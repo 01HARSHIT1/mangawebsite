@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MangaReader - Ultimate Manga Reading Experience
 
 A full-featured, production-ready manga website built with Next.js, MongoDB, and Tailwind CSS. Enjoy advanced reading, discovery, community, admin, and monitoring features.
@@ -62,3 +63,7 @@ A full-featured, production-ready manga website built with Next.js, MongoDB, and
 ---
 
 Built with ❤️ by the MangaReader Team.
+=======
+# mangawebsite
+This is my first official website
+>>>>>>> 43d7120e01d95324506e963ed33a40d41ad8ae8f
