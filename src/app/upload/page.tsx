@@ -1,11 +1,19 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
 export default function UploadPage() {
+    return (
+        <Suspense fallback={<div className="max-w-xl mx-auto my-12 p-8 bg-gray-900 rounded-2xl shadow-2xl text-white">Loading...</div>}>
+            <UploadClient />
+        </Suspense>
+    );
+}
+
+function UploadClient() {
     const searchParams = useSearchParams();
     const [uploadType, setUploadType] = useState<string | null>(null);
     const [form, setForm] = useState({
@@ -27,23 +35,18 @@ export default function UploadPage() {
     const [coverImageDragActive, setCoverImageDragActive] = useState(false);
     const [pdfFileDragActive, setPdfFileDragActive] = useState(false);
     const [coverPageDragActive, setCoverPageDragActive] = useState(false);
-    // Separate refs for each file input to ensure complete isolation
     const coverImageRef = useRef<HTMLInputElement | null>(null);
     const pdfFileRef = useRef<HTMLInputElement | null>(null);
     const coverPageRef = useRef<HTMLInputElement | null>(null);
     const pdfFileChapterRef = useRef<HTMLInputElement | null>(null);
-
     const router = useRouter();
 
     useEffect(() => {
         const type = searchParams.get("type");
         const mangaId = searchParams.get("mangaId");
-
         if (type === "manga" || type === "chapter") {
             setUploadType(type);
         }
-
-        // Reset form state on mount to ensure clean state
         setForm({
             title: "",
             description: "",
@@ -58,71 +61,43 @@ export default function UploadPage() {
             coverPage: null,
         });
         setMessage("");
-
-        console.log('URL params:', { type, mangaId });
-
     }, [searchParams]);
 
     useEffect(() => {
         if (uploadType === "chapter") {
-            console.log('Fetching manga list for chapter upload...');
             fetch("/api/manga")
                 .then(res => res.json())
                 .then(data => {
-                    console.log('Manga API response:', data);
                     if (data.manga && Array.isArray(data.manga)) {
                         const mangaOptions = data.manga.map((m: any) => ({ _id: m._id, title: m.title }));
                         setMangaList(mangaOptions);
-                        console.log('Available manga:', mangaOptions);
-
-                        // If mangaId is in the query, pre-select it
                         const urlParams = new URLSearchParams(window.location.search);
                         const preselectId = urlParams.get("mangaId");
-                        console.log('Pre-selecting mangaId:', preselectId);
                         if (preselectId) {
                             setForm(f => ({ ...f, mangaId: preselectId }));
                         }
                     }
                 })
-                .catch(error => {
-                    console.error('Error fetching manga list:', error);
-                    setMessage('Error loading manga list');
-                });
+                .catch(() => setMessage('Error loading manga list'));
         }
     }, [uploadType]);
 
     const handleTypeChange = (type: string) => {
         setUploadType(type);
         setMessage("");
-
-
-
-        // Clear form file states
-        setForm(prev => ({
-            ...prev,
-            coverImage: null,
-            pdfFile: null,
-            coverPage: null
-        }));
+        setForm(prev => ({ ...prev, coverImage: null, pdfFile: null, coverPage: null }));
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, files } = e.target as any;
-        if (files) {
-            setForm((prev) => ({ ...prev, [name]: files[0] }));
-        } else {
-            setForm((prev) => ({ ...prev, [name]: value }));
-        }
+        if (files) setForm((prev) => ({ ...prev, [name]: files[0] }));
+        else setForm((prev) => ({ ...prev, [name]: value }));
     };
 
-    // Fixed file change handlers - removed problematic event handling
     const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files[0]) {
             const file = files[0];
-            console.log('Cover image selected:', file.name, file.type);
-
-            // Validate image file type
             if (file.type.startsWith('image/')) {
                 setForm((prev) => ({ ...prev, coverImage: file }));
                 setMessage("Cover image selected successfully!");
@@ -137,9 +112,6 @@ export default function UploadPage() {
         const files = e.target.files;
         if (files && files[0]) {
             const file = files[0];
-            console.log('PDF file selected:', file.name, file.type);
-
-            // Validate PDF file type
             if (file.type === 'application/pdf') {
                 setForm((prev) => ({ ...prev, pdfFile: file }));
                 setMessage("PDF file selected successfully!");
@@ -154,9 +126,6 @@ export default function UploadPage() {
         const files = e.target.files;
         if (files && files[0]) {
             const file = files[0];
-            console.log('Cover page selected:', file.name, file.type);
-
-            // Validate image file type
             if (file.type.startsWith('image/')) {
                 setForm((prev) => ({ ...prev, coverPage: file }));
                 setMessage("Cover page selected successfully!");
@@ -171,9 +140,6 @@ export default function UploadPage() {
         const files = e.target.files;
         if (files && files[0]) {
             const file = files[0];
-            console.log('Chapter PDF file selected:', file.name, file.type);
-
-            // Validate PDF file type
             if (file.type === 'application/pdf') {
                 setForm((prev) => ({ ...prev, pdfFile: file }));
                 setMessage("Chapter PDF file selected successfully!");
@@ -183,108 +149,50 @@ export default function UploadPage() {
             }
         }
     };
-    // Drag-and-drop handlers
+
     const handleDrag = (e: React.DragEvent<HTMLDivElement>, dragState: boolean, setDragState: (value: boolean) => void) => {
         e.preventDefault();
         e.stopPropagation();
         if (e.type === "dragenter" || e.type === "dragover") setDragState(true);
         else if (e.type === "dragleave") setDragState(false);
     };
+
     const handleDrop = (e: React.DragEvent<HTMLDivElement>, name: string, setDragState: (value: boolean) => void) => {
         e.preventDefault();
         e.stopPropagation();
         setDragState(false);
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             const file = e.dataTransfer.files[0];
-
-            // Validate file type based on the field name
             if (name === 'coverImage' || name === 'coverPage') {
-                if (file.type.startsWith('image/')) {
-                    setForm((prev) => ({ ...prev, [name]: file }));
-                } else {
-                    setMessage("Please select a valid image file (PNG, JPG, JPEG, etc.)");
-                }
+                if (file.type.startsWith('image/')) setForm((prev) => ({ ...prev, [name]: file }));
+                else setMessage("Please select a valid image file (PNG, JPG, JPEG, etc.)");
             } else if (name === 'pdfFile') {
-                if (file.type === 'application/pdf') {
-                    setForm((prev) => ({ ...prev, [name]: file }));
-                } else {
-                    setMessage("Please select a valid PDF file");
-                }
+                if (file.type === 'application/pdf') setForm((prev) => ({ ...prev, [name]: file }));
+                else setMessage("Please select a valid PDF file");
             }
         }
     };
-    // Simplified click handlers to prevent infinite loops
-    const triggerCoverImageInput = () => {
-        if (coverImageRef.current) {
-            coverImageRef.current.click();
-        }
-    };
 
-    const triggerPdfFileInput = () => {
-        if (pdfFileRef.current) {
-            pdfFileRef.current.click();
-        }
-    };
-
-    const triggerCoverPageInput = () => {
-        if (coverPageRef.current) {
-            coverPageRef.current.click();
-        }
-    };
-
-    const triggerPdfFileChapterInput = () => {
-        if (pdfFileChapterRef.current) {
-            pdfFileChapterRef.current.click();
-        }
-    };
+    const triggerCoverImageInput = () => coverImageRef.current?.click();
+    const triggerPdfFileInput = () => pdfFileRef.current?.click();
+    const triggerCoverPageInput = () => coverPageRef.current?.click();
+    const triggerPdfFileChapterInput = () => pdfFileChapterRef.current?.click();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Client-side validation
         if (uploadType === "manga") {
             if (!form.title || !form.description || !form.genre || !form.chapterNumber) {
                 setMessage("Please fill in all required fields");
                 return;
             }
-            if (!form.coverImage) {
-                setMessage("Please select a cover image");
-                return;
-            }
-            if (!form.pdfFile) {
-                setMessage("Please select a PDF file");
-                return;
-            }
+            if (!form.coverImage) { setMessage("Please select a cover image"); return; }
+            if (!form.pdfFile) { setMessage("Please select a PDF file"); return; }
         } else if (uploadType === "chapter") {
-            console.log('Chapter validation - form data:', {
-                mangaId: form.mangaId,
-                chapterNumber: form.chapterNumber,
-                description: form.description,
-                coverPage: form.coverPage,
-                pdfFile: form.pdfFile
-            });
-
-            // More detailed validation
-            if (!form.mangaId) {
-                setMessage("Please select a manga");
-                return;
-            }
-            if (!form.chapterNumber) {
-                setMessage("Please enter chapter number");
-                return;
-            }
-            if (!form.description) {
-                setMessage("Please enter description");
-                return;
-            }
-            if (!form.coverPage) {
-                setMessage("Please select a cover page");
-                return;
-            }
-            if (!form.pdfFile) {
-                setMessage("Please select a PDF file");
-                return;
-            }
+            if (!form.mangaId) { setMessage("Please select a manga"); return; }
+            if (!form.chapterNumber) { setMessage("Please enter chapter number"); return; }
+            if (!form.description) { setMessage("Please enter description"); return; }
+            if (!form.coverPage) { setMessage("Please select a cover page"); return; }
+            if (!form.pdfFile) { setMessage("Please select a PDF file"); return; }
         }
 
         setLoading(true);
@@ -309,14 +217,10 @@ export default function UploadPage() {
             if (form.pdfFile) formData.append("pdfFile", form.pdfFile);
         }
         try {
-            const res = await fetch("/api/manga", {
-                method: "POST",
-                body: formData,
-            });
+            const res = await fetch("/api/manga", { method: "POST", body: formData });
             const data = await res.json();
             if (res.ok) {
                 if (uploadType === "manga" && data.manga && data.manga._id) {
-                    // Redirect to chapter upload with new manga pre-selected
                     router.push(`/upload?type=chapter&mangaId=${data.manga._id}`);
                     return;
                 }
@@ -337,7 +241,7 @@ export default function UploadPage() {
             } else {
                 setMessage(data.error || "Upload failed");
             }
-        } catch (err) {
+        } catch {
             setMessage("Upload failed");
         } finally {
             setLoading(false);
@@ -353,6 +257,7 @@ export default function UploadPage() {
             </div>
             {uploadType === "manga" && (
                 <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-5">
+                    {/* manga fields */}
                     <div>
                         <label className="block font-semibold mb-1">Title <span className="text-red-400">*</span></label>
                         <input name="title" value={form.title} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none" aria-label="Manga Title" />
@@ -377,6 +282,7 @@ export default function UploadPage() {
                         <label className="block font-semibold mb-1">Status</label>
                         <input name="status" value={form.status} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none" aria-label="Status" />
                     </div>
+                    {/* cover image */}
                     <div>
                         <label className="block font-semibold mb-1">Cover Image <span className="text-red-400">*</span></label>
                         <div
@@ -410,6 +316,7 @@ export default function UploadPage() {
                             />
                         </div>
                     </div>
+                    {/* pdf file */}
                     <div>
                         <label className="block font-semibold mb-1">PDF File <span className="text-red-400">*</span></label>
                         <div
@@ -447,6 +354,7 @@ export default function UploadPage() {
             )}
             {uploadType === "chapter" && (
                 <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-5">
+                    {/* chapter fields */}
                     <div>
                         <label className="block font-semibold mb-1">Manga <span className="text-red-400">*</span></label>
                         <select name="mangaId" value={form.mangaId} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none" aria-label="Select Manga">
@@ -468,6 +376,7 @@ export default function UploadPage() {
                         <label className="block font-semibold mb-1">Description <span className="text-red-400">*</span></label>
                         <textarea name="description" value={form.description} onChange={handleChange} className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none" aria-label="Chapter Description" />
                     </div>
+                    {/* cover page */}
                     <div>
                         <label className="block font-semibold mb-1">Cover Page <span className="text-red-400">*</span></label>
                         <div
@@ -501,6 +410,7 @@ export default function UploadPage() {
                             />
                         </div>
                     </div>
+                    {/* chapter pdf */}
                     <div>
                         <label className="block font-semibold mb-1">PDF File <span className="text-red-400">*</span></label>
                         <div
