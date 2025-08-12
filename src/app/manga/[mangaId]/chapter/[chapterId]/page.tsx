@@ -6,7 +6,7 @@ import { FaArrowLeft, FaBookmark, FaRegBookmark, FaSpinner, FaHeart, FaRegHeart,
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import AdSlot from '@/components/AdSlot';
-import OptimizedImage from '../../../../components/OptimizedImage';
+import OptimizedImage from '@/components/OptimizedImage';
 const ChapterComments = dynamic(() => import('@/components/ChapterComments'), { ssr: false });
 
 // Reading mode types
