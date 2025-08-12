@@ -3,6 +3,7 @@ import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
+import { getStorage } from '@/lib/storage';
 
 // GET: List manga with pagination and sorting
 export async function GET(req: NextRequest) {
@@ -107,10 +108,9 @@ export async function POST(req: NextRequest) {
             if (coverImageFile && typeof coverImageFile === 'object' && 'arrayBuffer' in coverImageFile) {
                 const buffer = Buffer.from(await coverImageFile.arrayBuffer());
                 const filename = `cover_${Date.now()}_${coverImageFile.name}`;
-                const uploadPath = path.join(process.cwd(), 'public', 'uploads', filename);
-                fs.mkdirSync(path.dirname(uploadPath), { recursive: true });
-                fs.writeFileSync(uploadPath, buffer);
-                coverImagePath = `/uploads/${filename}`;
+                const storage = getStorage();
+                const savedUrl = await storage.save({ buffer, key: filename, contentType: (coverImageFile as any).type || 'image/webp' });
+                coverImagePath = savedUrl;
             }
         }
 
