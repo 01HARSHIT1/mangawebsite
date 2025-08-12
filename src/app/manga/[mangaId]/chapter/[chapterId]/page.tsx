@@ -63,7 +63,7 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
     const [imgLoaded, setImgLoaded] = useState<boolean[]>(() => Array((chapter.pages || []).length).fill(false));
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(chapter.likes ? chapter.likes.length : 0);
-    const [viewCount, setViewCount] = useState<number | null>(null);
+    const [viewCount, setViewCount] = useState<number | null>(typeof chapter.views === 'number' ? chapter.views : null);
     const feedbackRef = useRef<HTMLSpanElement>(null);
     const [unlocked, setUnlocked] = useState(false);
     const [coinPrice, setCoinPrice] = useState(chapter.coinPrice || 0);
@@ -205,7 +205,7 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
                     // Check for chapter bookmark
                     if (data.user && data.user.bookmarks && Array.isArray(data.user.bookmarks)) {
                         setBookmarked(data.user.bookmarks.some((b: any) => typeof b === 'object' && b.chapterId === params.chapterId));
-                        setLiked(chapter.likes && Array.isArray(chapter.likes) && chapter.likes.includes(data.user._id));
+                        setLiked(chapter.likes && Array.isArray(chapter.likes) && chapter.likes.includes(data.user.id));
                     }
                     // Check if chapter is unlocked
                     if (data.user && Array.isArray(data.user.unlockedChapters) && data.user.unlockedChapters.includes(params.chapterId)) {
@@ -216,15 +216,12 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
         } else {
             setLoading(false);
         }
-        // Fetch view count (aggregate from analytics or placeholder)
-        fetch(`/api/creator-analytics?chapterId=${params.chapterId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.episodeViews) {
-                    const found = data.episodeViews.find((ep: any) => ep._id === params.chapterId);
-                    setViewCount(found ? found.views : 0);
-                }
-            });
+        // Increment view count in chapter document
+        fetch(`/api/chapters/${params.chapterId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'incrementView' })
+        }).then(() => setViewCount(v => (typeof v === 'number' ? v + 1 : 1)));
         // Record reading history
         if (token) {
             fetch('/api/profile', {
@@ -307,10 +304,17 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
         const token = localStorage.getItem('token');
         if (!token) return;
         setLoading(true);
+        // Resolve userId from profile to ensure correct like attribution
+        let userId: string | null = null;
+        try {
+            const profileRes = await fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } });
+            const profileData = await profileRes.json();
+            userId = profileData?.user?.id || null;
+        } catch {}
         const res = await fetch(`/api/chapters/${params.chapterId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ action: liked ? 'unlike' : 'like', userId: params.chapterId })
+            body: JSON.stringify({ action: liked ? 'unlike' : 'like', userId })
         });
         if (res.ok) {
             setLiked(l => !l);
@@ -506,6 +510,7 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
                                         fallbackSrc="/file.svg"
                                         tabIndex={0}
                                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, (max-width: 1024px) 80vw, 600px"
+                                        onLoad={() => setImgLoaded(prev => { const next = [...prev]; next[i] = true; return next; })}
                                     />
                                     {!imgLoaded[i] && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg">

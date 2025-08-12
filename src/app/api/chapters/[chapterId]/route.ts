@@ -5,7 +5,55 @@ import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '@/lib/config';
+const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
+
+export async function GET(req: NextRequest, { params }: { params: { chapterId: string } }) {
+    try {
+        const auth = req.headers.get('authorization');
+        let role: 'viewer' | 'creator' | 'admin' = 'viewer';
+        if (auth && auth.startsWith('Bearer ')) {
+            try {
+                const payload: any = jwt.verify(auth.replace('Bearer ', ''), JWT_SECRET);
+                role = payload.role || 'viewer';
+            } catch {}
+        }
+
+        const client = await clientPromise;
+        const db = client.db();
+        const chapter = await db.collection('chapters').findOne({ _id: new ObjectId(params.chapterId) });
+        if (!chapter) return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
+
+        // Hide unpublished chapters from non-creator/admin
+        if (role !== 'creator' && role !== 'admin') {
+            if (chapter.publishDate && new Date(chapter.publishDate) > new Date()) {
+                return NextResponse.json({ error: 'Chapter not available' }, { status: 403 });
+            }
+        }
+
+        // Validate file existence for cover and pages
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        if (chapter.coverPage) {
+            const filePath = path.join(uploadsDir, path.basename(chapter.coverPage));
+            if (!fs.existsSync(filePath)) delete (chapter as any).coverPage;
+        }
+        if (Array.isArray(chapter.pages)) {
+            chapter.pages = chapter.pages.filter((p: string) => {
+                const filePath = path.join(uploadsDir, path.basename(p));
+                return fs.existsSync(filePath);
+            });
+        }
+
+        return NextResponse.json({
+            ...chapter,
+            _id: chapter._id.toString(),
+            createdAt: chapter.createdAt ? chapter.createdAt.toString() : null,
+            publishDate: chapter.publishDate ? chapter.publishDate.toString() : null,
+        });
+    } catch (error) {
+        console.error('Chapter GET error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
 
 export async function DELETE(req: NextRequest, { params }: { params: { chapterId: string } }) {
     const client = await clientPromise;
@@ -43,6 +91,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
             await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $addToSet: { likes: body.userId } });
         } else if (body.action === 'unlike' && body.userId) {
             await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $pull: { likes: body.userId } });
+        } else if (body.action === 'incrementView') {
+            await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $inc: { views: 1 } }, { upsert: false });
         }
     } else {
         const formData = await req.formData();
@@ -51,9 +101,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
         if (formData.get('tags')) update.tags = formData.get('tags');
         if (formData.get('publishDate')) update.publishDate = formData.get('publishDate');
         if (formData.get('order')) update.order = Number(formData.get('order'));
-        if (formData.get('likes')) update.likes = JSON.parse(formData.get('likes'));
-        if (formData.get('comments')) update.comments = JSON.parse(formData.get('comments'));
-        if (formData.get('ratings')) update.ratings = JSON.parse(formData.get('ratings'));
+        if (formData.get('likes')) update.likes = JSON.parse(formData.get('likes') as string);
+        if (formData.get('comments')) update.comments = JSON.parse(formData.get('comments') as string);
+        if (formData.get('ratings')) update.ratings = JSON.parse(formData.get('ratings') as string);
         // Bulk image upload for pages
         const pages = formData.getAll('pages');
         if (pages && pages.length > 0) {
@@ -70,7 +120,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
             }
         }
     }
-    await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $set: update });
+    if (Object.keys(update).length > 0) {
+        await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $set: update });
+    }
     return NextResponse.json({ success: true });
 }
 
