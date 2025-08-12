@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 export default function UploadPage() {
     const searchParams = useSearchParams();
     const [uploadType, setUploadType] = useState<string | null>(null);
