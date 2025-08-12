@@ -67,3 +67,28 @@ Built with ❤️ by the MangaReader Team.
 # mangawebsite
 This is my first official website
 >>>>>>> 43d7120e01d95324506e963ed33a40d41ad8ae8f
+
+## Deployment (Docker Compose)
+
+Use the provided `docker-compose.yml` to run the app and MongoDB together:
+
+- Build and start:
+```
+docker compose up --build -d
+```
+- App will be available at `http://localhost:3000`
+- MongoDB runs as `mongo` inside the network; MONGODB_URI is `mongodb://mongo:27017/mangawebsite`
+
+### Environment Variables
+
+- `MONGODB_URI` (required): e.g., `mongodb://mongo:27017/mangawebsite`
+- Optional S3 for production:
+  - `USE_S3=1`
+  - `AWS_S3_BUCKET=your-bucket`
+  - `AWS_S3_REGION=your-region`
+  - `AWS_S3_PUBLIC_BASE=https://cdn.example.com` (optional CDN/public base)
+
+## E2E Tests
+
+- Basic E2E: `BASE_URL=http://localhost:3000 node test-e2e.js`
+- Extended E2E: `BASE_URL=http://localhost:3000 node test-e2e-extended.js`

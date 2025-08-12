@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: manga_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  app:
+    build: .
+    container_name: manga_app
+    ports:
+      - "3000:3000"
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/mangawebsite
+      NODE_ENV: production
+    depends_on:
+      - mongo
+    command: node .next/standalone/server.js
+
+volumes:
+  mongo_data:

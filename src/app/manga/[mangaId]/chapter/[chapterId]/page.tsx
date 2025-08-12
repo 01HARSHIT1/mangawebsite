@@ -6,11 +6,12 @@ import { FaArrowLeft, FaBookmark, FaRegBookmark, FaSpinner, FaHeart, FaRegHeart,
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import AdSlot from '@/components/AdSlot';
-import OptimizedImage from '../../../../components/OptimizedImage';
+import OptimizedImage from '@/components/OptimizedImage';
 const ChapterComments = dynamic(() => import('@/components/ChapterComments'), { ssr: false });
 
 // Reading mode types
 type ReadingMode = 'vertical' | 'horizontal' | 'single';
+type FitMode = 'original' | 'fit-width' | 'fit-height';
 type ZoomLevel = 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2;
 
 export default function ChapterPage({ params }: { params: { mangaId: string, chapterId: string } }) {
@@ -63,10 +64,11 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
     const [imgLoaded, setImgLoaded] = useState<boolean[]>(() => Array((chapter.pages || []).length).fill(false));
     const [liked, setLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(chapter.likes ? chapter.likes.length : 0);
-    const [viewCount, setViewCount] = useState<number | null>(null);
+    const [viewCount, setViewCount] = useState<number | null>(typeof chapter.views === 'number' ? chapter.views : null);
     const feedbackRef = useRef<HTMLSpanElement>(null);
     const [unlocked, setUnlocked] = useState(false);
     const [coinPrice, setCoinPrice] = useState(chapter.coinPrice || 0);
+    const [coinsBalance, setCoinsBalance] = useState<number | null>(null);
     const [unlockLoading, setUnlockLoading] = useState(false);
     const [unlockError, setUnlockError] = useState('');
     const [showUnlockSuccess, setShowUnlockSuccess] = useState(false);
@@ -74,6 +76,7 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
     // Advanced Reader Features
     const [readingMode, setReadingMode] = useState<ReadingMode>('vertical');
     const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(1);
+    const [fitMode, setFitMode] = useState<FitMode>('original');
     const [currentPage, setCurrentPage] = useState(0);
     const [showControls, setShowControls] = useState(true);
     const [autoScroll, setAutoScroll] = useState(false);
@@ -84,6 +87,34 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
     const [readingProgress, setReadingProgress] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const [fullscreen, setFullscreen] = useState(false);
+
+    // Load persisted preferences
+    useEffect(() => {
+        try {
+            const savedMode = localStorage.getItem('reader_mode') as ReadingMode | null;
+            const savedZoom = localStorage.getItem('reader_zoom');
+            const savedMuted = localStorage.getItem('reader_muted');
+            const savedFit = localStorage.getItem('reader_fit') as FitMode | null;
+            if (savedMode) setReadingMode(savedMode);
+            if (savedZoom) setZoomLevel(Number(savedZoom) as ZoomLevel);
+            if (savedMuted) setMuted(savedMuted === '1');
+            if (savedFit) setFitMode(savedFit);
+        } catch {}
+    }, []);
+
+    // Persist preferences on change
+    useEffect(() => {
+        try { localStorage.setItem('reader_mode', readingMode); } catch {}
+    }, [readingMode]);
+    useEffect(() => {
+        try { localStorage.setItem('reader_zoom', String(zoomLevel)); } catch {}
+    }, [zoomLevel]);
+    useEffect(() => {
+        try { localStorage.setItem('reader_muted', muted ? '1' : '0'); } catch {}
+    }, [muted]);
+    useEffect(() => {
+        try { localStorage.setItem('reader_fit', fitMode); } catch {}
+    }, [fitMode]);
 
     // Preload next images
     const preloadImages = useCallback((imgs: string[]) => {
@@ -205,26 +236,26 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
                     // Check for chapter bookmark
                     if (data.user && data.user.bookmarks && Array.isArray(data.user.bookmarks)) {
                         setBookmarked(data.user.bookmarks.some((b: any) => typeof b === 'object' && b.chapterId === params.chapterId));
-                        setLiked(chapter.likes && Array.isArray(chapter.likes) && chapter.likes.includes(data.user._id));
+                        setLiked(chapter.likes && Array.isArray(chapter.likes) && chapter.likes.includes(data.user.id));
                     }
                     // Check if chapter is unlocked
                     if (data.user && Array.isArray(data.user.unlockedChapters) && data.user.unlockedChapters.includes(params.chapterId)) {
                         setUnlocked(true);
+                    }
+                    if (typeof data.user?.coins === 'number') {
+                        setCoinsBalance(data.user.coins);
                     }
                     setLoading(false);
                 });
         } else {
             setLoading(false);
         }
-        // Fetch view count (aggregate from analytics or placeholder)
-        fetch(`/api/creator-analytics?chapterId=${params.chapterId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.episodeViews) {
-                    const found = data.episodeViews.find((ep: any) => ep._id === params.chapterId);
-                    setViewCount(found ? found.views : 0);
-                }
-            });
+        // Increment view count in chapter document
+        fetch(`/api/chapters/${params.chapterId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'incrementView' })
+        }).then(() => setViewCount(v => (typeof v === 'number' ? v + 1 : 1)));
         // Record reading history
         if (token) {
             fetch('/api/profile', {
@@ -272,7 +303,12 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
             if (res.ok) {
                 const data = await res.json();
                 if (data.pages && data.pages.length > 0) {
-                    setPages(p => [...p, ...data.pages]);
+                    setPages(p => {
+                        const newPages = data.pages as string[];
+                        // grow the imgLoaded tracker for new images
+                        setImgLoaded(prev => ([...prev, ...Array(newPages.length).fill(false)]));
+                        return [...p, ...newPages];
+                    });
                     setCurrentIdx(nextIdx);
                     preloadImages(data.pages.slice(0, 3));
                 } else {
@@ -307,10 +343,17 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
         const token = localStorage.getItem('token');
         if (!token) return;
         setLoading(true);
+        // Resolve userId from profile to ensure correct like attribution
+        let userId: string | null = null;
+        try {
+            const profileRes = await fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } });
+            const profileData = await profileRes.json();
+            userId = profileData?.user?.id || null;
+        } catch {}
         const res = await fetch(`/api/chapters/${params.chapterId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ action: liked ? 'unlike' : 'like', userId: params.chapterId })
+            body: JSON.stringify({ action: liked ? 'unlike' : 'like', userId })
         });
         if (res.ok) {
             setLiked(l => !l);
@@ -373,7 +416,10 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
             <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-white p-4">
                 <div className="bg-gray-900 rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-10 max-w-md w-full text-center">
                     <h2 className="text-xl sm:text-2xl font-bold mb-4 text-yellow-400">Paid Chapter</h2>
-                    <div className="text-base sm:text-lg mb-4">Unlock this chapter for <span className="text-yellow-300 font-bold">{coinPrice} Coins</span></div>
+                    <div className="text-base sm:text-lg mb-2">Unlock this chapter for <span className="text-yellow-300 font-bold">{coinPrice} Coins</span></div>
+                    {coinsBalance !== null && (
+                        <div className="text-sm text-gray-300 mb-4">Your balance: <span className="text-yellow-200 font-semibold">{coinsBalance} Coins</span></div>
+                    )}
                     {unlockError && <div className="text-red-400 mb-2 text-sm sm:text-base" role="status">{unlockError}</div>}
                     <button
                         onClick={handleUnlock}
@@ -466,7 +512,9 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
                                     width={800}
                                     height={1200}
                                     className="max-h-full max-w-full object-contain"
-                                    style={{ transform: `scale(${zoomLevel})` }}
+                                    style={{
+                                        transform: `scale(${zoomLevel})`,
+                                    }}
                                     quality={80}
                                     priority={true}
                                     fallbackSrc="/file.svg"
@@ -497,8 +545,12 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
                                         alt={`Page ${i + 1} of chapter ${chapter.chapterNumber}`}
                                         width={600}
                                         height={900}
-                                        className="rounded-lg shadow-lg transition-all duration-300 hover:scale-105 focus:scale-105 outline-none w-full h-auto"
-                                        style={{ transform: `scale(${zoomLevel})` }}
+                                        className="rounded-lg shadow-lg transition-all duration-300 hover:scale-105 focus:scale-105 outline-none w-full h-auto object-contain"
+                                        style={{
+                                            transform: fitMode === 'original' ? `scale(${zoomLevel})` : undefined,
+                                            width: fitMode === 'fit-width' ? '100%' : undefined,
+                                            height: fitMode === 'fit-height' ? '100%' : 'auto'
+                                        }}
                                         loading={i < 3 ? 'eager' : 'lazy'}
                                         quality={80}
                                         unoptimized={false}
@@ -506,6 +558,7 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
                                         fallbackSrc="/file.svg"
                                         tabIndex={0}
                                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, (max-width: 1024px) 80vw, 600px"
+                                        onLoad={() => setImgLoaded(prev => { const next = [...prev]; next[i] = true; return next; })}
                                     />
                                     {!imgLoaded[i] && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg">
@@ -642,6 +695,20 @@ function ChapterClient({ chapter, params, allChapters }: { chapter: any, params:
                             <option value="horizontal">Horizontal</option>
                             <option value="single">Single</option>
                         </select>
+
+                        {/* Fit Mode */}
+                        {readingMode === 'vertical' && (
+                            <select
+                                value={fitMode}
+                                onChange={(e) => setFitMode(e.target.value as FitMode)}
+                                className="bg-gray-700 text-white rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                                aria-label="Fit mode"
+                            >
+                                <option value="original">Original</option>
+                                <option value="fit-width">Fit width</option>
+                                <option value="fit-height">Fit height</option>
+                            </select>
+                        )}
 
                         {/* Zoom Controls */}
                         <select

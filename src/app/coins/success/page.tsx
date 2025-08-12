@@ -1,9 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
 
+export const dynamic = 'force-dynamic';
+
 export default function CoinSuccessPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">Loading...</div>}>
+            <CoinSuccessClient />
+        </Suspense>
+    );
+}
+
+function CoinSuccessClient() {
     const [coins, setCoins] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();

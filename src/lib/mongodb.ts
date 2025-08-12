@@ -82,4 +82,10 @@ if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
     createIndexes();
 }
 
+export async function connectToDatabase() {
+    const client = await clientPromise;
+    const db = client.db();
+    return { client, db };
+}
+
 export default clientPromise; 
