@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import { getStorage } from '@/lib/storage';
 import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
@@ -112,10 +113,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
                 if (typeof page === 'object' && 'arrayBuffer' in page) {
                     const buffer = Buffer.from(await page.arrayBuffer());
                     const filename = `page_${chapterId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`;
-                    const uploadPath = path.join(process.cwd(), 'public', 'uploads', filename);
-                    // Convert to webp
-                    await sharp(buffer).webp({ quality: 80 }).toFile(uploadPath);
-                    update.pages.push(`/uploads/${filename}`);
+                    // Convert to webp buffer
+                    const webp = await sharp(buffer).webp({ quality: 80 }).toBuffer();
+                    const storage = getStorage();
+                    const savedUrl = await storage.save({ buffer: webp, key: filename, contentType: 'image/webp' });
+                    update.pages.push(savedUrl);
                 }
             }
         }
