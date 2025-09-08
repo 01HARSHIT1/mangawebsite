@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback } fromreact';
-import { FaHeart, FaComment, FaStar, FaThumbsUp, FaShare, FaReply, FaEdit, FaTrash, FaUser, FaSpinner, FaExclamationTriangle, FaCheckCircle } from react-icons/fa;
-import { motion, AnimatePresence } fromframer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { FaHeart, FaComment, FaStar, FaThumbsUp, FaShare, FaReply, FaEdit, FaTrash, FaUser, FaSpinner, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
 interface Comment[object Object]

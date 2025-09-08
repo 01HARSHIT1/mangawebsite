@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import ClientLayoutShell from "@/components/ClientLayoutShell";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
   title: {
@@ -133,7 +134,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
       </head>
       <body className="bg-gray-950 dark:bg-gray-950 text-white dark:text-white min-h-screen font-sans">
-        <ClientLayoutShell>{children}</ClientLayoutShell>
+        <AuthProvider>
+          <ClientLayoutShell>{children}</ClientLayoutShell>
+        </AuthProvider>
       </body>
     </html>
   );

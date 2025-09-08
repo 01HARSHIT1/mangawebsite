@@ -1,39 +1,39 @@
 "use client";
-import { useState, useEffect, useCallback } fromreact;
-import [object Object]FaFire, FaStar, FaEye, FaHeart, FaBookmark, FaSpinner, FaArrowRight } from react - icons / fa;
-import { motion } from framer - motion';
+import { useState, useEffect, useCallback } from 'react';
+import { FaFire, FaStar, FaEye, FaHeart, FaBookmark, FaSpinner, FaArrowRight } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import OptimizedImage from './OptimizedImage';
 
-interface Manga[object Object]
-_id: string;
-title: string;
-description: string;
-coverImage: string;
-genres: string[];
-status: string;
-rating: number;
-views: number;
-likes: number;
-chapters: number;
-author: string;
-year: number;
-similarity ?: number;
+interface Manga {
+    _id: string;
+    title: string;
+    description: string;
+    coverImage: string;
+    genres: string[];
+    status: string;
+    rating: number;
+    views: number;
+    likes: number;
+    chapters: number;
+    author: string;
+    year: number;
+    similarity?: number;
 }
 
-interface SmartRecommendationsProps[object Object]
-currentUser ?: any;
-currentMangaId ?: string;
+interface SmartRecommendationsProps {
+    currentUser?: any;
+    currentMangaId?: string;
 }
 
 export default function SmartRecommendations({ currentUser, currentMangaId }: SmartRecommendationsProps) {
-    const [personalized, setPersonalized] = useState<Manga>([]);
-    const [trending, setTrending] = useState<Manga>([]);
-    const [similar, setSimilar] = useState<Manga>([]);
+    const [personalized, setPersonalized] = useState<Manga[]>([]);
+    const [trending, setTrending] = useState<Manga[]>([]);
+    const [similar, setSimilar] = useState<Manga[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState < personalized | ending' | 'similar'>('personalized);
-    consterror, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'personalized' | 'trending' | 'similar'>('personalized');
+    const [error, setError] = useState<string | null>(null);
 
     // Fetch personalized recommendations
     const fetchPersonalized = useCallback(async () => {
@@ -41,116 +41,144 @@ export default function SmartRecommendations({ currentUser, currentMangaId }: Sm
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(/api/manga / recommendations / personalized',[object Object]           headers: token ? { Authorization: `Bearer ${token}` } : {}
+            const res = await fetch('/api/manga/recommendations/personalized', {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
 
-    if (res.ok) [object Object]             const data = await res.json();
-    setPersonalized(data.manga || []);
-}
+            if (res.ok) {
+                const data = await res.json();
+                setPersonalized(data.manga || []);
+            }
         } catch (err) {
-    console.error('Failed to fetch personalized recommendations:', err);
-}
+            console.error('Failed to fetch personalized recommendations:', err);
+        }
     }, [currentUser]);
 
-// Fetch trending manga
-const fetchTrending = useCallback(async () => {
-    try {
-        const res = await fetch(/api/manga / recommendations / trending);
-        if (res.ok) [object Object]             const data = await res.json();
-        setTrending(data.manga || []);
-    }
+    // Fetch trending manga
+    const fetchTrending = useCallback(async () => {
+        try {
+            const res = await fetch('/api/manga/recommendations/trending');
+            if (res.ok) {
+                const data = await res.json();
+                setTrending(data.manga || []);
+            }
         } catch (err) {
-    console.error('Failed to fetch trending manga:', err);
-}
-    },   // Fetch similar manga
-const fetchSimilar = useCallback(async () => {
-    if (!currentMangaId) return;
+            console.error('Failed to fetch trending manga:', err);
+        }
+    }, []);
 
-    try {
-        const res = await fetch(`/api/manga/${currentMangaId}/similar`);
-        if (res.ok) [object Object]             const data = await res.json();
-        setSimilar(data.manga || []);
-    }
+    // Fetch similar manga
+    const fetchSimilar = useCallback(async () => {
+        if (!currentMangaId) return;
+
+        try {
+            const res = await fetch(`/api/manga/${currentMangaId}/similar`);
+            if (res.ok) {
+                const data = await res.json();
+                setSimilar(data.manga || []);
+            }
         } catch (err) {
-    console.error('Failed to fetch similar manga:', err);
-}
+            console.error('Failed to fetch similar manga:', err);
+        }
     }, [currentMangaId]);
 
-// Load recommendations
-useEffect(() => {
-    const loadRecommendations = async () => [object Object]        setLoading(true);
-    setError(null);
+    // Load recommendations
+    useEffect(() => {
+        const loadRecommendations = async () => {
+            setLoading(true);
+            setError(null);
 
-    try[object Object]             await Promise.all([
-        fetchPersonalized(),
-        fetchTrending(),
-        fetchSimilar()
-    ]);
-} catch (err)[object Object]               setError('Failed to load recommendations');
-            } finally[object Object]            setLoading(false);
+            try {
+                await Promise.all([
+                    fetchPersonalized(),
+                    fetchTrending(),
+                    fetchSimilar()
+                ]);
+            } catch (err) {
+                setError('Failed to load recommendations');
+            } finally {
+                setLoading(false);
             }
         };
 
-loadRecommendations();
-    }, fetchPersonalized, fetchTrending, fetchSimilar]);
+        loadRecommendations();
+    }, [fetchPersonalized, fetchTrending, fetchSimilar]);
 
-// Get current recommendations based on active tab
-const getCurrentRecommendations = () => [object Object]    switch (activeTab) [object Object]            case 'personalized:            return personalized;
-            case 'trending:            return trending;
-            case 'similar:            return similar;
+    // Get current recommendations based on active tab
+    const getCurrentRecommendations = () => {
+        switch (activeTab) {
+            case 'personalized':
+                return personalized;
+            case 'trending':
+                return trending;
+            case 'similar':
+                return similar;
             default:
-return        }
-    };
-
-// Get tab title
-const getTabTitle = () => [object Object]    switch (activeTab) [object Object]            case 'personalized:            return 'For You';
-            case 'trending:            return 'Trending Now';
-            case 'similar:            returnSimilar Manga';
-            default:
-return        }
-    };
-
-// Get tab icon
-const getTabIcon = () => [object Object]    switch (activeTab) [object Object]            case 'personalized:            return <FaHeart className=text-pink-400;
-            case 'trending:            return <FaFire className="text-orange-400;
-            case 'similar:            return <FaStar className="text-yellow-400           default:
-return null;
+                return [];
         }
     };
 
-if (loading) {
-    return (
-        <div className="bg-gray-900 rounded-2-6>                <div className=" flex justify-center py-8">
-            < FaSpinner className = animate - spin text - 3text - blue - 400" />
-                </div >
-            </div >
-        );
-}
+    // Get tab title
+    const getTabTitle = () => {
+        switch (activeTab) {
+            case 'personalized':
+                return 'For You';
+            case 'trending':
+                return 'Trending Now';
+            case 'similar':
+                return 'Similar Manga';
+            default:
+                return '';
+        }
+    };
 
-if (error) {
-    return (
-        <div className="bg-gray-900 rounded-2-6>                <div className=" text-center py-8">
-            < p className = text - red - 40mb - 2">{error}</p>
-                < button
-    onClick = {() => window.location.reload()
-}
-className = px - 4 bg - blue - 600 hover: bg - blue - 500 text - white rounded - lg"
-    >
-    Try Again
-                    </button >
+    // Get tab icon
+    const getTabIcon = () => {
+        switch (activeTab) {
+            case 'personalized':
+                return <FaHeart className="text-pink-400" />;
+            case 'trending':
+                return <FaFire className="text-orange-400" />;
+            case 'similar':
+                return <FaStar className="text-yellow-400" />;
+            default:
+                return null;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="bg-gray-900 rounded-2-6>                <div className=" flex justify-center py-8">
+                < FaSpinner className = animate - spin text - 3text - blue - 400" />
+                    </div >
                 </div >
-            </div >
-        );
+            );
     }
 
-const currentRecommendations = getCurrentRecommendations();
+    if (error) {
+        return (
+            <div className="bg-gray-900 rounded-2-6>                <div className=" text-center py-8">
+                < p className = text - red - 40mb - 2">{error}</p>
+                    < button
+            onClick = {() => window.location.reload()
+}
+className = px - 4 bg - blue - 600 hover: bg - blue - 500 text - white rounded - lg"
+            >
+            Try Again
+                        </button >
+                    </div >
+                </div >
+            );
+    }
 
-return (
-    <div className="bg-gray-900 rounded-2dow-xl p-6>        {/* Header */}
-            <div className=flex items-center justify-between mb-6>
-                <div className=flex items-center gap-3">
-        {getTabIcon()}
-        <h2 className="text-2nt-bold text-white">[object Object]getTabTitle()}</h2                </div>
+    const currentRecommendations = getCurrentRecommendations();
+
+    return (
+        <div className="bg-gray-900 rounded-2dow-xl p-6>        {/* Header */}
+                <div className=flex items-center justify-between mb-6>
+                    <div className=flex items-center gap-3">
+                {getTabIcon()}
+                <h2 className="text-2nt-bold text-white">[object Object]getTabTitle()}</h2                </div>
                 
                 {/* Tab Navigation */ }
 <div className=flex gap-2">

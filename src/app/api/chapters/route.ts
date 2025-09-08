@@ -61,16 +61,17 @@ export async function GET(req: NextRequest) {
         .toArray();
 
     const chaptersWithIds = chapters.map((ch: any) => {
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        const coversDir = path.join(process.cwd(), 'public', 'manga-covers');
+        const mangaImagesDir = path.join(process.cwd(), 'public', 'manga-images');
         if (ch.coverPage) {
-            const filePath = path.join(uploadsDir, path.basename(ch.coverPage));
+            const filePath = path.join(coversDir, path.basename(ch.coverPage));
             if (!fs.existsSync(filePath)) {
                 delete ch.coverPage;
             }
         }
         if (Array.isArray(ch.pages)) {
             ch.pages = ch.pages.filter((p: string) => {
-                const filePath = path.join(uploadsDir, path.basename(p));
+                const filePath = path.join(mangaImagesDir, path.basename(p));
                 return fs.existsSync(filePath);
             });
         }

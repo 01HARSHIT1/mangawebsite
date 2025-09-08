@@ -62,10 +62,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
                 if (typeof page === 'object' && 'arrayBuffer' in page) {
                     const buffer = Buffer.from(await page.arrayBuffer());
                     const filename = `page_${chapterId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`;
-                    const uploadPath = path.join(process.cwd(), 'public', 'uploads', filename);
+                    const uploadPath = path.join(process.cwd(), 'public', 'manga-images', filename);
                     // Convert to webp
                     await sharp(buffer).webp({ quality: 80 }).toFile(uploadPath);
-                    update.pages.push(`/uploads/${filename}`);
+                    update.pages.push(`/manga-images/${filename}`);
                 }
             }
         }

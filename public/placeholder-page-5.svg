@@ -1,0 +1,9 @@
+<svg width="800" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="1200" fill="#9ca3af"/>
+  <rect x="50" y="50" width="700" height="1100" fill="#d1d5db" stroke="#e5e7eb" stroke-width="2"/>
+  <text x="400" y="300" font-family="Arial, sans-serif" font-size="36" fill="#374151" text-anchor="middle">Page 5</text>
+  <text x="400" y="600" font-family="Arial, sans-serif" font-size="48" fill="#374151" text-anchor="middle">Chapter End</text>
+  <text x="400" y="680" font-family="Arial, sans-serif" font-size="24" fill="#6b7280" text-anchor="middle">Sample Page</text>
+  <rect x="100" y="200" width="600" height="400" fill="#e5e7eb" stroke="#f3f4f6" stroke-width="1"/>
+  <text x="400" y="420" font-family="Arial, sans-serif" font-size="18" fill="#374151" text-anchor="middle">Content Area</text>
+</svg>

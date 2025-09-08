@@ -75,14 +75,14 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
     };
 
     return (
-        <div className="bg-gray-900 rounded-2xl p-6 shadow-xl">
+        <div className="bg-gray-800 rounded-2xl p-6 shadow-xl">
             <h3 className="text-xl font-bold mb-4 text-blue-300">Reviews & Comments</h3>
             <div className="mb-6">
                 <textarea
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none mb-2"
+                    className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none mb-2"
                     placeholder="Write your review or comment..."
                     aria-label="Write a review or comment"
                 />
@@ -98,22 +98,17 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
             <div className="space-y-6">
                 {comments.length === 0 && <div className="text-gray-400">No comments yet. Be the first to review!</div>}
                 {comments.map((c, i) => (
-                    <div key={c._id || i} className="bg-gray-800 rounded-lg p-4 shadow flex gap-4 items-start transition-all duration-300 animate-fade-in">
-                        <div className="w-12 h-12 rounded-full bg-blue-900 flex items-center justify-center text-lg font-bold text-blue-300">
-                            {c.user?.avatarUrl ? (
-                                <OptimizedImage src={c.user.avatarUrl} alt="avatar" width={40} height={40} className="w-full h-full object-cover rounded-full" fallbackSrc="/file.svg" />
-                            ) : (
-                                <OptimizedImage src="/file.svg" alt="avatar" width={40} height={40} className="w-full h-full object-cover rounded-full" />
-                            )}
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-blue-200">{c.user?.nickname || 'User'}</span>
-                                <span className="text-xs text-gray-400">{c.createdAt ? new Date(c.createdAt).toLocaleString() : ''}</span>
+                    <div key={c._id || i} className="bg-gray-700 rounded-lg p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                {c.user?.username?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
-                            <div className="text-gray-200 mb-2 whitespace-pre-line">{c.text}</div>
-                            {/* Reactions, edit/delete, and replies can be added here */}
+                            <div>
+                                <div className="font-semibold text-white">{c.user?.username || 'Anonymous'}</div>
+                                <div className="text-sm text-gray-400">{c.createdAt ? timeAgo(new Date(c.createdAt)) : ''}</div>
+                            </div>
                         </div>
+                        <div className="text-gray-200">{c.text}</div>
                     </div>
                 ))}
             </div>
@@ -121,83 +116,72 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
     );
 }
 
-export default function MangaTabs({ manga, chapters, mangaId }: { manga: any, chapters: any[], mangaId: string }) {
+export default function MangaTabs({ manga, chapters, mangaId }: { manga: any; chapters: any[]; mangaId: string }) {
     const [tab, setTab] = useState<'synopsis' | 'chapters' | 'reviews'>('synopsis');
     const [search, setSearch] = useState('');
-    const genres = manga.genre ? manga.genre.split(',').map((g: string) => g.trim()) : [];
-    const tags = manga.tags || [];
-
-    // Sort chapters by chapterNumber descending
-    const sortedChapters = useMemo(() =>
-        [...chapters].sort((a, b) => Number(b.chapterNumber) - Number(a.chapterNumber)),
-        [chapters]
-    );
-
-    // Filter chapters by search
-    const filteredChapters = useMemo(() =>
-        sortedChapters.filter(ch =>
-        (!search ||
-            (ch.chapterNumber && ch.chapterNumber.toString().includes(search)) ||
-            (ch.subtitle && ch.subtitle.toLowerCase().includes(search.toLowerCase()))
-        )
-        ),
-        [sortedChapters, search]
-    );
-
-    // Find the latest chapter (for 'New' badge)
-    const latestChapterNumber = sortedChapters.length > 0 ? sortedChapters[0].chapterNumber : null;
-
     const [liked, setLiked] = useState(false);
-    const [likeCount, setLikeCount] = useState(manga.likes ? manga.likes.length : 0);
     const [bookmarked, setBookmarked] = useState(false);
+    const [likeCount, setLikeCount] = useState(manga.likes?.length || 0);
     const [viewCount, setViewCount] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [userId, setUserId] = useState<string | null>(null);
+    const [latestChapterNumber, setLatestChapterNumber] = useState<number>(0);
+
+    const feedbackRef = useRef<HTMLSpanElement>(null);
+
+    // Get genres and tags from manga
+    const genres = useMemo(() => {
+        if (manga.genre) {
+            return Array.isArray(manga.genre) ? manga.genre : manga.genre.split(',').map((g: string) => g.trim());
+        }
+        return [];
+    }, [manga.genre]);
+
+    const tags = useMemo(() => {
+        if (manga.tags) {
+            return Array.isArray(manga.tags) ? manga.tags : [];
+        }
+        return [];
+    }, [manga.tags]);
+
+    // Filter chapters based on search
+    const filteredChapters = useMemo(() => {
+        if (!search.trim()) return chapters;
+        const searchLower = search.toLowerCase();
+        return chapters.filter(ch =>
+            ch.chapterNumber?.toString().includes(searchLower) ||
+            ch.title?.toLowerCase().includes(searchLower) ||
+            ch.subtitle?.toLowerCase().includes(searchLower)
+        );
+    }, [chapters, search]);
+
     useEffect(() => {
+        // Get user info
         const token = localStorage.getItem('token');
         if (token) {
             fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } })
-                .then(res => {
-                    if (res.ok) {
-                        return res.json();
-                    } else {
-                        // If profile API fails (401, 403, etc.), handle gracefully
-                        console.log('Profile API not available, user not authenticated');
-                        return null;
-                    }
-                })
+                .then(res => res.json())
                 .then(data => {
-                    if (data && data.user) {
-                        setUserId(data.user._id || null);
-                        setBookmarked(data.user.bookmarks && Array.isArray(data.user.bookmarks) && data.user.bookmarks.includes(mangaId));
-                        setLiked(manga.likes && Array.isArray(manga.likes) && data.user && manga.likes.includes(data.user._id));
-                    } else {
-                        // User not authenticated, set defaults
-                        setUserId(null);
-                        setBookmarked(false);
-                        setLiked(false);
+                    if (data.user) {
+                        setUserId(data.user._id);
+                        setLiked(data.user.likes?.includes(mangaId) || false);
+                        setBookmarked(data.user.bookmarks?.includes(mangaId) || false);
                     }
-                })
-                .catch(error => {
-                    // Handle any network errors gracefully
-                    console.log('Profile fetch failed:', error.message);
-                    setUserId(null);
-                    setBookmarked(false);
-                    setLiked(false);
                 });
         }
-        // Fetch view count (aggregate from analytics or placeholder)
-        fetch(`/api/creator-analytics?mangaId=${mangaId}`)
-            .then(res => {
-                if (res.ok) {
-                    return res.json();
-                } else {
-                    // If analytics API fails (401, 403, etc.), use manga's view count as fallback
-                    console.log('Analytics API not available, using manga view count');
-                    return null;
-                }
-            })
+
+        // Get latest chapter number
+        if (chapters.length > 0) {
+            const numbers = chapters.map(ch => ch.chapterNumber).filter(n => typeof n === 'number');
+            if (numbers.length > 0) {
+                setLatestChapterNumber(Math.max(...numbers));
+            }
+        }
+
+        // Get view count from analytics
+        fetch(`/api/manga/${mangaId}/analytics`)
+            .then(res => res.json())
             .then(data => {
                 if (data && data.seriesEngagement) {
                     const found = data.seriesEngagement.find((s: any) => s._id === mangaId);
@@ -213,6 +197,7 @@ export default function MangaTabs({ manga, chapters, mangaId }: { manga: any, ch
                 setViewCount(manga.views || 0);
             });
     }, [mangaId, manga.likes]);
+
     const handleBookmark = async () => {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -228,6 +213,7 @@ export default function MangaTabs({ manga, chapters, mangaId }: { manga: any, ch
         setTimeout(() => setFeedback(''), 1200);
         setLoading(false);
     };
+
     const handleLike = async () => {
         const token = localStorage.getItem('token');
         if (!token) return;
@@ -247,123 +233,175 @@ export default function MangaTabs({ manga, chapters, mangaId }: { manga: any, ch
         setLoading(false);
     };
 
-    const feedbackRef = useRef<HTMLSpanElement>(null);
-
     return (
-        <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <h1 style={{ fontSize: 36, fontWeight: 800 }}>{manga.title}</h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-4">
+                <h1 className="text-4xl font-extrabold text-white">{manga.title}</h1>
+                <div className="flex items-center gap-3">
                     <button
                         onClick={handleLike}
                         disabled={loading}
-                        className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition-transform duration-150 hover:scale-105 focus:scale-105"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
                         aria-label={liked ? 'Unlike' : 'Like'}
-                        tabIndex={0}
                         title={liked ? 'Unlike this manga' : 'Like this manga'}
-                        onKeyDown={e => { if ((e.key === ' ' || e.key === 'Enter') && !loading) handleLike(); }}
                     >
-                        {liked ? <FaHeart style={{ animation: feedback === 'Liked!' ? 'pulse 0.4s' : undefined }} /> : <FaRegHeart />}
-                        {likeCount}
+                        {liked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
+                        <span>{likeCount}</span>
                     </button>
                     <button
                         onClick={handleBookmark}
                         disabled={loading}
-                        className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition-transform duration-150 hover:scale-105 focus:scale-105"
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
                         aria-label={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
-                        tabIndex={0}
                         title={bookmarked ? 'Remove bookmark' : 'Bookmark this manga'}
-                        onKeyDown={e => { if ((e.key === ' ' || e.key === 'Enter') && !loading) handleBookmark(); }}
                     >
-                        {bookmarked ? <FaBookmark style={{ animation: feedback === 'Bookmarked!' ? 'pulse 0.4s' : undefined }} /> : <FaRegBookmark />}
-                        {bookmarked ? 'Bookmarked' : 'Bookmark'}
+                        {bookmarked ? <FaBookmark className="text-blue-500" /> : <FaRegBookmark />}
+                        <span>{bookmarked ? 'Bookmarked' : 'Bookmark'}</span>
                     </button>
-                    {viewCount !== null && <span style={{ color: '#aaa', fontSize: 16, marginLeft: 8, transition: 'opacity 0.3s', opacity: viewCount !== null ? 1 : 0 }} aria-label="View count"><span className="sr-only">Total views: </span>👁️ {viewCount} views</span>}
-                    <span ref={feedbackRef} tabIndex={-1} style={{ color: '#facc15', fontWeight: 600, marginLeft: 8, outline: 'none' }} role="status" aria-live="polite">{feedback}</span>
+                    {viewCount !== null && (
+                        <span className="text-gray-400 text-sm ml-2" aria-label="View count">
+                            👁️ {viewCount} views
+                        </span>
+                    )}
+                    {feedback && (
+                        <span
+                            ref={feedbackRef}
+                            className="text-yellow-400 font-semibold ml-2 text-sm"
+                            role="status"
+                            aria-live="polite"
+                        >
+                            {feedback}
+                        </span>
+                    )}
                 </div>
             </div>
-            <div style={{ display: 'flex', gap: 24, marginBottom: 18 }}>
-                <div
-                    style={{ fontWeight: 600, fontSize: 18, color: tab === 'synopsis' ? '#fff' : '#aaa', borderBottom: tab === 'synopsis' ? '2px solid #e11d48' : '2px solid transparent', paddingBottom: 4, cursor: 'pointer' }}
+
+            {/* Tab Navigation */}
+            <div className="flex gap-6 mb-6 border-b border-gray-700">
+                <button
                     onClick={() => setTab('synopsis')}
-                    role="tab"
-                    aria-selected={tab === 'synopsis'}
-                >Synopsis</div>
-                <div
-                    style={{ fontWeight: 600, fontSize: 18, color: tab === 'chapters' ? '#fff' : '#aaa', borderBottom: tab === 'chapters' ? '2px solid #e11d48' : '2px solid transparent', paddingBottom: 4, cursor: 'pointer' }}
+                    className={`pb-2 px-1 font-semibold text-lg transition-colors ${tab === 'synopsis'
+                        ? 'text-white border-b-2 border-red-500'
+                        : 'text-gray-400 hover:text-gray-300'
+                        }`}
+                >
+                    Synopsis
+                </button>
+                <button
                     onClick={() => setTab('chapters')}
-                    role="tab"
-                    aria-selected={tab === 'chapters'}
-                >Chapters ({chapters.length})</div>
-                <div
-                    style={{ fontWeight: 600, fontSize: 18, color: tab === 'reviews' ? '#fff' : '#aaa', borderBottom: tab === 'reviews' ? '2px solid #e11d48' : '2px solid transparent', paddingBottom: 4, cursor: 'pointer' }}
+                    className={`pb-2 px-1 font-semibold text-lg transition-colors ${tab === 'chapters'
+                        ? 'text-white border-b-2 border-red-500'
+                        : 'text-gray-400 hover:text-gray-300'
+                        }`}
+                >
+                    Chapters ({chapters.length})
+                </button>
+                <button
                     onClick={() => setTab('reviews')}
-                    role="tab"
-                    aria-selected={tab === 'reviews'}
-                >Reviews</div>
+                    className={`pb-2 px-1 font-semibold text-lg transition-colors ${tab === 'reviews'
+                        ? 'text-white border-b-2 border-red-500'
+                        : 'text-gray-400 hover:text-gray-300'
+                        }`}
+                >
+                    Reviews
+                </button>
             </div>
-            {/* Tabs content */}
-            <div role="tabpanel" aria-labelledby={`tab-${tab}`}>
+
+            {/* Tab Content */}
+            <div className="min-h-96">
                 {tab === 'synopsis' && (
                     <>
-                        <div style={{ background: '#23272F', borderRadius: 12, padding: 20, marginBottom: 18, fontSize: 17, color: '#e5e5e5' }}>
-                            <b>Summary</b>
-                            <div style={{ marginTop: 8 }}>{manga.description}</div>
+                        <div className="bg-gray-800 rounded-xl p-6 mb-6">
+                            <h3 className="text-xl font-bold mb-4 text-white">Summary</h3>
+                            <div className="text-gray-300 leading-relaxed">
+                                {manga.description || 'No description available.'}
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+                        <div className="flex gap-3 flex-wrap mb-6">
                             {genres.map((g: string, i: number) => (
-                                <span key={g ? g + '-' + i : 'genre-' + i} style={{ background: '#23272F', color: '#fff', borderRadius: 8, padding: '6px 16px', fontWeight: 600, fontSize: 15 }}>{g}</span>
+                                <span
+                                    key={`genre-${g}-${i}`}
+                                    className="bg-gray-700 text-white rounded-lg px-4 py-2 font-semibold text-sm"
+                                >
+                                    {g}
+                                </span>
                             ))}
                             {Array.isArray(tags) && tags.map((t: string, i: number) => (
-                                <span key={t ? t + '-' + i : 'tag-' + i} style={{ background: '#23272F', color: '#fff', borderRadius: 8, padding: '6px 16px', fontWeight: 600, fontSize: 15 }}>{t}</span>
+                                <span
+                                    key={`tag-${t}-${i}`}
+                                    className="bg-gray-700 text-white rounded-lg px-4 py-2 font-semibold text-sm"
+                                >
+                                    {t}
+                                </span>
                             ))}
                         </div>
                     </>
                 )}
+
                 {tab === 'chapters' && (
-                    <div style={{ marginTop: 8 }}>
-                        <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 18 }}>Chapters</div>
-                        <div style={{ marginBottom: 18 }}>
+                    <div className="space-y-6">
+                        <h3 className="text-2xl font-bold text-white">Chapters</h3>
+                        <div className="mb-6">
                             <input
                                 type="text"
                                 placeholder="Search by chapter number or title..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                style={{ width: 340, padding: '10px 16px', borderRadius: 8, border: 'none', background: '#23272F', color: '#fff', fontSize: 16, boxShadow: '0 2px 8px #0004' }}
+                                className="w-full max-w-md px-4 py-3 rounded-lg border-none bg-gray-800 text-white text-base shadow-lg focus:ring-2 focus:ring-blue-400 focus:outline-none"
                             />
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {filteredChapters.map((ch) => (
                                 <div
                                     key={ch._id}
-                                    style={{ background: '#23272F', borderRadius: 16, padding: 16, width: 270, display: 'flex', alignItems: 'center', gap: 18, marginBottom: 8, boxShadow: '0 2px 8px #0002', position: 'relative', cursor: 'pointer' }}
-                                    onClick={() => { if (ch.pdfFile) window.open(ch.pdfFile, '_blank'); }}
-                                    title={ch.subtitle || ch.chapterNumber}
-                                    className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition-transform duration-150 hover:scale-105 focus:scale-105"
+                                    className="bg-gray-800 rounded-xl p-4 hover:bg-gray-700 transition-colors cursor-pointer group"
+                                    onClick={() => { window.location.href = `/manga/${mangaId}/chapter/${ch._id}`; }}
+                                    title={ch.subtitle || `Chapter ${ch.chapterNumber}`}
                                 >
-                                    <div style={{ width: 70, height: 70, borderRadius: 12, overflow: 'hidden', background: '#333', flexShrink: 0 }}>
-                                        {ch.coverPage ? (
-                                            <img src={ch.coverPage} alt={`Cover for chapter ${ch.chapterNumber}`} className="w-full h-full object-cover rounded-full" />
-                                        ) : (
-                                            <div style={{ width: 70, height: 70, background: '#444' }} />
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-700 flex-shrink-0">
+                                            {ch.coverPage ? (
+                                                <img
+                                                    src={ch.coverPage}
+                                                    alt={`Cover for chapter ${ch.chapterNumber}`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-600 flex items-center justify-center">
+                                                    <span className="text-gray-400 text-xs">CH {ch.chapterNumber}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-bold text-lg text-white">
+                                                Chapter {ch.chapterNumber}
+                                            </div>
+                                            {ch.subtitle && (
+                                                <div className="text-gray-400 text-sm truncate">
+                                                    {ch.subtitle}
+                                                </div>
+                                            )}
+                                            <div className="text-gray-500 text-xs mt-1">
+                                                {ch.createdAt ? timeAgo(new Date(ch.createdAt)) : ''}
+                                            </div>
+                                        </div>
+                                        {ch.chapterNumber === latestChapterNumber && (
+                                            <span className="bg-red-500 text-white rounded-lg px-2 py-1 text-xs font-bold">
+                                                New
+                                            </span>
                                         )}
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 700, fontSize: 18 }}>Chapter {ch.chapterNumber}</div>
-                                        <div style={{ color: '#aaa', fontSize: 15 }}>{ch.subtitle || ''}</div>
-                                        <div style={{ color: '#aaa', fontSize: 14, marginTop: 2 }}>{ch.createdAt ? timeAgo(new Date(ch.createdAt)) : ''}</div>
-                                    </div>
-                                    {ch.chapterNumber === latestChapterNumber && (
-                                        <span style={{ position: 'absolute', top: 10, right: 16, background: '#e11d48', color: '#fff', borderRadius: 8, padding: '2px 10px', fontWeight: 700, fontSize: 13 }}>New</span>
-                                    )}
                                 </div>
                             ))}
-                            {filteredChapters.length === 0 && (
-                                <div style={{ color: '#aaa', fontSize: 18, marginTop: 24 }}>No chapters found.</div>
-                            )}
                         </div>
+                        {filteredChapters.length === 0 && (
+                            <div className="text-gray-400 text-lg text-center py-12">
+                                No chapters found.
+                            </div>
+                        )}
                     </div>
                 )}
+
                 {tab === 'reviews' && (
                     <ReviewComments mangaId={mangaId} />
                 )}

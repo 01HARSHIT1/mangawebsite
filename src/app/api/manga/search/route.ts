@@ -121,8 +121,8 @@ export async function GET(req: NextRequest) {
         // Filter out coverImage if file does not exist
         const filteredResults = results.map(m => {
             if (m.coverImage) {
-                const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-                const filePath = path.join(uploadsDir, path.basename(m.coverImage));
+                const coversDir = path.join(process.cwd(), 'public', 'manga-covers');
+                const filePath = path.join(coversDir, path.basename(m.coverImage));
                 if (!fs.existsSync(filePath)) {
                     delete m.coverImage;
                 }

@@ -1,0 +1,8 @@
+<svg width="800" height="1200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="1200" fill="#1f2937"/>
+  <rect x="50" y="50" width="700" height="1100" fill="#374151" stroke="#6b7280" stroke-width="2"/>
+  <text x="400" y="600" font-family="Arial, sans-serif" font-size="48" fill="#ffffff" text-anchor="middle">Manga Page</text>
+  <text x="400" y="680" font-family="Arial, sans-serif" font-size="24" fill="#9ca3af" text-anchor="middle">Image not available</text>
+  <rect x="100" y="200" width="600" height="300" fill="#4b5563" stroke="#6b7280" stroke-width="1"/>
+  <text x="400" y="350" font-family="Arial, sans-serif" font-size="18" fill="#9ca3af" text-anchor="middle">Content Area</text>
+</svg>

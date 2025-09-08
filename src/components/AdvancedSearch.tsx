@@ -1,18 +1,18 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } fromreact';
-import { FaSearch, FaFilter, FaSort, FaTimes, FaStar, FaEye, FaHeart, FaBookmark, FaSpinner, FaChevronDown, FaChevronUp } from react-icons/fa;
-import { motion, AnimatePresence } fromframer-motion';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { FaSearch, FaFilter, FaSort, FaTimes, FaStar, FaEye, FaHeart, FaBookmark, FaSpinner, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import OptimizedImage from './OptimizedImage';
 
-interface Manga[object Object]
+interface Manga {
     _id: string;
     title: string;
     description: string;
     coverImage: string;
     genres: string[];
-    status: 'ongoing' |completed' | 'hiatus' | 'cancelled';
+    status: 'ongoing' | 'completed' | 'hiatus' | 'cancelled';
     rating: number;
     views: number;
     likes: number;
@@ -28,7 +28,7 @@ interface SearchFilters {
     rating: number;
     yearFrom: number;
     yearTo: number;
-    sortBy: 'relevance' | title' | rating|views | likes' | newest' | oldest';
+    sortBy: 'relevance' | 'title' | 'rating' | 'views' | 'likes' | 'newest' | 'oldest';
     sortOrder: 'asc' | 'desc';
 }
 
@@ -37,41 +37,43 @@ interface AdvancedSearchProps {
     initialFilters?: Partial<SearchFilters>;
 }
 
-const GENRES =Action',Adventure', Comedy',Drama,Fantasy,Horror,Mystery, 
-    Romance', 'Sci-Fi', Slice of Life', 'Sports,Supernatural,Thriller    Psychological, Historical, Martial Arts,Mecha', 'Music,School Life,
-    Shoujo', Shounen, Seinen,Josei,Ecchi', Harem,Isekai, Yaoi', 'Yuri
-];
+const GENRES = ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller', 'Psychological', 'Historical', 'Martial Arts', 'Mecha', 'Music', 'School Life', 'Shoujo', 'Shounen', 'Seinen', 'Josei', 'Ecchi', 'Harem', 'Isekai', 'Yaoi', 'Yuri'];
 
-const STATUS_OPTIONS = ['ongoing', 'completed, iatus, ncelled'];
+const STATUS_OPTIONS = ['ongoing', 'completed', 'hiatus', 'cancelled'];
 
 export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSearchProps) {
     const [filters, setFilters] = useState<SearchFilters>({
-        query: ,      genres: ],
-        status: ],
+        query: '',
+        genres: [],
+        status: [],
         rating: 0,
-        yearFrom: 1990       yearTo: new Date().getFullYear(),
+        yearFrom: 1990,
+        yearTo: new Date().getFullYear(),
         sortBy: 'relevance',
         sortOrder: 'desc',
         ...initialFilters
     });
 
-    const [results, setResults] = useState<Manga>([]);
+    const [results, setResults] = useState<Manga[]>([]);
     const [loading, setLoading] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
-    const [suggestions, setSuggestions] = useState<string>([]);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
-    consterror, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     // Debounced search function
     const debouncedSearch = useMemo(
-        () =>[object Object]       let timeoutId: NodeJS.Timeout;
-            return (searchFilters: SearchFilters) =>[object Object]             clearTimeout(timeoutId);
+        () => {
+            let timeoutId: NodeJS.Timeout;
+            return (searchFilters: SearchFilters) => {
+                clearTimeout(timeoutId);
                 timeoutId = setTimeout(() => {
                     performSearch(searchFilters);
-                },300);
+                }, 300);
             };
         },
-       );
+        []
+    );
 
     // Perform search
     const performSearch = useCallback(async (searchFilters: SearchFilters) => {
@@ -81,40 +83,44 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
         try {
             const params = new URLSearchParams();
             
-            if (searchFilters.query) params.append(qearchFilters.query);
-            if (searchFilters.genres.length > 0params.append('genres', searchFilters.genres.join(,));
-            if (searchFilters.status.length > 0ams.append('status', searchFilters.status.join(,));
-            if (searchFilters.rating > 0ams.append('rating', searchFilters.rating.toString());
-            if (searchFilters.yearFrom > 1990arams.append(yearFrom', searchFilters.yearFrom.toString());
+            if (searchFilters.query) params.append('q', searchFilters.query);
+            if (searchFilters.genres.length > 0) params.append('genres', searchFilters.genres.join(','));
+            if (searchFilters.status.length > 0) params.append('status', searchFilters.status.join(','));
+            if (searchFilters.rating > 0) params.append('rating', searchFilters.rating.toString());
+            if (searchFilters.yearFrom > 1990) params.append('yearFrom', searchFilters.yearFrom.toString());
             if (searchFilters.yearTo < new Date().getFullYear()) params.append('yearTo', searchFilters.yearTo.toString());
             params.append('sortBy', searchFilters.sortBy);
             params.append('sortOrder', searchFilters.sortOrder);
 
             const res = await fetch(`/api/manga/search?${params.toString()}`);
             
-            if (!res.ok)[object Object]             throw new Error('Failed to search manga');
+            if (!res.ok) {
+                throw new Error('Failed to search manga');
             }
 
             const data = await res.json();
-            setResults(data.manga ||       
-            if (onSearch)[object Object]                onSearch(data.manga ||, searchFilters);
+            setResults(data.manga || []);
+            if (onSearch) {
+                onSearch(data.manga || [], searchFilters);
             }
         } catch (err) {
-            console.error('Search error:', err);
-            setError('Failed to search manga. Please try again.');
-        } finally[object Object]        setLoading(false);
+            setError(err instanceof Error ? err.message : 'Search failed');
+        } finally {
+            setLoading(false);
         }
     }, [onSearch]);
 
     // Get search suggestions
     const getSuggestions = useCallback(async (query: string) => {
-        if (query.length < 2)[object Object]        setSuggestions([]);
+        if (query.length < 2) {
+            setSuggestions([]);
             return;
         }
 
         try {
             const res = await fetch(`/api/manga/suggestions?q=${encodeURIComponent(query)}`);
-            if (res.ok)[object Object]             const data = await res.json();
+            if (res.ok) {
+                const data = await res.json();
                 setSuggestions(data.suggestions || []);
             }
         } catch (err) {
@@ -124,7 +130,7 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
 
     // Handle filter changes
     const handleFilterChange = useCallback((key: keyof SearchFilters, value: any) => {
-        const newFilters = [object Object]...filters, [key]: value };
+        const newFilters = { ...filters, [key]: value };
         setFilters(newFilters);
         debouncedSearch(newFilters);
     }, [filters, debouncedSearch]);
@@ -148,16 +154,16 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
     const toggleGenre = useCallback((genre: string) => {
         const newGenres = filters.genres.includes(genre)
             ? filters.genres.filter(g => g !== genre)
-            : ...filters.genres, genre];
-        handleFilterChange('genres,newGenres);
+            : [...filters.genres, genre];
+        handleFilterChange('genres', newGenres);
     }, [filters.genres, handleFilterChange]);
 
     // Toggle status filter
     const toggleStatus = useCallback((status: string) => {
         const newStatus = filters.status.includes(status)
             ? filters.status.filter(s => s !== status)
-            : ...filters.status, status];
-        handleFilterChange('status,newStatus);
+            : [...filters.status, status];
+        handleFilterChange('status', newStatus);
     }, [filters.status, handleFilterChange]);
 
     // Clear all filters
@@ -167,10 +173,10 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
             genres: [],
             status: [],
             rating: 0,
-            yearFrom:1990,
+            yearFrom: 1990,
             yearTo: new Date().getFullYear(),
             sortBy: 'relevance' as const,
-            sortOrder: 'desc as const
+            sortOrder: 'desc' as const
         };
         setFilters(clearedFilters);
         performSearch(clearedFilters);
@@ -181,7 +187,9 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
         if (filters.query || filters.genres.length > 0 || filters.status.length > 0) {
             performSearch(filters);
         }
-    },  Close suggestions when clicking outside
+    }, []);
+
+    // Close suggestions when clicking outside
     useEffect(() => {
         const handleClickOutside = () => setShowSuggestions(false);
         document.addEventListener('click', handleClickOutside);
@@ -189,29 +197,31 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
     }, []);
 
     const activeFiltersCount = filters.genres.length + filters.status.length + 
-        (filters.rating > 0 ?1 : 0) + 
-        (filters.yearFrom > 1990 || filters.yearTo < new Date().getFullYear() ? 1 : 0  return (
-        <div className="bg-gray-900 rounded-2l shadow-xl p-6>        {/* Search Header */}
-            <div className="mb-6>
-                <h2 className="text-2nt-bold text-white mb-2>Discover Manga</h2
-                <p className="text-gray-40your next favorite series</p>
+        (filters.rating > 0 ? 1 : 0) + 
+        (filters.yearFrom > 1990 || filters.yearTo < new Date().getFullYear() ? 1 : 0);
+
+    return (
+        <div className="bg-gray-900 rounded-2xl shadow-xl p-6">        {/* Search Header */}
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold text-white mb-2">Discover Manga</h2>
+                <p className="text-gray-400">your next favorite series</p>
             </div>
 
-        [object Object]/* Search Bar */}
-            <div className="relative mb-4>
+            {/* Search Bar */}
+            <div className="relative mb-4">
                 <div className="relative">
-                    <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1text-gray-400" />
+                    <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                         type="text"
                         value={filters.query}
                         onChange={(e) => handleQueryChange(e.target.value)}
                         placeholder="Search manga by title, author, or description..."
-                        className="w-full bg-gray-800 text-white rounded-lg pl-12-4 py-3 focus:ring-2ocus:ring-blue-500focus:outline-none"
+                        className="w-full bg-gray-800 text-white rounded-lg pl-12 py-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                     {filters.query && (
                         <button
                             onClick={() => handleQueryChange('')}
-                            className="absolute right-4 top-1/2 transform -translate-y-1ext-gray-400hover:text-white"
+                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
                         >
                             <FaTimes />
                         </button>
@@ -220,14 +230,14 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
 
                 {/* Search Suggestions */}
                 <AnimatePresence>
-                  [object Object]showSuggestions && suggestions.length > 0 && (
+                    {showSuggestions && suggestions.length > 0 && (
                         <motion.div
-                            initial={[object Object]opacity: 0, y: -10 }}
-                            animate=[object Object]{ opacity: 1, y: 0 }}
-                            exit={[object Object]opacity: 0, y: -10 }}
-                            className=absolute top-full left-0ight-0 bg-gray-80ded-lg mt-2 shadow-xl z-50 max-h-60 overflow-y-auto"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-full left-0 right-0 bg-gray-800 rounded-lg mt-2 shadow-xl z-50 max-h-60 overflow-y-auto"
                         >
-                            [object Object]suggestions.map((suggestion, index) => (
+                            {suggestions.map((suggestion, index) => (
                                 <button
                                     key={index}
                                     onClick={() => handleSuggestionSelect(suggestion)}
@@ -242,25 +252,25 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
             </div>
 
             {/* Filter Toggle */}
-            <div className=flex items-center justify-between mb-4>
+            <div className="flex items-center justify-between mb-4">
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className=flex items-center gap-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
                 >
                     <FaFilter />
                     Filters
-                [object Object]activeFiltersCount > 0 && (
-                        <span className="bg-blue-60text-white text-xs rounded-full px-2 py-1">
-                        [object Object]activeFiltersCount}
+                    {activeFiltersCount > 0 && (
+                        <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1">
+                            {activeFiltersCount}
                         </span>
                     )}
                     {showFilters ? <FaChevronUp /> : <FaChevronDown />}
                 </button>
 
-            [object Object]activeFiltersCount > 0 && (
+                {activeFiltersCount > 0 && (
                     <button
                         onClick={clearFilters}
-                        className="text-gray-400er:text-white text-sm"
+                        className="text-gray-400 hover:text-white text-sm"
                     >
                         Clear all
                     </button>
@@ -272,21 +282,22 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
                 {showFilters && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity:1height: 'auto' }}
+                        animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-gray-800 rounded-lg p-4                   >
+                        className="bg-gray-800 rounded-lg p-4"
+                    >
                         {/* Genres */}
                         <div>
                             <h3 className="text-white font-semibold mb-2">Genres</h3>
                             <div className="flex flex-wrap gap-2">
-                                [object Object]GENRES.map((genre) => (
+                                {GENRES.map((genre) => (
                                     <button
                                         key={genre}
-                                        onClick=[object Object]() => toggleGenre(genre)}
+                                        onClick={() => toggleGenre(genre)}
                                         className={`px-3 py-1 rounded-full text-sm transition-colors ${
                                             filters.genres.includes(genre)
-                                                ?bg-blue-600 text-white'
-                                                :bg-gray-700ext-gray-300 hover:bg-gray-600'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                                         }`}
                                     >
                                         {genre}
@@ -299,14 +310,14 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
                         <div>
                             <h3 className="text-white font-semibold mb-2">Status</h3>
                             <div className="flex flex-wrap gap-2">
-                             [object Object]STATUS_OPTIONS.map((status) => (
+                                {STATUS_OPTIONS.map((status) => (
                                     <button
                                         key={status}
                                         onClick={() => toggleStatus(status)}
                                         className={`px-3 py-1 rounded-full text-sm transition-colors capitalize ${
                                             filters.status.includes(status)
-                                                ? bg-green-600 text-white'
-                                                :bg-gray-700ext-gray-300 hover:bg-gray-600'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                                         }`}
                                     >
                                         {status}
@@ -317,8 +328,8 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
 
                         {/* Rating */}
                         <div>
-                            <h3 className="text-white font-semibold mb-2>Minimum Rating</h3>
-                            <div className=flex items-center gap-2">
+                            <h3 className="text-white font-semibold mb-2">Minimum Rating</h3>
+                            <div className="flex items-center gap-2">
                                 <input
                                     type="range"
                                     min="0"
@@ -329,16 +340,17 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
                                     className="flex-1"
                                 />
                                 <span className="text-white min-w-[3rem]">
-                                    [object Object]filters.rating > 0 ? `${filters.rating}★` : 'Any'}
+                                    {filters.rating > 0 ? `${filters.rating}★` : 'Any'}
                                 </span>
                             </div>
                         </div>
 
-                    [object Object]/* Year Range */}
+                        {/* Year Range */}
                         <div>
-                            <h3 className="text-white font-semibold mb-2>Year Range</h3>                   <div className=flex items-center gap-4">
+                            <h3 className="text-white font-semibold mb-2">Year Range</h3>
+                            <div className="flex items-center gap-4">
                                 <div>
-                                    <label className="text-gray-40xt-sm">From</label>
+                                    <label className="text-gray-400 text-sm">From</label>
                                     <input
                                         type="number"
                                         min="1990"
@@ -349,13 +361,13 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-gray-400text-sm">To</label>
+                                    <label className="text-gray-400 text-sm">To</label>
                                     <input
                                         type="number"
                                         min="1990"
                                         max={new Date().getFullYear()}
                                         value={filters.yearTo}
-                                        onChange={(e) => handleFilterChange(yearTo', parseInt(e.target.value))}
+                                        onChange={(e) => handleFilterChange('yearTo', parseInt(e.target.value))}
                                         className="w-full bg-gray-700 text-white rounded px-3 py-1 mt-1"
                                     />
                                 </div>
@@ -365,22 +377,26 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
                         {/* Sort Options */}
                         <div>
                             <h3 className="text-white font-semibold mb-2">Sort By</h3>
-                            <div className=flex items-center gap-4">
+                            <div className="flex items-center gap-4">
                                 <select
                                     value={filters.sortBy}
-                                    onChange={(e) => handleFilterChange(sortBy', e.target.value)}
+                                    onChange={(e) => handleFilterChange('sortBy', e.target.value)}
                                     className="bg-gray-700 text-white rounded px-3 py-2"
                                 >
                                     <option value="relevance">Relevance</option>
                                     <option value="title">Title</option>
-                                    <option value="rating>Rating</option>                   <option value="views">Views</option>
+                                    <option value="rating">Rating</option>
+                                    <option value="views">Views</option>
                                     <option value="likes">Likes</option>
-                                    <option value="newest>Newest</option>                   <option value="oldest>Oldest</option>                   </select>
+                                    <option value="newest">Newest</option>
+                                    <option value="oldest">Oldest</option>
+                                </select>
                                 <button
-                                    onClick={() => handleFilterChange('sortOrder', filters.sortOrder === asc' ?desc                   className=flex items-center gap-2 px-3 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                                    onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                                    className="flex items-center gap-2 px-3 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
                                 >
                                     <FaSort />
-                                    {filters.sortOrder === asc' ? 'A-Z' : 'Z-A'}
+                                    {filters.sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
                                 </button>
                             </div>
                         </div>
@@ -389,37 +405,37 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
             </AnimatePresence>
 
             {/* Results */}
-            <div className="space-y-4>
+            <div className="space-y-4">
                 {loading ? (
                     <div className="flex justify-center py-8">
-                        <FaSpinner className=animate-spin text-3text-blue-400" />
+                        <FaSpinner className="animate-spin text-3xl text-blue-400" />
                     </div>
                 ) : error ? (
                     <div className="text-center py-8">
-                        <p className=text-red-400mb-2">{error}</p>
+                        <p className="text-red-400 mb-2">{error}</p>
                         <button
                             onClick={() => performSearch(filters)}
-                            className=px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+                            className="px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
                         >
                             Try Again
                         </button>
                     </div>
                 ) : results.length === 0 ? (
                     <div className="text-center py-8">
-                        <div className=text-4xl mb-2">🔍</div>
-                        <p className=text-gray-40>No manga found</p>
-                        <p className=text-sm text-gray-500Try adjusting your search criteria</p>
+                        <div className="text-4xl mb-2">🔍</div>
+                        <p className="text-gray-400">No manga found</p>
+                        <p className="text-sm text-gray-500">Try adjusting your search criteria</p>
                     </div>
                 ) : (
                     <>
-                        <div className=flex items-center justify-between">
+                        <div className="flex items-center justify-between">
                             <p className="text-gray-400">
                                 Found {results.length} manga
                             </p>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                         {results.map((manga, index) => (
+                            {results.map((manga, index) => (
                                 <motion.div
                                     key={manga._id ? manga._id : index}
                                     initial={{ opacity: 0, y: 20 }}
@@ -430,11 +446,11 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
                                     <Link href={`/manga/${manga._id}`}>
                                         <div className="relative">
                                             <OptimizedImage src={manga.coverImage} alt={manga.title} width={120} height={180} className="object-cover w-full h-full" fallbackSrc="/file.svg" />
-                                            <div className="absolute top-2 right-2lack/70text-white px-2 py-1rounded text-sm">
+                                            <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
                                                 {manga.status}
                                             </div>
                                             {manga.rating > 0 && (
-                                                <div className="absolute bottom-2 left-2 bg-yellow-60text-white px-2 py-1unded text-sm flex items-center gap-1">
+                                                <div className="absolute bottom-2 left-2 bg-yellow-600 text-white px-2 py-1 rounded text-sm flex items-center gap-1">
                                                     <FaStar />
                                                     {manga.rating.toFixed(1)}
                                                 </div>

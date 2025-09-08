@@ -5,6 +5,48 @@ import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 
+export async function GET(req: NextRequest, { params }: { params: { mangaId: string } }) {
+    try {
+        const client = await clientPromise;
+        const db = client.db('mangawebsite');
+        const mangaId = params.mangaId;
+
+        // Validate ObjectId
+        if (!ObjectId.isValid(mangaId)) {
+            return NextResponse.json({ error: 'Invalid manga ID' }, { status: 400 });
+        }
+
+        const manga = await db.collection('manga').findOne({ _id: new ObjectId(mangaId) });
+
+        if (!manga) {
+            return NextResponse.json({ error: 'Manga not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({
+            manga: {
+                _id: manga._id.toString(),
+                title: manga.title,
+                creator: manga.creator,
+                description: manga.description,
+                genres: manga.genres || [],
+                status: manga.status || 'ongoing',
+                coverImage: manga.coverImage,
+                views: manga.views || 0,
+                likes: manga.likes || 0,
+                createdAt: manga.createdAt,
+                updatedAt: manga.updatedAt
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching manga:', error);
+        return NextResponse.json(
+            { error: 'Failed to fetch manga' },
+            { status: 500 }
+        );
+    }
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: { mangaId: string } }) {
     const client = await clientPromise;
     const db = client.db();
@@ -56,10 +98,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { mangaId: s
         if (coverImage && typeof coverImage === 'object' && 'arrayBuffer' in coverImage) {
             const buffer = Buffer.from(await coverImage.arrayBuffer());
             const filename = `cover_${mangaId}_${Date.now()}.webp`;
-            const uploadPath = path.join(process.cwd(), 'public', 'uploads', filename);
+            const uploadPath = path.join(process.cwd(), 'public', 'manga-covers', filename);
             // Convert to webp
             await sharp(buffer).webp({ quality: 80 }).toFile(uploadPath);
-            update.coverImage = `/uploads/${filename}`;
+            update.coverImage = `/manga-covers/${filename}`;
         }
     }
     await db.collection('manga').updateOne({ _id: new ObjectId(mangaId) }, { $set: update });
