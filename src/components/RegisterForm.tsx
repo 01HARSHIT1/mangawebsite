@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import SocialLogin from './SocialLogin';
 
 interface RegisterFormProps {
     onSuccess?: () => void;
@@ -164,6 +165,12 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                 </button>
             </form>
+
+            {/* Social Login */}
+            <SocialLogin
+                onSuccess={onSuccess}
+                onError={(error) => setError(error)}
+            />
 
             {onSwitchToLogin && (
                 <div className="mt-6 text-center">

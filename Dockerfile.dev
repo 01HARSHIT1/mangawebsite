@@ -1,0 +1,27 @@
+# Development Dockerfile
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p public/manga-images public/manga-covers
+
+# Expose port
+EXPOSE 3000
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV MONGODB_URI=mongodb://mongo:27017/mangawebsite
+
+# Start the development server
+CMD ["npm", "run", "dev"]

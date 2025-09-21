@@ -1,11 +1,12 @@
 import { MetadataRoute } from 'next';
-import { connectToDatabase } from '@/lib/mongodb';
+import clientPromise from '@/lib/mongodb';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://mangareader.com';
 
     try {
-        const db = await connectToDatabase();
+        const client = await clientPromise;
+        const db = client.db('mangawebsite');
 
         // Static pages
         const staticPages = [

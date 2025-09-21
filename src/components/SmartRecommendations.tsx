@@ -40,7 +40,7 @@ export default function SmartRecommendations({ currentUser, currentMangaId }: Sm
         if (!currentUser) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken');
             const res = await fetch('/api/manga/recommendations/personalized', {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
@@ -50,20 +50,20 @@ export default function SmartRecommendations({ currentUser, currentMangaId }: Sm
                 setPersonalized(data.manga || []);
             }
         } catch (err) {
-            console.error('Failed to fetch personalized recommendations:', err);
+            console.error('Error fetching personalized recommendations:', err);
         }
     }, [currentUser]);
 
     // Fetch trending manga
     const fetchTrending = useCallback(async () => {
         try {
-            const res = await fetch('/api/manga/recommendations/trending');
+            const res = await fetch('/api/manga/trending');
             if (res.ok) {
                 const data = await res.json();
                 setTrending(data.manga || []);
             }
         } catch (err) {
-            console.error('Failed to fetch trending manga:', err);
+            console.error('Error fetching trending manga:', err);
         }
     }, []);
 
@@ -78,11 +78,11 @@ export default function SmartRecommendations({ currentUser, currentMangaId }: Sm
                 setSimilar(data.manga || []);
             }
         } catch (err) {
-            console.error('Failed to fetch similar manga:', err);
+            console.error('Error fetching similar manga:', err);
         }
     }, [currentMangaId]);
 
-    // Load recommendations
+    // Load all recommendations
     useEffect(() => {
         const loadRecommendations = async () => {
             setLoading(true);
@@ -96,6 +96,7 @@ export default function SmartRecommendations({ currentUser, currentMangaId }: Sm
                 ]);
             } catch (err) {
                 setError('Failed to load recommendations');
+                console.error('Error loading recommendations:', err);
             } finally {
                 setLoading(false);
             }
@@ -104,7 +105,6 @@ export default function SmartRecommendations({ currentUser, currentMangaId }: Sm
         loadRecommendations();
     }, [fetchPersonalized, fetchTrending, fetchSimilar]);
 
-    // Get current recommendations based on active tab
     const getCurrentRecommendations = () => {
         switch (activeTab) {
             case 'personalized':
@@ -118,238 +118,198 @@ export default function SmartRecommendations({ currentUser, currentMangaId }: Sm
         }
     };
 
-    // Get tab title
-    const getTabTitle = () => {
-        switch (activeTab) {
+    const getTabIcon = (tab: string) => {
+        switch (tab) {
             case 'personalized':
-                return 'For You';
+                return <FaHeart className="w-4 h-4" />;
             case 'trending':
-                return 'Trending Now';
+                return <FaFire className="w-4 h-4" />;
             case 'similar':
-                return 'Similar Manga';
-            default:
-                return '';
-        }
-    };
-
-    // Get tab icon
-    const getTabIcon = () => {
-        switch (activeTab) {
-            case 'personalized':
-                return <FaHeart className="text-pink-400" />;
-            case 'trending':
-                return <FaFire className="text-orange-400" />;
-            case 'similar':
-                return <FaStar className="text-yellow-400" />;
+                return <FaStar className="w-4 h-4" />;
             default:
                 return null;
         }
     };
 
+    const getTabTitle = (tab: string) => {
+        switch (tab) {
+            case 'personalized':
+                return 'For You';
+            case 'trending':
+                return 'Trending';
+            case 'similar':
+                return 'Similar';
+            default:
+                return '';
+        }
+    };
+
     if (loading) {
         return (
-            <div className="bg-gray-900 rounded-2-6>                <div className=" flex justify-center py-8">
-                < FaSpinner className = animate - spin text - 3text - blue - 400" />
-                    </div >
-                </div >
-            );
+            <div className="bg-gray-900 rounded-2xl p-6">
+                <div className="flex justify-center py-8">
+                    <FaSpinner className="animate-spin text-3xl text-blue-400" />
+                </div>
+            </div>
+        );
     }
 
     if (error) {
         return (
-            <div className="bg-gray-900 rounded-2-6>                <div className=" text-center py-8">
-                < p className = text - red - 40mb - 2">{error}</p>
-                    < button
-            onClick = {() => window.location.reload()
-}
-className = px - 4 bg - blue - 600 hover: bg - blue - 500 text - white rounded - lg"
-            >
-            Try Again
-                        </button >
-                    </div >
-                </div >
-            );
+            <div className="bg-gray-900 rounded-2xl p-6">
+                <div className="text-center py-8">
+                    <p className="text-red-400 mb-2">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     const currentRecommendations = getCurrentRecommendations();
 
     return (
-        <div className="bg-gray-900 rounded-2dow-xl p-6>        {/* Header */}
-                <div className=flex items-center justify-between mb-6>
-                    <div className=flex items-center gap-3">
-                {getTabIcon()}
-                <h2 className="text-2nt-bold text-white">[object Object]getTabTitle()}</h2                </div>
-                
-                {/* Tab Navigation */ }
-<div className=flex gap-2">
-{
-    currentUser && (
-        <button
-            onClick={() => setActiveTab('personalized')}
-            className={`px-3-1rounded-lg text-sm transition-colors ${activeTab === 'personalized'
-                ? bg - blue - 600 text-white'
-                                    : bg - gray - 800ext - gray - 400hover: text - white'
-} `}
-                        >
-                            For You
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setActiveTab('trending')}
-                        className={`px - 3 - 1rounded - lg text - sm transition - colors ${
-    activeTab === 'trending'
-        ? 'bg-orange-600 text-white'
-        : bg - gray - 800ext - gray - 400hover: text - white'
-} `}
-                    >
-                        Trending
-                    </button>
-                    {currentMangaId && (
+        <div className="bg-gray-900 rounded-2xl shadow-xl p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">Smart Recommendations</h2>
+                <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
+                    {(['personalized', 'trending', 'similar'] as const).map((tab) => (
                         <button
-                            onClick={() => setActiveTab('similar')}
-                            className={`px - 3 - 1rounded - lg text - sm transition - colors ${
-    activeTab === 'similar'
-        ? 'bg-yellow-600 text-white'
-        : bg - gray - 800ext - gray - 400hover: text - white'
-} `}
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${activeTab === tab
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                }`}
                         >
-                            Similar
+                            {getTabIcon(tab)}
+                            <span>{getTabTitle(tab)}</span>
                         </button>
-                    )}
+                    ))}
                 </div>
             </div>
 
             {/* Recommendations Grid */}
-            {currentRecommendations.length === 0 ? (
-                <div className="text-center py-8">
-                    <div className=text-4xl mb-2">
-                        {activeTab === personalized' ? '💝' : 
-                         activeTab ===trending' ? '🔥' : '⭐'}
-                    </div>
-                    <p className=text-gray-40>
-                        {activeTab === personalized' ? 'No personalized recommendations yet' :
-                         activeTab === 'trending' ? No trending manga available' :
-                        No similar manga found'}
-                    </p>
-                    <p className=text-sm text-gray-500>
-                        {activeTab === personalized ?Start reading to get personalized suggestions!' :
-                         activeTab === 'trending' ?Check back later for trending content' :
-                     Try exploring other genres'}
-                    </p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {currentRecommendations.map((manga, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {currentRecommendations.length > 0 ? (
+                    currentRecommendations.map((manga, index) => (
                         <motion.div
-                            key={manga._id ? manga._id : index}
+                            key={manga._id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: index * 0.1 }}
-                            className="bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750ition-all duration-20 hover:scale-105"
+                            transition={{ delay: index * 0.1 }}
+                            className="group cursor-pointer"
                         >
-                            <Link href={`/ manga / ${ manga._id } `}>
-                                <div className="relative">
-                                    <OptimizedImage src={manga.coverImage} alt={manga.title} width={120} height={180} className="object-cover w-full h-full" fallbackSrc="/file.svg" />
-                                    {/* Status Badge */}
-                                    <div className="absolute top-2 right-2lack/70text-white px-2 py-1text-xs capitalize">
-                                        {manga.status}
-                                    </div>
-                                    {/* Rating Badge */}
-                                    {manga.rating > 0 && (
-                                        <div className="absolute bottom-2 left-2 bg-yellow-60text-white px-2 py-1unded text-xs flex items-center gap-1">
-                                            <FaStar />
-                                            {manga.rating.toFixed(1)}
+                            <Link href={`/manga/${manga._id}`}>
+                                <div className="bg-gray-800 rounded-xl overflow-hidden hover:bg-gray-700 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                                    {/* Cover Image */}
+                                    <div className="relative aspect-[3/4] overflow-hidden">
+                                        <OptimizedImage
+                                            src={manga.coverImage}
+                                            alt={manga.title}
+                                            fill
+                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                        {/* Rating Badge */}
+                                        <div className="absolute top-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
+                                            <FaStar className="w-3 h-3" />
+                                            <span>{manga.rating.toFixed(1)}</span>
                                         </div>
-                                    )}
-                                    {/* Similarity Score for similar manga */}
-                                    {activeTab === 'similar' && manga.similarity && (
-                                        <div className="absolute bottom-2ight-2lue-60text-white px-2 py-1rounded text-xs">
-                                            {Math.round(manga.similarity * 100)}% match
+
+                                        {/* Status Badge */}
+                                        <div className="absolute top-2 left-2">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${manga.status === 'Ongoing'
+                                                    ? 'bg-green-500 text-white'
+                                                    : 'bg-gray-500 text-white'
+                                                }`}>
+                                                {manga.status}
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="p-4">
-                                    <h3 className="font-semibold text-white mb-1">{manga.title}</h3>
-                                    <p className="text-gray-400 text-sm mb-2">{manga.description}</p>
-                                    {/* Author and Year */}
-                                    <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                                        <span className="truncate">{manga.author}</span>
-                                        <span>{manga.year}</span>
                                     </div>
-                                    {/* Stats */}
-                                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                                        <span className="flex items-center gap-1">
-                                            <FaEye />
-                                            {manga.views.toLocaleString()}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <FaHeart />
-                                            {manga.likes.toLocaleString()}
-                                        </span>
-                                        <span>{manga.chapters} ch</span>
-                                    </div>
-                                    {/* Genres */}
-                                    {manga.genres && manga.genres.length > 0 && (
-                                        <div className="flex flex-wrap gap-1 mt-2">
-                                            {manga.genres.slice(0, 2).map((genre, idx) => (
-                                                <span key={genre ? genre + '-' + idx : 'genre-' + idx} className="bg-gray-700text-gray-300 text-xs px-2 py-1 rounded">
+
+                                    {/* Content */}
+                                    <div className="p-4">
+                                        <h3 className="font-bold text-white text-lg mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">
+                                            {manga.title}
+                                        </h3>
+
+                                        <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                                            {manga.description}
+                                        </p>
+
+                                        {/* Genres */}
+                                        <div className="flex flex-wrap gap-1 mb-3">
+                                            {manga.genres.slice(0, 2).map((genre) => (
+                                                <span
+                                                    key={genre}
+                                                    className="px-2 py-1 bg-blue-600/20 text-blue-400 text-xs rounded-full"
+                                                >
                                                     {genre}
                                                 </span>
                                             ))}
-                                            {manga.genres.length > 2 && (
-                                                <span className="text-gray-500 text-xs">
-                                                    +{manga.genres.length - 2}
-                                                </span>
-                                            )}
                                         </div>
-                                    )}
+
+                                        {/* Stats */}
+                                        <div className="flex items-center justify-between text-sm text-gray-400">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="flex items-center space-x-1">
+                                                    <FaEye className="w-3 h-3" />
+                                                    <span>{manga.views.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex items-center space-x-1">
+                                                    <FaHeart className="w-3 h-3" />
+                                                    <span>{manga.likes.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs">
+                                                {manga.chapters} chapters
+                                            </span>
+                                        </div>
+
+                                        {/* Author & Year */}
+                                        <div className="mt-2 text-xs text-gray-500">
+                                            <p>by {manga.author}</p>
+                                            <p>{manga.year}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </Link>
                         </motion.div>
-                    ))}
-                </div>
-            )}
+                    ))
+                ) : (
+                    <div className="col-span-full text-center py-12">
+                        <div className="text-gray-400 text-lg mb-4">
+                            No recommendations available
+                        </div>
+                        <p className="text-gray-500">
+                            {activeTab === 'personalized'
+                                ? 'Sign in to get personalized recommendations'
+                                : 'Check back later for new content'
+                            }
+                        </p>
+                    </div>
+                )}
+            </div>
 
             {/* View More Button */}
             {currentRecommendations.length > 0 && (
                 <div className="mt-6 text-center">
                     <Link
-                        href="/series"
-                        className=inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold transition-colors"
+                        href={`/manga?tab=${activeTab}`}
+                        className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 hover:scale-105"
                     >
-                        View More Manga
-                        <FaArrowRight />
+                        <span>View More {getTabTitle(activeTab)}</span>
+                        <FaArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
             )}
-
-            {/* Recommendation Info */}
-            <div className=mt-6g-gray-800>
-                <h4 className="text-white font-semibold mb-2">How recommendations work</h4
-                <div className=text-sm text-gray-400 space-y-1">
-                    {activeTab ===personalized' && (
-                        <>
-                            <p>• Based on your reading history and preferences</p>
-                            <p>• Considers genres you enjoy and authors you follow</p>
-                            <p>• Updates as you read more manga</p>
-                        </>
-                    )}
-                  [object Object]activeTab === 'trending' && (
-                        <>
-                            <p>• Most popular manga in the last 30 days</p>
-                            <p>• Based on views, likes, and new chapter releases</p>
-                            <p>• Updated daily</p>
-                        </>
-                    )}
-                    {activeTab === 'similar' && (
-                        <>
-                            <p>• Manga with similar genres, themes, and style</p>
-                            <p>• Based on content analysis and user behavior</p>
-                            <p>• Perfect for discovering new series</p>
-                        </>
-                    )}
-                </div>
-            </div>
         </div>
     );
-} 
+}

@@ -56,6 +56,15 @@ export default function Navigation() {
                                     <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                 </Link>
                             )}
+                            {isAuthenticated && (
+                                <Link
+                                    href="/coins"
+                                    className="group relative px-4 py-2 text-gray-300 hover:text-white rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-yellow-500/20"
+                                >
+                                    <span className="relative z-10">🪙 Coins</span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                </Link>
+                            )}
                             {isCreator && (
                                 <Link
                                     href="/creator/dashboard"
@@ -130,6 +139,15 @@ export default function Navigation() {
                                 onClick={() => setIsMobileMenuOpen(false)}
                             >
                                 Upload
+                            </Link>
+                        )}
+                        {isAuthenticated && (
+                            <Link
+                                href="/coins"
+                                className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                Coins
                             </Link>
                         )}
                         {isCreator && (

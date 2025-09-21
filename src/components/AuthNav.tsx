@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationDropdown from './NotificationDropdown';
 
 export default function AuthNav() {
     const { user, isAuthenticated, isCreator, logout } = useAuth();
@@ -35,83 +36,86 @@ export default function AuthNav() {
     }
 
     return (
-        <div className="relative">
-            <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="group flex items-center space-x-3 text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-purple-500/20"
-            >
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
-                    <span className="text-white text-sm font-bold">
-                        {user?.creatorProfile?.displayName?.charAt(0) || user?.username?.charAt(0) || 'U'}
-                    </span>
-                </div>
-                <span className="hidden md:block font-medium">
-                    {user?.creatorProfile?.displayName || user?.username}
-                </span>
-                <svg
-                    className={`w-4 h-4 transition-transform duration-300 ${showUserMenu ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+        <div className="flex items-center space-x-4">
+            <NotificationDropdown />
+            <div className="relative">
+                <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="group flex items-center space-x-3 text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-purple-500/20"
                 >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-
-            {showUserMenu && (
-                <div className="absolute right-0 mt-3 w-56 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl py-2 z-50 border border-purple-500/20 backdrop-blur-md">
-                    <div className="px-4 py-3 border-b border-gray-700">
-                        <p className="text-sm font-semibold text-white">
-                            {user?.creatorProfile?.displayName || user?.username}
-                        </p>
-                        <p className="text-xs text-gray-400">{user?.email}</p>
-                        {isCreator && (
-                            <span className="inline-block mt-2 px-3 py-1 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
-                                ✨ Creator
-                            </span>
-                        )}
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
+                        <span className="text-white text-sm font-bold">
+                            {user?.creatorProfile?.displayName?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                        </span>
                     </div>
-
-                    <Link
-                        href="/profile"
-                        className="group flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-purple-500/20 transition-all duration-300"
-                        onClick={() => setShowUserMenu(false)}
+                    <span className="hidden md:block font-medium">
+                        {user?.creatorProfile?.displayName || user?.username}
+                    </span>
+                    <svg
+                        className={`w-4 h-4 transition-transform duration-300 ${showUserMenu ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                     >
-                        <span className="mr-3">👤</span>
-                        Profile
-                    </Link>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
 
-                    {isCreator && (
+                {showUserMenu && (
+                    <div className="absolute right-0 mt-3 w-56 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl py-2 z-50 border border-purple-500/20 backdrop-blur-md">
+                        <div className="px-4 py-3 border-b border-gray-700">
+                            <p className="text-sm font-semibold text-white">
+                                {user?.creatorProfile?.displayName || user?.username}
+                            </p>
+                            <p className="text-xs text-gray-400">{user?.email}</p>
+                            {isCreator && (
+                                <span className="inline-block mt-2 px-3 py-1 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                                    ✨ Creator
+                                </span>
+                            )}
+                        </div>
+
                         <Link
-                            href="/creator/dashboard"
-                            className="group flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-pink-500/20 transition-all duration-300"
+                            href="/profile"
+                            className="group flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-purple-500/20 transition-all duration-300"
                             onClick={() => setShowUserMenu(false)}
                         >
-                            <span className="mr-3">📊</span>
-                            Creator Dashboard
+                            <span className="mr-3">👤</span>
+                            Profile
                         </Link>
-                    )}
 
-                    <Link
-                        href="/upload"
-                        className="group flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-amber-500/20 transition-all duration-300"
-                        onClick={() => setShowUserMenu(false)}
-                    >
-                        <span className="mr-3">📤</span>
-                        Upload Manga
-                    </Link>
+                        {isCreator && (
+                            <Link
+                                href="/creator/dashboard"
+                                className="group flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-pink-500/20 transition-all duration-300"
+                                onClick={() => setShowUserMenu(false)}
+                            >
+                                <span className="mr-3">📊</span>
+                                Creator Dashboard
+                            </Link>
+                        )}
 
-                    <div className="border-t border-gray-700 mt-2">
-                        <button
-                            onClick={handleLogout}
-                            className="group flex items-center w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-red-500/20 transition-all duration-300"
+                        <Link
+                            href="/upload"
+                            className="group flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-amber-500/20 transition-all duration-300"
+                            onClick={() => setShowUserMenu(false)}
                         >
-                            <span className="mr-3">🚪</span>
-                            Logout
-                        </button>
+                            <span className="mr-3">📤</span>
+                            Upload Manga
+                        </Link>
+
+                        <div className="border-t border-gray-700 mt-2">
+                            <button
+                                onClick={handleLogout}
+                                className="group flex items-center w-full text-left px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-red-500/20 transition-all duration-300"
+                            >
+                                <span className="mr-3">🚪</span>
+                                Logout
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

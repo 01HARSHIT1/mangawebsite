@@ -14,14 +14,7 @@ export async function POST(request: NextRequest) {
         // Require authentication
         const user = await requireAuth(request);
 
-        // Auto-upgrade user to creator if they're not already
-        if (!user.isCreator) {
-            await upgradeToCreator(user._id, {
-                displayName: user.username,
-                bio: 'New creator on the platform',
-            });
-            console.log(`✅ Auto-upgraded user ${user.username} to creator status`);
-        }
+        // Note: User will be prompted to upgrade to creator after successful upload
 
         const formData = await request.formData();
 
@@ -44,8 +37,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Connect to MongoDB
+        console.log('🔗 Connecting to MongoDB...');
         const client = await clientPromise;
-        const db = client.db();
+        const db = client.db('mangawebsite');
+        console.log('✅ Connected to MongoDB successfully');
 
         // Create normalized folder names (safe for file system)
         const normalizedCreator = creatorName.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -65,6 +60,36 @@ export async function POST(request: NextRequest) {
         console.log(`🔄 Converting PDF to images for ${mangaTitle} Chapter ${chapterNumber}...`);
 
         try {
+            // Check if pdftoppm is available
+            try {
+                await execAsync('pdftoppm -v');
+            } catch (pdftoppmError) {
+                console.log('⚠️ pdftoppm not found, trying alternative method...');
+
+                // Fallback: Use a simple approach - just copy the PDF as a single "page"
+                const fallbackImagePath = join(baseDir, 'page-1.png');
+                const { createCanvas } = await import('canvas');
+
+                // Create a simple placeholder image
+                const canvas = createCanvas(800, 1200);
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(0, 0, 800, 1200);
+                ctx.fillStyle = '#333';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('PDF Preview', 400, 300);
+                ctx.fillText(mangaTitle, 400, 350);
+                ctx.fillText(`Chapter ${chapterNumber}`, 400, 400);
+                ctx.fillText('PDF conversion not available', 400, 500);
+                ctx.fillText('Please install Poppler tools', 400, 550);
+
+                const buffer = canvas.toBuffer('image/png');
+                await writeFile(fallbackImagePath, buffer);
+                console.log('✅ Created fallback image');
+            }
+
+            // Try pdftoppm conversion
             const convertCommand = `pdftoppm -png -r 300 "${tempPdfPath}" "${join(baseDir, 'page')}"`;
             const { stdout, stderr } = await execAsync(convertCommand);
 
@@ -76,10 +101,27 @@ export async function POST(request: NextRequest) {
 
         } catch (error) {
             console.error('❌ PDF conversion failed:', error);
-            return NextResponse.json({
-                error: 'Failed to convert PDF to images',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            }, { status: 500 });
+
+            // Create a fallback single page
+            const fallbackImagePath = join(baseDir, 'page-1.png');
+            const { createCanvas } = await import('canvas');
+
+            const canvas = createCanvas(800, 1200);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, 800, 1200);
+            ctx.fillStyle = '#333';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('PDF Preview', 400, 300);
+            ctx.fillText(mangaTitle, 400, 350);
+            ctx.fillText(`Chapter ${chapterNumber}`, 400, 400);
+            ctx.fillText('PDF conversion failed', 400, 500);
+            ctx.fillText('Using fallback image', 400, 550);
+
+            const buffer = canvas.toBuffer('image/png');
+            await writeFile(fallbackImagePath, buffer);
+            console.log('✅ Created fallback image after conversion failure');
         }
 
         // Get list of generated images
@@ -224,9 +266,26 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('❌ Error uploading manga:', error);
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
+        // More specific error messages
+        let errorMessage = 'Failed to upload manga';
+        if (error instanceof Error) {
+            if (error.message.includes('ENOENT')) {
+                errorMessage = 'File system error: Directory not found';
+            } else if (error.message.includes('EACCES')) {
+                errorMessage = 'Permission denied: Cannot write to directory';
+            } else if (error.message.includes('MongoDB')) {
+                errorMessage = 'Database connection error';
+            } else {
+                errorMessage = error.message;
+            }
+        }
+
         return NextResponse.json({
-            error: 'Failed to upload manga',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            error: errorMessage,
+            details: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString()
         }, { status: 500 });
     }
 }

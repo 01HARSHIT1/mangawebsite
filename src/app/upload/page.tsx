@@ -74,7 +74,12 @@ export default function UploadPage() {
     useEffect(() => {
         if (uploadType === "chapter") {
             console.log('Fetching manga list for chapter upload...');
-            fetch("/api/manga")
+            const token = localStorage.getItem('authToken');
+            fetch("/api/manga", {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
                 .then(res => res.json())
                 .then(data => {
                     console.log('Manga API response:', data);
@@ -319,8 +324,12 @@ export default function UploadPage() {
             if (form.pdfFile) formData.append("pdfFile", form.pdfFile);
 
             try {
+                const token = localStorage.getItem('authToken');
                 const res = await fetch("/api/upload-manga", {
                     method: "POST",
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData,
                 });
                 const data = await res.json();
@@ -352,7 +361,12 @@ export default function UploadPage() {
             // Use new upload-manga API for chapter uploads
             // First get manga info to get creator name
             try {
-                const mangaRes = await fetch(`/api/manga/${form.mangaId}`);
+                const token = localStorage.getItem('authToken');
+                const mangaRes = await fetch(`/api/manga/${form.mangaId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 const mangaData = await mangaRes.json();
 
                 if (mangaRes.ok && mangaData.manga) {
@@ -367,8 +381,12 @@ export default function UploadPage() {
                     if (form.coverPage) formData.append("coverImage", form.coverPage);
                     if (form.pdfFile) formData.append("pdfFile", form.pdfFile);
 
+                    const token = localStorage.getItem('authToken');
                     const res = await fetch("/api/upload-manga", {
                         method: "POST",
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
                         body: formData,
                     });
                     const data = await res.json();

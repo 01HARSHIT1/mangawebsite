@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import clientPromise from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
 
 // Admin: Update user (suspend, ban, activate, promote, demote)
@@ -21,7 +21,8 @@ export async function PUT(
     if (!action || !['suspend', 'ban', 'activate', 'promote', 'demote'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-    const { db } = await connectToDatabase();
+    const client = await clientPromise;
+    const db = client.db('mangawebsite');
     // Get the target user
     const targetUser = await db.collection('users').findOne({ _id: params.userId });
     if (!targetUser) {
@@ -138,7 +139,8 @@ export async function GET(
     if (!user || user.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
-    const { db } = await connectToDatabase();
+    const client = await clientPromise;
+    const db = client.db('mangawebsite');
     const targetUser = await db.collection('users').findOne({ _id: params.userId });
     if (!targetUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

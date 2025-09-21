@@ -21,7 +21,7 @@ interface PerformanceStats {
   today: {
     totalSessions: number;
     grades: Record<string, number>;
-    scores: number
+    scores: number;
   };
   weekly: {
     totalSessions: number;
@@ -62,12 +62,13 @@ const MonitoringDashboard: React.FC = () => {
       setIsLoading(true);
 
       // Fetch all monitoring data in parallel
-      const [errorStatsRes, performanceStatsRes, recentErrorsRes, recentPerformanceRes, systemHealthRes] = await Promise.all(fetch('/api/errors'),
+      const [errorStatsRes, performanceStatsRes, recentErrorsRes, recentPerformanceRes, systemHealthRes] = await Promise.all([
+        fetch('/api/errors'),
         fetch('/api/performance'),
         fetch('/api/errors?limit=10'),
         fetch('/api/performance?limit=10'),
         fetch('/api/admin/system-health')
-      );
+      ]);
 
       if (errorStatsRes.ok) {
         const errorData = await errorStatsRes.json();
@@ -130,7 +131,8 @@ const MonitoringDashboard: React.FC = () => {
       case 'D':
         return 'text-orange-600 bg-orange-10';
       case 'F':
-        return 'text-red-600 bg-red-10'; default:
+        return 'text-red-600 bg-red-10';
+      default:
         return 'text-gray-600 bg-gray-10';
     }
   };
@@ -141,13 +143,15 @@ const MonitoringDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+              ))}
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">             {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-96 bg-gray-200 rounded-lg"></div>
-            ))}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="h-96 bg-gray-200 rounded-lg"></div>
+              ))}
             </div>
           </div>
         </div>
@@ -336,9 +340,9 @@ const MonitoringDashboard: React.FC = () => {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-900">{error.message}</span>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${error.severity === 'critical' ? 'bg-red-100 text-red-800' :
-                            error.severity === 'high' ? 'bg-orange-100 text-orange-800' :
-                              error.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
+                          error.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                            error.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
                           }`}>
                           {error.severity}
                         </span>
@@ -404,16 +408,18 @@ const MonitoringDashboard: React.FC = () => {
             className="mt-8 bg-white rounded-lg shadow p-6"
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Performance Grade Distribution (This Week)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">           {Object.entries(performanceStats.weekly.gradeCounts).map(([grade, count]) => (
-              <div key={grade} className="text-center">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl font-bold ${getPerformanceGradeColor(grade)}`}>
-                  {grade}
-                </div>
-                <div className="text-2xl font-bold text-gray-900">
-                  <div className="text-sm text-gray-600">{count}</div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {Object.entries(performanceStats.weekly.gradeCounts).map(([grade, count]) => (
+                <div key={grade} className="text-center">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl font-bold ${getPerformanceGradeColor(grade)}`}>
+                    {grade}
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-sm text-gray-600">{count}</div>
+                  </div>
                 </div>
               ))}
-              </div>
+            </div>
           </motion.div>
         )}
       </div>

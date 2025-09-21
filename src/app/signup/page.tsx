@@ -43,11 +43,11 @@ export default function SignupPage() {
         }
 
         try {
-            const success = await register(email, username, password);
-            if (success) {
+            const result = await register(email, username, password);
+            if (result.success) {
                 router.push('/upload');
             } else {
-                setError('Registration failed. Email or username may already be taken.');
+                setError(result.error || 'Registration failed. Please try again.');
             }
         } catch (err) {
             setError('Registration failed. Please try again.');

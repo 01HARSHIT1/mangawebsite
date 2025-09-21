@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import clientPromise from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {

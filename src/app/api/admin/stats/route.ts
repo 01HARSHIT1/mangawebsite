@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import clientPromise from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
         if (!user || user.role !== 'admin') {
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
-        const { db } = await connectToDatabase();
+        const client = await clientPromise;
+        const db = client.db('mangawebsite');
         // Get current date for today's stats
         const today = new Date();
         today.setHours(0, 0, 0, 0);

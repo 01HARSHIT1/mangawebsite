@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const register = async (email: string, username: string, password: string): Promise<boolean> => {
+    const register = async (email: string, username: string, password: string): Promise<{ success: boolean; error?: string }> => {
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -84,12 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const data = await response.json();
                 localStorage.setItem('authToken', data.token);
                 setUser(data.user);
-                return true;
+                return { success: true };
+            } else {
+                const errorData = await response.json();
+                return { success: false, error: errorData.error || 'Registration failed' };
             }
-            return false;
         } catch (error) {
             console.error('Registration error:', error);
-            return false;
+            return { success: false, error: 'Network error. Please try again.' };
         }
     };
 

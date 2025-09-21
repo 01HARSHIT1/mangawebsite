@@ -9,11 +9,15 @@ import PerformanceMonitor from '@/components/PerformanceMonitor';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
+import PushNotifications from './PushNotifications';
 
 export default function ClientLayoutShell({ children }: { children: React.ReactNode }) {
     return (
         <AuthProvider>
-            <ClientLayoutContent>{children}</ClientLayoutContent>
+            <NotificationProvider>
+                <ClientLayoutContent>{children}</ClientLayoutContent>
+            </NotificationProvider>
         </AuthProvider>
     );
 }
@@ -60,6 +64,7 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
             <PerformanceMonitor />
             <Navigation />
             <main role="main">{children}</main>
+            <PushNotifications />
             {/* ...footer code from previous layout.tsx... */}
         </ErrorBoundary>
     );

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import SocialLogin from './SocialLogin';
 
 interface LoginFormProps {
     onSuccess?: () => void;
@@ -108,6 +109,12 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                 </button>
             </form>
+
+            {/* Social Login */}
+            <SocialLogin
+                onSuccess={onSuccess}
+                onError={(error) => setError(error)}
+            />
 
             {onSwitchToRegister && (
                 <div className="mt-6 text-center">

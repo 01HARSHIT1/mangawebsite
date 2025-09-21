@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
-import './globals.css'; // or '../globals.css' depending on your structure
 
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 

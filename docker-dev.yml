@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongo:
+    image: mongo:7.0
+    container_name: manga-mongo-dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: mangawebsite
+    volumes:
+      - mongo_data_dev:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - manga-network
+
+  # Next.js Application (Development)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: manga-app-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongo:27017/mangawebsite?authSource=admin
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./public/manga-images:/app/public/manga-images
+      - ./public/manga-covers:/app/public/manga-covers
+    depends_on:
+      - mongo
+    networks:
+      - manga-network
+
+volumes:
+  mongo_data_dev:
+
+networks:
+  manga-network:
+    driver: bridge

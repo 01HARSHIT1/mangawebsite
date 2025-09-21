@@ -152,6 +152,8 @@ export default function Home() {
             <Link href="/contact" className="text-gray-400 hover:text-purple-400 transition-colors duration-300 font-medium">Contact</Link>
             <Link href="/terms" className="text-gray-400 hover:text-purple-400 transition-colors duration-300 font-medium">Terms</Link>
             <Link href="/privacy" className="text-gray-400 hover:text-purple-400 transition-colors duration-300 font-medium">Privacy</Link>
+            <Link href="/help" className="text-gray-400 hover:text-purple-400 transition-colors duration-300 font-medium">Help</Link>
+            <Link href="/pricing" className="text-gray-400 hover:text-purple-400 transition-colors duration-300 font-medium">Pricing</Link>
           </div>
 
           <div className="border-t border-gray-700 pt-8">
