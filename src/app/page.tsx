@@ -3,6 +3,7 @@ import Link from "next/link";
 import TrendingMangaAsync from '@/components/TrendingMangaAsync';
 import FeaturedCarouselAsync from '@/components/FeaturedCarouselAsync';
 import ActivityFeed from '@/components/ActivityFeed';
+import AIRecommendations from '@/components/AIRecommendations';
 import SearchAndFilter from "@/components/SearchAndFilterClient";
 import { FaUserPlus, FaSignInAlt, FaCrown, FaBookOpen, FaUserCircle, FaTachometerAlt } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
@@ -121,19 +122,10 @@ export default function Home() {
           </h2>
           <p className="text-gray-400 text-lg">Personalized manga suggestions just for you</p>
         </div>
-        {isAuthenticated ? (
-          <div className="text-center py-12">
-            <div className="inline-block px-6 py-3 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full border border-blue-500/30">
-              <span className="text-blue-300 text-lg">✨ Personalized recommendations coming soon!</span>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="inline-block px-6 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full border border-purple-500/30">
-              <span className="text-purple-300 text-lg">🔐 Sign in to see personalized manga recommendations!</span>
-            </div>
-          </div>
-        )}
+        {/* AI Recommendations Section */}
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <AIRecommendations limit={6} variant="carousel" />
+        </div>
       </section>
 
       {/* Community Activity Section */}
