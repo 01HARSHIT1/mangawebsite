@@ -2,9 +2,12 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaGift } from 'react-icons/fa';
+import { FaGift, FaComments, FaUsers } from 'react-icons/fa';
 import MangaTabs from '@/components/MangaTabs';
 import OptimizedImage from './OptimizedImage';
+import LiveChat from './LiveChat';
+import LiveReactions from './LiveReactions';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 
 export default function MangaDetailClient({ manga, chapters, ratings, favorites, author, lastUpdate, status, type, genres, tags }: any) {
     const [bookmarked, setBookmarked] = useState(false);
@@ -14,8 +17,16 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
     const [tipLoading, setTipLoading] = useState(false);
     const [tipSuccess, setTipSuccess] = useState('');
     const [tipError, setTipError] = useState('');
+    const [showLiveChat, setShowLiveChat] = useState(false);
+    
+    const { currentReaders, joinMangaRoom, leaveMangaRoom } = useWebSocket();
 
     useEffect(() => {
+        // Join manga room for real-time features
+        if (manga?._id) {
+            joinMangaRoom(manga._id);
+        }
+
         // Check if this manga is bookmarked
         const token = localStorage.getItem('token');
         if (!token) return setLoading(false);
@@ -33,7 +44,14 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ action: 'recordReading', mangaId: manga._id })
         });
-    }, [manga._id]);
+
+        // Cleanup: Leave manga room when component unmounts
+        return () => {
+            if (manga?._id) {
+                leaveMangaRoom(manga._id);
+            }
+        };
+    }, [manga._id, joinMangaRoom, leaveMangaRoom]);
 
     const handleBookmark = async () => {
         const token = localStorage.getItem('token');
@@ -143,6 +161,46 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                     </div>
                 </div>
             </div>
+
+            {/* Live Features */}
+            <div className="fixed bottom-4 right-4 flex flex-col items-end space-y-4 z-40">
+                {/* Current Readers Indicator */}
+                {currentReaders[manga._id] && currentReaders[manga._id].length > 0 && (
+                    <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 border border-purple-500/20 shadow-lg">
+                        <div className="flex items-center space-x-2 text-white">
+                            <FaUsers className="text-purple-400" />
+                            <span className="text-sm">
+                                {currentReaders[manga._id].length} reader{currentReaders[manga._id].length !== 1 ? 's' : ''} online
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Live Chat Toggle */}
+                <button
+                    onClick={() => setShowLiveChat(!showLiveChat)}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-full shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105"
+                    title="Toggle Live Chat"
+                >
+                    <FaComments className="text-xl" />
+                </button>
+
+                {/* Live Reactions */}
+                <LiveReactions 
+                    targetId={manga._id} 
+                    targetType="manga"
+                    className="relative"
+                />
+            </div>
+
+            {/* Live Chat */}
+            {showLiveChat && (
+                <LiveChat
+                    mangaId={manga._id}
+                    isMinimized={false}
+                    onToggleMinimize={() => setShowLiveChat(false)}
+                />
+            )}
 
             {/* Tip Modal */}
             {showTip && (

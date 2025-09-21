@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { FaChevronLeft, FaChevronRight, FaHome, FaList, FaCog } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaHome, FaList, FaCog, FaComments, FaUsers } from 'react-icons/fa';
+import LiveChat from './LiveChat';
+import LiveReactions from './LiveReactions';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 
 interface ChapterReaderProps {
     manga: any;
@@ -25,9 +28,12 @@ export default function ChapterReader({
     const [showControls, setShowControls] = useState(true);
     const [readingMode, setReadingMode] = useState<'vertical' | 'horizontal'>('vertical');
     const [imageQuality, setImageQuality] = useState<'high' | 'medium' | 'low'>('high');
+    const [showLiveChat, setShowLiveChat] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+    
+    const { currentReaders, joinMangaRoom, leaveMangaRoom } = useWebSocket();
 
     // Get chapter pages (assuming pages are stored as an array of image URLs)
     const pages = Array.isArray(chapter.pages) ? chapter.pages : [];
@@ -45,6 +51,20 @@ export default function ChapterReader({
             setShowControls(false);
         }, 3000);
     }, []);
+
+    // Join manga room for live features
+    useEffect(() => {
+        if (manga?._id) {
+            joinMangaRoom(manga._id);
+        }
+
+        // Cleanup: Leave room when component unmounts
+        return () => {
+            if (manga?._id) {
+                leaveMangaRoom(manga._id);
+            }
+        };
+    }, [manga._id, joinMangaRoom, leaveMangaRoom]);
 
     // Show controls on mouse move or touch
     const showControlsTemporarily = useCallback(() => {
@@ -363,6 +383,47 @@ export default function ChapterReader({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Live Features for Chapter Reading */}
+            <div className="fixed bottom-4 right-4 flex flex-col items-end space-y-4 z-50">
+                {/* Current Readers Indicator */}
+                {currentReaders[manga._id] && currentReaders[manga._id].length > 0 && (
+                    <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 border border-purple-500/20 shadow-lg">
+                        <div className="flex items-center space-x-2 text-white">
+                            <FaUsers className="text-purple-400" />
+                            <span className="text-sm">
+                                {currentReaders[manga._id].length} reading together
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Live Chat Toggle */}
+                <button
+                    onClick={() => setShowLiveChat(!showLiveChat)}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-full shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105"
+                    title="Toggle Live Chat"
+                >
+                    <FaComments className="text-lg" />
+                </button>
+
+                {/* Live Reactions for Chapter */}
+                <LiveReactions 
+                    targetId={chapter._id} 
+                    targetType="chapter"
+                    className="relative"
+                />
+            </div>
+
+            {/* Live Chat */}
+            {showLiveChat && (
+                <LiveChat
+                    mangaId={manga._id}
+                    chapterId={chapter._id}
+                    isMinimized={false}
+                    onToggleMinimize={() => setShowLiveChat(false)}
+                />
             )}
         </div>
     );

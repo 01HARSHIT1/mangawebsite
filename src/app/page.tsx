@@ -2,6 +2,7 @@
 import Link from "next/link";
 import TrendingMangaAsync from '@/components/TrendingMangaAsync';
 import FeaturedCarouselAsync from '@/components/FeaturedCarouselAsync';
+import ActivityFeed from '@/components/ActivityFeed';
 import SearchAndFilter from "@/components/SearchAndFilterClient";
 import { FaUserPlus, FaSignInAlt, FaCrown, FaBookOpen, FaUserCircle, FaTachometerAlt } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
@@ -133,6 +134,22 @@ export default function Home() {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Community Activity Section */}
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            🌟 Community Activity
+          </h2>
+          <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+            See what the manga community is up to - new uploads, ratings, and social interactions
+          </p>
+        </div>
+        
+        <div className="max-w-4xl mx-auto">
+          <ActivityFeed feedType="global" limit={10} />
+        </div>
       </section>
 
       {/* Footer */}

@@ -10,13 +10,17 @@ import Navigation from '@/components/Navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
+import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import PushNotifications from './PushNotifications';
+import PWAInstaller from './PWAInstaller';
 
 export default function ClientLayoutShell({ children }: { children: React.ReactNode }) {
     return (
         <AuthProvider>
             <NotificationProvider>
-                <ClientLayoutContent>{children}</ClientLayoutContent>
+                <WebSocketProvider>
+                    <ClientLayoutContent>{children}</ClientLayoutContent>
+                </WebSocketProvider>
             </NotificationProvider>
         </AuthProvider>
     );
@@ -65,6 +69,7 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
             <Navigation />
             <main role="main">{children}</main>
             <PushNotifications />
+            <PWAInstaller />
             {/* ...footer code from previous layout.tsx... */}
         </ErrorBoundary>
     );
