@@ -1,0 +1,27 @@
+[
+  {
+    "type": "LARGE_FILE",
+    "severity": "MEDIUM",
+    "file": "src/app/upload/page.tsx",
+    "size": 61994,
+    "message": "File size: 60.54KB (recommended: <50KB)"
+  },
+  {
+    "type": "MISSING_DEPENDENCIES",
+    "severity": "MEDIUM",
+    "file": "src/app/series/page.tsx",
+    "message": "useEffect with state update but no dependency array"
+  },
+  {
+    "type": "MISSING_DEPENDENCIES",
+    "severity": "MEDIUM",
+    "file": "src/app/test-manga-reader/page.tsx",
+    "message": "useEffect with state update but no dependency array"
+  },
+  {
+    "type": "MISSING_DEPENDENCIES",
+    "severity": "MEDIUM",
+    "file": "src/components/FeaturedCarouselAsync.tsx",
+    "message": "useEffect with state update but no dependency array"
+  }
+]

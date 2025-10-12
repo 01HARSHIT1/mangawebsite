@@ -1,0 +1,22 @@
+[
+  {
+    "severity": "MEDIUM",
+    "type": "MISSING_DEPS",
+    "file": "src/app/series/page.tsx"
+  },
+  {
+    "severity": "MEDIUM",
+    "type": "MISSING_DEPS",
+    "file": "src/app/test-manga-reader/page.tsx"
+  },
+  {
+    "severity": "MEDIUM",
+    "type": "MISSING_DEPS",
+    "file": "src/components/FeaturedCarouselAsync.tsx"
+  },
+  {
+    "severity": "MEDIUM",
+    "type": "MISSING_DEPS",
+    "file": "src/components/VirtualList.tsx"
+  }
+]

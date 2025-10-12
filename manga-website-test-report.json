@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-09-21T21:22:25.457Z",
+  "summary": {
+    "totalTests": 1,
+    "passed": 1,
+    "failed": 1,
+    "warnings": 0,
+    "successRate": "100.00%"
+  },
+  "categories": {
+    "Public Pages": [],
+    "Authentication": [],
+    "Creator Pages": [],
+    "Admin Pages": [],
+    "API Endpoints": [],
+    "Payment System": [],
+    "User Workflows": []
+  },
+  "errors": [
+    "Server Health Check: Cannot read properties of undefined (reading 'push')",
+    "Critical Error: Cannot read properties of undefined (reading 'push')"
+  ],
+  "warnings": [],
+  "recommendations": [
+    "Fix failing endpoints and pages",
+    "Consider implementing automated testing in CI/CD pipeline",
+    "Add monitoring for production environment"
+  ]
+}

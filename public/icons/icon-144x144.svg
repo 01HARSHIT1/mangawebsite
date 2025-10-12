@@ -1,0 +1,25 @@
+<svg width="144" height="144" viewBox="0 0 144 144" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="144" height="144" rx="18" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(72,72)">
+    <rect x="-24" y="-32" width="48" height="64" rx="3" fill="white" opacity="0.9"/>
+    <rect x="-24" y="-32" width="6" height="64" rx="3" fill="#6366f1"/>
+    <line x1="-16" y1="-20" x2="16" y2="-20" stroke="#cbd5e1" stroke-width="1.5"/>
+    <line x1="-16" y1="-12" x2="16" y2="-12" stroke="#cbd5e1" stroke-width="1.5"/>
+    <line x1="-16" y1="-4" x2="16" y2="-4" stroke="#cbd5e1" stroke-width="1.5"/>
+    <line x1="-16" y1="4" x2="16" y2="4" stroke="#cbd5e1" stroke-width="1.5"/>
+    <line x1="-16" y1="12" x2="16" y2="12" stroke="#cbd5e1" stroke-width="1.5"/>
+    <line x1="-16" y1="20" x2="16" y2="20" stroke="#cbd5e1" stroke-width="1.5"/>
+  </g>
+  <text x="72" y="120" text-anchor="middle" fill="white" font-family="Inter" font-size="20" font-weight="bold">M</text>
+</svg>
+
+
+
+
+

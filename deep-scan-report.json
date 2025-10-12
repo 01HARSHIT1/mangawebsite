@@ -1,0 +1,61 @@
+[
+  {
+    "severity": "HIGH",
+    "type": "POTENTIAL_RECURSION",
+    "file": "src/app/api/manga/[mangaId]/mangaId]/comments/route.ts",
+    "function": "GET",
+    "line": 13
+  },
+  {
+    "severity": "HIGH",
+    "type": "POTENTIAL_RECURSION",
+    "file": "src/app/api/performance/route.ts",
+    "function": "POST",
+    "line": 11
+  },
+  {
+    "severity": "HIGH",
+    "type": "POTENTIAL_RECURSION",
+    "file": "src/components/SocialShare.tsx",
+    "function": "SocialShare",
+    "line": 17
+  },
+  {
+    "severity": "HIGH",
+    "type": "POTENTIAL_RECURSION",
+    "file": "src/lib/cache.ts",
+    "function": "preloadCriticalData",
+    "line": 190
+  },
+  {
+    "severity": "HIGH",
+    "type": "POTENTIAL_RECURSION",
+    "file": "src/lib/mongodb.ts",
+    "function": "createIndexes",
+    "line": 34
+  },
+  {
+    "severity": "MEDIUM",
+    "type": "MANY_MAP_OPERATIONS",
+    "file": "src/app/admin-dashboard/page.tsx",
+    "count": 11
+  },
+  {
+    "severity": "LOW",
+    "type": "MULTIPLE_DB_CONNECTIONS",
+    "file": "src/app/api/ads/route.ts",
+    "count": 4
+  },
+  {
+    "severity": "LOW",
+    "type": "MULTIPLE_DB_CONNECTIONS",
+    "file": "src/app/api/users/route.ts",
+    "count": 4
+  },
+  {
+    "severity": "LOW",
+    "type": "MULTIPLE_DB_CONNECTIONS",
+    "file": "src/lib/auth.ts",
+    "count": 4
+  }
+]

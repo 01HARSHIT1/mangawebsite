@@ -1,0 +1,15 @@
+{
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": [
+    "iad1"
+  ],
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 10,
+      "memory": 1024
+    }
+  }
+}

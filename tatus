@@ -1,0 +1,5 @@
+[33md026873[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: Add MongoDB URI checks to prevent build failures in activities and sitemap routes
+[33m2c5a9e3[m fix: Add dynamic exports to API routes and create MongoDB auth fix guide
+[33mb960f62[m docs: Add detailed connection string explanation guide
+[33m16fd752[m docs: Add MongoDB setup options guide (Docker vs Compass vs Atlas)
+[33m8cb521a[m fix: Resolve all 6 Vercel deployment errors - Add dynamic config to recommendations API - Add dynamic config to sitemap generation - Optimize vercelignore for better build performance - Add comprehensive MongoDB connection fix guide
