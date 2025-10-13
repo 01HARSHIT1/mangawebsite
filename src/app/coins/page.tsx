@@ -6,6 +6,7 @@ import { FaCoins, FaGift, FaCrown, FaRocket, FaSpinner, FaCheckCircle, FaQrcode 
 import RazorpayPayment from '@/components/RazorpayPayment';
 import QRCodePayment from '@/components/QRCodePayment';
 import AlternativeQRPayment from '@/components/AlternativeQRPayment';
+import UPIQRPayment from '@/components/UPIQRPayment';
 
 interface CoinPackage {
     id: string;
@@ -238,7 +239,7 @@ export default function CoinsPage() {
                                     }}
                                 />
                             ) : (
-                                <AlternativeQRPayment
+                                <UPIQRPayment
                                     amount={pkg.price}
                                     description={`${pkg.coins + pkg.bonus} Coins Package`}
                                     onSuccess={handlePaymentSuccess}
