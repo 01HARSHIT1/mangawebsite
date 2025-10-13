@@ -5,20 +5,40 @@ import { requireAuth } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
-
 export async function POST(request: NextRequest) {
     try {
-        // Check environment variables
-        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+        // Check environment variables first
+        const keyId = process.env.RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        
+        console.log('🔍 Environment check:', {
+            hasKeyId: !!keyId,
+            hasKeySecret: !!keySecret,
+            keyIdLength: keyId?.length,
+            keySecretLength: keySecret?.length
+        });
+
+        if (!keyId || !keySecret) {
             console.error('❌ Missing Razorpay environment variables');
             return NextResponse.json({
                 error: 'Payment service not configured',
-                details: 'Razorpay credentials not found'
+                details: 'Razorpay credentials not found. Please check environment variables.'
+            }, { status: 500 });
+        }
+
+        // Initialize Razorpay with error handling
+        let razorpay;
+        try {
+            razorpay = new Razorpay({
+                key_id: keyId,
+                key_secret: keySecret,
+            });
+            console.log('✅ Razorpay initialized successfully');
+        } catch (initError) {
+            console.error('❌ Failed to initialize Razorpay:', initError);
+            return NextResponse.json({
+                error: 'Payment service initialization failed',
+                details: initError instanceof Error ? initError.message : 'Failed to initialize Razorpay SDK'
             }, { status: 500 });
         }
 
@@ -49,33 +69,58 @@ export async function POST(request: NextRequest) {
         }
 
         // Create Razorpay order
-        const order = await razorpay.orders.create({
-            amount: amountInPaise, // Use pre-calculated paise amount
+        console.log('📦 Creating Razorpay order with params:', {
+            amount: amountInPaise,
             currency,
             receipt: `receipt_${Date.now()}_${user._id}`,
-            notes: {
-                userId: user._id,
-                userEmail: user.email,
-                description: description || 'MangaReader Payment',
-                ...metadata
-            }
         });
 
-        console.log('✅ Razorpay order created:', order.id);
+        let order;
+        try {
+            order = await razorpay.orders.create({
+                amount: amountInPaise, // Use pre-calculated paise amount
+                currency,
+                receipt: `receipt_${Date.now()}_${user._id}`,
+                notes: {
+                    userId: user._id,
+                    userEmail: user.email,
+                    description: description || 'MangaReader Payment',
+                    ...metadata
+                }
+            });
+            console.log('✅ Razorpay order created successfully:', order.id);
+        } catch (orderError) {
+            console.error('❌ Razorpay order creation error:', orderError);
+            const errorDetails = orderError instanceof Error 
+                ? `${orderError.message}${(orderError as any).description ? ` - ${(orderError as any).description}` : ''}`
+                : JSON.stringify(orderError);
+            
+            return NextResponse.json({
+                error: 'Failed to create payment order',
+                details: errorDetails,
+                hint: 'Please check your Razorpay credentials and account status'
+            }, { status: 500 });
+        }
 
         return NextResponse.json({
             success: true,
             orderId: order.id,
             amount: order.amount,
             currency: order.currency,
-            key: process.env.RAZORPAY_KEY_ID
+            key: keyId
         });
 
     } catch (error) {
-        console.error('❌ Razorpay order creation failed:', error);
+        console.error('❌ Unexpected error in payment API:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        const errorStack = error instanceof Error ? error.stack : '';
+        
+        console.error('Error stack:', errorStack);
+        
         return NextResponse.json({
             error: 'Payment initialization failed',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: errorMessage,
+            type: error instanceof Error ? error.constructor.name : typeof error
         }, { status: 500 });
     }
 }

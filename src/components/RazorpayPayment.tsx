@@ -92,7 +92,17 @@ export default function RazorpayPayment({
 
             if (!orderData.success) {
                 console.error('❌ Order creation failed:', orderData);
-                const errorMessage = orderData.details || orderData.error || 'Failed to create order';
+                
+                // Build detailed error message
+                let errorMessage = orderData.error || 'Failed to create order';
+                if (orderData.details) {
+                    errorMessage += ': ' + orderData.details;
+                }
+                if (orderData.hint) {
+                    errorMessage += ' (' + orderData.hint + ')';
+                }
+                
+                console.error('Full error:', errorMessage);
                 throw new Error(errorMessage);
             }
 
