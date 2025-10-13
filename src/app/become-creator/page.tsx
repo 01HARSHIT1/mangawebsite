@@ -160,6 +160,12 @@ export default function BecomeCreatorPage() {
                     <Link href="/terms" className="text-purple-400 hover:underline">Terms of Service</Link>
                     {' '}and{' '}
                     <Link href="/privacy" className="text-purple-400 hover:underline">Creator Guidelines</Link>
+                    <br />
+                    <span className="text-xs text-gray-500 mt-2 block">
+                        Also see: <Link href="/refund" className="text-purple-400 hover:underline">Refund Policy</Link>
+                        {' '}| <Link href="/shipping" className="text-purple-400 hover:underline">Shipping Policy</Link>
+                        {' '}| <Link href="/contact" className="text-purple-400 hover:underline">Contact Us</Link>
+                    </span>
                 </p>
             </div>
         </div>

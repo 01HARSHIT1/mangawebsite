@@ -664,6 +664,8 @@ export default function ImprovedHomePage() {
                                 { href: '/contact', label: 'Contact' },
                                 { href: '/terms', label: 'Terms' },
                                 { href: '/privacy', label: 'Privacy' },
+                                { href: '/refund', label: 'Refund Policy' },
+                                { href: '/shipping', label: 'Shipping Policy' },
                                 { href: '/help', label: 'Help' },
                                 { href: '/pricing', label: 'Pricing' }
                             ].map((link) => (

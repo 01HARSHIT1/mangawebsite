@@ -412,6 +412,8 @@ export default function ModernHomePage() {
                             <Link href="/contact" className="nav-link">Contact</Link>
                             <Link href="/terms" className="nav-link">Terms</Link>
                             <Link href="/privacy" className="nav-link">Privacy</Link>
+                            <Link href="/refund" className="nav-link">Refund Policy</Link>
+                            <Link href="/shipping" className="nav-link">Shipping Policy</Link>
                             <Link href="/help" className="nav-link">Help</Link>
                             <Link href="/pricing" className="nav-link">Pricing</Link>
                         </div>
