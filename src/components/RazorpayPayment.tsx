@@ -89,9 +89,12 @@ export default function RazorpayPayment({
 
             const orderData = await orderResponse.json();
             console.log('🔍 Order creation response:', orderData);
+            console.log('🔍 Response status:', orderResponse.status);
+            console.log('🔍 Response details:', JSON.stringify(orderData, null, 2));
 
             if (!orderData.success) {
                 console.error('❌ Order creation failed:', orderData);
+                console.error('❌ Error object:', JSON.stringify(orderData, null, 2));
                 
                 // Build detailed error message
                 let errorMessage = orderData.error || 'Failed to create order';
@@ -101,8 +104,11 @@ export default function RazorpayPayment({
                 if (orderData.hint) {
                     errorMessage += ' (' + orderData.hint + ')';
                 }
+                if (orderData.type) {
+                    errorMessage += ' [Type: ' + orderData.type + ']';
+                }
                 
-                console.error('Full error:', errorMessage);
+                console.error('📢 FULL ERROR MESSAGE:', errorMessage);
                 throw new Error(errorMessage);
             }
 
