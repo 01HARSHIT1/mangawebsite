@@ -17,12 +17,12 @@ declare global {
     }
 }
 
-export default function RazorpayPayment({ 
-    amount, 
-    description, 
-    onSuccess, 
-    onError, 
-    metadata = {} 
+export default function RazorpayPayment({
+    amount,
+    description,
+    onSuccess,
+    onError,
+    metadata = {}
 }: RazorpayPaymentProps) {
     const [loading, setLoading] = useState(false);
     const { user } = useAuth();
@@ -70,7 +70,8 @@ export default function RazorpayPayment({
             const orderData = await orderResponse.json();
 
             if (!orderData.success) {
-                throw new Error(orderData.error || 'Failed to create order');
+                console.error('❌ Order creation failed:', orderData);
+                throw new Error(orderData.error || orderData.details || 'Failed to create order');
             }
 
             // Configure Razorpay options

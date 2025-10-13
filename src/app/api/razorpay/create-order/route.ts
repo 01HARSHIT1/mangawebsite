@@ -13,8 +13,19 @@ const razorpay = new Razorpay({
 
 export async function POST(request: NextRequest) {
     try {
+        // Check environment variables
+        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+            console.error('❌ Missing Razorpay environment variables');
+            return NextResponse.json({
+                error: 'Payment service not configured',
+                details: 'Razorpay credentials not found'
+            }, { status: 500 });
+        }
+
         const user = await requireAuth(request);
         const { amount, currency = 'INR', description, metadata = {} } = await request.json();
+
+        console.log('🔍 Creating order for amount:', amount, 'currency:', currency);
 
         // Validate amount
         if (!amount || amount < 1) {
