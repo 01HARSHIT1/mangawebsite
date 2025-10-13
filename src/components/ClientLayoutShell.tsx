@@ -7,6 +7,7 @@ import Link from "next/link";
 import ErrorBoundary from '@/components/ErrorBoundary';
 import PerformanceMonitor from '@/components/PerformanceMonitor';
 import ModernNavigation from '@/components/ModernNavigation';
+import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -68,9 +69,9 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
             <PerformanceMonitor />
             <ModernNavigation />
             <main role="main">{children}</main>
+            <Footer />
             <PushNotifications />
             <PWAInstaller />
-            {/* ...footer code from previous layout.tsx... */}
         </ErrorBoundary>
     );
 } 

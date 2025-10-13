@@ -59,6 +59,12 @@ export default function ModernNavigation() {
         { href: '/genres', label: 'Genres', icon: FaTags },
     ];
 
+    const policyItems = [
+        { href: '/refund', label: 'Refund Policy', icon: FaCog },
+        { href: '/shipping', label: 'Shipping Policy', icon: FaCog },
+        { href: '/contact', label: 'Contact Us', icon: FaCog },
+    ];
+
     const userNavItems = isAuthenticated ? [
         { href: '/library', label: 'Library', icon: FaBookmark },
         { href: '/stats', label: 'Statistics', icon: FaChartBar },
@@ -317,6 +323,21 @@ export default function ModernNavigation() {
                                         >
                                             <item.icon className="text-indigo-400" />
                                             <span className="text-white font-medium">{item.label}</span>
+                                        </Link>
+                                    ))}
+
+                                    {/* Policy Pages */}
+                                    <div className="border-t border-slate-700 my-4"></div>
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider px-3">Legal</h3>
+                                    {policyItems.map((item) => (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                            <item.icon className="text-slate-400" />
+                                            <span className="text-slate-300 font-medium">{item.label}</span>
                                         </Link>
                                     ))}
 
