@@ -23,18 +23,34 @@ export async function POST(request: NextRequest) {
         }
 
         const user = await requireAuth(request);
-        const { amount, currency = 'INR', description, metadata = {} } = await request.json();
+        const requestBody = await request.json();
+        const { amount, currency = 'INR', description, metadata = {} } = requestBody;
 
-        console.log('🔍 Creating order for amount:', amount, 'currency:', currency);
+        console.log('🔍 Full request body:', JSON.stringify(requestBody, null, 2));
+        console.log('🔍 Creating order for amount:', amount, 'type:', typeof amount, 'currency:', currency);
 
         // Validate amount
-        if (!amount || amount < 1) {
-            return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+        if (!amount || amount <= 0) {
+            console.error('❌ Invalid amount received:', amount);
+            return NextResponse.json({ 
+                error: 'Invalid amount', 
+                details: `Amount must be greater than 0, received: ${amount}` 
+            }, { status: 400 });
+        }
+
+        // Convert to paise for Razorpay (minimum 100 paise = 1 rupee)
+        const amountInPaise = Math.round(amount * 100);
+        if (amountInPaise < 100) {
+            console.error('❌ Amount too small for Razorpay:', amountInPaise);
+            return NextResponse.json({ 
+                error: 'Amount too small', 
+                details: 'Minimum amount is ₹1.00' 
+            }, { status: 400 });
         }
 
         // Create Razorpay order
         const order = await razorpay.orders.create({
-            amount: Math.round(amount * 100), // Convert to paise
+            amount: amountInPaise, // Use pre-calculated paise amount
             currency,
             receipt: `receipt_${Date.now()}_${user._id}`,
             notes: {

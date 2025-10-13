@@ -53,6 +53,14 @@ export default function RazorpayPayment({
             }
 
             // Create order
+            console.log('🔍 Sending payment request:', {
+                amount,
+                type: typeof amount,
+                currency: 'INR',
+                description,
+                metadata
+            });
+
             const orderResponse = await fetch('/api/razorpay/create-order', {
                 method: 'POST',
                 headers: {
@@ -68,10 +76,12 @@ export default function RazorpayPayment({
             });
 
             const orderData = await orderResponse.json();
+            console.log('🔍 Order creation response:', orderData);
 
             if (!orderData.success) {
                 console.error('❌ Order creation failed:', orderData);
-                throw new Error(orderData.error || orderData.details || 'Failed to create order');
+                const errorMessage = orderData.details || orderData.error || 'Failed to create order';
+                throw new Error(errorMessage);
             }
 
             // Configure Razorpay options
