@@ -40,10 +40,18 @@ export async function POST(request: NextRequest) {
 
         // Convert to paise for Razorpay
         const amountInPaise = Math.round(amount * 100);
+        console.log('🔍 Amount validation:', {
+            originalAmount: amount,
+            amountInPaise,
+            minimumRequired: 100
+        });
+        
+        // Razorpay QR codes might have different minimum requirements
         if (amountInPaise < 100) {
+            console.error('❌ Amount too small for QR code:', amountInPaise);
             return NextResponse.json({ 
                 error: 'Amount too small', 
-                details: 'Minimum amount is ₹1.00' 
+                details: `Minimum amount for QR code is ₹1.00, received ₹${(amountInPaise / 100).toFixed(2)}` 
             }, { status: 400 });
         }
 
@@ -60,14 +68,13 @@ export async function POST(request: NextRequest) {
         });
 
         // Create QR code using Razorpay's qrCodes.create API
-        const qrCode = await razorpay.qrCodes.create({
+        // Try with minimal required parameters first
+        const qrCodeParams = {
             type: 'upi_qr',
-            name: `MangaReader Payment - ${description || 'Coins'}`,
+            name: `MangaReader - ${description || 'Coins'}`,
             usage: 'single_use',
             fixed_amount: true,
             payment_amount: amountInPaise,
-            description: description || 'MangaReader Payment',
-            customer_id: user._id.toString(),
             close_by: Math.floor(Date.now() / 1000) + (15 * 60), // 15 minutes from now
             notes: {
                 userId: user._id.toString(),
@@ -75,7 +82,11 @@ export async function POST(request: NextRequest) {
                 description: description || 'MangaReader Payment',
                 ...metadata
             }
-        });
+        };
+
+        console.log('📦 QR code creation params:', JSON.stringify(qrCodeParams, null, 2));
+
+        const qrCode = await razorpay.qrCodes.create(qrCodeParams);
 
         console.log('✅ QR code created successfully:', qrCode.id);
 
@@ -95,15 +106,33 @@ export async function POST(request: NextRequest) {
         console.error('❌ QR code creation failed:', error);
         const errorObj = error as any;
         
+        // Log full error details for debugging
+        console.error('❌ Full error object:', JSON.stringify(errorObj, null, 2));
+        
+        // Extract specific error information
+        const errorDetails = errorObj.error?.description || errorObj.message || 'Unknown error';
+        const errorCode = errorObj.error?.code || errorObj.statusCode;
+        const errorSource = errorObj.error?.source || 'unknown';
+        
+        console.error('❌ Error details:', {
+            code: errorCode,
+            description: errorDetails,
+            source: errorSource,
+            fullError: errorObj
+        });
+        
         return NextResponse.json({
             error: 'Failed to create QR code',
-            details: errorObj.error?.description || errorObj.message || 'Unknown error',
+            details: errorDetails,
+            errorCode: errorCode,
+            errorSource: errorSource,
             razorpayError: {
                 code: errorObj.error?.code,
                 description: errorObj.error?.description,
                 source: errorObj.error?.source,
                 step: errorObj.error?.step,
-                reason: errorObj.error?.reason
+                reason: errorObj.error?.reason,
+                field: errorObj.error?.field
             }
         }, { status: 500 });
     }
