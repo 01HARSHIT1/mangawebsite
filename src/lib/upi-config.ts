@@ -21,7 +21,18 @@ export const UPI_CONFIG = {
 export function generateUPIPaymentUrl(amount: number, description: string, transactionId: string): string {
     const { PERSONAL_UPI_ID, BUSINESS_NAME } = UPI_CONFIG;
     
-    return `upi://pay?pa=${PERSONAL_UPI_ID}&pn=${BUSINESS_NAME}&am=${amount}&cu=INR&tn=${encodeURIComponent(description)}&tr=${transactionId}`;
+    // Format amount to 2 decimal places
+    const formattedAmount = amount.toFixed(2);
+    
+    // Create UPI payment URL with proper format
+    const upiUrl = `upi://pay?pa=${PERSONAL_UPI_ID}&pn=${encodeURIComponent(BUSINESS_NAME)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent(description)}&tr=${transactionId}&mode=02`;
+    
+    console.log('🔍 Generated UPI URL:', upiUrl);
+    console.log('🔍 UPI ID:', PERSONAL_UPI_ID);
+    console.log('🔍 Amount:', formattedAmount);
+    console.log('🔍 Description:', description);
+    
+    return upiUrl;
 }
 
 // Generate Razorpay QR code
