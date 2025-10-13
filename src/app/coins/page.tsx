@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaCoins, FaGift, FaCrown, FaRocket, FaSpinner, FaCheckCircle } from 'react-icons/fa';
+import { FaCoins, FaGift, FaCrown, FaRocket, FaSpinner, FaCheckCircle, FaQrcode } from 'react-icons/fa';
 import RazorpayPayment from '@/components/RazorpayPayment';
+import QRCodePayment from '@/components/QRCodePayment';
 
 interface CoinPackage {
     id: string;
@@ -57,6 +58,7 @@ export default function CoinsPage() {
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'qr'>('razorpay');
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
@@ -184,17 +186,59 @@ export default function CoinsPage() {
                                 ))}
                             </ul>
 
-                            <RazorpayPayment
-                                amount={pkg.price}
-                                description={`${pkg.coins + pkg.bonus} Coins Package`}
-                                onSuccess={handlePaymentSuccess}
-                                onError={handlePaymentError}
-                                metadata={{
-                                    packageId: pkg.id,
-                                    coins: pkg.coins + pkg.bonus,
-                                    type: 'coins'
-                                }}
-                            />
+                            {/* Payment Method Selector */}
+                            <div className="mb-4">
+                                <div className="flex bg-gray-700 rounded-lg p-1">
+                                    <button
+                                        onClick={() => setPaymentMethod('razorpay')}
+                                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                                            paymentMethod === 'razorpay'
+                                                ? 'bg-purple-600 text-white'
+                                                : 'text-gray-300 hover:text-white'
+                                        }`}
+                                    >
+                                        💳 Razorpay
+                                    </button>
+                                    <button
+                                        onClick={() => setPaymentMethod('qr')}
+                                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                                            paymentMethod === 'qr'
+                                                ? 'bg-green-600 text-white'
+                                                : 'text-gray-300 hover:text-white'
+                                        }`}
+                                    >
+                                        <FaQrcode className="inline mr-1" />
+                                        QR Code
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Payment Component */}
+                            {paymentMethod === 'razorpay' ? (
+                                <RazorpayPayment
+                                    amount={pkg.price}
+                                    description={`${pkg.coins + pkg.bonus} Coins Package`}
+                                    onSuccess={handlePaymentSuccess}
+                                    onError={handlePaymentError}
+                                    metadata={{
+                                        packageId: pkg.id,
+                                        coins: pkg.coins + pkg.bonus,
+                                        type: 'coins'
+                                    }}
+                                />
+                            ) : (
+                                <QRCodePayment
+                                    amount={pkg.price}
+                                    description={`${pkg.coins + pkg.bonus} Coins Package`}
+                                    onSuccess={handlePaymentSuccess}
+                                    onError={handlePaymentError}
+                                    metadata={{
+                                        packageId: pkg.id,
+                                        coins: pkg.coins + pkg.bonus,
+                                        type: 'coins'
+                                    }}
+                                />
+                            )}
                         </div>
                     ))}
                 </div>

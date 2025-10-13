@@ -55,6 +55,12 @@ export async function POST(request: NextRequest) {
             case 'refund.processed':
                 await handleRefundProcessed(db, event.payload);
                 break;
+            case 'qr_code.paid':
+                await handleQRCodePaid(db, event.payload);
+                break;
+            case 'qr_code.expired':
+                await handleQRCodeExpired(db, event.payload);
+                break;
             default:
                 console.log('ℹ️ Unhandled webhook event:', event.event);
         }
@@ -175,5 +181,74 @@ async function handleRefundProcessed(db: any, payload: any) {
 
     } catch (error) {
         console.error('❌ Error handling refund processed:', error);
+    }
+}
+
+// Handle QR code payment success
+async function handleQRCodePaid(db: any, payload: any) {
+    try {
+        const qrCode = payload.qr_code.entity;
+        const payment = payload.payment.entity;
+        
+        console.log('💰 QR code payment successful:', {
+            qrCodeId: qrCode.id,
+            paymentId: payment.id,
+            amount: payment.amount / 100,
+            currency: payment.currency
+        });
+
+        // Extract user info from QR code notes
+        const userId = qrCode.notes?.userId;
+        const coins = qrCode.notes?.coins || Math.floor(payment.amount / 100); // Default to 1 coin per rupee
+
+        if (userId) {
+            // Update user's coin balance
+            await db.collection('users').updateOne(
+                { _id: new ObjectId(userId) },
+                { $inc: { coins: parseInt(coins) } }
+            );
+            console.log(`✅ User ${userId} coins updated by ${coins}`);
+
+            // Record the payment
+            await db.collection('payments').insertOne({
+                userId: new ObjectId(userId),
+                paymentId: payment.id,
+                qrCodeId: qrCode.id,
+                amount: payment.amount / 100,
+                currency: payment.currency,
+                status: 'captured',
+                paymentMethod: 'qr_code',
+                coinsAdded: parseInt(coins),
+                timestamp: new Date(),
+                notes: qrCode.notes
+            });
+            console.log(`✅ QR payment ${payment.id} recorded`);
+        }
+
+    } catch (error) {
+        console.error('❌ Error handling QR code payment:', error);
+    }
+}
+
+// Handle QR code expiration
+async function handleQRCodeExpired(db: any, payload: any) {
+    try {
+        const qrCode = payload.qr_code.entity;
+        
+        console.log('⏰ QR code expired:', qrCode.id);
+
+        // Update QR code status in database if you're storing them
+        await db.collection('qr_codes').updateOne(
+            { razorpayQrCodeId: qrCode.id },
+            { 
+                $set: { 
+                    status: 'expired',
+                    expiredAt: new Date()
+                } 
+            }
+        );
+
+    } catch (error) {
+        console.error('❌ Error handling QR code expiration:', error);
     }
 }
