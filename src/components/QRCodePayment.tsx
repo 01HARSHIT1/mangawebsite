@@ -113,6 +113,10 @@ export default function QRCodePayment({ amount, description, onSuccess, onError,
                 setStatus('waiting');
                 setTimeLeft(data.expiresAt - Math.floor(Date.now() / 1000));
             } else {
+                // Check if it's a test mode limitation
+                if (data.error === 'QR codes not supported' || data.details?.includes('test mode')) {
+                    throw new Error('QR Code payments are only available in live mode. Please use Razorpay checkout for test payments.');
+                }
                 throw new Error(data.details || data.error || 'Failed to create QR code');
             }
 

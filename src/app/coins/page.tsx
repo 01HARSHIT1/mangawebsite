@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FaCoins, FaGift, FaCrown, FaRocket, FaSpinner, FaCheckCircle, FaQrcode } from 'react-icons/fa';
 import RazorpayPayment from '@/components/RazorpayPayment';
 import QRCodePayment from '@/components/QRCodePayment';
+import AlternativeQRPayment from '@/components/AlternativeQRPayment';
 
 interface CoinPackage {
     id: string;
@@ -206,11 +207,21 @@ export default function CoinsPage() {
                                                 ? 'bg-green-600 text-white'
                                                 : 'text-gray-300 hover:text-white'
                                         }`}
+                                        title="QR Code payments are only available in live mode"
                                     >
                                         <FaQrcode className="inline mr-1" />
                                         QR Code
+                                        <span className="text-xs block text-yellow-300">(Live Mode Only)</span>
                                     </button>
                                 </div>
+                                {paymentMethod === 'qr' && (
+                                    <div className="mt-2 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                                        <p className="text-yellow-300 text-sm">
+                                            <strong>Note:</strong> QR Code payments are only available in live mode. 
+                                            Please use Razorpay checkout for test payments, or contact us to enable live mode.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Payment Component */}
@@ -227,7 +238,7 @@ export default function CoinsPage() {
                                     }}
                                 />
                             ) : (
-                                <QRCodePayment
+                                <AlternativeQRPayment
                                     amount={pkg.price}
                                     description={`${pkg.coins + pkg.bonus} Coins Package`}
                                     onSuccess={handlePaymentSuccess}
