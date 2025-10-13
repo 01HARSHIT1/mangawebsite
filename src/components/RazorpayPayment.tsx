@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface RazorpayPaymentProps {
-    amount: number;
+    amount: number; // Amount in USD
     description: string;
     onSuccess: (paymentId: string) => void;
     onError: (error: string) => void;
     metadata?: Record<string, any>;
 }
+
+// USD to INR conversion rate (update this periodically or fetch from API)
+const USD_TO_INR_RATE = 83; // Approximate rate: 1 USD = 83 INR
 
 declare global {
     interface Window {
@@ -52,10 +55,15 @@ export default function RazorpayPayment({
                 throw new Error('Failed to load Razorpay script');
             }
 
+            // Convert USD to INR
+            const amountInINR = Math.round(amount * USD_TO_INR_RATE * 100) / 100; // Round to 2 decimal places
+
             // Create order
             console.log('🔍 Sending payment request:', {
-                amount,
-                type: typeof amount,
+                amountUSD: amount,
+                amountINR: amountInINR,
+                conversionRate: USD_TO_INR_RATE,
+                type: typeof amountInINR,
                 currency: 'INR',
                 description,
                 metadata
@@ -68,10 +76,14 @@ export default function RazorpayPayment({
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                 },
                 body: JSON.stringify({
-                    amount,
+                    amount: amountInINR, // Send INR amount
                     currency: 'INR',
                     description,
-                    metadata
+                    metadata: {
+                        ...metadata,
+                        originalAmountUSD: amount,
+                        conversionRate: USD_TO_INR_RATE
+                    }
                 })
             });
 
@@ -144,6 +156,9 @@ export default function RazorpayPayment({
         }
     };
 
+    // Calculate display amount in INR
+    const displayAmountINR = Math.round(amount * USD_TO_INR_RATE * 100) / 100;
+
     return (
         <button
             onClick={handlePayment}
@@ -157,7 +172,7 @@ export default function RazorpayPayment({
                 </>
             ) : (
                 <>
-                    <span>Pay ₹{amount}</span>
+                    <span>Pay ₹{displayAmountINR.toFixed(2)} (${amount.toFixed(2)})</span>
                     <span>•</span>
                     <span>Razorpay</span>
                 </>
