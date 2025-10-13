@@ -69,10 +69,16 @@ export async function POST(request: NextRequest) {
         }
 
         // Create Razorpay order
+        // Generate a short receipt ID (max 40 chars for Razorpay)
+        const timestamp = Date.now().toString().slice(-8); // Last 8 digits
+        const userIdShort = user._id.toString().slice(-8); // Last 8 digits of user ID
+        const receiptId = `rcpt_${timestamp}_${userIdShort}`; // Format: rcpt_12345678_abcd1234 (max 25 chars)
+        
         console.log('📦 Creating Razorpay order with params:', {
             amount: amountInPaise,
             currency,
-            receipt: `receipt_${Date.now()}_${user._id}`,
+            receipt: receiptId,
+            receiptLength: receiptId.length
         });
 
         let order;
@@ -80,9 +86,9 @@ export async function POST(request: NextRequest) {
             order = await razorpay.orders.create({
                 amount: amountInPaise, // Use pre-calculated paise amount
                 currency,
-                receipt: `receipt_${Date.now()}_${user._id}`,
+                receipt: receiptId,
                 notes: {
-                    userId: user._id,
+                    userId: user._id.toString(),
                     userEmail: user.email,
                     description: description || 'MangaReader Payment',
                     ...metadata
