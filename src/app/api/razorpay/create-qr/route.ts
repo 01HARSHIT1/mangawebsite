@@ -73,20 +73,8 @@ export async function POST(request: NextRequest) {
         console.log('🔍 qrCodes available:', !!razorpay.qrCodes);
         console.log('🔍 qrCodes.create available:', typeof razorpay.qrCodes?.create);
         
-        // First, let's try to check if the qrCodes method exists
-        if (!razorpay.qrCodes || typeof razorpay.qrCodes.create !== 'function') {
-            console.error('❌ QR codes API not available in this Razorpay SDK version');
-            return NextResponse.json({
-                error: 'QR codes not supported',
-                details: 'QR codes API is not available in test mode or with current Razorpay configuration',
-                suggestion: 'Please use Razorpay checkout instead',
-                debug: {
-                    hasQrCodes: !!razorpay.qrCodes,
-                    hasCreateMethod: typeof razorpay.qrCodes?.create === 'function',
-                    availableMethods: Object.keys(razorpay)
-                }
-            }, { status: 400 });
-        }
+        // For now, let's try to create QR code even if API might not be available
+        // This will help us see the actual error from Razorpay
 
         // Create QR code using Razorpay's qrCodes.create API
         // Try with minimal required parameters first

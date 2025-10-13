@@ -7,6 +7,7 @@ import RazorpayPayment from '@/components/RazorpayPayment';
 import QRCodePayment from '@/components/QRCodePayment';
 import AlternativeQRPayment from '@/components/AlternativeQRPayment';
 import UPIQRPayment from '@/components/UPIQRPayment';
+import HybridQRPayment from '@/components/HybridQRPayment';
 
 interface CoinPackage {
     id: string;
@@ -239,7 +240,7 @@ export default function CoinsPage() {
                                     }}
                                 />
                             ) : (
-                                <UPIQRPayment
+                                <HybridQRPayment
                                     amount={pkg.price}
                                     description={`${pkg.coins + pkg.bonus} Coins Package`}
                                     onSuccess={handlePaymentSuccess}
