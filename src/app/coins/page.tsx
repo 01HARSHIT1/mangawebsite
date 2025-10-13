@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaCoins, FaGift, FaCrown, FaRocket, FaSpinner } from 'react-icons/fa';
+import { FaCoins, FaGift, FaCrown, FaRocket, FaSpinner, FaCheckCircle } from 'react-icons/fa';
+import RazorpayPayment from '@/components/RazorpayPayment';
 
 interface CoinPackage {
     id: string;
@@ -54,6 +55,8 @@ export default function CoinsPage() {
     const [userCoins, setUserCoins] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [purchasing, setPurchasing] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
@@ -84,36 +87,17 @@ export default function CoinsPage() {
         fetchCoins();
     }, [isAuthenticated, router]);
 
-    const handlePurchase = async (packageId: string, coins: number) => {
-        if (!user) return;
+    const handlePaymentSuccess = (paymentId: string) => {
+        setSuccess('Payment successful! Coins have been added to your account.');
+        setError(null);
+        setPurchasing(null);
+        fetchCoins(); // Refresh coins balance
+    };
 
-        setPurchasing(packageId);
-
-        try {
-            const token = localStorage.getItem('authToken');
-            const response = await fetch('/api/coins/stripe-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ amount: coins })
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.url) {
-                // Redirect to Stripe checkout
-                window.location.href = data.url;
-            } else {
-                alert('Failed to create payment session. Please try again.');
-            }
-        } catch (error) {
-            console.error('Purchase error:', error);
-            alert('An error occurred. Please try again.');
-        } finally {
-            setPurchasing(null);
-        }
+    const handlePaymentError = (errorMessage: string) => {
+        setError(errorMessage);
+        setSuccess(null);
+        setPurchasing(null);
     };
 
     if (!isAuthenticated) {
@@ -143,6 +127,21 @@ export default function CoinsPage() {
                         </span>
                     </div>
                 </div>
+
+                {/* Success/Error Messages */}
+                {success && (
+                    <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-6 flex items-center space-x-3">
+                        <FaCheckCircle className="text-green-400 text-xl" />
+                        <span className="text-green-300">{success}</span>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6 flex items-center space-x-3">
+                        <span className="text-red-400 text-xl">⚠️</span>
+                        <span className="text-red-300">{error}</span>
+                    </div>
+                )}
 
                 {/* Coin Packages */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -185,23 +184,17 @@ export default function CoinsPage() {
                                 ))}
                             </ul>
 
-                            <button
-                                onClick={() => handlePurchase(pkg.id, pkg.coins + pkg.bonus)}
-                                disabled={purchasing === pkg.id}
-                                className={`w-full py-3 px-6 rounded-xl font-bold transition-all duration-300 ${pkg.popular
-                                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
-                                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                                {purchasing === pkg.id ? (
-                                    <div className="flex items-center justify-center">
-                                        <FaSpinner className="animate-spin mr-2" />
-                                        Processing...
-                                    </div>
-                                ) : (
-                                    `Purchase ${pkg.coins + pkg.bonus} Coins`
-                                )}
-                            </button>
+                            <RazorpayPayment
+                                amount={pkg.price}
+                                description={`${pkg.coins + pkg.bonus} Coins Package`}
+                                onSuccess={handlePaymentSuccess}
+                                onError={handlePaymentError}
+                                metadata={{
+                                    packageId: pkg.id,
+                                    coins: pkg.coins + pkg.bonus,
+                                    type: 'coins'
+                                }}
+                            />
                         </div>
                     ))}
                 </div>
