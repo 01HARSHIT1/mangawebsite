@@ -248,11 +248,34 @@ export async function POST(request: NextRequest) {
 
         // Upgrade user to creator if they aren't already
         if (user.role !== 'creator' && user.role !== 'admin') {
-            await upgradeToCreator(user._id, {
-                displayName: creatorName || user.username,
-                bio: `Creator of ${mangaTitle}`,
-            });
-            console.log('✅ User upgraded to creator');
+            try {
+                // First check if user exists and get current data
+                const existingUser = await db.collection('users').findOne({ _id: new ObjectId(user._id) });
+                
+                if (existingUser) {
+                    const now = new Date();
+                    await db.collection('users').updateOne(
+                        { _id: new ObjectId(user._id) },
+                        {
+                            $set: {
+                                role: 'creator',
+                                isCreator: true,
+                                creatorProfile: {
+                                    displayName: creatorName || existingUser.username || 'Creator',
+                                    bio: `Creator of ${mangaTitle}`,
+                                },
+                                updatedAt: now
+                            }
+                        }
+                    );
+                    console.log('✅ User upgraded to creator');
+                } else {
+                    console.log('⚠️ User not found, skipping creator upgrade');
+                }
+            } catch (upgradeError) {
+                console.error('⚠️ Error upgrading user to creator (non-fatal):', upgradeError);
+                // Don't fail the upload if upgrade fails - it's optional
+            }
         }
 
         console.log('\n🎯 Upload Summary:');
