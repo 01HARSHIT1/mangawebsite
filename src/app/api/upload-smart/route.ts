@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, upgradeToCreator } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,6 +17,9 @@ export async function POST(request: NextRequest) {
             apiSecret: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
         });
 
+        // Get the raw body stream
+        const body = await request.arrayBuffer();
+
         // Redirect to appropriate upload endpoint
         if (hasCloudinary) {
             console.log('☁️ Using Cloudinary for upload');
@@ -27,8 +29,11 @@ export async function POST(request: NextRequest) {
             // Forward the request to Cloudinary endpoint
             const response = await fetch(cloudinaryUrl, {
                 method: 'POST',
-                headers: request.headers,
-                body: request.body
+                headers: {
+                    ...Object.fromEntries(request.headers.entries()),
+                    'Content-Type': request.headers.get('Content-Type') || 'multipart/form-data'
+                },
+                body: body
             });
 
             const data = await response.json();
@@ -42,8 +47,11 @@ export async function POST(request: NextRequest) {
             // Forward the request to local endpoint
             const response = await fetch(localUrl, {
                 method: 'POST',
-                headers: request.headers,
-                body: request.body
+                headers: {
+                    ...Object.fromEntries(request.headers.entries()),
+                    'Content-Type': request.headers.get('Content-Type') || 'multipart/form-data'
+                },
+                body: body
             });
 
             const data = await response.json();
@@ -52,9 +60,11 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('❌ Smart upload error:', error);
+        console.error('Error details:', error instanceof Error ? error.stack : 'Unknown error');
         return NextResponse.json({
             error: 'Upload service unavailable',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
+            hint: 'Check if Cloudinary credentials are configured in Vercel environment variables'
         }, { status: 500 });
     }
 }
