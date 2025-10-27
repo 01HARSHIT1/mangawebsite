@@ -11,8 +11,16 @@ export async function POST(request: NextRequest) {
             process.env.CLOUDINARY_API_KEY &&
             process.env.CLOUDINARY_API_SECRET;
 
+        console.log('🔍 Cloudinary Check:', {
+            hasCloudinary,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Missing',
+            apiKey: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Missing',
+            apiSecret: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Missing'
+        });
+
         // Redirect to appropriate upload endpoint
         if (hasCloudinary) {
+            console.log('☁️ Using Cloudinary for upload');
             // Use Cloudinary for production
             const cloudinaryUrl = `${request.nextUrl.origin}/api/upload-manga-cloudinary`;
 
@@ -27,6 +35,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(data, { status: response.status });
 
         } else {
+            console.log('💾 Using local file system for upload (Cloudinary not configured)');
             // Use local file system for development
             const localUrl = `${request.nextUrl.origin}/api/upload-manga`;
 

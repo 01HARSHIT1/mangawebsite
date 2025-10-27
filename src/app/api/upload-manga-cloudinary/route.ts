@@ -14,6 +14,12 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+console.log('☁️ Cloudinary configured:', {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+    hasApiSecret: !!process.env.CLOUDINARY_API_SECRET
+});
+
 // Helper function to convert File to Buffer
 async function fileToBuffer(file: File): Promise<Buffer> {
     const arrayBuffer = await file.arrayBuffer();
