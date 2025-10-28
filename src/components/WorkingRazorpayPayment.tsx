@@ -145,6 +145,46 @@ export default function WorkingRazorpayPayment({
                 theme: {
                     color: '#6366f1'
                 },
+                // Configure payment methods for Indian market
+                config: {
+                    display: {
+                        blocks: {
+                            banks: {
+                                name: "All payment methods",
+                                instruments: [
+                                    {
+                                        method: "card"
+                                    },
+                                    {
+                                        method: "upi"
+                                    },
+                                    {
+                                        method: "wallet",
+                                        wallets: ["paytm"]
+                                    },
+                                    {
+                                        method: "netbanking"
+                                    }
+                                ]
+                            }
+                        },
+                        sequence: ["block.banks"],
+                        preferences: {
+                            show_default_blocks: false
+                        }
+                    }
+                },
+                // Enable Indian card support in production
+                method: {
+                    card: {
+                        name: "Cards",
+                        description: "Pay using Credit or Debit cards"
+                    },
+                    upi: {
+                        name: "UPI",
+                        description: "Pay using any UPI app"
+                    }
+                },
                 modal: {
                     ondismiss: function () {
                         setLoading(false);
