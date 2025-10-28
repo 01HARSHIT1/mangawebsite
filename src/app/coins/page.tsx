@@ -19,7 +19,7 @@ const coinPackages: CoinPackage[] = [
     {
         id: 'starter',
         coins: 100,
-        price: 0.99,
+        price: 0.12, // $0.12 = ₹10 (for testing live payments)
         bonus: 0,
         icon: <FaCoins className="text-yellow-400" />,
         features: ['Perfect for trying out', 'Tip your favorite creators', 'Support the community']
@@ -94,7 +94,7 @@ export default function CoinsPage() {
         setSuccess('Payment successful! Coins have been added to your account.');
         setError(null);
         setPurchasing(null);
-        
+
         // Wait a moment for database to update, then refresh
         setTimeout(async () => {
             console.log('🔄 Refreshing coins balance...');
@@ -199,8 +199,8 @@ export default function CoinsPage() {
                                     <button
                                         onClick={() => setPaymentMethod('razorpay')}
                                         className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${paymentMethod === 'razorpay'
-                                                ? 'bg-purple-600 text-white'
-                                                : 'text-gray-300 hover:text-white'
+                                            ? 'bg-purple-600 text-white'
+                                            : 'text-gray-300 hover:text-white'
                                             }`}
                                     >
                                         💳 Razorpay
@@ -208,8 +208,8 @@ export default function CoinsPage() {
                                     <button
                                         onClick={() => setPaymentMethod('qr')}
                                         className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${paymentMethod === 'qr'
-                                                ? 'bg-green-600 text-white'
-                                                : 'text-gray-300 hover:text-white'
+                                            ? 'bg-green-600 text-white'
+                                            : 'text-gray-300 hover:text-white'
                                             }`}
                                         title="QR Code payments are only available in live mode"
                                     >
