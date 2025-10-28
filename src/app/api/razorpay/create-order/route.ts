@@ -83,16 +83,20 @@ export async function POST(request: NextRequest) {
 
         let order;
         try {
+            const orderNotes = {
+                userId: user._id.toString(),
+                userEmail: user.email,
+                description: description || 'MangaReader Payment',
+                metadata: metadata // Pass metadata within notes
+            };
+            
+            console.log('📦 Creating order with notes:', JSON.stringify(orderNotes, null, 2));
+            
             order = await razorpay.orders.create({
                 amount: amountInPaise, // Use pre-calculated paise amount
                 currency,
                 receipt: receiptId,
-                notes: {
-                    userId: user._id.toString(),
-                    userEmail: user.email,
-                    description: description || 'MangaReader Payment',
-                    ...metadata
-                }
+                notes: orderNotes
             });
             console.log('✅ Razorpay order created successfully:', order.id);
         } catch (orderError) {

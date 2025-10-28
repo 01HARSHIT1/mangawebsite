@@ -17,6 +17,12 @@ export async function POST(request: NextRequest) {
         const user = await requireAuth(request);
         const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = await request.json();
 
+        console.log('🔍 Verifying payment:', {
+            razorpay_payment_id,
+            razorpay_order_id,
+            userId: user._id
+        });
+
         // Verify payment signature
         const body = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto
@@ -26,13 +32,26 @@ export async function POST(request: NextRequest) {
 
         const isValidSignature = expectedSignature === razorpay_signature;
 
+        console.log('🔍 Signature check:', {
+            isValidSignature,
+            expectedSignature: expectedSignature.substring(0, 20) + '...',
+            receivedSignature: razorpay_signature.substring(0, 20) + '...'
+        });
+
         if (!isValidSignature) {
+            console.error('❌ Invalid signature');
             return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
         }
 
         // Get payment details from Razorpay
         const payment = await razorpay.payments.fetch(razorpay_payment_id);
         const order = await razorpay.orders.fetch(razorpay_order_id);
+
+        console.log('🔍 Payment details:', {
+            paymentStatus: payment.status,
+            paymentAmount: payment.amount / 100,
+            orderNotes: order.notes
+        });
 
         const client = await clientPromise;
         const db = client.db();
@@ -58,24 +77,43 @@ export async function POST(request: NextRequest) {
             const description = (order.notes?.description || '').toLowerCase();
             const metadata = order.notes?.metadata || {};
             
+            console.log('🔍 Processing coins:', {
+                description,
+                metadata,
+                hasPackageId: !!metadata.packageId,
+                hasCoins: !!metadata.coins,
+                descriptionIncludesCoins: description.includes('coins')
+            });
+            
             if (description.includes('coins') || metadata.packageId || metadata.coins) {
                 // Get coins amount from metadata or calculate from payment amount
                 const coinsToAdd = metadata.coins || Math.floor(payment.amount / 100) || 1;
                 
+                console.log('💰 Adding coins:', {
+                    coinsToAdd,
+                    userId: user._id,
+                    fromMetadata: metadata.coins,
+                    fromAmount: Math.floor(payment.amount / 100)
+                });
+                
                 await db.collection('users').updateOne(
-                    { _id: user._id },
+                    { _id: new (await import('mongodb')).ObjectId(user._id) },
                     { $inc: { coins: coinsToAdd } }
                 );
-                console.log('🪙 Added coins to user:', coinsToAdd);
+                console.log('✅ Added coins to user:', coinsToAdd);
+            } else {
+                console.log('⚠️ No coins to add - conditions not met');
             }
 
             if (description.includes('creator') || metadata.type === 'creator') {
                 await db.collection('users').updateOne(
-                    { _id: user._id },
+                    { _id: new (await import('mongodb')).ObjectId(user._id) },
                     { $set: { role: 'creator', isCreator: true } }
                 );
                 console.log('👑 User upgraded to creator');
             }
+        } else {
+            console.log('⚠️ Payment not captured, status:', payment.status);
         }
 
         return NextResponse.json({
