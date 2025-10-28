@@ -61,38 +61,46 @@ export default function CoinsPage() {
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
+    // Fetch user's current coin balance
+    const fetchCoins = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch('/api/coins', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            console.log('💰 Fetched coins from API:', data.coins);
+            setUserCoins(data.coins || 0);
+        } catch (error) {
+            console.error('Error fetching coins:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (!isAuthenticated) {
             router.push('/login');
             return;
         }
 
-        // Fetch user's current coin balance
-        const fetchCoins = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch('/api/coins', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const data = await response.json();
-                setUserCoins(data.coins || 0);
-            } catch (error) {
-                console.error('Error fetching coins:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchCoins();
     }, [isAuthenticated, router]);
 
-    const handlePaymentSuccess = (paymentId: string) => {
+    const handlePaymentSuccess = async (paymentId: string) => {
+        console.log('✅ Payment success callback:', paymentId);
         setSuccess('Payment successful! Coins have been added to your account.');
         setError(null);
         setPurchasing(null);
-        fetchCoins(); // Refresh coins balance
+        
+        // Wait a moment for database to update, then refresh
+        setTimeout(async () => {
+            console.log('🔄 Refreshing coins balance...');
+            await fetchCoins();
+            console.log('💰 Updated coin balance displayed');
+        }, 1000);
     };
 
     const handlePaymentError = (errorMessage: string) => {
