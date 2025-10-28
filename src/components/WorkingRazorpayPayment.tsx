@@ -145,6 +145,8 @@ export default function WorkingRazorpayPayment({
                 theme: {
                     color: '#6366f1'
                 },
+                // Force Indian locale
+                locale: 'en',
                 // Configure payment methods for Indian market
                 config: {
                     display: {
@@ -174,21 +176,12 @@ export default function WorkingRazorpayPayment({
                         }
                     }
                 },
-                // Enable Indian card support in production
-                method: {
-                    card: {
-                        name: "Cards",
-                        description: "Pay using Credit or Debit cards"
-                    },
-                    upi: {
-                        name: "UPI",
-                        description: "Pay using any UPI app"
-                    }
-                },
                 modal: {
                     ondismiss: function () {
                         setLoading(false);
-                    }
+                    },
+                    escape: true,
+                    animation: true
                 }
             };
 
