@@ -103,6 +103,8 @@ export default function WorkingRazorpayPayment({
                 name: 'MangaReader',
                 description: description,
                 order_id: orderData.orderId,
+                // Test mode settings
+                image: 'https://mangawebsite.vercel.app/favicon.ico',
                 handler: async function (response: any) {
                     console.log('✅ Payment successful:', response);
 
@@ -148,31 +150,44 @@ export default function WorkingRazorpayPayment({
                 // Force Indian locale
                 locale: 'en',
                 // Configure payment methods for Indian market
+                // Note: Cards may show 'international cards not supported' in test mode
+                // Use UPI or wallets for testing
                 config: {
                     display: {
                         blocks: {
-                            banks: {
-                                name: "All payment methods",
+                            upi: {
+                                name: "UPI",
                                 instruments: [
                                     {
-                                        method: "card"
-                                    },
-                                    {
                                         method: "upi"
-                                    },
+                                    }
+                                ]
+                            },
+                            wallets: {
+                                name: "Wallets",
+                                instruments: [
                                     {
                                         method: "wallet",
-                                        wallets: ["paytm"]
-                                    },
+                                        wallets: ["paytm", "phonepe"]
+                                    }
+                                ]
+                            },
+                            cards: {
+                                name: "Cards",
+                                instruments: [
                                     {
-                                        method: "netbanking"
+                                        method: "card",
+                                        networks: ["Visa", "MasterCard", "RuPay"]
                                     }
                                 ]
                             }
                         },
-                        sequence: ["block.banks"],
+                        sequence: ["block.upi", "block.wallets", "block.cards"],
                         preferences: {
-                            show_default_blocks: false
+                            show_default_blocks: true,
+                            banks: {
+                                order: ["HDFC", "SBI", "ICICI", "Axis", "Kotak"]
+                            }
                         }
                     }
                 },
@@ -213,22 +228,31 @@ export default function WorkingRazorpayPayment({
     }
 
     return (
-        <button
-            onClick={handlePayment}
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
-        >
-            {loading ? (
-                <>
-                    <FaSpinner className="animate-spin text-xl" />
-                    <span>Processing...</span>
-                </>
-            ) : (
-                <>
-                    <FaCreditCard className="text-xl" />
-                    <span>Pay ₹{Math.round(amount * USD_TO_INR_RATE * 100) / 100} (${amount.toFixed(2)}) via Razorpay</span>
-                </>
-            )}
-        </button>
+        <div className="w-full">
+            <button
+                onClick={handlePayment}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+            >
+                {loading ? (
+                    <>
+                        <FaSpinner className="animate-spin text-xl" />
+                        <span>Processing...</span>
+                    </>
+                ) : (
+                    <>
+                        <FaCreditCard className="text-xl" />
+                        <span>Pay ₹{Math.round(amount * USD_TO_INR_RATE * 100) / 100} (${amount.toFixed(2)}) via Razorpay</span>
+                    </>
+                )}
+            </button>
+            
+            <div className="mt-3 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <p className="text-blue-300 text-sm">
+                    <strong>💡 Test Mode Tip:</strong> Use <strong>UPI</strong> or <strong>Wallets</strong> to avoid card restrictions. 
+                    In live mode, all payment methods including cards will work properly.
+                </p>
+            </div>
+        </div>
     );
 }
