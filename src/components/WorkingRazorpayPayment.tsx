@@ -149,7 +149,7 @@ export default function WorkingRazorpayPayment({
                 },
                 // Force Indian locale
                 locale: 'en',
-                // Configure payment methods for Indian market - show popular options first
+                // Configure payment methods for Indian market - prioritize popular wallets
                 config: {
                     display: {
                         blocks: {
@@ -165,17 +165,23 @@ export default function WorkingRazorpayPayment({
                                     {
                                         method: "card",
                                         networks: ["Visa", "MasterCard", "RuPay"]
+                                    },
+                                    {
+                                        method: "netbanking"
                                     }
                                 ]
                             }
                         },
                         sequence: ["block.banks"],
                         preferences: {
-                            show_default_blocks: true,
-                            banks: {
-                                order: ["HDFC", "ICICI", "SBI", "Axis", "Kotak", "PNB", "BOI"]
-                            }
+                            show_default_blocks: true
                         }
+                    }
+                },
+                // Explicitly specify which payment methods to show
+                method: {
+                    upi: {
+                        description: 'Pay using UPI ID or apps like PhonePe, GPay, Paytm'
                     }
                 },
                 modal: {
@@ -236,8 +242,11 @@ export default function WorkingRazorpayPayment({
 
             <div className="mt-3 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
                 <p className="text-blue-300 text-sm">
-                    <strong>💡 Test Mode Tip:</strong> Use <strong>UPI</strong> or <strong>Wallets</strong> to avoid card restrictions.
-                    In live mode, all payment methods including cards will work properly.
+                    <strong>💡 Test Mode Info:</strong> 
+                    <br />• UPI works perfectly in test mode ✅
+                    <br />• Available wallets in test mode: Mobikwik, JioMoney, OlaMoney, etc.
+                    <br />• Paytm & PhonePe will be available in <strong>Live Mode</strong> ✅
+                    <br />• All popular wallets (Paytm, PhonePe, GPay, etc.) work in production
                 </p>
             </div>
         </div>
