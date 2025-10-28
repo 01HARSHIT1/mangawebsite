@@ -150,8 +150,8 @@ export default function CoinsPage() {
                         <div
                             key={pkg.id}
                             className={`relative bg-slate-800/50 rounded-3xl p-6 backdrop-blur-sm border transition-all duration-300 hover:scale-105 ${pkg.popular
-                                    ? 'border-green-500/50 ring-2 ring-green-500/20'
-                                    : 'border-slate-700/50 hover:border-purple-500/50'
+                                ? 'border-green-500/50 ring-2 ring-green-500/20'
+                                : 'border-slate-700/50 hover:border-purple-500/50'
                                 }`}
                         >
                             {pkg.popular && (
@@ -190,21 +190,19 @@ export default function CoinsPage() {
                                 <div className="flex bg-gray-700 rounded-lg p-1">
                                     <button
                                         onClick={() => setPaymentMethod('razorpay')}
-                                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                                            paymentMethod === 'razorpay'
+                                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${paymentMethod === 'razorpay'
                                                 ? 'bg-purple-600 text-white'
                                                 : 'text-gray-300 hover:text-white'
-                                        }`}
+                                            }`}
                                     >
                                         💳 Razorpay
                                     </button>
                                     <button
                                         onClick={() => setPaymentMethod('qr')}
-                                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                                            paymentMethod === 'qr'
+                                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${paymentMethod === 'qr'
                                                 ? 'bg-green-600 text-white'
                                                 : 'text-gray-300 hover:text-white'
-                                        }`}
+                                            }`}
                                         title="QR Code payments are only available in live mode"
                                     >
                                         <FaQrcode className="inline mr-1" />
@@ -215,7 +213,7 @@ export default function CoinsPage() {
                                 {paymentMethod === 'qr' && (
                                     <div className="mt-2 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
                                         <p className="text-yellow-300 text-sm">
-                                            <strong>Note:</strong> QR Code payments are only available in live mode. 
+                                            <strong>Note:</strong> QR Code payments are only available in live mode.
                                             Please use Razorpay checkout for test payments, or contact us to enable live mode.
                                         </p>
                                     </div>
@@ -223,17 +221,17 @@ export default function CoinsPage() {
                             </div>
 
                             {/* Payment Component */}
-                        <WorkingRazorpayPayment
-                            amount={pkg.price}
-                            description={`${pkg.coins + pkg.bonus} Coins Package`}
-                            onSuccess={handlePaymentSuccess}
-                            onError={handlePaymentError}
-                            metadata={{
-                                packageId: pkg.id,
-                                coins: pkg.coins + pkg.bonus,
-                                type: 'coins'
-                            }}
-                        />
+                            <WorkingRazorpayPayment
+                                amount={pkg.price}
+                                description={`${pkg.coins + pkg.bonus} Coins Package`}
+                                onSuccess={handlePaymentSuccess}
+                                onError={handlePaymentError}
+                                metadata={{
+                                    packageId: pkg.id,
+                                    coins: pkg.coins + pkg.bonus,
+                                    type: 'coins'
+                                }}
+                            />
                         </div>
                     ))}
                 </div>

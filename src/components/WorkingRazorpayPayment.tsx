@@ -103,9 +103,9 @@ export default function WorkingRazorpayPayment({
                 name: 'MangaReader',
                 description: description,
                 order_id: orderData.orderId,
-                handler: async function(response: any) {
+                handler: async function (response: any) {
                     console.log('✅ Payment successful:', response);
-                    
+
                     // Verify payment
                     try {
                         const verifyResponse = await fetch('/api/razorpay/verify-payment', {
@@ -146,14 +146,14 @@ export default function WorkingRazorpayPayment({
                     color: '#6366f1'
                 },
                 modal: {
-                    ondismiss: function() {
+                    ondismiss: function () {
                         setLoading(false);
                     }
                 }
             };
 
             const razorpay = new window.Razorpay(options);
-            razorpay.on('payment.failed', function(response: any) {
+            razorpay.on('payment.failed', function (response: any) {
                 console.error('❌ Payment failed:', response.error);
                 onError(response.error.description || 'Payment failed');
                 setLoading(false);

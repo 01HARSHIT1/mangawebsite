@@ -54,8 +54,14 @@ export async function POST(request: NextRequest) {
 
         // Process payment based on type
         if (payment.status === 'captured') {
-            if (order.notes?.description?.includes('coins')) {
-                const coinsToAdd = Math.floor(payment.amount / 100);
+            // Check for coins in metadata or notes (case-insensitive)
+            const description = (order.notes?.description || '').toLowerCase();
+            const metadata = order.notes?.metadata || {};
+            
+            if (description.includes('coins') || metadata.packageId || metadata.coins) {
+                // Get coins amount from metadata or calculate from payment amount
+                const coinsToAdd = metadata.coins || Math.floor(payment.amount / 100) || 1;
+                
                 await db.collection('users').updateOne(
                     { _id: user._id },
                     { $inc: { coins: coinsToAdd } }
@@ -63,7 +69,7 @@ export async function POST(request: NextRequest) {
                 console.log('🪙 Added coins to user:', coinsToAdd);
             }
 
-            if (order.notes?.description?.includes('creator')) {
+            if (description.includes('creator') || metadata.type === 'creator') {
                 await db.collection('users').updateOne(
                     { _id: user._id },
                     { $set: { role: 'creator', isCreator: true } }
