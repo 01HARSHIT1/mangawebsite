@@ -149,32 +149,19 @@ export default function WorkingRazorpayPayment({
                 },
                 // Force Indian locale
                 locale: 'en',
-                // Configure payment methods for Indian market
-                // Note: Cards may show 'international cards not supported' in test mode
-                // Use UPI or wallets for testing
+                // Configure payment methods for Indian market - show popular options first
                 config: {
                     display: {
                         blocks: {
-                            upi: {
-                                name: "UPI",
+                            banks: {
+                                name: "All payment methods",
                                 instruments: [
                                     {
                                         method: "upi"
-                                    }
-                                ]
-                            },
-                            wallets: {
-                                name: "Wallets",
-                                instruments: [
+                                    },
                                     {
-                                        method: "wallet",
-                                        wallets: ["paytm", "phonepe"]
-                                    }
-                                ]
-                            },
-                            cards: {
-                                name: "Cards",
-                                instruments: [
+                                        method: "wallet"
+                                    },
                                     {
                                         method: "card",
                                         networks: ["Visa", "MasterCard", "RuPay"]
@@ -182,11 +169,11 @@ export default function WorkingRazorpayPayment({
                                 ]
                             }
                         },
-                        sequence: ["block.upi", "block.wallets", "block.cards"],
+                        sequence: ["block.banks"],
                         preferences: {
                             show_default_blocks: true,
                             banks: {
-                                order: ["HDFC", "SBI", "ICICI", "Axis", "Kotak"]
+                                order: ["HDFC", "ICICI", "SBI", "Axis", "Kotak", "PNB", "BOI"]
                             }
                         }
                     }
@@ -246,10 +233,10 @@ export default function WorkingRazorpayPayment({
                     </>
                 )}
             </button>
-            
+
             <div className="mt-3 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
                 <p className="text-blue-300 text-sm">
-                    <strong>💡 Test Mode Tip:</strong> Use <strong>UPI</strong> or <strong>Wallets</strong> to avoid card restrictions. 
+                    <strong>💡 Test Mode Tip:</strong> Use <strong>UPI</strong> or <strong>Wallets</strong> to avoid card restrictions.
                     In live mode, all payment methods including cards will work properly.
                 </p>
             </div>
