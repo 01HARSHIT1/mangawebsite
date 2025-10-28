@@ -3,13 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaCoins, FaGift, FaCrown, FaRocket, FaSpinner, FaCheckCircle, FaQrcode } from 'react-icons/fa';
-import RazorpayPayment from '@/components/RazorpayPayment';
-import QRCodePayment from '@/components/QRCodePayment';
-import AlternativeQRPayment from '@/components/AlternativeQRPayment';
-import UPIQRPayment from '@/components/UPIQRPayment';
-import HybridQRPayment from '@/components/HybridQRPayment';
-import ImprovedUPIQRPayment from '@/components/ImprovedUPIQRPayment';
-import ImprovedRazorpayQRPayment from '@/components/ImprovedRazorpayQRPayment';
+import WorkingRazorpayPayment from '@/components/WorkingRazorpayPayment';
 
 interface CoinPackage {
     id: string;
@@ -229,31 +223,17 @@ export default function CoinsPage() {
                             </div>
 
                             {/* Payment Component */}
-                        {paymentMethod === 'razorpay' ? (
-                            <ImprovedRazorpayQRPayment
-                                amount={pkg.price}
-                                description={`${pkg.coins + pkg.bonus} Coins Package`}
-                                onSuccess={handlePaymentSuccess}
-                                onError={handlePaymentError}
-                                metadata={{
-                                    packageId: pkg.id,
-                                    coins: pkg.coins + pkg.bonus,
-                                    type: 'coins'
-                                }}
-                            />
-                        ) : (
-                            <ImprovedUPIQRPayment
-                                amount={pkg.price}
-                                description={`${pkg.coins + pkg.bonus} Coins Package`}
-                                onSuccess={handlePaymentSuccess}
-                                onError={handlePaymentError}
-                                metadata={{
-                                    packageId: pkg.id,
-                                    coins: pkg.coins + pkg.bonus,
-                                    type: 'coins'
-                                }}
-                            />
-                        )}
+                        <WorkingRazorpayPayment
+                            amount={pkg.price}
+                            description={`${pkg.coins + pkg.bonus} Coins Package`}
+                            onSuccess={handlePaymentSuccess}
+                            onError={handlePaymentError}
+                            metadata={{
+                                packageId: pkg.id,
+                                coins: pkg.coins + pkg.bonus,
+                                type: 'coins'
+                            }}
+                        />
                         </div>
                     ))}
                 </div>
