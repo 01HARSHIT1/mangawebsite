@@ -36,7 +36,19 @@ export async function POST(request: NextRequest) {
                 body: body
             });
 
-            const data = await response.json();
+            const respContentType = response.headers.get('content-type') || '';
+            let data: any;
+            if (respContentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = {
+                    error: 'Upstream upload endpoint returned non-JSON response',
+                    status: response.status,
+                    raw: text,
+                    hint: response.status === 413 ? 'Request entity too large: reduce file size or ensure Cloudinary upload is used' : undefined
+                };
+            }
             return NextResponse.json(data, { status: response.status });
 
         } else {
@@ -54,7 +66,19 @@ export async function POST(request: NextRequest) {
                 body: body
             });
 
-            const data = await response.json();
+            const respContentType = response.headers.get('content-type') || '';
+            let data: any;
+            if (respContentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = {
+                    error: 'Upstream upload endpoint returned non-JSON response',
+                    status: response.status,
+                    raw: text,
+                    hint: response.status === 413 ? 'Request entity too large: reduce file size or ensure Cloudinary upload is used' : undefined
+                };
+            }
             return NextResponse.json(data, { status: response.status });
         }
 

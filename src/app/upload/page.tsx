@@ -332,7 +332,15 @@ function UploadPageContent() {
                     },
                     body: formData,
                 });
-                const data = await res.json();
+                let data: any;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    const text = await res.text();
+                    throw new Error(text.startsWith('Request En') || text.includes('Entity Too Large')
+                        ? 'File too large for server. Please try a smaller file or ensure Cloudinary is configured.'
+                        : text.substring(0, 200));
+                }
                 if (res.ok) {
                     setMessage("Manga uploaded successfully! Now you can upload chapters for this manga.");
 
@@ -389,7 +397,15 @@ function UploadPageContent() {
                         },
                         body: formData,
                     });
-                    const data = await res.json();
+                let data: any;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    const text = await res.text();
+                    throw new Error(text.startsWith('Request En') || text.includes('Entity Too Large')
+                        ? 'File too large for server. Please try a smaller file or ensure Cloudinary is configured.'
+                        : text.substring(0, 200));
+                }
                     if (res.ok) {
                         setMessage("Chapter uploaded successfully! Your manga is now live on the website!");
 
@@ -414,7 +430,7 @@ function UploadPageContent() {
                             coverPage: null,
                         });
                     } else {
-                        setMessage(data.error || "Upload failed");
+                    setMessage(data?.error || "Upload failed");
                     }
                 } else {
                     setMessage("Failed to get manga information");
