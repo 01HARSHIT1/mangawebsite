@@ -37,7 +37,19 @@ export default function ChapterReader({
 
     // Get chapter pages (assuming pages are stored as an array of image URLs)
     const pages = Array.isArray(chapter.pages) ? chapter.pages : [];
-    const pdfUrl = chapter?.pdfFile?.secure_url || chapter?.pdfFile?.url || chapter?.pdfFile;
+    const pdfUrl =
+        chapter?.pdfUrl ||
+        chapter?.pdfFile?.secure_url ||
+        chapter?.pdfFile?.url ||
+        chapter?.pdfFile ||
+        (Array.isArray(pages) && pages.length > 0
+            ? (typeof pages[0] === 'string' && pages[0].toLowerCase().endsWith('.pdf')
+                ? pages[0]
+                : (pages[0]?.imagePath && typeof pages[0].imagePath === 'string' && pages[0].imagePath.toLowerCase().endsWith('.pdf')
+                    ? pages[0].imagePath
+                    : '') )
+            : '');
+    const hasPdf = typeof pdfUrl === 'string' && pdfUrl.length > 0;
 
     // Ensure all IDs are strings
     const mangaId = typeof manga._id === 'string' ? manga._id : manga._id?.toString() || '';
@@ -169,9 +181,9 @@ export default function ChapterReader({
         recordProgress();
     }, [mangaId, chapterId, currentPage]);
 
-    if (!pages || pages.length === 0) {
-        // If there are no rasterized pages but a PDF URL exists (Cloudinary), render the PDF inline
-        if (typeof pdfUrl === 'string' && pdfUrl.length > 0) {
+    if (!pages || pages.length === 0 || hasPdf) {
+        // If there are no rasterized pages OR content is a PDF, render the PDF inline
+        if (hasPdf) {
             return (
                 <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center">
                     <div className="w-full max-w-5xl py-6 px-4">
