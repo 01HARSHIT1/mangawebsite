@@ -332,15 +332,8 @@ function UploadPageContent() {
                     },
                     body: formData,
                 });
-                let data: any;
-                try {
-                    data = await res.json();
-                } catch (e) {
-                    const text = await res.text();
-                    throw new Error(text.startsWith('Request En') || text.includes('Entity Too Large')
-                        ? 'File too large for server. Please try a smaller file or ensure Cloudinary is configured.'
-                        : text.substring(0, 200));
-                }
+                const ct = res.headers.get('content-type') || '';
+                const data: any = ct.includes('application/json') ? await res.json() : { error: await res.text() };
                 if (res.ok) {
                     setMessage("Manga uploaded successfully! Now you can upload chapters for this manga.");
 
@@ -397,15 +390,8 @@ function UploadPageContent() {
                         },
                         body: formData,
                     });
-                let data: any;
-                try {
-                    data = await res.json();
-                } catch (e) {
-                    const text = await res.text();
-                    throw new Error(text.startsWith('Request En') || text.includes('Entity Too Large')
-                        ? 'File too large for server. Please try a smaller file or ensure Cloudinary is configured.'
-                        : text.substring(0, 200));
-                }
+                    const ct2 = res.headers.get('content-type') || '';
+                    const data: any = ct2.includes('application/json') ? await res.json() : { error: await res.text() };
                     if (res.ok) {
                         setMessage("Chapter uploaded successfully! Your manga is now live on the website!");
 
@@ -430,7 +416,10 @@ function UploadPageContent() {
                             coverPage: null,
                         });
                     } else {
-                    setMessage(data?.error || "Upload failed");
+                    const errMsg = typeof data === 'string' ? data : (data?.error || "Upload failed");
+                    setMessage(errMsg.includes('Entity Too Large') || errMsg.startsWith('Request En')
+                        ? 'File too large for server (possible 4.5MB limit). We will switch to direct Cloudinary upload for larger files.'
+                        : errMsg);
                     }
                 } else {
                     setMessage("Failed to get manga information");
