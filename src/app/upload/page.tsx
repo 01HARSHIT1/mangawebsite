@@ -393,9 +393,9 @@ function UploadPageContent() {
                     if (res.ok) {
                         setMessage("Chapter uploaded successfully! Your manga is now live on the website!");
 
-                        // Check if user is a creator, if not, show upgrade modal after successful chapter upload
+                        // If the user isn't a creator yet, navigate to become-creator page to complete profile
                         if (!isCreator) {
-                            setShowCreatorUpgrade(true);
+                            router.push('/become-creator');
                         }
 
                         // Reset form
