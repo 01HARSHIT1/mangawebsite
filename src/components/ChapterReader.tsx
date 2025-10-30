@@ -37,6 +37,7 @@ export default function ChapterReader({
 
     // Get chapter pages (assuming pages are stored as an array of image URLs)
     const pages = Array.isArray(chapter.pages) ? chapter.pages : [];
+    const pdfUrl = chapter?.pdfFile?.secure_url || chapter?.pdfFile?.url || chapter?.pdfFile;
 
     // Ensure all IDs are strings
     const mangaId = typeof manga._id === 'string' ? manga._id : manga._id?.toString() || '';
@@ -169,6 +170,28 @@ export default function ChapterReader({
     }, [mangaId, chapterId, currentPage]);
 
     if (!pages || pages.length === 0) {
+        // If there are no rasterized pages but a PDF URL exists (Cloudinary), render the PDF inline
+        if (typeof pdfUrl === 'string' && pdfUrl.length > 0) {
+            return (
+                <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center">
+                    <div className="w-full max-w-5xl py-6 px-4">
+                        <div className="mb-4 flex items-center justify-between">
+                            <Link href={`/manga/${mangaId}`} className="text-blue-400 hover:text-blue-300">← Back to Manga</Link>
+                            <div className="text-gray-300">Chapter {chapter.chapterNumber}</div>
+                        </div>
+                        <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl" style={{height: '85vh'}}>
+                            {/* Use object as primary since some browsers block iframe PDF without plugin */}
+                            <object data={`${pdfUrl}#view=fitH&page=1`} type="application/pdf" width="100%" height="100%">
+                                <iframe src={`${pdfUrl}#view=fitH&page=1`} title="Chapter PDF" width="100%" height="100%" />
+                            </object>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                            If the PDF does not display, <a className="text-blue-400 underline" href={pdfUrl} target="_blank" rel="noreferrer">open it in a new tab</a>.
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         return (
             <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
                 <div className="text-center">
