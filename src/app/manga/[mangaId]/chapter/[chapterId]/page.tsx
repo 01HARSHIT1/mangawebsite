@@ -57,40 +57,40 @@ export default async function ChapterPage({
         const serializedManga = {
             ...manga,
             _id: manga._id.toString(),
-            createdAt: manga.createdAt?.toISOString(),
-            updatedAt: manga.updatedAt?.toISOString()
+            createdAt: typeof (manga as any).createdAt === 'string' ? (manga as any).createdAt : manga.createdAt?.toISOString(),
+            updatedAt: typeof (manga as any).updatedAt === 'string' ? (manga as any).updatedAt : manga.updatedAt?.toISOString()
         };
 
         const serializedChapter = {
             ...chapter,
             _id: chapter._id.toString(),
             mangaId: chapter.mangaId,
-            createdAt: chapter.createdAt?.toISOString(),
-            updatedAt: chapter.updatedAt?.toISOString()
+            createdAt: typeof (chapter as any).createdAt === 'string' ? (chapter as any).createdAt : chapter.createdAt?.toISOString(),
+            updatedAt: typeof (chapter as any).updatedAt === 'string' ? (chapter as any).updatedAt : chapter.updatedAt?.toISOString()
         };
 
         const serializedAllChapters = allChapters.map(ch => ({
             ...ch,
             _id: ch._id.toString(),
             mangaId: ch.mangaId,
-            createdAt: ch.createdAt?.toISOString(),
-            updatedAt: ch.updatedAt?.toISOString()
+            createdAt: typeof (ch as any).createdAt === 'string' ? (ch as any).createdAt : (ch as any).createdAt?.toISOString?.(),
+            updatedAt: typeof (ch as any).updatedAt === 'string' ? (ch as any).updatedAt : (ch as any).updatedAt?.toISOString?.()
         }));
 
         const serializedPrevChapter = prevChapter ? {
             ...prevChapter,
             _id: prevChapter._id.toString(),
             mangaId: prevChapter.mangaId,
-            createdAt: prevChapter.createdAt?.toISOString(),
-            updatedAt: prevChapter.updatedAt?.toISOString()
+            createdAt: typeof (prevChapter as any).createdAt === 'string' ? (prevChapter as any).createdAt : (prevChapter as any).createdAt?.toISOString?.(),
+            updatedAt: typeof (prevChapter as any).updatedAt === 'string' ? (prevChapter as any).updatedAt : (prevChapter as any).updatedAt?.toISOString?.()
         } : null;
 
         const serializedNextChapter = nextChapter ? {
             ...nextChapter,
             _id: nextChapter._id.toString(),
             mangaId: nextChapter.mangaId,
-            createdAt: nextChapter.createdAt?.toISOString(),
-            updatedAt: nextChapter.updatedAt?.toISOString()
+            createdAt: typeof (nextChapter as any).createdAt === 'string' ? (nextChapter as any).createdAt : (nextChapter as any).createdAt?.toISOString?.(),
+            updatedAt: typeof (nextChapter as any).updatedAt === 'string' ? (nextChapter as any).updatedAt : (nextChapter as any).updatedAt?.toISOString?.()
         } : null;
 
         return (
