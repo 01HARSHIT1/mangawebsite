@@ -55,15 +55,16 @@ export async function POST(request: NextRequest) {
             // Also create initial chapter entry using provided chapterNumber/Title (if present)
             if (manga.chapterNumber) {
                 await db.collection('chapters').insertOne({
-                    mangaId: result.insertedId,
-                    number: manga.chapterNumber,
+                    mangaId: String(result.insertedId),
+                    chapterNumber: Number(manga.chapterNumber),
                     title: manga.chapterTitle || `Chapter ${manga.chapterNumber}`,
                     subtitle: manga.chapterSubtitle || '',
                     description: manga.description || '',
-                    coverImage: manga.coverImage,
-                    pdfFile: manga.pdfFile,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
+                    coverPage: manga.coverImage?.secure_url || null,
+                    pages: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    publishDate: new Date().toISOString(),
                 });
             }
 
@@ -83,15 +84,16 @@ export async function POST(request: NextRequest) {
             }
 
             const chapterDoc = {
-                mangaId: new ObjectId(mangaId),
-                number: chapter.chapterNumber,
+                mangaId: String(mangaId),
+                chapterNumber: Number(chapter.chapterNumber),
                 title: chapter.chapterTitle || `Chapter ${chapter.chapterNumber}`,
                 subtitle: chapter.chapterSubtitle || '',
                 description: chapter.description,
-                coverImage: chapter.coverImage,
-                pdfFile: chapter.pdfFile,
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                coverPage: chapter.coverImage?.secure_url || null,
+                pages: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                publishDate: new Date().toISOString(),
             };
             const result = await db.collection('chapters').insertOne(chapterDoc);
             return NextResponse.json({ success: true, chapterId: String(result.insertedId) });
