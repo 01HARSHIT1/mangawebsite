@@ -42,6 +42,37 @@ function UploadPageContent() {
 
     const router = useRouter();
 
+    async function uploadToCloudinary(file: File, folder: string) {
+        // 1) ask server for a signed payload
+        const signRes = await fetch('/api/cloudinary/sign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folder, resource_type: 'auto' })
+        });
+        if (!signRes.ok) {
+            const t = await signRes.text();
+            throw new Error(`Failed to sign upload: ${t}`);
+        }
+        const { cloudName, apiKey, timestamp, folder: signedFolder, signature } = await signRes.json();
+
+        // 2) upload file directly to Cloudinary
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('api_key', apiKey);
+        fd.append('timestamp', String(timestamp));
+        fd.append('signature', signature);
+        if (signedFolder) fd.append('folder', signedFolder);
+
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+        const upRes = await fetch(uploadUrl, { method: 'POST', body: fd });
+        const ct = upRes.headers.get('content-type') || '';
+        const upData: any = ct.includes('application/json') ? await upRes.json() : { error: await upRes.text() };
+        if (!upRes.ok || upData.error) {
+            throw new Error(typeof upData.error === 'string' ? upData.error : (upData.error?.message || 'Cloudinary upload failed'));
+        }
+        return { public_id: upData.public_id, secure_url: upData.secure_url };
+    }
+
     useEffect(() => {
         const type = searchParams?.get("type");
         const mangaId = searchParams?.get("mangaId");
@@ -325,36 +356,59 @@ function UploadPageContent() {
 
             try {
                 const token = localStorage.getItem('authToken');
-                const res = await fetch("/api/upload-smart", {
-                    method: "POST",
+                // Direct uploads
+                const [coverInfo, pdfInfo] = await Promise.all([
+                    form.coverImage ? uploadToCloudinary(form.coverImage, 'mangawebsite/covers') : Promise.reject(new Error('Missing cover image')),
+                    form.pdfFile ? uploadToCloudinary(form.pdfFile, 'mangawebsite/pdfs') : Promise.reject(new Error('Missing PDF file')),
+                ]);
+
+                // Save metadata
+                const saveRes = await fetch('/api/upload-metadata', {
+                    method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: formData,
+                    body: JSON.stringify({
+                        type: 'manga',
+                        userId: (user as any)?._id || (user as any)?.id,
+                        manga: {
+                            title: form.title,
+                            creatorName: form.creatorName,
+                            description: form.description,
+                            genres: form.genre,
+                            status: form.status || 'ongoing',
+                            chapterNumber: form.chapterNumber,
+                            chapterTitle: `Chapter ${form.chapterNumber}`,
+                            chapterSubtitle: '',
+                            coverImage: coverInfo,
+                            pdfFile: pdfInfo,
+                        }
+                    })
                 });
-                const ct = res.headers.get('content-type') || '';
-                const data: any = ct.includes('application/json') ? await res.json() : { error: await res.text() };
-                if (res.ok) {
-                    setMessage("Manga uploaded successfully! Now you can upload chapters for this manga.");
+                const saveData = await saveRes.json();
+                if (!saveRes.ok) throw new Error(saveData?.error || 'Failed to save manga');
 
-                    // Reset form
-                    setForm({
-                        title: "",
-                        creatorName: "",
-                        description: "",
-                        genre: "",
-                        chapterNumber: "",
-                        tags: "",
-                        status: "",
-                        coverImage: null,
-                        pdfFile: null,
-                        mangaId: "",
-                        subtitle: "",
-                        coverPage: null,
-                    });
-                } else {
-                    setMessage(data.error || "Upload failed");
-                }
+                setMessage("Manga uploaded successfully! Please complete your creator profile.");
+
+                // Reset form
+                setForm({
+                    title: "",
+                    creatorName: "",
+                    description: "",
+                    genre: "",
+                    chapterNumber: "",
+                    tags: "",
+                    status: "",
+                    coverImage: null,
+                    pdfFile: null,
+                    mangaId: "",
+                    subtitle: "",
+                    coverPage: null,
+                });
+
+                // Go to Become Creator page instead of Add Chapter
+                router.push('/become-creator');
             } catch (err) {
                 setMessage("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));
             }
@@ -371,28 +425,37 @@ function UploadPageContent() {
                 const mangaData = await mangaRes.json();
 
                 if (mangaRes.ok && mangaData.manga) {
-                    formData.append("mangaTitle", mangaData.manga.title);
-                    formData.append("creatorName", mangaData.manga.creator || "Unknown Creator");
-                    formData.append("description", form.description);
-                    formData.append("genres", mangaData.manga.genres?.join(',') || "");
-                    formData.append("status", mangaData.manga.status || "ongoing");
-                    formData.append("chapterNumber", form.chapterNumber);
-                    formData.append("chapterTitle", `Chapter ${form.chapterNumber}`);
-                    formData.append("chapterSubtitle", form.subtitle || "");
-                    if (form.coverPage) formData.append("coverImage", form.coverPage);
-                    if (form.pdfFile) formData.append("pdfFile", form.pdfFile);
+                    // Direct uploads for chapter
+                    const [coverInfo, pdfInfo] = await Promise.all([
+                        form.coverPage ? uploadToCloudinary(form.coverPage, 'mangawebsite/covers') : Promise.reject(new Error('Missing cover page')),
+                        form.pdfFile ? uploadToCloudinary(form.pdfFile, 'mangawebsite/pdfs') : Promise.reject(new Error('Missing PDF file')),
+                    ]);
 
-                    const token = localStorage.getItem('authToken');
-                    const res = await fetch("/api/upload-smart", {
-                        method: "POST",
+                    // Save chapter metadata
+                    const saveRes = await fetch('/api/upload-metadata', {
+                        method: 'POST',
                         headers: {
+                            'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: formData,
+                        body: JSON.stringify({
+                            type: 'chapter',
+                            userId: (user as any)?._id || (user as any)?.id,
+                            mangaId: form.mangaId,
+                            chapter: {
+                                chapterNumber: form.chapterNumber,
+                                chapterTitle: `Chapter ${form.chapterNumber}`,
+                                chapterSubtitle: form.subtitle || '',
+                                description: form.description,
+                                coverImage: coverInfo,
+                                pdfFile: pdfInfo,
+                            }
+                        })
                     });
-                    const ct2 = res.headers.get('content-type') || '';
-                    const data: any = ct2.includes('application/json') ? await res.json() : { error: await res.text() };
-                    if (res.ok) {
+                    const saveData = await saveRes.json();
+                    if (!saveRes.ok) throw new Error(saveData?.error || 'Failed to save chapter');
+
+                    if (saveRes.ok) {
                         setMessage("Chapter uploaded successfully! Your manga is now live on the website!");
 
                         // If the user isn't a creator yet, navigate to become-creator page to complete profile
@@ -416,9 +479,9 @@ function UploadPageContent() {
                             coverPage: null,
                         });
                     } else {
-                    const errMsg = typeof data === 'string' ? data : (data?.error || "Upload failed");
+                        const errMsg = saveData?.error || "Upload failed";
                     setMessage(errMsg.includes('Entity Too Large') || errMsg.startsWith('Request En')
-                        ? 'File too large for server (possible 4.5MB limit). We will switch to direct Cloudinary upload for larger files.'
+                        ? 'File too large for server (possible 4.5MB limit).'
                         : errMsg);
                     }
                 } else {
