@@ -47,6 +47,13 @@ export async function POST(request: NextRequest) {
 
         const { signature } = signParams(paramsToSign, CLOUDINARY_API_SECRET);
 
+        console.log('🔐 Cloudinary sign debug:', {
+            cloudName: CLOUDINARY_CLOUD_NAME,
+            apiKeyTail: CLOUDINARY_API_KEY?.slice(-4),
+            toSign: Object.entries(paramsToSign).sort(([a],[b]) => a.localeCompare(b)).map(([k,v]) => `${k}=${v}`).join('&'),
+            signedKeys: Object.keys(paramsToSign).sort(),
+        });
+
         return NextResponse.json({
             cloudName: CLOUDINARY_CLOUD_NAME,
             apiKey: CLOUDINARY_API_KEY,
