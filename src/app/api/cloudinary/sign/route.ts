@@ -29,16 +29,21 @@ export async function POST(request: NextRequest) {
         const body = await request.json().catch(() => ({}));
         const timestamp = Math.floor(Date.now() / 1000);
 
-        // Common params you may sign for uploads
+        // Sign ONLY the params that will be sent to Cloudinary in the form body.
+        // Our client sends: file, api_key, timestamp, signature, folder
         const paramsToSign: Record<string, string | number | boolean | undefined> = {
             timestamp,
             folder: body.folder || 'mangawebsite',
-            overwrite: body.overwrite ?? true,
-            invalidate: body.invalidate ?? true,
-            resource_type: body.resource_type || 'auto',
-            // Optional: public_id: body.public_id,
-            // Optional transformations: eager, transformation, context, etc.
+            // If client includes additional signed params (e.g., public_id), include them here:
+            public_id: body.public_id,
+            eager: body.eager,
+            transformation: body.transformation,
+            context: body.context,
+            tags: body.tags,
         };
+
+        // Remove undefined so signature string matches exactly
+        Object.keys(paramsToSign).forEach((k) => paramsToSign[k] === undefined && delete paramsToSign[k]);
 
         const { signature } = signParams(paramsToSign, CLOUDINARY_API_SECRET);
 
@@ -47,7 +52,6 @@ export async function POST(request: NextRequest) {
             apiKey: CLOUDINARY_API_KEY,
             timestamp,
             folder: paramsToSign.folder,
-            resource_type: paramsToSign.resource_type,
             signature,
         });
     } catch (error) {
