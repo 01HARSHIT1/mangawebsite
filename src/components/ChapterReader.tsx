@@ -184,6 +184,12 @@ export default function ChapterReader({
     if (!pages || pages.length === 0 || hasPdf) {
         // If there are no rasterized pages OR content is a PDF, render the PDF inline
         if (hasPdf) {
+            // Convert Cloudinary PDF URL to image preview URL
+            // Cloudinary can convert PDF pages to images: replace /upload/ with /upload/pg_1/
+            const cloudinaryImageUrl = pdfUrl.includes('cloudinary.com') 
+                ? pdfUrl.replace('/upload/', '/upload/f_jpg,pg_1,q_auto/')
+                : pdfUrl;
+            
             return (
                 <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center">
                     <div className="w-full max-w-5xl py-6 px-4">
@@ -191,14 +197,37 @@ export default function ChapterReader({
                             <Link href={`/manga/${mangaId}`} className="text-blue-400 hover:text-blue-300">← Back to Manga</Link>
                             <div className="text-gray-300">Chapter {chapter.chapterNumber}</div>
                         </div>
-                        <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl" style={{height: '85vh'}}>
-                            {/* Use object as primary since some browsers block iframe PDF without plugin */}
-                            <object data={`${pdfUrl}#view=fitH&page=1`} type="application/pdf" width="100%" height="100%">
-                                <iframe src={`${pdfUrl}#view=fitH&page=1`} title="Chapter PDF" width="100%" height="100%" />
-                            </object>
+                        
+                        {/* Try to render as image first (Cloudinary converts PDF to image) */}
+                        <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl bg-black flex items-center justify-center" style={{minHeight: '85vh'}}>
+                            <img 
+                                src={cloudinaryImageUrl} 
+                                alt={`Chapter ${chapter.chapterNumber}`}
+                                className="w-full h-auto max-w-full"
+                                onError={(e) => {
+                                    // If image conversion fails, show direct PDF link
+                                    console.error('Failed to load PDF as image, falling back to direct link');
+                                    e.currentTarget.style.display = 'none';
+                                    const container = e.currentTarget.parentElement;
+                                    if (container) {
+                                        container.innerHTML = `
+                                            <div class="text-center p-8">
+                                                <p class="text-lg mb-4">Unable to display PDF inline</p>
+                                                <a href="${pdfUrl}" target="_blank" rel="noreferrer" 
+                                                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
+                                                    Open PDF in New Tab
+                                                </a>
+                                            </div>
+                                        `;
+                                    }
+                                }}
+                            />
                         </div>
-                        <div className="text-xs text-gray-500 mt-2">
-                            If the PDF does not display, <a className="text-blue-400 underline" href={pdfUrl} target="_blank" rel="noreferrer">open it in a new tab</a>.
+                        
+                        <div className="text-xs text-gray-500 mt-2 text-center">
+                            <a className="text-blue-400 underline hover:text-blue-300" href={pdfUrl} target="_blank" rel="noreferrer">
+                                Open PDF in new tab
+                            </a>
                         </div>
                     </div>
                 </div>
