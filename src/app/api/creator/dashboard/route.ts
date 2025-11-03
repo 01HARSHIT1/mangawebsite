@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
         // Get creator's manga
         const manga = await db.collection('manga')
-            .find({ creatorId: user._id })
+            .find({ uploaderId: user._id })
             .sort({ createdAt: -1 })
             .toArray();
 
