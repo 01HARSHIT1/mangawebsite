@@ -46,7 +46,9 @@ export async function POST(request: NextRequest) {
                 status: manga.status,
                 coverImage: manga.coverImage, // { public_id, secure_url }
                 pdfFile: manga.pdfFile,       // { public_id, secure_url }
-                createdBy: new ObjectId(userId),
+                uploaderId: userId, // Store as string to match existing manga schema
+                views: 0,
+                likes: 0,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -61,7 +63,26 @@ export async function POST(request: NextRequest) {
                     subtitle: manga.chapterSubtitle || '',
                     description: manga.description || '',
                     coverPage: manga.coverImage?.secure_url || null,
-                    pages: [],
+                    pdfUrl: manga.pdfFile?.secure_url || null,
+                    pdfPublicId: manga.pdfFile?.public_id || null,
+                    pages: [{
+                        pageNumber: 1,
+                        imagePath: manga.pdfFile?.secure_url || '',
+                        publicId: manga.pdfFile?.public_id || '',
+                        format: 'pdf',
+                        width: 800,
+                        height: 1200,
+                        size: 0,
+                        isRealContent: true,
+                        toolUsed: 'cloudinary',
+                        quality: 'high'
+                    }],
+                    status: 'published',
+                    imageStorage: 'cloudinary',
+                    totalSize: 0,
+                    toolUsed: 'cloudinary',
+                    quality: 'high',
+                    imageSource: 'cloudinary_upload',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     publishDate: new Date().toISOString(),
@@ -90,7 +111,26 @@ export async function POST(request: NextRequest) {
                 subtitle: chapter.chapterSubtitle || '',
                 description: chapter.description,
                 coverPage: chapter.coverImage?.secure_url || null,
-                pages: [],
+                pdfUrl: chapter.pdfFile?.secure_url || null, // Add PDF URL for direct rendering
+                pdfPublicId: chapter.pdfFile?.public_id || null, // Add PDF public ID for Cloudinary management
+                pages: [{
+                    pageNumber: 1,
+                    imagePath: chapter.pdfFile?.secure_url || '',
+                    publicId: chapter.pdfFile?.public_id || '',
+                    format: 'pdf',
+                    width: 800,
+                    height: 1200,
+                    size: 0,
+                    isRealContent: true,
+                    toolUsed: 'cloudinary',
+                    quality: 'high'
+                }],
+                status: 'published',
+                imageStorage: 'cloudinary',
+                totalSize: 0,
+                toolUsed: 'cloudinary',
+                quality: 'high',
+                imageSource: 'cloudinary_upload',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 publishDate: new Date().toISOString(),
