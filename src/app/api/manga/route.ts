@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
                 description: m.description,
                 genres: m.genres || [],
                 status: m.status || 'ongoing',
-                coverImage: m.coverImage,
+                coverImage: typeof m.coverImage === 'string' ? m.coverImage : m.coverImage?.secure_url || m.coverImage, // Handle both string and object formats
                 views: m.views || 0,
                 likes: m.likes || 0,
                 createdAt: m.createdAt,

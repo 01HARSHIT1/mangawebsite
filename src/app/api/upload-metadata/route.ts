@@ -44,8 +44,9 @@ export async function POST(request: NextRequest) {
                 description: manga.description,
                 genres: typeof manga.genres === 'string' ? manga.genres.split(',').map((g: string) => g.trim()).filter(Boolean) : manga.genres,
                 status: manga.status,
-                coverImage: manga.coverImage, // { public_id, secure_url }
-                pdfFile: manga.pdfFile,       // { public_id, secure_url }
+                coverImage: manga.coverImage?.secure_url || manga.coverImage, // Extract URL from Cloudinary object
+                coverImagePublicId: manga.coverImage?.public_id || null, // Store public_id separately for management
+                pdfFile: manga.pdfFile,       // Keep full object for internal use
                 uploaderId: userId, // Store as string to match existing manga schema
                 views: 0,
                 likes: 0,
