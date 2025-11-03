@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
         const genre = searchParams.get('genre');
         const status = searchParams.get('status');
         const search = searchParams.get('search');
+        const myManga = searchParams.get('myManga'); // Filter for creator's own manga
+        const uploaderId = searchParams.get('uploaderId'); // Specific uploader filter
 
         // Try MongoDB first, fallback to mock data
         try {
@@ -38,6 +40,36 @@ export async function GET(request: NextRequest) {
                     { creator: { $regex: search, $options: 'i' } },
                     { description: { $regex: search, $options: 'i' } }
                 ];
+            }
+
+            // Filter by uploader if requested
+            if (myManga === 'true' || uploaderId) {
+                // Extract user from auth token
+                const token = request.headers.get('authorization')?.replace('Bearer ', '');
+                if (token) {
+                    try {
+                        const { verify } = await import('jsonwebtoken');
+                        const secret = process.env.JWT_SECRET || 'your-secret-key';
+                        const decoded = verify(token, secret) as { userId: string };
+                        
+                        // Filter by the authenticated user's ID
+                        query.uploaderId = uploaderId || decoded.userId;
+                        console.log('Filtering manga by uploaderId:', query.uploaderId);
+                    } catch (authError) {
+                        console.error('Auth token verification failed:', authError);
+                        return NextResponse.json({
+                            error: 'Invalid authentication token',
+                            manga: [],
+                            pagination: { page: 1, limit, total: 0, pages: 0 }
+                        }, { status: 401 });
+                    }
+                } else {
+                    return NextResponse.json({
+                        error: 'Authentication required',
+                        manga: [],
+                        pagination: { page: 1, limit, total: 0, pages: 0 }
+                    }, { status: 401 });
+                }
             }
 
             // Build sort

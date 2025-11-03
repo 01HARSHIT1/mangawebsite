@@ -106,7 +106,7 @@ function UploadPageContent() {
         if (uploadType === "chapter") {
             console.log('Fetching manga list for chapter upload...');
             const token = localStorage.getItem('authToken');
-            fetch("/api/manga", {
+            fetch("/api/manga?myManga=true", {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -117,7 +117,7 @@ function UploadPageContent() {
                     if (data.manga && Array.isArray(data.manga)) {
                         const mangaOptions = data.manga.map((m: any) => ({ _id: m._id, title: m.title }));
                         setMangaList(mangaOptions);
-                        console.log('Available manga:', mangaOptions);
+                        console.log('Available manga (creator\'s own):', mangaOptions);
 
                         // If mangaId is in the query, pre-select it
                         const urlParams = new URLSearchParams(window.location.search);
