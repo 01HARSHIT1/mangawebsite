@@ -17,15 +17,15 @@ export async function GET(req: NextRequest) {
     const client = await clientPromise;
     const db = client.db();
         
-        console.log('🔍 Searching for manga with creatorId:', user._id);
+        console.log('🔍 Searching for manga with uploaderId:', user._id);
         
         // Use the same query method as Dashboard API - direct string match
         const series = await db.collection('manga')
-            .find({ creatorId: user._id })
+            .find({ uploaderId: user._id })
             .sort({ createdAt: -1 })
             .toArray();
-        console.log('📚 Found series with creatorId:', series.length);
-        console.log('📚 Series details:', series.map(s => ({ id: s._id, title: s.title, creatorId: s.creatorId })));
+        console.log('📚 Found series with uploaderId:', series.length);
+        console.log('📚 Series details:', series.map(s => ({ id: s._id, title: s.title, uploaderId: s.uploaderId })));
 
         // If no series found, return empty analytics but still valid data
         if (series.length === 0) {
