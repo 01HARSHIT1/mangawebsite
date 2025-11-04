@@ -165,7 +165,7 @@ export async function PUT(req: NextRequest) {
 
     // Handle password change
     if (currentPassword && newPassword) {
-        const bcrypt = require('bcrypt');
+        const bcrypt = require('bcryptjs');
         const isValid = await bcrypt.compare(currentPassword, user.password);
         if (!isValid) {
             return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
