@@ -99,6 +99,7 @@ export default function LibraryPage() {
 
                 // Process reading history
                 if (user.readingHistory && user.readingHistory.length > 0) {
+                    console.log('📚 Processing reading history:', user.readingHistory.length, 'entries');
                     const historyPromises = user.readingHistory.slice(0, 20).map(async (entry: any) => {
                         try {
                             const response = await fetch(`/api/manga/${entry.mangaId}`);
@@ -106,8 +107,9 @@ export default function LibraryPage() {
                                 const mangaData = await response.json();
                                 return {
                                     ...mangaData.manga,
-                                    lastReadChapter: entry.chapterId || 1,
-                                    lastReadDate: entry.timestamp
+                                    lastReadChapter: entry.chapterNumber || entry.chapterId || 1,
+                                    lastReadDate: entry.timestamp,
+                                    lastReadChapterId: entry.chapterId
                                 };
                             }
                         } catch (error) {
@@ -118,6 +120,7 @@ export default function LibraryPage() {
 
                     const history = (await Promise.all(historyPromises)).filter(Boolean);
                     setReadingHistory(history);
+                    console.log('✅ Loaded reading history:', history.length, 'manga');
 
                     // Continue reading is the most recent unique manga from history
                     const uniqueHistory = history.reduce((acc: MangaItem[], current: MangaItem) => {
@@ -127,6 +130,7 @@ export default function LibraryPage() {
                         return acc;
                     }, []);
                     setContinueReading(uniqueHistory.slice(0, 10));
+                    console.log('✅ Continue reading list:', uniqueHistory.length, 'manga');
                 }
 
                 // Load reading lists (mock data for now - you can implement this properly)
@@ -304,12 +308,12 @@ export default function LibraryPage() {
                             </div>
 
                             <div className="flex items-center justify-between">
-                                {item.lastReadChapter ? (
+                                {item.lastReadChapterId ? (
                                     <Link
-                                        href={`/manga/${item._id}/chapter/${item.lastReadChapter + 1 || 1}`}
+                                        href={`/manga/${item._id}/chapter/${item.lastReadChapterId}`}
                                         className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-full transition-colors"
                                     >
-                                        Continue
+                                        Continue Ch. {item.lastReadChapter}
                                     </Link>
                                 ) : (
                                     <Link

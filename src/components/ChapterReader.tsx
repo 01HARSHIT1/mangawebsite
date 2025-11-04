@@ -169,9 +169,11 @@ export default function ChapterReader({
                             action: 'recordReading',
                             mangaId: mangaId,
                             chapterId: chapterId,
+                            chapterNumber: chapter.chapterNumber || 1,
                             currentPage: currentPage
                         })
                     });
+                    console.log('✅ Reading progress recorded:', { mangaId, chapterId, chapterNumber: chapter.chapterNumber });
                 } catch (error) {
                     console.error('Failed to record reading progress:', error);
                 }

@@ -192,11 +192,29 @@ export async function PUT(req: NextRequest) {
     } else if (action === 'removeChapterBookmark' && mangaId && chapterId) {
         await users.updateOne({ _id: user._id }, { $pull: { bookmarks: { mangaId, chapterId } } });
     } else if (action === 'recordReading' && (mangaId || chapterId)) {
-        const { source, campaign, cohort } = await req.json();
-        const entry = chapterId ? { mangaId, chapterId, timestamp: new Date().toISOString(), source, campaign, cohort } : { mangaId, timestamp: new Date().toISOString(), source, campaign, cohort };
+        const { source, campaign, cohort, chapterNumber, currentPage } = body;
+        const entry = chapterId 
+            ? { 
+                mangaId, 
+                chapterId, 
+                chapterNumber: chapterNumber || 1,
+                currentPage: currentPage || 1,
+                timestamp: new Date().toISOString(), 
+                source, 
+                campaign, 
+                cohort 
+              } 
+            : { 
+                mangaId, 
+                timestamp: new Date().toISOString(), 
+                source, 
+                campaign, 
+                cohort 
+              };
         await users.updateOne({ _id: user._id }, { $push: { readingHistory: { $each: [entry], $position: 0 } } });
         // Optionally limit history length
         await users.updateOne({ _id: user._id }, [{ $set: { readingHistory: { $slice: ["$readingHistory", 50] } } }]);
+        console.log('✅ Reading history saved:', entry);
     } else if (action === 'completeReading' && (mangaId || chapterId)) {
         // Find the latest matching readingHistory entry and update it
         const filter = { _id: user._id, 'readingHistory.0': { $exists: true } };
