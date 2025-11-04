@@ -238,39 +238,9 @@ export default function MangaTabs({ manga, chapters, mangaId }: { manga: any; ch
             <div className="flex items-center justify-between mb-4">
                 <h1 className="text-4xl font-extrabold text-white">{manga.title}</h1>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleLike}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        aria-label={liked ? 'Unlike' : 'Like'}
-                        title={liked ? 'Unlike this manga' : 'Like this manga'}
-                    >
-                        {liked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
-                        <span>{likeCount}</span>
-                    </button>
-                    <button
-                        onClick={handleBookmark}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        aria-label={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
-                        title={bookmarked ? 'Remove bookmark' : 'Bookmark this manga'}
-                    >
-                        {bookmarked ? <FaBookmark className="text-blue-500" /> : <FaRegBookmark />}
-                        <span>{bookmarked ? 'Bookmarked' : 'Bookmark'}</span>
-                    </button>
                     {viewCount !== null && (
-                        <span className="text-gray-400 text-sm ml-2" aria-label="View count">
+                        <span className="text-gray-400 text-sm" aria-label="View count">
                             👁️ {viewCount} views
-                        </span>
-                    )}
-                    {feedback && (
-                        <span
-                            ref={feedbackRef}
-                            className="text-yellow-400 font-semibold ml-2 text-sm"
-                            role="status"
-                            aria-live="polite"
-                        >
-                            {feedback}
                         </span>
                     )}
                 </div>
