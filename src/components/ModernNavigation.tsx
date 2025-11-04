@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaSearch, FaBell, FaUser, FaBookmark, FaChartBar, FaUpload, FaCog, FaSignOutAlt, FaBars, FaTimes, FaHome, FaBook, FaTags, FaCoins, FaCrown } from 'react-icons/fa';
+import { FaSearch, FaBell, FaUser, FaBookmark, FaChartBar, FaUpload, FaCog, FaSignOutAlt, FaBars, FaTimes, FaHome, FaBook, FaTags, FaCoins, FaCrown, FaExchangeAlt, FaShieldAlt, FaQuestionCircle, FaHeadset, FaMoon, FaSun } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ModernNavigation() {
@@ -229,32 +229,146 @@ export default function ModernNavigation() {
                                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                className="dropdown-menu right-0"
+                                                className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50"
                                             >
-                                                <Link href="/profile" className="dropdown-item flex items-center space-x-3">
-                                                    <FaUser />
-                                                    <span>Profile</span>
-                                                </Link>
-                                                <Link href="/library" className="dropdown-item flex items-center space-x-3">
-                                                    <FaBookmark />
-                                                    <span>Library</span>
-                                                </Link>
-                                                <Link href="/stats" className="dropdown-item flex items-center space-x-3">
-                                                    <FaChartBar />
-                                                    <span>Statistics</span>
-                                                </Link>
-                                                <div className="border-t border-slate-700 my-2"></div>
-                                                <Link href="/settings" className="dropdown-item flex items-center space-x-3">
-                                                    <FaCog />
-                                                    <span>Settings</span>
-                                                </Link>
-                                                <button
-                                                    onClick={handleLogout}
-                                                    className="dropdown-item flex items-center space-x-3 w-full text-left text-red-400 hover:text-red-300"
-                                                >
-                                                    <FaSignOutAlt />
-                                                    <span>Sign Out</span>
-                                                </button>
+                                                {/* User Info Header */}
+                                                <div className="p-4 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border-b border-slate-700">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                                                            <span className="text-white text-lg font-bold">
+                                                                {user?.username?.charAt(0).toUpperCase() || 'U'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="text-white font-semibold text-sm truncate">
+                                                                {user?.username || 'User'}
+                                                            </h3>
+                                                            <p className="text-gray-400 text-xs truncate">
+                                                                {user?.email || 'user@example.com'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {isCreator && (
+                                                        <div className="mt-2 inline-flex items-center space-x-1 px-2 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-md">
+                                                            <FaCrown className="text-yellow-400 text-xs" />
+                                                            <span className="text-indigo-300 text-xs font-medium">Creator Account</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Menu Items */}
+                                                <div className="py-2">
+                                                    {/* Main Actions */}
+                                                    <Link 
+                                                        href="/profile" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaUser className="text-indigo-400 w-4" />
+                                                        <span className="text-sm font-medium">My Profile</span>
+                                                    </Link>
+                                                    
+                                                    <Link 
+                                                        href="/library" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaBookmark className="text-indigo-400 w-4" />
+                                                        <span className="text-sm font-medium">My Library</span>
+                                                    </Link>
+
+                                                    {isCreator && (
+                                                        <>
+                                                            <Link 
+                                                                href="/creator/dashboard" 
+                                                                className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                                onClick={() => setIsUserMenuOpen(false)}
+                                                            >
+                                                                <FaCrown className="text-yellow-400 w-4" />
+                                                                <span className="text-sm font-medium">Creator Dashboard</span>
+                                                            </Link>
+                                                            <Link 
+                                                                href="/upload" 
+                                                                className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                                onClick={() => setIsUserMenuOpen(false)}
+                                                            >
+                                                                <FaUpload className="text-green-400 w-4" />
+                                                                <span className="text-sm font-medium">Upload Content</span>
+                                                            </Link>
+                                                        </>
+                                                    )}
+                                                    
+                                                    <Link 
+                                                        href="/stats" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaChartBar className="text-indigo-400 w-4" />
+                                                        <span className="text-sm font-medium">My Statistics</span>
+                                                    </Link>
+
+                                                    <Link 
+                                                        href="/coins" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaCoins className="text-yellow-400 w-4" />
+                                                        <span className="text-sm font-medium">My Coins</span>
+                                                    </Link>
+
+                                                    <div className="border-t border-slate-700 my-2"></div>
+
+                                                    {/* Account Management */}
+                                                    <Link 
+                                                        href="/login" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaExchangeAlt className="text-blue-400 w-4" />
+                                                        <span className="text-sm font-medium">Switch Account</span>
+                                                    </Link>
+
+                                                    <div className="border-t border-slate-700 my-2"></div>
+
+                                                    {/* Settings & Support */}
+                                                    <Link 
+                                                        href="/settings" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaCog className="text-gray-400 w-4" />
+                                                        <span className="text-sm font-medium">Settings</span>
+                                                    </Link>
+
+                                                    <Link 
+                                                        href="/help" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaQuestionCircle className="text-gray-400 w-4" />
+                                                        <span className="text-sm font-medium">Help Center</span>
+                                                    </Link>
+
+                                                    <Link 
+                                                        href="/contact" 
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    >
+                                                        <FaHeadset className="text-gray-400 w-4" />
+                                                        <span className="text-sm font-medium">Contact Support</span>
+                                                    </Link>
+
+                                                    <div className="border-t border-slate-700 my-2"></div>
+
+                                                    {/* Sign Out */}
+                                                    <button
+                                                        onClick={handleLogout}
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-red-500/10 transition-colors text-red-400 hover:text-red-300 w-full text-left"
+                                                    >
+                                                        <FaSignOutAlt className="w-4" />
+                                                        <span className="text-sm font-medium">Sign Out</span>
+                                                    </button>
+                                                </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
