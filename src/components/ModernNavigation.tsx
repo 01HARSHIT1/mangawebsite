@@ -225,7 +225,23 @@ export default function ModernNavigation() {
                                 <Link
                                     href="/notifications"
                                     className="relative p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200"
-                                    onClick={() => setUnreadCount(0)}
+                                    onClick={async () => {
+                                        // Mark all as read when clicking the bell
+                                        if (unreadCount > 0) {
+                                            try {
+                                                const token = localStorage.getItem('token');
+                                                await fetch('/api/notifications/mark-all-read', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${token}`
+                                                    }
+                                                });
+                                                setUnreadCount(0);
+                                            } catch (error) {
+                                                console.error('Failed to mark notifications as read:', error);
+                                            }
+                                        }
+                                    }}
                                 >
                                     <FaBell className="text-gray-400" />
                                     {unreadCount > 0 && (

@@ -381,11 +381,18 @@ export default function ModernMangaPage() {
                                             <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-24 h-32 flex-shrink-0' : 'aspect-[3/4]'
                                                 }`}>
                                                 <Image
-                                                    src={item.coverImage}
+                                                    src={
+                                                        typeof item.coverImage === 'string' 
+                                                            ? item.coverImage 
+                                                            : item.coverImage?.secure_url || '/placeholder.svg'
+                                                    }
                                                     alt={item.title}
                                                     fill
                                                     className="object-cover group-hover:scale-110 transition-transform duration-500"
                                                     sizes={viewMode === 'list' ? '96px' : '(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw'}
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = '/placeholder.svg';
+                                                    }}
                                                 />
 
                                                 {/* Overlay */}

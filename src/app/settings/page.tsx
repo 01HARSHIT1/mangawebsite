@@ -60,9 +60,13 @@ export default function SettingsPage() {
         setSaveMessage('');
 
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/profile', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     username: formData.username,
                     bio: formData.bio,
@@ -71,8 +75,11 @@ export default function SettingsPage() {
 
             if (response.ok) {
                 setSaveMessage('✅ Profile updated successfully!');
+                // Update local user data if needed
+                setTimeout(() => setSaveMessage(''), 3000);
             } else {
-                setSaveMessage('❌ Failed to update profile');
+                const data = await response.json();
+                setSaveMessage(`❌ ${data.error || 'Failed to update profile'}`);
             }
         } catch (error) {
             setSaveMessage('❌ Error updating profile');
@@ -87,13 +94,22 @@ export default function SettingsPage() {
             return;
         }
 
+        if (formData.newPassword.length < 6) {
+            setSaveMessage('❌ Password must be at least 6 characters');
+            return;
+        }
+
         setLoading(true);
         setSaveMessage('');
 
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/profile', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     currentPassword: formData.currentPassword,
                     newPassword: formData.newPassword,
@@ -103,8 +119,10 @@ export default function SettingsPage() {
             if (response.ok) {
                 setSaveMessage('✅ Password changed successfully!');
                 setFormData({ ...formData, currentPassword: '', newPassword: '', confirmPassword: '' });
+                setTimeout(() => setSaveMessage(''), 3000);
             } else {
-                setSaveMessage('❌ Failed to change password');
+                const data = await response.json();
+                setSaveMessage(`❌ ${data.error || 'Failed to change password'}`);
             }
         } catch (error) {
             setSaveMessage('❌ Error changing password');
@@ -118,16 +136,22 @@ export default function SettingsPage() {
         setSaveMessage('');
 
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/profile', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ preferences }),
             });
 
             if (response.ok) {
                 setSaveMessage('✅ Preferences saved successfully!');
+                setTimeout(() => setSaveMessage(''), 3000);
             } else {
-                setSaveMessage('❌ Failed to save preferences');
+                const data = await response.json();
+                setSaveMessage(`❌ ${data.error || 'Failed to save preferences'}`);
             }
         } catch (error) {
             setSaveMessage('❌ Error saving preferences');

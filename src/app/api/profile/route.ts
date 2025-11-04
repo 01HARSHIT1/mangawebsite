@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-    // Add or remove bookmarks, or record reading history
+    // Add or remove bookmarks, record reading history, or update settings
     const auth = req.headers.get('authorization');
     if (!auth || !auth.startsWith('Bearer ')) {
         return NextResponse.json({ error: 'Missing or invalid token' }, { status: 401 });
@@ -148,7 +148,40 @@ export async function PUT(req: NextRequest) {
     const user = await users.findOne({ _id: new ObjectId(payload.userId) });
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-    const { action, mangaId, chapterId } = await req.json();
+    const body = await req.json();
+    const { action, mangaId, chapterId, username, bio, currentPassword, newPassword, preferences } = body;
+
+    // Handle settings updates
+    if (username || bio) {
+        const updateData: any = {};
+        if (username) updateData.username = username;
+        if (bio !== undefined) updateData.bio = bio;
+        
+        await users.updateOne({ _id: user._id }, { $set: updateData });
+        const updated = await users.findOne({ _id: user._id });
+        const { password, verificationToken, resetToken, ...safeUser } = updated;
+        return NextResponse.json({ success: true, user: safeUser });
+    }
+
+    // Handle password change
+    if (currentPassword && newPassword) {
+        const bcrypt = require('bcrypt');
+        const isValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isValid) {
+            return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 });
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await users.updateOne({ _id: user._id }, { $set: { password: hashedPassword } });
+        return NextResponse.json({ success: true, message: 'Password updated successfully' });
+    }
+
+    // Handle preferences update
+    if (preferences) {
+        await users.updateOne({ _id: user._id }, { $set: { preferences } });
+        const updated = await users.findOne({ _id: user._id });
+        const { password, verificationToken, resetToken, ...safeUser } = updated;
+        return NextResponse.json({ success: true, user: safeUser });
+    }
     if (action === 'addBookmark' && mangaId && !chapterId) {
         // Add manga bookmark (legacy)
         await users.updateOne({ _id: user._id }, { $addToSet: { bookmarks: mangaId } });
