@@ -112,11 +112,14 @@ const sampleManga: Manga[] = [
 export default function ModernMangaPage() {
     const [manga, setManga] = useState<Manga[]>([]);
     const [filteredManga, setFilteredManga] = useState<Manga[]>([]);
+    const [displayedManga, setDisplayedManga] = useState<Manga[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedGenre, setSelectedGenre] = useState('all');
     const [sortBy, setSortBy] = useState('popular');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [itemsPerPage, setItemsPerPage] = useState(6);
+    const [showAll, setShowAll] = useState(false);
 
     const genres = ['all', 'action', 'romance', 'fantasy', 'comedy', 'drama', 'horror', 'sci-fi', 'slice of life'];
     const sortOptions = [
@@ -127,12 +130,29 @@ export default function ModernMangaPage() {
     ];
 
     useEffect(() => {
-        // Simulate loading from API
-        setTimeout(() => {
-            setManga(sampleManga);
-            setFilteredManga(sampleManga);
-            setLoading(false);
-        }, 1000);
+        // Fetch real manga from API
+        const fetchManga = async () => {
+            try {
+                const response = await fetch('/api/manga');
+                if (response.ok) {
+                    const data = await response.json();
+                    const mangaList = data.manga || [];
+                    setManga(mangaList.length > 0 ? mangaList : sampleManga);
+                    setFilteredManga(mangaList.length > 0 ? mangaList : sampleManga);
+                } else {
+                    setManga(sampleManga);
+                    setFilteredManga(sampleManga);
+                }
+            } catch (error) {
+                console.error('Failed to fetch manga:', error);
+                setManga(sampleManga);
+                setFilteredManga(sampleManga);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchManga();
     }, []);
 
     useEffect(() => {
@@ -171,6 +191,23 @@ export default function ModernMangaPage() {
 
         setFilteredManga(filtered);
     }, [manga, searchQuery, selectedGenre, sortBy]);
+
+    // Update displayed manga based on pagination
+    useEffect(() => {
+        if (showAll) {
+            setDisplayedManga(filteredManga);
+        } else {
+            setDisplayedManga(filteredManga.slice(0, itemsPerPage));
+        }
+    }, [filteredManga, itemsPerPage, showAll]);
+
+    const handleLoadMore = () => {
+        setItemsPerPage(prev => prev + 6);
+    };
+
+    const handleShowAll = () => {
+        setShowAll(true);
+    };
 
     if (loading) {
         return (
@@ -316,18 +353,19 @@ export default function ModernMangaPage() {
                 {/* Manga Grid */}
                 <AnimatePresence mode="wait">
                     {filteredManga.length > 0 ? (
-                        <motion.div
-                            key={viewMode}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.3 }}
-                            className={`grid gap-6 ${viewMode === 'grid'
-                                ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
-                                : 'grid-cols-1'
-                                }`}
-                        >
-                            {filteredManga.map((item, index) => (
+                        <>
+                            <motion.div
+                                key={viewMode}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className={`grid gap-6 mb-8 ${viewMode === 'grid'
+                                    ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
+                                    : 'grid-cols-1'
+                                    }`}
+                            >
+                                {displayedManga.map((item, index) => (
                                 <motion.div
                                     key={item._id}
                                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
@@ -490,7 +528,51 @@ export default function ModernMangaPage() {
                                     </Link>
                                 </motion.div>
                             ))}
-                        </motion.div>
+                            </motion.div>
+
+                            {/* Load More and Show All Buttons */}
+                            {!showAll && displayedManga.length < filteredManga.length && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex flex-col sm:flex-row items-center justify-center gap-4 py-8"
+                                >
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleLoadMore}
+                                        className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                                    >
+                                        <span>Load More</span>
+                                        <span className="text-sm opacity-80">({filteredManga.length - displayedManga.length} more)</span>
+                                    </motion.button>
+
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleShowAll}
+                                        className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                                    >
+                                        <span>Show All</span>
+                                        <span className="text-sm opacity-80">({filteredManga.length} total)</span>
+                                    </motion.button>
+                                </motion.div>
+                            )}
+
+                            {/* Show All Active Message */}
+                            {showAll && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-center py-8"
+                                >
+                                    <div className="inline-flex items-center space-x-2 px-6 py-3 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300">
+                                        <span className="text-2xl">✅</span>
+                                        <span className="font-semibold">Showing all {filteredManga.length} manga</span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </>
                     ) : (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}

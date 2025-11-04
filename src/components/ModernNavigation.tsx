@@ -14,6 +14,7 @@ export default function ModernNavigation() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const { isAuthenticated, user, logout, isCreator } = useAuth();
     const router = useRouter();
 
@@ -25,6 +26,30 @@ export default function ModernNavigation() {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Fetch unread notifications count
+    useEffect(() => {
+        if (isAuthenticated) {
+            const fetchUnreadCount = async () => {
+                try {
+                    const response = await fetch('/api/notifications?unread=true&limit=1');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setUnreadCount(data.pagination?.total || 0);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch unread notifications:', error);
+                }
+            };
+
+            fetchUnreadCount();
+            // Poll every 60 seconds
+            const interval = setInterval(fetchUnreadCount, 60000);
+            return () => clearInterval(interval);
+        } else {
+            setUnreadCount(0);
+        }
+    }, [isAuthenticated]);
 
     // Handle search
     useEffect(() => {
@@ -200,9 +225,14 @@ export default function ModernNavigation() {
                                 <Link
                                     href="/notifications"
                                     className="relative p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200"
+                                    onClick={() => setUnreadCount(0)}
                                 >
                                     <FaBell className="text-gray-400" />
-                                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 bg-red-500 rounded-full flex items-center justify-center px-1">
+                                            <span className="text-white text-xs font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                                        </span>
+                                    )}
                                 </Link>
                             )}
 
@@ -319,14 +349,17 @@ export default function ModernNavigation() {
                                                     <div className="border-t border-slate-700 my-2"></div>
 
                                                     {/* Account Management */}
-                                                    <Link 
-                                                        href="/login" 
-                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
-                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    <button
+                                                        onClick={async () => {
+                                                            await logout();
+                                                            setIsUserMenuOpen(false);
+                                                            router.push('/login');
+                                                        }}
+                                                        className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white w-full text-left"
                                                     >
                                                         <FaExchangeAlt className="text-blue-400 w-4" />
                                                         <span className="text-sm font-medium">Switch Account</span>
-                                                    </Link>
+                                                    </button>
 
                                                     <div className="border-t border-slate-700 my-2"></div>
 
