@@ -100,6 +100,8 @@ export default function LibraryPage() {
                 // Process reading history
                 if (user.readingHistory && user.readingHistory.length > 0) {
                     console.log('📚 Processing reading history:', user.readingHistory.length, 'entries');
+                    console.log('📖 Raw history sample:', user.readingHistory.slice(0, 3));
+                    
                     const historyPromises = user.readingHistory.slice(0, 20).map(async (entry: any) => {
                         try {
                             const response = await fetch(`/api/manga/${entry.mangaId}`);
@@ -107,9 +109,9 @@ export default function LibraryPage() {
                                 const mangaData = await response.json();
                                 return {
                                     ...mangaData.manga,
-                                    lastReadChapter: entry.chapterNumber || entry.chapterId || 1,
+                                    lastReadChapter: entry.chapterNumber || 1,
                                     lastReadDate: entry.timestamp,
-                                    lastReadChapterId: entry.chapterId
+                                    lastReadChapterId: entry.chapterId || null
                                 };
                             }
                         } catch (error) {
@@ -122,15 +124,41 @@ export default function LibraryPage() {
                     setReadingHistory(history);
                     console.log('✅ Loaded reading history:', history.length, 'manga');
 
-                    // Continue reading is the most recent unique manga from history
-                    const uniqueHistory = history.reduce((acc: MangaItem[], current: MangaItem) => {
+                    // Continue reading: Only show manga where user actually read a chapter (has chapterId)
+                    // This filters out manga that were just browsed but not read
+                    const continueReadingCandidates = user.readingHistory.filter((entry: any) => entry.chapterId);
+                    console.log('📖 Continue reading candidates:', continueReadingCandidates.length, 'entries with chapters');
+                    
+                    const continuePromises = continueReadingCandidates.slice(0, 10).map(async (entry: any) => {
+                        try {
+                            const response = await fetch(`/api/manga/${entry.mangaId}`);
+                            if (response.ok) {
+                                const mangaData = await response.json();
+                                return {
+                                    ...mangaData.manga,
+                                    lastReadChapter: entry.chapterNumber || 1,
+                                    lastReadDate: entry.timestamp,
+                                    lastReadChapterId: entry.chapterId
+                                };
+                            }
+                        } catch (error) {
+                            console.error(`Failed to load manga ${entry.mangaId}:`, error);
+                        }
+                        return null;
+                    });
+                    
+                    const continueList = (await Promise.all(continuePromises)).filter(Boolean);
+                    
+                    // Get unique manga (most recent reading of each)
+                    const uniqueContinue = continueList.reduce((acc: MangaItem[], current: MangaItem) => {
                         if (!acc.find(item => item._id === current._id)) {
                             acc.push(current);
                         }
                         return acc;
                     }, []);
-                    setContinueReading(uniqueHistory.slice(0, 10));
-                    console.log('✅ Continue reading list:', uniqueHistory.length, 'manga');
+                    
+                    setContinueReading(uniqueContinue);
+                    console.log('✅ Continue reading list:', uniqueContinue.length, 'manga');
                 }
 
                 // Load reading lists (mock data for now - you can implement this properly)
@@ -486,8 +514,18 @@ export default function LibraryPage() {
                                     ) : (
                                         <div className="text-center py-20">
                                             <FaClock className="mx-auto text-6xl text-gray-600 mb-4" />
-                                            <h3 className="text-xl font-semibold text-gray-400 mb-2">No Reading Progress</h3>
-                                            <p className="text-gray-500">Start reading some manga to see your progress here!</p>
+                                            <h3 className="text-xl font-semibold text-gray-400 mb-2">No Reading Progress Yet</h3>
+                                            <p className="text-gray-500 mb-4">
+                                                Start reading manga chapters to track your progress here!
+                                            </p>
+                                            <div className="max-w-md mx-auto bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 text-sm text-gray-300">
+                                                <p className="font-semibold mb-2">💡 How it works:</p>
+                                                <ol className="text-left space-y-1 list-decimal list-inside">
+                                                    <li>Browse and find a manga you like</li>
+                                                    <li><strong>Open and read a chapter</strong> (not just the manga page)</li>
+                                                    <li>Come back here to continue where you left off!</li>
+                                                </ol>
+                                            </div>
                                         </div>
                                     )}
                                 </motion.div>
