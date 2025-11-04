@@ -84,7 +84,7 @@ export default function ChapterReader({
     // Check if chapter is bookmarked
     useEffect(() => {
         const checkBookmark = async () => {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             if (!token || !mangaId || !chapterId) return;
 
             try {
@@ -112,7 +112,7 @@ export default function ChapterReader({
 
     // Handle chapter bookmark toggle
     const handleBookmarkChapter = async () => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (!token) {
             alert('Please login to bookmark chapters');
             return;
@@ -226,9 +226,10 @@ export default function ChapterReader({
     // Record reading progress - fires once when component mounts
     useEffect(() => {
         const recordProgress = async () => {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             if (!token) {
                 console.warn('⚠️ No token found, cannot record reading progress');
+                console.warn('   Check localStorage: authToken =', localStorage.getItem('authToken'), ', token =', localStorage.getItem('token'));
                 return;
             }
             

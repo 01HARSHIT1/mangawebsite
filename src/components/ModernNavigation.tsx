@@ -229,7 +229,7 @@ export default function ModernNavigation() {
                                         // Mark all as read when clicking the bell
                                         if (unreadCount > 0) {
                                             try {
-                                                const token = localStorage.getItem('token');
+                                                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
                                                 await fetch('/api/notifications/mark-all-read', {
                                                     method: 'POST',
                                                     headers: {

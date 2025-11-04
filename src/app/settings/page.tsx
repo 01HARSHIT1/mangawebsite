@@ -60,7 +60,7 @@ export default function SettingsPage() {
         setSaveMessage('');
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const response = await fetch('/api/profile', {
                 method: 'PUT',
                 headers: { 
@@ -103,7 +103,7 @@ export default function SettingsPage() {
         setSaveMessage('');
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const response = await fetch('/api/profile', {
                 method: 'PUT',
                 headers: { 
@@ -136,7 +136,7 @@ export default function SettingsPage() {
         setSaveMessage('');
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const response = await fetch('/api/profile', {
                 method: 'PUT',
                 headers: { 

@@ -63,8 +63,11 @@ export default function LibraryPage() {
     const loadLibraryData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            if (!token) return;
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                console.warn('⚠️ No token found in library page');
+                return;
+            }
 
             // Load user profile with bookmarks and history
             const profileResponse = await fetch('/api/profile', {
@@ -219,7 +222,7 @@ export default function LibraryPage() {
 
     const handleRemoveBookmark = async (mangaId: string) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             if (!token) return;
 
             const response = await fetch('/api/profile', {

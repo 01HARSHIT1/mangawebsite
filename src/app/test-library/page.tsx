@@ -9,7 +9,7 @@ export default function TestLibraryPage() {
     const checkReadingHistory = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             if (!token) {
                 setResult({ error: 'No token found. Please login first.' });
                 return;
@@ -30,7 +30,7 @@ export default function TestLibraryPage() {
     const testRecordReading = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             if (!token) {
                 setResult({ error: 'No token found. Please login first.' });
                 return;
