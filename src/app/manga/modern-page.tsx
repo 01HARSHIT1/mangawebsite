@@ -378,22 +378,33 @@ export default function ModernMangaPage() {
                                         <div className={`bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-indigo-500/50 transition-all duration-300 backdrop-blur-sm hover:shadow-2xl hover:shadow-indigo-500/10 ${viewMode === 'list' ? 'flex space-x-4 p-4' : ''
                                             }`}>
                                             {/* Cover Image */}
-                                            <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-24 h-32 flex-shrink-0' : 'aspect-[3/4]'
+                                            <div className={`relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-800 ${viewMode === 'list' ? 'w-24 h-32 flex-shrink-0' : 'aspect-[3/4]'
                                                 }`}>
-                                                <Image
-                                                    src={
-                                                        typeof item.coverImage === 'string' 
-                                                            ? item.coverImage 
-                                                            : item.coverImage?.secure_url || '/placeholder.svg'
-                                                    }
-                                                    alt={item.title}
-                                                    fill
-                                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                                    sizes={viewMode === 'list' ? '96px' : '(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw'}
-                                                    onError={(e) => {
-                                                        e.currentTarget.src = '/placeholder.svg';
-                                                    }}
-                                                />
+                                                {item.coverImage && (typeof item.coverImage === 'string' || item.coverImage?.secure_url) ? (
+                                                    <Image
+                                                        src={
+                                                            typeof item.coverImage === 'string' 
+                                                                ? item.coverImage 
+                                                                : item.coverImage?.secure_url || ''
+                                                        }
+                                                        alt={item.title}
+                                                        fill
+                                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                        sizes={viewMode === 'list' ? '96px' : '(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw'}
+                                                        unoptimized={false}
+                                                        onError={(e) => {
+                                                            console.error('Failed to load image:', item.coverImage);
+                                                            e.currentTarget.style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="text-center p-4">
+                                                            <div className="text-4xl mb-2">📚</div>
+                                                            <div className="text-xs text-gray-400">No Cover</div>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 {/* Overlay */}
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
