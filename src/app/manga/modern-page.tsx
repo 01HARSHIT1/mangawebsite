@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -110,7 +110,7 @@ const sampleManga: Manga[] = [
     }
 ];
 
-export default function ModernMangaPage() {
+function MangaBrowseContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     
@@ -616,5 +616,26 @@ export default function ModernMangaPage() {
                 </AnimatePresence>
             </div>
         </div>
+    );
+}
+
+// Wrapper component with Suspense boundary
+export default function ModernMangaPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16">
+                <div className="container mx-auto px-4 py-16">
+                    <div className="text-center mb-12">
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-6 shadow-2xl animate-pulse">
+                            <FaBookmark className="text-white text-2xl" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-white mb-4">Loading Manga Library</h2>
+                        <p className="text-gray-400">Discovering amazing stories for you...</p>
+                    </div>
+                </div>
+            </div>
+        }>
+            <MangaBrowseContent />
+        </Suspense>
     );
 }
