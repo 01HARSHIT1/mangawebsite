@@ -223,7 +223,7 @@ export default function ChapterReader({
         };
     }, [hideControls]);
 
-    // Record reading progress - fires when component mounts and when page changes
+    // Record reading progress - fires once when component mounts
     useEffect(() => {
         const recordProgress = async () => {
             const token = localStorage.getItem('token');
@@ -242,7 +242,7 @@ export default function ChapterReader({
                     mangaId, 
                     chapterId, 
                     chapterNumber: chapter.chapterNumber,
-                    currentPage 
+                    currentPage: 0
                 });
                 
                 const response = await fetch('/api/profile', {
@@ -256,7 +256,7 @@ export default function ChapterReader({
                         mangaId: mangaId,
                         chapterId: chapterId,
                         chapterNumber: chapter.chapterNumber || 1,
-                        currentPage: currentPage || 0
+                        currentPage: 0
                     })
                 });
                 
@@ -272,10 +272,9 @@ export default function ChapterReader({
             }
         };
 
-        // Small delay to ensure everything is initialized
-        const timer = setTimeout(recordProgress, 500);
-        return () => clearTimeout(timer);
-    }, [mangaId, chapterId, chapter.chapterNumber, currentPage]);
+        // Record immediately on mount
+        recordProgress();
+    }, [mangaId, chapterId, chapter.chapterNumber]); // Removed currentPage dependency
 
     if (!pages || pages.length === 0 || hasPdf) {
         // If there are no rasterized pages OR content is a PDF, render the PDF inline
