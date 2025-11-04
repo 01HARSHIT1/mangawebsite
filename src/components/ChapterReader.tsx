@@ -29,6 +29,8 @@ export default function ChapterReader({
     const [readingMode, setReadingMode] = useState<'vertical' | 'horizontal'>('vertical');
     const [imageQuality, setImageQuality] = useState<'high' | 'medium' | 'low'>('high');
     const [showLiveChat, setShowLiveChat] = useState(false);
+    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const controlsTimeoutRef = useRef<NodeJS.Timeout>();
@@ -78,6 +80,74 @@ export default function ChapterReader({
             }
         };
     }, [manga._id, joinMangaRoom, leaveMangaRoom]);
+
+    // Check if chapter is bookmarked
+    useEffect(() => {
+        const checkBookmark = async () => {
+            const token = localStorage.getItem('token');
+            if (!token || !mangaId || !chapterId) return;
+
+            try {
+                const response = await fetch('/api/profile', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.user && data.user.bookmarks) {
+                        // Check if this chapter is bookmarked
+                        const isChapterBookmarked = data.user.bookmarks.some((bookmark: any) => 
+                            (typeof bookmark === 'object' && bookmark.mangaId === mangaId && bookmark.chapterId === chapterId) ||
+                            (typeof bookmark === 'string' && bookmark === mangaId) // Legacy manga bookmark
+                        );
+                        setIsBookmarked(isChapterBookmarked);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to check bookmark status:', error);
+            }
+        };
+
+        checkBookmark();
+    }, [mangaId, chapterId]);
+
+    // Handle chapter bookmark toggle
+    const handleBookmarkChapter = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please login to bookmark chapters');
+            return;
+        }
+
+        setBookmarkLoading(true);
+        try {
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    action: isBookmarked ? 'removeChapterBookmark' : 'addChapterBookmark',
+                    mangaId,
+                    chapterId
+                })
+            });
+
+            if (response.ok) {
+                setIsBookmarked(!isBookmarked);
+                console.log(isBookmarked ? '🔖 Chapter bookmark removed' : '🔖 Chapter bookmarked');
+            } else {
+                const error = await response.json();
+                console.error('Failed to toggle bookmark:', error);
+                alert('Failed to bookmark chapter');
+            }
+        } catch (error) {
+            console.error('Error toggling bookmark:', error);
+            alert('Error bookmarking chapter');
+        } finally {
+            setBookmarkLoading(false);
+        }
+    };
 
     // Show controls on mouse move or touch
     const showControlsTemporarily = useCallback(() => {
@@ -153,35 +223,59 @@ export default function ChapterReader({
         };
     }, [hideControls]);
 
-    // Record reading progress
+    // Record reading progress - fires when component mounts and when page changes
     useEffect(() => {
         const recordProgress = async () => {
             const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    await fetch('/api/profile', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            action: 'recordReading',
-                            mangaId: mangaId,
-                            chapterId: chapterId,
-                            chapterNumber: chapter.chapterNumber || 1,
-                            currentPage: currentPage
-                        })
-                    });
-                    console.log('✅ Reading progress recorded:', { mangaId, chapterId, chapterNumber: chapter.chapterNumber });
-                } catch (error) {
-                    console.error('Failed to record reading progress:', error);
+            if (!token) {
+                console.warn('⚠️ No token found, cannot record reading progress');
+                return;
+            }
+            
+            if (!mangaId || !chapterId) {
+                console.warn('⚠️ Missing mangaId or chapterId:', { mangaId, chapterId });
+                return;
+            }
+
+            try {
+                console.log('📖 Recording reading progress...', { 
+                    mangaId, 
+                    chapterId, 
+                    chapterNumber: chapter.chapterNumber,
+                    currentPage 
+                });
+                
+                const response = await fetch('/api/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        action: 'recordReading',
+                        mangaId: mangaId,
+                        chapterId: chapterId,
+                        chapterNumber: chapter.chapterNumber || 1,
+                        currentPage: currentPage || 0
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Reading progress recorded successfully:', result);
+                } else {
+                    const error = await response.text();
+                    console.error('❌ Failed to record reading progress:', response.status, error);
                 }
+            } catch (error) {
+                console.error('❌ Error recording reading progress:', error);
             }
         };
 
-        recordProgress();
-    }, [mangaId, chapterId, currentPage]);
+        // Small delay to ensure everything is initialized
+        const timer = setTimeout(recordProgress, 500);
+        return () => clearTimeout(timer);
+    }, [mangaId, chapterId, chapter.chapterNumber, currentPage]);
 
     if (!pages || pages.length === 0 || hasPdf) {
         // If there are no rasterized pages OR content is a PDF, render the PDF inline
@@ -280,6 +374,18 @@ export default function ChapterReader({
                             <div className="text-white text-sm">
                                 Page {currentPage + 1} of {pages.length}
                             </div>
+                            <button
+                                onClick={handleBookmarkChapter}
+                                disabled={bookmarkLoading}
+                                className={`px-3 py-1 rounded-lg transition-all ${
+                                    isBookmarked 
+                                        ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
+                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                }`}
+                                title={isBookmarked ? 'Remove bookmark' : 'Bookmark this chapter'}
+                            >
+                                {bookmarkLoading ? '...' : isBookmarked ? '🔖 Bookmarked' : '🔖 Bookmark'}
+                            </button>
                             <button
                                 onClick={() => setReadingMode(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
                                 className="text-white hover:text-blue-400 transition-colors"

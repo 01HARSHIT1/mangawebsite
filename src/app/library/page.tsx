@@ -75,26 +75,47 @@ export default function LibraryPage() {
                 const profileData = await profileResponse.json();
                 const user = profileData.user;
 
-                // Load bookmarked manga details
+                // Load bookmarked manga and chapters
                 if (user.bookmarks && user.bookmarks.length > 0) {
-                    const bookmarkPromises = user.bookmarks.map(async (mangaId: string) => {
+                    console.log('🔖 Processing bookmarks:', user.bookmarks.length, 'items');
+                    const bookmarkPromises = user.bookmarks.map(async (bookmark: any) => {
                         try {
+                            // Handle both legacy manga bookmarks (string) and new chapter bookmarks (object)
+                            const mangaId = typeof bookmark === 'string' ? bookmark : bookmark.mangaId;
+                            const chapterId = typeof bookmark === 'object' ? bookmark.chapterId : null;
+                            
                             const response = await fetch(`/api/manga/${mangaId}`);
                             if (response.ok) {
                                 const mangaData = await response.json();
                                 return {
                                     ...mangaData.manga,
-                                    addedToLibraryDate: new Date().toISOString() // You might want to track this properly
+                                    addedToLibraryDate: new Date().toISOString(),
+                                    bookmarkedChapterId: chapterId,
+                                    bookmarkedChapterNumber: chapterId ? await getChapterNumber(mangaId, chapterId) : null
                                 };
                             }
                         } catch (error) {
-                            console.error(`Failed to load manga ${mangaId}:`, error);
+                            console.error(`Failed to load manga ${typeof bookmark === 'string' ? bookmark : bookmark.mangaId}:`, error);
                         }
                         return null;
                     });
 
                     const bookmarks = (await Promise.all(bookmarkPromises)).filter(Boolean);
                     setBookmarkedManga(bookmarks);
+                    console.log('✅ Loaded bookmarks:', bookmarks.length, 'manga/chapters');
+                }
+
+                async function getChapterNumber(mangaId: string, chapterId: string) {
+                    try {
+                        const response = await fetch(`/api/chapters/${chapterId}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            return data.chapter?.chapterNumber || null;
+                        }
+                    } catch (error) {
+                        console.error('Failed to get chapter number:', error);
+                    }
+                    return null;
                 }
 
                 // Process reading history
@@ -326,6 +347,11 @@ export default function LibraryPage() {
                                     Last read: Chapter {item.lastReadChapter}
                                 </div>
                             )}
+                            {item.bookmarkedChapterNumber && (
+                                <div className="text-xs text-yellow-400 mb-2">
+                                    🔖 Bookmarked: Chapter {item.bookmarkedChapterNumber}
+                                </div>
+                            )}
 
                             <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                                 <div className="flex items-center space-x-1">
@@ -336,12 +362,12 @@ export default function LibraryPage() {
                             </div>
 
                             <div className="flex items-center justify-between">
-                                {item.lastReadChapterId ? (
+                                {item.lastReadChapterId || item.bookmarkedChapterId ? (
                                     <Link
-                                        href={`/manga/${item._id}/chapter/${item.lastReadChapterId}`}
+                                        href={`/manga/${item._id}/chapter/${item.lastReadChapterId || item.bookmarkedChapterId}`}
                                         className="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-full transition-colors"
                                     >
-                                        Continue Ch. {item.lastReadChapter}
+                                        {item.lastReadChapterId ? `Continue Ch. ${item.lastReadChapter}` : `Go to Ch. ${item.bookmarkedChapterNumber}`}
                                     </Link>
                                 ) : (
                                     <Link
