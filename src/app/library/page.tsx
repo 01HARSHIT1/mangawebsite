@@ -33,7 +33,7 @@ interface ReadingList {
 
 export default function LibraryPage() {
     const { user, isAuthenticated } = useAuth();
-    const [activeTab, setActiveTab] = useState<'bookmarks' | 'history' | 'lists' | 'continue'>('bookmarks');
+    const [activeTab, setActiveTab] = useState<'bookmarks' | 'history' | 'lists' | 'continue' | 'chapter-bookmarks'>('continue');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +42,7 @@ export default function LibraryPage() {
 
     // Data states
     const [bookmarkedManga, setBookmarkedManga] = useState<MangaItem[]>([]);
+    const [chapterBookmarks, setChapterBookmarks] = useState<MangaItem[]>([]);
     const [readingHistory, setReadingHistory] = useState<MangaItem[]>([]);
     const [continueReading, setContinueReading] = useState<MangaItem[]>([]);
     const [readingLists, setReadingLists] = useState<ReadingList[]>([]);
@@ -78,34 +79,61 @@ export default function LibraryPage() {
                 const profileData = await profileResponse.json();
                 const user = profileData.user;
 
-                // Load bookmarked manga and chapters
+                // Separate manga bookmarks from chapter bookmarks
                 if (user.bookmarks && user.bookmarks.length > 0) {
                     console.log('🔖 Processing bookmarks:', user.bookmarks.length, 'items');
-                    const bookmarkPromises = user.bookmarks.map(async (bookmark: any) => {
-                        try {
-                            // Handle both legacy manga bookmarks (string) and new chapter bookmarks (object)
-                            const mangaId = typeof bookmark === 'string' ? bookmark : bookmark.mangaId;
-                            const chapterId = typeof bookmark === 'object' ? bookmark.chapterId : null;
-                            
-                            const response = await fetch(`/api/manga/${mangaId}`);
-                            if (response.ok) {
-                                const mangaData = await response.json();
-                                return {
-                                    ...mangaData.manga,
-                                    addedToLibraryDate: new Date().toISOString(),
-                                    bookmarkedChapterId: chapterId,
-                                    bookmarkedChapterNumber: chapterId ? await getChapterNumber(mangaId, chapterId) : null
-                                };
+                    
+                    const mangaBookmarks = user.bookmarks.filter((b: any) => typeof b === 'string');
+                    const chapterBookmarksData = user.bookmarks.filter((b: any) => typeof b === 'object' && b.chapterId);
+                    
+                    console.log('📚 Manga bookmarks:', mangaBookmarks.length);
+                    console.log('📖 Chapter bookmarks:', chapterBookmarksData.length);
+                    
+                    // Load manga bookmarks
+                    if (mangaBookmarks.length > 0) {
+                        const mangaPromises = mangaBookmarks.map(async (mangaId: string) => {
+                            try {
+                                const response = await fetch(`/api/manga/${mangaId}`);
+                                if (response.ok) {
+                                    const mangaData = await response.json();
+                                    return {
+                                        ...mangaData.manga,
+                                        addedToLibraryDate: new Date().toISOString()
+                                    };
+                                }
+                            } catch (error) {
+                                console.error(`Failed to load manga ${mangaId}:`, error);
                             }
-                        } catch (error) {
-                            console.error(`Failed to load manga ${typeof bookmark === 'string' ? bookmark : bookmark.mangaId}:`, error);
-                        }
-                        return null;
-                    });
-
-                    const bookmarks = (await Promise.all(bookmarkPromises)).filter(Boolean);
-                    setBookmarkedManga(bookmarks);
-                    console.log('✅ Loaded bookmarks:', bookmarks.length, 'manga/chapters');
+                            return null;
+                        });
+                        const mangaBookmarksList = (await Promise.all(mangaPromises)).filter(Boolean);
+                        setBookmarkedManga(mangaBookmarksList);
+                    }
+                    
+                    // Load chapter bookmarks
+                    if (chapterBookmarksData.length > 0) {
+                        const chapterPromises = chapterBookmarksData.map(async (bookmark: any) => {
+                            try {
+                                const response = await fetch(`/api/manga/${bookmark.mangaId}`);
+                                if (response.ok) {
+                                    const mangaData = await response.json();
+                                    const chapterNumber = await getChapterNumber(bookmark.mangaId, bookmark.chapterId);
+                                    return {
+                                        ...mangaData.manga,
+                                        addedToLibraryDate: new Date().toISOString(),
+                                        bookmarkedChapterId: bookmark.chapterId,
+                                        bookmarkedChapterNumber: chapterNumber
+                                    };
+                                }
+                            } catch (error) {
+                                console.error(`Failed to load chapter bookmark:`, error);
+                            }
+                            return null;
+                        });
+                        const chapterBookmarksList = (await Promise.all(chapterPromises)).filter(Boolean);
+                        setChapterBookmarks(chapterBookmarksList);
+                        console.log('✅ Loaded chapter bookmarks:', chapterBookmarksList.length);
+                    }
                 }
 
                 async function getChapterNumber(mangaId: string, chapterId: string) {
@@ -458,23 +486,29 @@ export default function LibraryPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex space-x-1 mb-8 bg-slate-800/50 rounded-lg p-1">
+                <div className="flex flex-wrap space-x-1 mb-8 bg-slate-800/50 rounded-lg p-1">
                     {[
                         { id: 'continue', label: 'Continue Reading', icon: FaClock },
-                        { id: 'bookmarks', label: 'Bookmarks', icon: FaBookmark },
+                        { id: 'chapter-bookmarks', label: '🔖 Chapter Bookmarks', icon: FaBookmark },
+                        { id: 'bookmarks', label: 'Manga Bookmarks', icon: FaBookmark },
                         { id: 'history', label: 'Reading History', icon: FaHistory },
                         { id: 'lists', label: 'Reading Lists', icon: FaStar }
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${activeTab === tab.id
+                            className={`flex items-center space-x-2 px-3 py-2 rounded-lg font-medium transition-all ${activeTab === tab.id
                                 ? 'bg-purple-600 text-white'
                                 : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
                                 }`}
                         >
                             <tab.icon className="text-sm" />
-                            <span>{tab.label}</span>
+                            <span className="text-xs sm:text-sm">{tab.label}</span>
+                            {tab.id === 'chapter-bookmarks' && chapterBookmarks.length > 0 && (
+                                <span className="ml-1 bg-yellow-500 text-white text-xs rounded-full px-2 py-0.5">
+                                    {chapterBookmarks.length}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -560,6 +594,42 @@ export default function LibraryPage() {
                                 </motion.div>
                             )}
 
+                            {activeTab === 'chapter-bookmarks' && (
+                                <motion.div
+                                    key="chapter-bookmarks"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                >
+                                    <div className="mb-6">
+                                        <h2 className="text-xl font-semibold mb-2 flex items-center space-x-2">
+                                            <span>🔖 Chapter Bookmarks</span>
+                                        </h2>
+                                        <p className="text-gray-400">Your bookmarked chapters - jump right back to where you want! ({chapterBookmarks.length} chapters)</p>
+                                    </div>
+                                    {chapterBookmarks.length > 0 ? (
+                                        renderMangaGrid(filteredManga(chapterBookmarks), true)
+                                    ) : (
+                                        <div className="text-center py-20">
+                                            <div className="text-6xl mb-4">🔖</div>
+                                            <h3 className="text-xl font-semibold text-gray-400 mb-2">No Chapter Bookmarks Yet</h3>
+                                            <p className="text-gray-500 mb-4">
+                                                Bookmark specific chapters to quickly return to them later!
+                                            </p>
+                                            <div className="max-w-md mx-auto bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 text-sm text-gray-300">
+                                                <p className="font-semibold mb-2">💡 How to bookmark a chapter:</p>
+                                                <ol className="text-left space-y-1 list-decimal list-inside">
+                                                    <li>Open any manga chapter</li>
+                                                    <li>Look for the <strong>🔖 Bookmark</strong> button in the top controls</li>
+                                                    <li>Click it to bookmark that specific chapter</li>
+                                                    <li>Come back here to see all your bookmarked chapters!</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+
                             {activeTab === 'bookmarks' && (
                                 <motion.div
                                     key="bookmarks"
@@ -568,7 +638,7 @@ export default function LibraryPage() {
                                     exit={{ opacity: 0, y: -20 }}
                                 >
                                     <div className="mb-6">
-                                        <h2 className="text-xl font-semibold mb-2">Bookmarked Manga</h2>
+                                        <h2 className="text-xl font-semibold mb-2">Manga Bookmarks</h2>
                                         <p className="text-gray-400">Your saved manga collection ({bookmarkedManga.length} manga)</p>
                                     </div>
                                     {bookmarkedManga.length > 0 ? (
@@ -576,8 +646,8 @@ export default function LibraryPage() {
                                     ) : (
                                         <div className="text-center py-20">
                                             <FaBookmark className="mx-auto text-6xl text-gray-600 mb-4" />
-                                            <h3 className="text-xl font-semibold text-gray-400 mb-2">No Bookmarks Yet</h3>
-                                            <p className="text-gray-500">Bookmark manga you want to read or keep track of!</p>
+                                            <h3 className="text-xl font-semibold text-gray-400 mb-2">No Manga Bookmarks Yet</h3>
+                                            <p className="text-gray-500">Bookmark entire manga series you want to track!</p>
                                         </div>
                                     )}
                                 </motion.div>

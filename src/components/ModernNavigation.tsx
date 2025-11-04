@@ -305,17 +305,17 @@ export default function ModernNavigation() {
                                                 {/* Menu Items */}
                                                 <div className="py-2">
                                                     {/* Main Actions */}
-                                                    <Link 
-                                                        href="/profile" 
+                                                    <Link
+                                                        href="/profile"
                                                         className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                         onClick={() => setIsUserMenuOpen(false)}
                                                     >
                                                         <FaUser className="text-indigo-400 w-4" />
                                                         <span className="text-sm font-medium">My Profile</span>
                                                     </Link>
-                                                    
-                                                    <Link 
-                                                        href="/library" 
+
+                                                    <Link
+                                                        href="/library"
                                                         className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                         onClick={() => setIsUserMenuOpen(false)}
                                                     >
@@ -325,16 +325,16 @@ export default function ModernNavigation() {
 
                                                     {isCreator && (
                                                         <>
-                                                            <Link 
-                                                                href="/creator/dashboard" 
+                                                            <Link
+                                                                href="/creator/dashboard"
                                                                 className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                                 onClick={() => setIsUserMenuOpen(false)}
                                                             >
                                                                 <FaCrown className="text-yellow-400 w-4" />
                                                                 <span className="text-sm font-medium">Creator Dashboard</span>
                                                             </Link>
-                                                            <Link 
-                                                                href="/upload" 
+                                                            <Link
+                                                                href="/upload"
                                                                 className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                                 onClick={() => setIsUserMenuOpen(false)}
                                                             >
@@ -343,9 +343,9 @@ export default function ModernNavigation() {
                                                             </Link>
                                                         </>
                                                     )}
-                                                    
-                                                    <Link 
-                                                        href="/stats" 
+
+                                                    <Link
+                                                        href="/stats"
                                                         className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                         onClick={() => setIsUserMenuOpen(false)}
                                                     >
@@ -353,8 +353,8 @@ export default function ModernNavigation() {
                                                         <span className="text-sm font-medium">My Statistics</span>
                                                     </Link>
 
-                                                    <Link 
-                                                        href="/coins" 
+                                                    <Link
+                                                        href="/coins"
                                                         className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                         onClick={() => setIsUserMenuOpen(false)}
                                                     >
@@ -380,8 +380,8 @@ export default function ModernNavigation() {
                                                     <div className="border-t border-slate-700 my-2"></div>
 
                                                     {/* Settings & Support */}
-                                                    <Link 
-                                                        href="/settings" 
+                                                    <Link
+                                                        href="/settings"
                                                         className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                         onClick={() => setIsUserMenuOpen(false)}
                                                     >
@@ -389,8 +389,8 @@ export default function ModernNavigation() {
                                                         <span className="text-sm font-medium">Settings</span>
                                                     </Link>
 
-                                                    <Link 
-                                                        href="/help" 
+                                                    <Link
+                                                        href="/help"
                                                         className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                         onClick={() => setIsUserMenuOpen(false)}
                                                     >
@@ -398,8 +398,8 @@ export default function ModernNavigation() {
                                                         <span className="text-sm font-medium">Help Center</span>
                                                     </Link>
 
-                                                    <Link 
-                                                        href="/contact" 
+                                                    <Link
+                                                        href="/contact"
                                                         className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                         onClick={() => setIsUserMenuOpen(false)}
                                                     >
