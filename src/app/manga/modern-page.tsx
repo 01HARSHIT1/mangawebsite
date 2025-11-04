@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaSearch, FaFilter, FaTh, FaList, FaStar, FaEye, FaBookmark, FaPlay, FaFire, FaHeart, FaClock } from 'react-icons/fa';
 
@@ -110,8 +111,10 @@ const sampleManga: Manga[] = [
 ];
 
 export default function ModernMangaPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    
     const [manga, setManga] = useState<Manga[]>([]);
-    const [filteredManga, setFilteredManga] = useState<Manga[]>([]);
     const [displayedManga, setDisplayedManga] = useState<Manga[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -129,77 +132,71 @@ export default function ModernMangaPage() {
         { value: 'alphabetical', label: 'A-Z' }
     ];
 
+    // Initialize filters from URL parameters
     useEffect(() => {
-        // Fetch real manga from API
+        const genreParam = searchParams.get('genre');
+        const searchParam = searchParams.get('search');
+        const sortParam = searchParams.get('sort');
+        
+        if (genreParam) {
+            setSelectedGenre(genreParam.toLowerCase());
+        }
+        if (searchParam) {
+            setSearchQuery(searchParam);
+        }
+        if (sortParam && sortOptions.some(opt => opt.value === sortParam)) {
+            setSortBy(sortParam);
+        }
+    }, [searchParams]);
+
+    // Fetch manga from API with server-side filtering
+    useEffect(() => {
         const fetchManga = async () => {
+            setLoading(true);
             try {
-                const response = await fetch('/api/manga');
+                // Build API URL with query parameters for server-side filtering
+                const params = new URLSearchParams();
+                
+                if (selectedGenre !== 'all') {
+                    params.append('genre', selectedGenre);
+                }
+                if (searchQuery) {
+                    params.append('search', searchQuery);
+                }
+                if (sortBy) {
+                    params.append('sort', sortBy);
+                }
+                
+                const apiUrl = `/api/manga${params.toString() ? '?' + params.toString() : ''}`;
+                console.log('Fetching manga with filters:', apiUrl);
+                
+                const response = await fetch(apiUrl);
                 if (response.ok) {
                     const data = await response.json();
                     const mangaList = data.manga || [];
                     setManga(mangaList.length > 0 ? mangaList : sampleManga);
-                    setFilteredManga(mangaList.length > 0 ? mangaList : sampleManga);
                 } else {
                     setManga(sampleManga);
-                    setFilteredManga(sampleManga);
                 }
             } catch (error) {
                 console.error('Failed to fetch manga:', error);
                 setManga(sampleManga);
-                setFilteredManga(sampleManga);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchManga();
-    }, []);
+    }, [selectedGenre, searchQuery, sortBy]);
 
-    useEffect(() => {
-        let filtered = [...manga];
-
-        // Apply search filter
-        if (searchQuery) {
-            filtered = filtered.filter(item =>
-                item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.creator.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                item.genres.some(genre => genre.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
-        }
-
-        // Apply genre filter
-        if (selectedGenre !== 'all') {
-            filtered = filtered.filter(item =>
-                item.genres.some(genre => genre.toLowerCase() === selectedGenre)
-            );
-        }
-
-        // Apply sorting
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case 'alphabetical':
-                    return a.title.localeCompare(b.title);
-                case 'rating':
-                    return b.rating - a.rating;
-                case 'newest':
-                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                case 'popular':
-                default:
-                    return b.views - a.views;
-            }
-        });
-
-        setFilteredManga(filtered);
-    }, [manga, searchQuery, selectedGenre, sortBy]);
-
-    // Update displayed manga based on pagination
+    // Update displayed manga based on pagination (no client-side filtering needed)
     useEffect(() => {
         if (showAll) {
-            setDisplayedManga(filteredManga);
+            setDisplayedManga(manga);
         } else {
-            setDisplayedManga(filteredManga.slice(0, itemsPerPage));
+            setDisplayedManga(manga.slice(0, itemsPerPage));
         }
-    }, [filteredManga, itemsPerPage, showAll]);
+    }, [manga, itemsPerPage, showAll]);
 
     const handleLoadMore = () => {
         setItemsPerPage(prev => prev + 6);
@@ -346,13 +343,13 @@ export default function ModernMangaPage() {
                     transition={{ delay: 0.3 }}
                     className="flex items-center justify-between mb-8 text-gray-400"
                 >
-                    <span>Showing {filteredManga.length} results</span>
-                    <span>{filteredManga.filter(m => m.isNew).length} new releases</span>
+                    <span>Showing {manga.length} results</span>
+                    <span>{manga.filter(m => m.isNew).length} new releases</span>
                 </motion.div>
 
                 {/* Manga Grid */}
                 <AnimatePresence mode="wait">
-                    {filteredManga.length > 0 ? (
+                    {manga.length > 0 ? (
                         <>
                             <motion.div
                                 key={viewMode}
@@ -549,7 +546,7 @@ export default function ModernMangaPage() {
                             </motion.div>
 
                             {/* Load More and Show All Buttons */}
-                            {!showAll && displayedManga.length < filteredManga.length && (
+                            {!showAll && displayedManga.length < manga.length && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -562,7 +559,7 @@ export default function ModernMangaPage() {
                                         className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
                                     >
                                         <span>Load More</span>
-                                        <span className="text-sm opacity-80">({filteredManga.length - displayedManga.length} more)</span>
+                                        <span className="text-sm opacity-80">({manga.length - displayedManga.length} more)</span>
                                     </motion.button>
 
                                     <motion.button
@@ -572,7 +569,7 @@ export default function ModernMangaPage() {
                                         className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl flex items-center space-x-2"
                                     >
                                         <span>Show All</span>
-                                        <span className="text-sm opacity-80">({filteredManga.length} total)</span>
+                                        <span className="text-sm opacity-80">({manga.length} total)</span>
                                     </motion.button>
                                 </motion.div>
                             )}
@@ -586,7 +583,7 @@ export default function ModernMangaPage() {
                                 >
                                     <div className="inline-flex items-center space-x-2 px-6 py-3 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300">
                                         <span className="text-2xl">✅</span>
-                                        <span className="font-semibold">Showing all {filteredManga.length} manga</span>
+                                        <span className="font-semibold">Showing all {manga.length} manga</span>
                                     </div>
                                 </motion.div>
                             )}

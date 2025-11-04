@@ -75,15 +75,20 @@ export async function GET(request: NextRequest) {
             // Build sort
             let sortQuery: any = { createdAt: -1 }; // Default sort
             switch (sort) {
+                case 'popular':
                 case 'trending':
                 case 'featured':
                     sortQuery = { views: -1, likes: -1 };
                     break;
+                case 'rating':
                 case 'top':
                     sortQuery = { likes: -1, views: -1 };
                     break;
                 case 'newest':
                     sortQuery = { createdAt: -1 };
+                    break;
+                case 'alphabetical':
+                    sortQuery = { title: 1 };
                     break;
                 case 'oldest':
                     sortQuery = { createdAt: 1 };
