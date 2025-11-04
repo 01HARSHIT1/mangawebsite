@@ -28,16 +28,32 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
         }
 
         // Check if this manga is bookmarked
-        const token = localStorage.getItem('token');
-        if (!token) return setLoading(false);
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (!token) {
+            console.log('ℹ️ No token found, user not logged in');
+            setLoading(false);
+            return;
+        }
+        
         fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } })
             .then(res => res.json())
             .then(data => {
-                if (data.user && data.user.bookmarks && data.user.bookmarks.includes(manga._id)) {
-                    setBookmarked(true);
+                if (data.user && data.user.bookmarks) {
+                    // Check if manga is bookmarked (handle both string and object formats)
+                    const isBookmarked = data.user.bookmarks.some((b: any) => 
+                        (typeof b === 'string' && b === manga._id) ||
+                        (typeof b === 'object' && b.mangaId === manga._id)
+                    );
+                    setBookmarked(isBookmarked);
+                    console.log('🔖 Bookmark status loaded:', isBookmarked);
                 }
                 setLoading(false);
+            })
+            .catch(error => {
+                console.error('Failed to load bookmark status:', error);
+                setLoading(false);
             });
+            
         // Record reading history
         fetch('/api/profile', {
             method: 'PUT',
@@ -54,16 +70,40 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
     }, [manga._id, joinMangaRoom, leaveMangaRoom]);
 
     const handleBookmark = async () => {
-        const token = localStorage.getItem('token');
-        if (!token) return;
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (!token) {
+            alert('Please login to bookmark manga');
+            return;
+        }
+        
         setLoading(true);
-        await fetch('/api/profile', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ action: bookmarked ? 'removeBookmark' : 'addBookmark', mangaId: manga._id })
-        });
-        setBookmarked(b => !b);
-        setLoading(false);
+        try {
+            console.log('🔖 Toggling bookmark for manga:', manga._id);
+            const response = await fetch('/api/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ action: bookmarked ? 'removeBookmark' : 'addBookmark', mangaId: manga._id })
+            });
+            
+            if (response.ok) {
+                setBookmarked(b => !b);
+                console.log('✅ Bookmark toggled successfully:', !bookmarked);
+                
+                // Show feedback to user
+                const message = bookmarked ? 'Removed from bookmarks!' : 'Added to bookmarks!';
+                // You could add a toast notification here
+                alert(message);
+            } else {
+                const error = await response.json();
+                console.error('❌ Failed to toggle bookmark:', error);
+                alert('Failed to bookmark manga. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error toggling bookmark:', error);
+            alert('Error bookmarking manga. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleTip = async () => {
