@@ -53,8 +53,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         if (isAuthenticated && user) {
+            // Skip WebSocket in production if no server is configured
+            const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+            if (!wsUrl && process.env.NODE_ENV === 'production') {
+                console.log('ℹ️ WebSocket disabled (no WS_URL configured)');
+                return;
+            }
+            
             // Initialize socket connection
-            const newSocket = io(process.env.NODE_ENV === 'production' ? 'wss://yourdomain.com' : 'http://localhost:3000', {
+            const newSocket = io(wsUrl || (process.env.NODE_ENV === 'production' ? 'wss://yourdomain.com' : 'http://localhost:3000'), {
                 transports: ['websocket', 'polling'],
                 autoConnect: true
             });
