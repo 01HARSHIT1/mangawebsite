@@ -31,24 +31,48 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [user, setUser] = useState<any>(null);
+    const [loadingUser, setLoadingUser] = useState(true);
 
     useEffect(() => {
         // Fetch comments for this manga
         fetch(`/api/comments?mangaId=${mangaId}`)
             .then(res => res.json())
-            .then(data => setComments(Array.isArray(data) ? data : []));
+            .then(data => setComments(Array.isArray(data) ? data : []))
+            .catch(err => console.error('Failed to load comments:', err));
+        
         // Fetch user info - check both token storage keys
+        setLoadingUser(true);
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        console.log('🔍 Checking for auth token...');
+        console.log('  authToken:', localStorage.getItem('authToken') ? 'Found' : 'Not found');
+        console.log('  token:', localStorage.getItem('token') ? 'Found' : 'Not found');
+        console.log('  Using token:', token ? 'Yes' : 'No');
+        
         if (token) {
+            console.log('📡 Fetching user profile with token...');
             fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } })
-                .then(res => res.json())
+                .then(res => {
+                    console.log('📥 Profile response status:', res.status);
+                    return res.json();
+                })
                 .then(data => {
+                    console.log('📦 Profile data received:', data);
                     if (data.user) {
                         setUser(data.user);
                         console.log('✅ User loaded for reviews:', data.user.username);
+                    } else {
+                        console.warn('⚠️ No user in response:', data);
                     }
+                    setLoadingUser(false);
                 })
-                .catch(err => console.error('Failed to load user:', err));
+                .catch(err => {
+                    console.error('❌ Failed to load user:', err);
+                    setError('Failed to verify login. Please refresh the page.');
+                    setLoadingUser(false);
+                });
+        } else {
+            console.warn('⚠️ No authentication token found');
+            setLoadingUser(false);
         }
     }, [mangaId]);
 
@@ -105,7 +129,11 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
             </div>
 
             {/* Comment Input - Show After Comments */}
-            {user ? (
+            {loadingUser ? (
+                <div className="bg-gray-700 rounded-lg p-6 text-center border-t-2 border-blue-600">
+                    <p className="text-gray-400">Loading...</p>
+                </div>
+            ) : user ? (
                 <div className="border-t-2 border-blue-600 pt-6">
                     <textarea
                         value={newComment}
@@ -124,8 +152,8 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
                             aria-label="Post comment"
                         >{loading ? 'Posting...' : 'Post'}</button>
                     </div>
-                    {error && <div className="text-red-400 animate-pulse font-semibold mt-2" role="status" aria-live="polite">{error}</div>}
-                    {success && <div className="text-green-400 animate-pulse font-semibold mt-2" role="status" aria-live="polite">{success}</div>}
+                    {error && <div className="text-red-400 font-semibold mt-2" role="status" aria-live="polite">{error}</div>}
+                    {success && <div className="text-green-400 font-semibold mt-2" role="status" aria-live="polite">{success}</div>}
                 </div>
             ) : (
                 <div className="bg-gray-700 rounded-lg p-6 text-center border-t-2 border-blue-600">
