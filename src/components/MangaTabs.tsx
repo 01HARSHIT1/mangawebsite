@@ -81,6 +81,7 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
         setLoading(true);
         setError('');
         setSuccess('');
+        
         // Check both token storage keys
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (!token) {
@@ -88,20 +89,38 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
             setLoading(false);
             return;
         }
-        const res = await fetch('/api/comments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ mangaId, text: newComment }),
-        });
-        const data = await res.json();
-        setLoading(false);
-        if (!res.ok) {
-            setError(data.error || 'Failed to post comment');
-        } else {
-            setSuccess('Comment posted!');
-            setComments(c => [data.comment, ...c]);
-            setNewComment('');
-            setTimeout(() => setSuccess(''), 1200);
+
+        try {
+            console.log('📤 Posting comment to manga:', mangaId);
+            const res = await fetch('/api/comments', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify({ mangaId, text: newComment }),
+            });
+            
+            console.log('📥 Response status:', res.status);
+            const data = await res.json();
+            console.log('📦 Response data:', data);
+            
+            setLoading(false);
+            
+            if (!res.ok) {
+                setError(data.error || 'Failed to post comment');
+                console.error('❌ Failed to post comment:', data);
+            } else {
+                setSuccess('Comment posted!');
+                setComments(c => [data.comment, ...c]);
+                setNewComment('');
+                console.log('✅ Comment posted successfully');
+                setTimeout(() => setSuccess(''), 3000);
+            }
+        } catch (err) {
+            console.error('❌ Error posting comment:', err);
+            setError('Network error. Please try again.');
+            setLoading(false);
         }
     };
 
