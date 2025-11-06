@@ -164,13 +164,82 @@ export default function RazorpayPayment({
                 },
                 modal: {
                     ondismiss: () => {
+                        console.log('⚠️ Payment modal dismissed');
                         setLoading(false);
-                    }
+                    },
+                    // Handle escape from payment (including after UPI payment)
+                    escape: false,
+                    // Add modal event handlers for better mobile UPI detection
+                    confirm_close: false,
+                    // Animation settings for smoother experience
+                    animation: true,
+                    // Handle backdrop clicks
+                    backdropclose: false
                 }
             };
 
             // Open Razorpay checkout
             const razorpay = new window.Razorpay(options);
+            
+            // Store order ID for checking payment status later
+            const currentOrderId = orderData.orderId;
+            console.log('💾 Storing order ID for status check:', currentOrderId);
+            
+            // Listen for Razorpay events (for better mobile UPI detection)
+            razorpay.on('payment.success', function (resp: any) {
+                console.log('🎉 Razorpay payment.success event:', resp);
+                // This sometimes fires even after modal close on mobile
+            });
+
+            razorpay.on('payment.failed', function (resp: any) {
+                console.error('❌ Razorpay payment.failed event:', resp);
+                setLoading(false);
+                onError(resp.error?.description || 'Payment failed');
+            });
+
+            razorpay.on('payment.cancelled', function (resp: any) {
+                console.log('⚠️ Razorpay payment.cancelled event:', resp);
+                setLoading(false);
+            });
+
+            // Check payment status when modal closes (important for mobile UPI)
+            const originalOnDismiss = options.modal.ondismiss;
+            razorpay.modal.ondismiss = async function() {
+                console.log('🔍 Modal closed, checking payment status for order:', currentOrderId);
+                originalOnDismiss();
+                
+                // Wait a moment for any pending callbacks
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Check if payment was completed using Razorpay Fetch API
+                try {
+                    console.log('📡 Fetching order status from Razorpay...');
+                    const statusResponse = await fetch(`/api/razorpay/check-payment-status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                            orderId: currentOrderId
+                        })
+                    });
+
+                    const statusData = await statusResponse.json();
+                    console.log('📊 Payment status check result:', statusData);
+
+                    if (statusData.success && statusData.paymentCompleted) {
+                        console.log('✅ Payment was completed! Payment ID:', statusData.paymentId);
+                        // Trigger success callback
+                        onSuccess(statusData.paymentId);
+                    } else {
+                        console.log('ℹ️ No completed payment found for this order');
+                    }
+                } catch (error) {
+                    console.error('❌ Error checking payment status:', error);
+                }
+            };
+
             razorpay.open();
 
         } catch (error) {
