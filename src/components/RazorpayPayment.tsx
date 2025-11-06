@@ -73,7 +73,7 @@ export default function RazorpayPayment({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('token')}`
                 },
                 body: JSON.stringify({
                     amount: amountInINR, // Send INR amount
@@ -112,6 +112,76 @@ export default function RazorpayPayment({
                 throw new Error(errorMessage);
             }
 
+            // Start polling for payment status immediately
+            // This is crucial for QR code payments where the modal stays open on laptop
+            // but payment happens on mobile
+            const orderId = orderData.orderId;
+            let pollingInterval: NodeJS.Timeout | null = null;
+            let pollCount = 0;
+            const maxPolls = 120; // Poll for up to 10 minutes (120 x 5 seconds)
+
+            const startPaymentPolling = () => {
+                console.log('🔄 Starting payment status polling for order:', orderId);
+                
+                pollingInterval = setInterval(async () => {
+                    pollCount++;
+                    console.log(`📡 Polling payment status... (attempt ${pollCount}/${maxPolls})`);
+
+                    try {
+                        const statusResponse = await fetch('/api/razorpay/check-payment-status', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('token')}`
+                            },
+                            body: JSON.stringify({ orderId })
+                        });
+
+                        const statusData = await statusResponse.json();
+
+                        if (statusData.success && statusData.paymentCompleted) {
+                            console.log('✅ PAYMENT DETECTED! Payment ID:', statusData.paymentId);
+                            
+                            // Stop polling
+                            if (pollingInterval) {
+                                clearInterval(pollingInterval);
+                                pollingInterval = null;
+                            }
+
+                            // Close Razorpay modal if open
+                            try {
+                                // Try to close the Razorpay modal
+                                const razorpayContainer = document.querySelector('.razorpay-container');
+                                if (razorpayContainer) {
+                                    console.log('🔒 Closing Razorpay modal...');
+                                    const closeButton = razorpayContainer.querySelector('[data-dismiss="modal"]') as HTMLElement;
+                                    if (closeButton) {
+                                        closeButton.click();
+                                    }
+                                }
+                            } catch (err) {
+                                console.log('ℹ️ Could not auto-close Razorpay modal:', err);
+                            }
+
+                            // Trigger success callback
+                            setLoading(false);
+                            onSuccess(statusData.paymentId);
+                        } else if (pollCount >= maxPolls) {
+                            console.log('⏱️ Polling timeout reached');
+                            if (pollingInterval) {
+                                clearInterval(pollingInterval);
+                                pollingInterval = null;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Error during polling:', error);
+                    }
+                }, 5000); // Poll every 5 seconds
+            };
+
+            // Start polling immediately
+            startPaymentPolling();
+
             // Configure Razorpay options
             const options = {
                 key: orderData.key,
@@ -121,7 +191,15 @@ export default function RazorpayPayment({
                 description: description,
                 order_id: orderData.orderId,
                 handler: async (response: any) => {
-                    console.log('✅ Payment completed, verifying...', response);
+                    console.log('✅ Payment completed via handler, verifying...', response);
+                    
+                    // Stop polling since payment was completed via normal handler
+                    if (pollingInterval) {
+                        console.log('⏹️ Stopping polling (handler triggered)');
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+                    
                     try {
                         // Verify payment
                         const verifyResponse = await fetch('/api/razorpay/verify-payment', {
@@ -164,81 +242,59 @@ export default function RazorpayPayment({
                 },
                 modal: {
                     ondismiss: () => {
-                        console.log('⚠️ Payment modal dismissed');
+                        console.log('⚠️ Payment modal dismissed by user');
+                        
+                        // Stop polling when modal is closed
+                        if (pollingInterval) {
+                            console.log('⏹️ Stopping polling (modal dismissed)');
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                        }
+                        
                         setLoading(false);
                     },
-                    // Handle escape from payment (including after UPI payment)
-                    escape: false,
-                    // Add modal event handlers for better mobile UPI detection
-                    confirm_close: false,
-                    // Animation settings for smoother experience
+                    // Allow user to close modal if needed
+                    escape: true,
+                    confirm_close: true,
                     animation: true,
-                    // Handle backdrop clicks
-                    backdropclose: false
+                    backdropclose: true
                 }
             };
 
             // Open Razorpay checkout
             const razorpay = new window.Razorpay(options);
             
-            // Store order ID for checking payment status later
-            const currentOrderId = orderData.orderId;
-            console.log('💾 Storing order ID for status check:', currentOrderId);
-            
-            // Listen for Razorpay events (for better mobile UPI detection)
+            // Listen for Razorpay events
             razorpay.on('payment.success', function (resp: any) {
                 console.log('🎉 Razorpay payment.success event:', resp);
-                // This sometimes fires even after modal close on mobile
+                // Stop polling
+                if (pollingInterval) {
+                    console.log('⏹️ Stopping polling (payment.success event)');
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
             });
 
             razorpay.on('payment.failed', function (resp: any) {
                 console.error('❌ Razorpay payment.failed event:', resp);
+                // Stop polling
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
                 setLoading(false);
                 onError(resp.error?.description || 'Payment failed');
             });
 
             razorpay.on('payment.cancelled', function (resp: any) {
                 console.log('⚠️ Razorpay payment.cancelled event:', resp);
+                // Stop polling
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
                 setLoading(false);
             });
-
-            // Check payment status when modal closes (important for mobile UPI)
-            const originalOnDismiss = options.modal.ondismiss;
-            razorpay.modal.ondismiss = async function() {
-                console.log('🔍 Modal closed, checking payment status for order:', currentOrderId);
-                originalOnDismiss();
-                
-                // Wait a moment for any pending callbacks
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Check if payment was completed using Razorpay Fetch API
-                try {
-                    console.log('📡 Fetching order status from Razorpay...');
-                    const statusResponse = await fetch(`/api/razorpay/check-payment-status`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('token')}`
-                        },
-                        body: JSON.stringify({
-                            orderId: currentOrderId
-                        })
-                    });
-
-                    const statusData = await statusResponse.json();
-                    console.log('📊 Payment status check result:', statusData);
-
-                    if (statusData.success && statusData.paymentCompleted) {
-                        console.log('✅ Payment was completed! Payment ID:', statusData.paymentId);
-                        // Trigger success callback
-                        onSuccess(statusData.paymentId);
-                    } else {
-                        console.log('ℹ️ No completed payment found for this order');
-                    }
-                } catch (error) {
-                    console.error('❌ Error checking payment status:', error);
-                }
-            };
 
             razorpay.open();
 
