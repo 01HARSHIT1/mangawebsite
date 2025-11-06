@@ -1,10 +1,8 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { FaChevronLeft, FaChevronRight, FaHome, FaList, FaCog, FaComments, FaUsers } from 'react-icons/fa';
-import LiveChat from './LiveChat';
-import LiveReactions from './LiveReactions';
-import { useWebSocket } from '@/contexts/WebSocketContext';
+import { FaChevronLeft, FaChevronRight, FaHome, FaChevronDown, FaFacebook, FaTwitter, FaInstagram, FaDiscord, FaWhatsapp, FaShareAlt } from 'react-icons/fa';
+import { socialMediaLinks, websiteInfo } from '@/config/socialMedia';
 
 interface ChapterReaderProps {
     manga: any;
@@ -23,580 +21,498 @@ export default function ChapterReader({
     nextChapter,
     currentIndex
 }: ChapterReaderProps) {
-    const [currentPage, setCurrentPage] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [showControls, setShowControls] = useState(true);
-    const [readingMode, setReadingMode] = useState<'vertical' | 'horizontal'>('vertical');
-    const [imageQuality, setImageQuality] = useState<'high' | 'medium' | 'low'>('high');
-    const [showLiveChat, setShowLiveChat] = useState(false);
-    const [isBookmarked, setIsBookmarked] = useState(false);
-    const [bookmarkLoading, setBookmarkLoading] = useState(false);
+    const [showChapterDropdown, setShowChapterDropdown] = useState(false);
+    const [comments, setComments] = useState<any[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [username, setUsername] = useState('');
+    const [submittingComment, setSubmittingComment] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const containerRef = useRef<HTMLDivElement>(null);
-    const controlsTimeoutRef = useRef<NodeJS.Timeout>();
-    
-    const { currentReaders, joinMangaRoom, leaveMangaRoom } = useWebSocket();
-
-    // Get chapter pages (assuming pages are stored as an array of image URLs)
-    const pages = Array.isArray(chapter.pages) ? chapter.pages : [];
-    const pdfUrl =
-        chapter?.pdfUrl ||
-        chapter?.pdfFile?.secure_url ||
-        chapter?.pdfFile?.url ||
-        chapter?.pdfFile ||
-        (Array.isArray(pages) && pages.length > 0
-            ? (typeof pages[0] === 'string' && pages[0].toLowerCase().endsWith('.pdf')
-                ? pages[0]
-                : (pages[0]?.imagePath && typeof pages[0].imagePath === 'string' && pages[0].imagePath.toLowerCase().endsWith('.pdf')
-                    ? pages[0].imagePath
-                    : '') )
-            : '');
-    const hasPdf = typeof pdfUrl === 'string' && pdfUrl.length > 0;
-
-    // Ensure all IDs are strings
     const mangaId = typeof manga._id === 'string' ? manga._id : manga._id?.toString() || '';
     const chapterId = typeof chapter._id === 'string' ? chapter._id : chapter._id?.toString() || '';
 
-    // Auto-hide controls after 3 seconds of inactivity
-    const hideControls = useCallback(() => {
-        if (controlsTimeoutRef.current) {
-            clearTimeout(controlsTimeoutRef.current);
+    // Get chapter pages
+    const pages = Array.isArray(chapter.pages) ? chapter.pages : [];
+    const pdfUrl = chapter?.pdfUrl || chapter?.pdfFile?.secure_url || '';
+
+    // Convert PDF pages to Cloudinary image URLs
+    const [loadedPageCount, setLoadedPageCount] = useState(0);
+    const [failedPages, setFailedPages] = useState(0);
+    const maxPages = 100; // Maximum pages to try loading
+    const maxConsecutiveFailures = 3; // Stop after 3 consecutive failures
+    
+    const chapterImages: string[] = [];
+    
+    if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
+        // Cloudinary PDF to image transformation
+        // We'll try loading pages until we hit consecutive failures
+        for (let i = 1; i <= maxPages; i++) {
+            // Transform: /upload/ -> /upload/f_jpg,pg_{pageNumber},q_auto/
+            const imageUrl = pdfUrl.replace('/upload/', `/upload/f_jpg,pg_${i},q_auto/`);
+            chapterImages.push(imageUrl);
         }
-        controlsTimeoutRef.current = setTimeout(() => {
-            setShowControls(false);
-        }, 3000);
+    } else if (pages.length > 0) {
+        // Use existing pages
+        pages.forEach((page: any) => {
+            if (typeof page === 'string') {
+                chapterImages.push(page);
+            } else if (page?.imagePath) {
+                chapterImages.push(page.imagePath);
+            }
+        });
+    }
+    
+    // Track image load errors
+    const handleImageError = (pageIndex: number) => {
+        setFailedPages(prev => {
+            const newFailedCount = prev + 1;
+            // If we have too many consecutive failures near the end, we've reached the last page
+            if (pageIndex > 5 && newFailedCount >= maxConsecutiveFailures) {
+                console.log(`📄 Detected end of chapter at page ${pageIndex}`);
+            }
+            return newFailedCount;
+        });
+    };
+    
+    const handleImageLoad = (pageIndex: number) => {
+        setLoadedPageCount(pageIndex + 1);
+        setFailedPages(0); // Reset consecutive failures
+    };
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowChapterDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Join manga room for live features
+    // Check if user is logged in
     useEffect(() => {
-        if (manga?._id) {
-            joinMangaRoom(manga._id);
-        }
-
-        // Cleanup: Leave room when component unmounts
-        return () => {
-            if (manga?._id) {
-                leaveMangaRoom(manga._id);
-            }
-        };
-    }, [manga._id, joinMangaRoom, leaveMangaRoom]);
-
-    // Check if chapter is bookmarked
-    useEffect(() => {
-        const checkBookmark = async () => {
-            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-            if (!token || !mangaId || !chapterId) return;
-
-            try {
-                const response = await fetch('/api/profile', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.user && data.user.bookmarks) {
-                        // Check if this chapter is bookmarked
-                        const isChapterBookmarked = data.user.bookmarks.some((bookmark: any) => 
-                            (typeof bookmark === 'object' && bookmark.mangaId === mangaId && bookmark.chapterId === chapterId) ||
-                            (typeof bookmark === 'string' && bookmark === mangaId) // Legacy manga bookmark
-                        );
-                        setIsBookmarked(isChapterBookmarked);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to check bookmark status:', error);
-            }
-        };
-
-        checkBookmark();
-    }, [mangaId, chapterId]);
-
-    // Handle chapter bookmark toggle
-    const handleBookmarkChapter = async () => {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        if (!token) {
-            alert('Please login to bookmark chapters');
+        if (token) {
+            setIsLoggedIn(true);
+            // Fetch user info
+            fetch('/api/profile', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.user) {
+                        setUsername(data.user.username || 'Anonymous');
+                    }
+                })
+                .catch(err => console.error('Failed to fetch user info:', err));
+        }
+    }, []);
+
+    // Load comments
+    useEffect(() => {
+        if (chapterId) {
+            fetch(`/api/comments/${chapterId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.comments) {
+                        setComments(data.comments);
+                    }
+                })
+                .catch(err => console.error('Failed to load comments:', err));
+        }
+    }, [chapterId]);
+
+    // Handle comment submission
+    const handleSubmitComment = async () => {
+        if (!newComment.trim()) return;
+        if (!isLoggedIn) {
+            alert('Please login to comment');
             return;
         }
 
-        setBookmarkLoading(true);
+        setSubmittingComment(true);
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+
         try {
-            const response = await fetch('/api/profile', {
-                method: 'PUT',
+            const response = await fetch(`/api/comments/${chapterId}`, {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    action: isBookmarked ? 'removeChapterBookmark' : 'addChapterBookmark',
-                    mangaId,
-                    chapterId
-                })
+                body: JSON.stringify({ content: newComment })
             });
 
             if (response.ok) {
-                setIsBookmarked(!isBookmarked);
-                console.log(isBookmarked ? '🔖 Chapter bookmark removed' : '🔖 Chapter bookmarked');
+                const data = await response.json();
+                setComments([data.comment, ...comments]);
+                setNewComment('');
             } else {
-                const error = await response.json();
-                console.error('Failed to toggle bookmark:', error);
-                alert('Failed to bookmark chapter');
+                alert('Failed to post comment');
             }
         } catch (error) {
-            console.error('Error toggling bookmark:', error);
-            alert('Error bookmarking chapter');
+            console.error('Error posting comment:', error);
+            alert('Error posting comment');
         } finally {
-            setBookmarkLoading(false);
+            setSubmittingComment(false);
         }
     };
 
-    // Show controls on mouse move or touch
-    const showControlsTemporarily = useCallback(() => {
-        setShowControls(true);
-        hideControls();
-    }, [hideControls]);
-
-    // Navigation functions
-    const goToNextPage = useCallback(() => {
-        if (currentPage < pages.length - 1) {
-            setCurrentPage(prev => prev + 1);
-        } else if (nextChapter) {
-            // Go to next chapter
-            const nextChapterId = typeof nextChapter._id === 'string' ? nextChapter._id : nextChapter._id?.toString() || '';
-            window.location.href = `/manga/${mangaId}/chapter/${nextChapterId}`;
+    // Handle share
+    const handleShare = () => {
+        const shareUrl = window.location.href;
+        if (navigator.share) {
+            navigator.share({
+                title: `${manga.title} - Chapter ${chapter.chapterNumber}`,
+                url: shareUrl
+            });
+        } else {
+            navigator.clipboard.writeText(shareUrl);
+            alert('Link copied to clipboard!');
         }
-    }, [currentPage, pages.length, nextChapter, mangaId]);
-
-    const goToPrevPage = useCallback(() => {
-        if (currentPage > 0) {
-            setCurrentPage(prev => prev - 1);
-        } else if (prevChapter) {
-            // Go to previous chapter
-            const prevChapterId = typeof prevChapter._id === 'string' ? prevChapter._id : prevChapter._id?.toString() || '';
-            window.location.href = `/manga/${mangaId}/chapter/${prevChapterId}`;
-        }
-    }, [currentPage, prevChapter, mangaId]);
-
-    // Keyboard navigation
-    useEffect(() => {
-        const handleKeyPress = (e: KeyboardEvent) => {
-            switch (e.key) {
-                case 'ArrowRight':
-                case ' ':
-                    e.preventDefault();
-                    goToNextPage();
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    goToPrevPage();
-                    break;
-                case 'Escape':
-                    setShowControls(prev => !prev);
-                    break;
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyPress);
-        return () => window.removeEventListener('keydown', handleKeyPress);
-    }, [goToNextPage, goToPrevPage]);
-
-    // Mouse/touch events for controls
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        container.addEventListener('mousemove', showControlsTemporarily);
-        container.addEventListener('touchstart', showControlsTemporarily);
-
-        return () => {
-            container.removeEventListener('mousemove', showControlsTemporarily);
-            container.removeEventListener('touchstart', showControlsTemporarily);
-        };
-    }, [showControlsTemporarily]);
-
-    // Auto-hide controls
-    useEffect(() => {
-        hideControls();
-        return () => {
-            if (controlsTimeoutRef.current) {
-                clearTimeout(controlsTimeoutRef.current);
-            }
-        };
-    }, [hideControls]);
-
-    // Record reading progress - fires once when component mounts
-    useEffect(() => {
-        const recordProgress = async () => {
-            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-            if (!token) {
-                console.warn('⚠️ No token found, cannot record reading progress');
-                console.warn('   Check localStorage: authToken =', localStorage.getItem('authToken'), ', token =', localStorage.getItem('token'));
-                return;
-            }
-            
-            if (!mangaId || !chapterId) {
-                console.warn('⚠️ Missing mangaId or chapterId:', { mangaId, chapterId });
-                return;
-            }
-
-            try {
-                console.log('📖 Recording reading progress...', { 
-                    mangaId, 
-                    chapterId, 
-                    chapterNumber: chapter.chapterNumber,
-                    currentPage: 0
-                });
-                
-                const response = await fetch('/api/profile', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        action: 'recordReading',
-                        mangaId: mangaId,
-                        chapterId: chapterId,
-                        chapterNumber: chapter.chapterNumber || 1,
-                        currentPage: 0
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('✅ Reading progress recorded successfully:', result);
-                } else {
-                    const error = await response.text();
-                    console.error('❌ Failed to record reading progress:', response.status, error);
-                }
-            } catch (error) {
-                console.error('❌ Error recording reading progress:', error);
-            }
-        };
-
-        // Record immediately on mount
-        recordProgress();
-    }, [mangaId, chapterId, chapter.chapterNumber]); // Removed currentPage dependency
-
-    if (!pages || pages.length === 0 || hasPdf) {
-        // If there are no rasterized pages OR content is a PDF, render the PDF inline
-        if (hasPdf) {
-            // Convert Cloudinary PDF URL to image preview URL
-            // Cloudinary can convert PDF pages to images: replace /upload/ with /upload/pg_1/
-            const cloudinaryImageUrl = pdfUrl.includes('cloudinary.com') 
-                ? pdfUrl.replace('/upload/', '/upload/f_jpg,pg_1,q_auto/')
-                : pdfUrl;
-            
-            return (
-                <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center">
-                    <div className="w-full max-w-5xl py-6 px-4">
-                        <div className="mb-4 flex items-center justify-between">
-                            <Link href={`/manga/${mangaId}`} className="text-blue-400 hover:text-blue-300">← Back to Manga</Link>
-                            <div className="text-gray-300">Chapter {chapter.chapterNumber}</div>
-                        </div>
-                        
-                        {/* Try to render as image first (Cloudinary converts PDF to image) */}
-                        <div className="rounded-xl overflow-hidden border border-gray-700 shadow-2xl bg-black flex items-center justify-center" style={{minHeight: '85vh'}}>
-                            <img 
-                                src={cloudinaryImageUrl} 
-                                alt={`Chapter ${chapter.chapterNumber}`}
-                                className="w-full h-auto max-w-full"
-                                onError={(e) => {
-                                    // If image conversion fails, show direct PDF link
-                                    console.error('Failed to load PDF as image, falling back to direct link');
-                                    e.currentTarget.style.display = 'none';
-                                    const container = e.currentTarget.parentElement;
-                                    if (container) {
-                                        container.innerHTML = `
-                                            <div class="text-center p-8">
-                                                <p class="text-lg mb-4">Unable to display PDF inline</p>
-                                                <a href="${pdfUrl}" target="_blank" rel="noreferrer" 
-                                                   class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
-                                                    Open PDF in New Tab
-                                                </a>
-                                            </div>
-                                        `;
-                                    }
-                                }}
-                            />
-                        </div>
-                        
-                        <div className="text-xs text-gray-500 mt-2 text-center">
-                            <a className="text-blue-400 underline hover:text-blue-300" href={pdfUrl} target="_blank" rel="noreferrer">
-                                Open PDF in new tab
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-        return (
-            <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold mb-4">No Pages Available</h1>
-                    <p className="text-gray-400">This chapter has no pages to display.</p>
-                    <Link href={`/manga/${mangaId}`} className="mt-4 inline-block bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg">
-                        Back to Manga
-                    </Link>
-                    <div className="mt-4">
-                        <img src="/placeholder-page.svg" alt="Placeholder" className="w-64 h-auto mx-auto opacity-50" />
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    };
 
     return (
-        <div
-            ref={containerRef}
-            className="min-h-screen bg-black relative overflow-hidden"
-            onMouseMove={showControlsTemporarily}
-            onTouchStart={showControlsTemporarily}
-        >
-            {/* Top Navigation Bar */}
-            {showControls && (
-                <div className="absolute top-0 left-0 right-0 z-50 bg-black bg-opacity-80 backdrop-blur-sm transition-opacity duration-300">
-                    <div className="flex items-center justify-between p-4">
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href={`/manga/${mangaId}`}
-                                className="flex items-center gap-2 text-white hover:text-blue-400 transition-colors"
-                            >
-                                <FaHome />
-                                <span className="hidden sm:inline">{manga.title}</span>
-                            </Link>
-                            <span className="text-gray-400">|</span>
-                            <span className="text-white font-semibold">
-                                Chapter {chapter.chapterNumber}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <div className="text-white text-sm">
-                                Page {currentPage + 1} of {pages.length}
-                            </div>
-                            <button
-                                onClick={handleBookmarkChapter}
-                                disabled={bookmarkLoading}
-                                className={`px-3 py-1 rounded-lg transition-all ${
-                                    isBookmarked 
-                                        ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
-                                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                }`}
-                                title={isBookmarked ? 'Remove bookmark' : 'Bookmark this chapter'}
-                            >
-                                {bookmarkLoading ? '...' : isBookmarked ? '🔖 Bookmarked' : '🔖 Bookmark'}
-                            </button>
-                            <button
-                                onClick={() => setReadingMode(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
-                                className="text-white hover:text-blue-400 transition-colors"
-                                title={`Switch to ${readingMode === 'vertical' ? 'horizontal' : 'vertical'} reading`}
-                            >
-                                {readingMode === 'vertical' ? '↔' : '↕'}
-                            </button>
-                            <Link
-                                href={`/manga/${mangaId}`}
-                                className="text-white hover:text-blue-400 transition-colors"
-                                title="Chapter List"
-                            >
-                                <FaList />
-                            </Link>
+        <div className="min-h-screen bg-gray-950 text-white">
+            {/* Top Navigation */}
+            <div className="w-full bg-black border-b border-gray-800 py-6">
+                <div className="max-w-4xl mx-auto px-4">
+                    {/* Chapter Cover and Title */}
+                    <div className="flex items-center gap-6 mb-6">
+                        {chapter.coverPage && (
+                            <img
+                                src={chapter.coverPage}
+                                alt={`Chapter ${chapter.chapterNumber}`}
+                                className="w-32 h-auto rounded-lg border border-gray-700 shadow-lg"
+                            />
+                        )}
+                        <div>
+                            <h1 className="text-3xl font-bold mb-2">
+                                {manga.title} Chapter {chapter.chapterNumber}
+                            </h1>
+                            {chapter.subtitle && (
+                                <p className="text-gray-400 text-lg">{chapter.subtitle}</p>
+                            )}
+                            <p className="text-gray-500 text-sm mt-2">
+                                {new Date(chapter.createdAt).toLocaleDateString()}
+                            </p>
                         </div>
                     </div>
-                </div>
-            )}
 
-            {/* Chapter Pages */}
-            <div className={`pt-16 ${readingMode === 'vertical' ? 'space-y-2' : 'flex overflow-x-auto'}`}>
-                {pages.map((page: any, index: number) => {
-                    // Handle both MongoDB-stored images and file paths
-                    let imageSrc = '';
-                    let imageAlt = `Page ${index + 1}`;
-
-                    if (typeof page === 'string') {
-                        // File path (legacy format)
-                        imageSrc = page;
-                    } else if (page && page.imagePath) {
-                        // Use the imagePath directly from the database
-                        imageSrc = page.imagePath;
-                        imageAlt = `Page ${page.pageNumber || index + 1}`;
-                    } else if (page && page.pageNumber) {
-                        // Fallback to API endpoint if imagePath doesn't exist
-                        imageSrc = `/api/manga/chapter/${chapterId}/page/${page.pageNumber}`;
-                        imageAlt = `Page ${page.pageNumber}`;
-                    } else {
-                        // Final fallback
-                        imageSrc = '/placeholder-page.svg';
-                    }
-
-                    return (
-                        <div
-                            key={index}
-                            className={`${readingMode === 'vertical'
-                                ? 'w-full max-w-4xl mx-auto'
-                                : 'flex-shrink-0 w-full max-w-4xl'
-                                }`}
-                        >
-                            <img
-                                src={imageSrc}
-                                alt={imageAlt}
-                                className={`w-full h-auto ${imageQuality === 'high' ? 'max-w-none' :
-                                    imageQuality === 'medium' ? 'max-w-3xl' : 'max-w-2xl'
-                                    } mx-auto transition-opacity duration-300`}
-                                onLoad={() => {
-                                    if (index === currentPage) {
-                                        setLoading(false);
-                                    }
-                                }}
-                                onLoadStart={() => {
-                                    if (index === currentPage) {
-                                        setLoading(true);
-                                    }
-                                }}
-                                onError={(e) => {
-                                    console.error(`Failed to load page ${index + 1}:`, page);
-                                    console.error(`Image source was:`, imageSrc);
-                                    console.error(`Page data:`, page);
-                                    // Use local SVG placeholders for reliable fallback
-                                    const pageNumber = index + 1;
-                                    if (pageNumber >= 1 && pageNumber <= 5) {
-                                        e.currentTarget.src = `/placeholder-page-${pageNumber}.svg`;
-                                    } else {
-                                        e.currentTarget.src = '/placeholder-page.svg';
-                                    }
-                                }}
-                            />
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Navigation Controls */}
-            {showControls && (
-                <>
-                    {/* Previous Page/Chapter Button */}
-                    {(currentPage > 0 || prevChapter) && (
-                        <button
-                            onClick={goToPrevPage}
-                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-3 rounded-full transition-all duration-200 z-40"
-                            title={currentPage > 0 ? 'Previous Page' : 'Previous Chapter'}
-                        >
-                            <FaChevronLeft size={24} />
-                        </button>
-                    )}
-
-                    {/* Next Page/Chapter Button */}
-                    {(currentPage < pages.length - 1 || nextChapter) && (
-                        <button
-                            onClick={goToNextPage}
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-3 rounded-full transition-all duration-200 z-40"
-                            title={currentPage < pages.length - 1 ? 'Next Page' : 'Next Chapter'}
-                        >
-                            <FaChevronRight size={24} />
-                        </button>
-                    )}
-
-                    {/* Chapter Navigation */}
-                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-40">
-                        <div className="flex items-center gap-4 bg-black bg-opacity-80 backdrop-blur-sm rounded-lg px-6 py-3">
-                            {prevChapter && (
+                    {/* Navigation Buttons */}
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-4">
+                            {/* Previous Button */}
+                            {prevChapter ? (
                                 <Link
-                                    href={`/manga/${mangaId}/chapter/${typeof prevChapter._id === 'string' ? prevChapter._id : prevChapter._id?.toString() || ''}`}
-                                    className="text-white hover:text-blue-400 transition-colors flex items-center gap-2"
+                                    href={`/manga/${mangaId}/chapter/${prevChapter._id}`}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
                                 >
                                     <FaChevronLeft />
-                                    <span className="hidden sm:inline">Chapter {prevChapter.chapterNumber}</span>
+                                    <span>Prev</span>
                                 </Link>
+                            ) : (
+                                <div className="w-24"></div>
                             )}
 
-                            <span className="text-white font-semibold">
-                                Chapter {chapter.chapterNumber}
-                            </span>
+                            {/* Home Button */}
+                            <Link
+                                href={`/manga/${mangaId}`}
+                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                            >
+                                <FaHome />
+                                <span>Home</span>
+                            </Link>
 
-                            {nextChapter && (
+                            {/* Next Button */}
+                            {nextChapter ? (
                                 <Link
-                                    href={`/manga/${mangaId}/chapter/${typeof nextChapter._id === 'string' ? nextChapter._id : nextChapter._id?.toString() || ''}`}
-                                    className="text-white hover:text-blue-400 transition-colors flex items-center gap-2"
+                                    href={`/manga/${mangaId}/chapter/${nextChapter._id}`}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
                                 >
-                                    <span className="hidden sm:inline">Chapter {nextChapter.chapterNumber}</span>
+                                    <span>Next</span>
                                     <FaChevronRight />
                                 </Link>
+                            ) : (
+                                <div className="w-24"></div>
+                            )}
+                        </div>
+
+                        {/* Chapter Dropdown */}
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setShowChapterDropdown(!showChapterDropdown)}
+                                className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg min-w-[200px] justify-center"
+                            >
+                                <span>Chapter {chapter.chapterNumber}</span>
+                                <FaChevronDown className={`transition-transform ${showChapterDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {showChapterDropdown && (
+                                <div className="absolute top-full mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden z-50 min-w-[200px]">
+                                    <div className="max-h-[280px] overflow-y-auto chapter-dropdown-scroll">
+                                        {allChapters.map((ch) => (
+                                            <Link
+                                                key={ch._id}
+                                                href={`/manga/${mangaId}/chapter/${ch._id}`}
+                                                className={`block px-4 py-3 hover:bg-gray-800 transition-colors ${
+                                                    ch._id === chapterId
+                                                        ? 'bg-blue-600 text-white font-bold'
+                                                        : 'text-gray-300'
+                                                }`}
+                                                onClick={() => setShowChapterDropdown(false)}
+                                            >
+                                                Chapter {ch.chapterNumber}
+                                                {ch.subtitle && <span className="text-sm opacity-75"> - {ch.subtitle}</span>}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
-                </>
-            )}
-
-            {/* Loading Indicator */}
-            {loading && (
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="text-white text-xl">Loading...</div>
                 </div>
-            )}
-
-            {/* Quick Navigation Menu */}
-            {showControls && (
-                <div className="absolute top-20 right-4 z-40">
-                    <div className="bg-black bg-opacity-80 backdrop-blur-sm rounded-lg p-4">
-                        <h3 className="text-white font-semibold mb-3">Quick Navigation</h3>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {allChapters.map((ch) => (
-                                <Link
-                                    key={ch._id}
-                                    href={`/manga/${mangaId}/chapter/${typeof ch._id === 'string' ? ch._id : ch._id?.toString() || ''}`}
-                                    className={`block px-3 py-2 rounded text-sm transition-colors ${ch._id === chapter._id
-                                        ? 'bg-blue-600 text-white'
-                                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                                        }`}
-                                >
-                                    Chapter {ch.chapterNumber}
-                                    {ch.subtitle && ` - ${ch.subtitle}`}
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Live Features for Chapter Reading */}
-            <div className="fixed bottom-4 right-4 flex flex-col items-end space-y-4 z-50">
-                {/* Current Readers Indicator */}
-                {currentReaders[manga._id] && currentReaders[manga._id].length > 0 && (
-                    <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 border border-purple-500/20 shadow-lg">
-                        <div className="flex items-center space-x-2 text-white">
-                            <FaUsers className="text-purple-400" />
-                            <span className="text-sm">
-                                {currentReaders[manga._id].length} reading together
-                            </span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Live Chat Toggle */}
-                <button
-                    onClick={() => setShowLiveChat(!showLiveChat)}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-full shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105"
-                    title="Toggle Live Chat"
-                >
-                    <FaComments className="text-lg" />
-                </button>
-
-                {/* Live Reactions for Chapter */}
-                <LiveReactions 
-                    targetId={chapter._id} 
-                    targetType="chapter"
-                    className="relative"
-                />
             </div>
 
-            {/* Live Chat */}
-            {showLiveChat && (
-                <LiveChat
-                    mangaId={manga._id}
-                    chapterId={chapter._id}
-                    isMinimized={false}
-                    onToggleMinimize={() => setShowLiveChat(false)}
-                />
-            )}
+            {/* Manga Content */}
+            <div className="w-full max-w-4xl mx-auto py-8 px-4">
+                {chapterImages.length > 0 ? (
+                    <div className="space-y-2">
+                        {chapterImages.map((imageSrc, index) => {
+                            // Stop rendering after too many consecutive failures
+                            if (index > loadedPageCount + maxConsecutiveFailures) {
+                                return null;
+                            }
+                            
+                            return (
+                                <img
+                                    key={index}
+                                    src={imageSrc}
+                                    alt={`Page ${index + 1}`}
+                                    className="w-full h-auto"
+                                    onLoad={() => handleImageLoad(index)}
+                                    onError={(e) => {
+                                        handleImageError(index);
+                                        // Hide broken images (pages beyond actual count)
+                                        e.currentTarget.style.display = 'none';
+                                    }}
+                                    loading="lazy"
+                                />
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="text-center py-20">
+                        <p className="text-gray-400 text-lg">No pages available for this chapter</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Navigation (Repeat) */}
+            <div className="w-full bg-black border-t border-gray-800 py-6">
+                <div className="max-w-4xl mx-auto px-4">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="flex items-center gap-4">
+                            {/* Previous Button */}
+                            {prevChapter ? (
+                                <Link
+                                    href={`/manga/${mangaId}/chapter/${prevChapter._id}`}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                >
+                                    <FaChevronLeft />
+                                    <span>Prev</span>
+                                </Link>
+                            ) : (
+                                <div className="w-24"></div>
+                            )}
+
+                            {/* Home Button */}
+                            <Link
+                                href={`/manga/${mangaId}`}
+                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                            >
+                                <FaHome />
+                                <span>Home</span>
+                            </Link>
+
+                            {/* Next Button */}
+                            {nextChapter ? (
+                                <Link
+                                    href={`/manga/${mangaId}/chapter/${nextChapter._id}`}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                >
+                                    <span>Next</span>
+                                    <FaChevronRight />
+                                </Link>
+                            ) : (
+                                <div className="w-24"></div>
+                            )}
+                        </div>
+
+                        {/* Chapter Dropdown (Repeat) */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowChapterDropdown(!showChapterDropdown)}
+                                className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg min-w-[200px] justify-center"
+                            >
+                                <span>Chapter {chapter.chapterNumber}</span>
+                                <FaChevronDown className={`transition-transform ${showChapterDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Social Media Share Section */}
+            <div className="w-full bg-gray-900 border-t border-gray-800 py-8">
+                <div className="max-w-4xl mx-auto px-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Share */}
+                        <div className="bg-gray-800 rounded-lg p-6 text-center">
+                            <h3 className="font-semibold mb-3 text-lg">Share This Chapter</h3>
+                            <button
+                                onClick={handleShare}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+                            >
+                                <FaShareAlt />
+                                Share
+                            </button>
+                        </div>
+
+                        {/* Join Our Socials */}
+                        <div className="bg-gray-800 rounded-lg p-6 text-center">
+                            <h3 className="font-semibold mb-3 text-lg">Join Our Socials</h3>
+                            <div className="flex items-center justify-center gap-3">
+                                {socialMediaLinks.facebook && (
+                                    <a href={socialMediaLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 text-2xl">
+                                        <FaFacebook />
+                                    </a>
+                                )}
+                                {socialMediaLinks.twitter && (
+                                    <a href={socialMediaLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-2xl">
+                                        <FaTwitter />
+                                    </a>
+                                )}
+                                {socialMediaLinks.instagram && (
+                                    <a href={socialMediaLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:text-pink-400 text-2xl">
+                                        <FaInstagram />
+                                    </a>
+                                )}
+                                {socialMediaLinks.discord && (
+                                    <a href={socialMediaLinks.discord} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:text-indigo-400 text-2xl">
+                                        <FaDiscord />
+                                    </a>
+                                )}
+                                {socialMediaLinks.whatsapp && (
+                                    <a href={socialMediaLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="text-green-500 hover:text-green-400 text-2xl">
+                                        <FaWhatsapp />
+                                    </a>
+                                )}
+                            </div>
+                            {!socialMediaLinks.facebook && !socialMediaLinks.twitter && !socialMediaLinks.instagram && !socialMediaLinks.discord && !socialMediaLinks.whatsapp && (
+                                <p className="text-gray-500 text-sm">Social links coming soon!</p>
+                            )}
+                        </div>
+
+                        {/* Support Us */}
+                        <div className="bg-gray-800 rounded-lg p-6 text-center">
+                            <h3 className="font-semibold mb-3 text-lg">Support Us</h3>
+                            <button
+                                onClick={() => alert('Support/Donation feature coming soon!')}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+                            >
+                                Donate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Comments Section */}
+            <div className="w-full bg-gray-950 border-t border-gray-800 py-8">
+                <div className="max-w-4xl mx-auto px-4">
+                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                        💬 Comments ({comments.length})
+                    </h2>
+
+                    {/* Comment Input */}
+                    {isLoggedIn ? (
+                        <div className="bg-gray-900 rounded-lg p-4 mb-6">
+                            <textarea
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Write your comment..."
+                                className="w-full bg-gray-800 text-white rounded-lg p-3 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="flex justify-between items-center mt-3">
+                                <span className="text-gray-400 text-sm">Commenting as {username}</span>
+                                <button
+                                    onClick={handleSubmitComment}
+                                    disabled={submittingComment || !newComment.trim()}
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-semibold transition-all"
+                                >
+                                    {submittingComment ? 'Posting...' : 'Post Comment'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-900 rounded-lg p-6 mb-6 text-center">
+                            <p className="text-gray-400 mb-3">Please login to comment</p>
+                            <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all">
+                                Login
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Comments List */}
+                    <div className="space-y-4">
+                        {comments.length > 0 ? (
+                            comments.map((comment) => (
+                                <div key={comment._id} className="bg-gray-900 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="font-semibold text-blue-400">{comment.username}</span>
+                                        <span className="text-gray-500 text-sm">
+                                            {new Date(comment.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <p className="text-gray-300">{comment.content}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-8 text-gray-500">
+                                No comments yet. Be the first to comment!
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div className="w-full bg-black border-t border-gray-800 py-8">
+                <div className="max-w-6xl mx-auto px-4">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h3 className="text-xl font-bold text-red-500 mb-1">{websiteInfo.name}</h3>
+                            <p className="text-gray-400 text-sm">{websiteInfo.tagline}</p>
+                            <p className="text-gray-600 text-xs mt-2">{websiteInfo.copyright} • v{websiteInfo.version}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                            <div className="flex gap-4 text-gray-400 text-sm">
+                                <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                                <Link href="/dmca" className="hover:text-white transition-colors">DMCA</Link>
+                                {socialMediaLinks.discord && (
+                                    <a href={socialMediaLinks.discord} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Discord</a>
+                                )}
+                            </div>
+                            <div className="text-gray-600 text-xs">Made by {websiteInfo.developer}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

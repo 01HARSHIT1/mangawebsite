@@ -802,3 +802,27 @@ body {
     background: var(--bg-elevated);
     color: var(--text-primary);
 }
+
+/* Chapter Dropdown Scrollbar */
+.chapter-dropdown-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937;
+}
+
+.chapter-dropdown-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chapter-dropdown-scroll::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 3px;
+}
+
+.chapter-dropdown-scroll::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 3px;
+}
+
+.chapter-dropdown-scroll::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
