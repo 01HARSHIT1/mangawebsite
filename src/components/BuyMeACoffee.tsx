@@ -37,6 +37,14 @@ export default function BuyMeACoffee() {
     };
 
     const handlePaymentSuccess = async (paymentId: string) => {
+        console.log('🎉 Payment successful! Payment ID:', paymentId);
+        console.log('💰 Recording donation of ₹', amount);
+        
+        // Immediately show success message
+        setSuccess('Payment successful! Recording your donation... 🎉');
+        setError('');
+        setShowPayment(false);
+        
         try {
             // Record the donation
             const response = await fetch('/api/donations', {
@@ -52,25 +60,37 @@ export default function BuyMeACoffee() {
                 })
             });
 
+            const data = await response.json();
+            console.log('📦 Donation record response:', data);
+
             if (response.ok) {
-                setSuccess('Thank you for your support! ❤️');
+                console.log('✅ Donation recorded successfully!');
+                setSuccess('Thank you for your generous support! ❤️');
                 setAmount('');
                 setCustomMessage('');
-                setShowPayment(false);
                 
-                // Show success and close modal after 3 seconds
+                // Show success and close modal after 4 seconds
                 setTimeout(() => {
                     setShowModal(false);
                     setSuccess('');
-                }, 3000);
+                }, 4000);
+            } else {
+                console.warn('⚠️ Donation record failed, but payment was successful');
+                // Still show success since payment went through
+                setSuccess('Payment successful! Thank you for your support! ❤️');
+                setTimeout(() => {
+                    setShowModal(false);
+                    setSuccess('');
+                }, 4000);
             }
         } catch (err) {
-            console.error('Error recording donation:', err);
+            console.error('❌ Error recording donation:', err);
+            // Payment was successful even if recording failed
             setSuccess('Payment successful! Thank you for your support! ❤️');
             setTimeout(() => {
                 setShowModal(false);
                 setSuccess('');
-            }, 3000);
+            }, 4000);
         }
     };
 
@@ -225,16 +245,44 @@ export default function BuyMeACoffee() {
                                     <motion.div
                                         initial={{ scale: 0.8, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
-                                        className="text-center py-8"
+                                        className="text-center py-12"
                                     >
                                         <motion.div
-                                            animate={{ scale: [1, 1.2, 1] }}
-                                            transition={{ duration: 1, repeat: Infinity }}
-                                            className="text-6xl mb-4"
+                                            animate={{ 
+                                                scale: [1, 1.3, 1],
+                                                rotate: [0, 10, -10, 0]
+                                            }}
+                                            transition={{ duration: 0.8, repeat: 3 }}
+                                            className="text-8xl mb-6"
                                         >
                                             🎉
                                         </motion.div>
-                                        <p className="text-green-400 text-xl font-semibold">{success}</p>
+                                        <motion.p 
+                                            initial={{ y: 20, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="text-green-400 text-2xl font-bold mb-4"
+                                        >
+                                            {success}
+                                        </motion.p>
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ delay: 0.5, type: "spring" }}
+                                            className="flex items-center justify-center space-x-2 text-amber-400"
+                                        >
+                                            <FaHeart className="text-3xl" />
+                                            <FaCoffee className="text-3xl" />
+                                            <FaHeart className="text-3xl" />
+                                        </motion.div>
+                                        <motion.p
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: 1 }}
+                                            className="text-gray-400 mt-6 text-sm"
+                                        >
+                                            Closing in a moment...
+                                        </motion.p>
                                     </motion.div>
                                 ) : showPayment ? (
                                     <div className="space-y-6">

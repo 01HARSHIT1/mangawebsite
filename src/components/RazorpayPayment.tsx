@@ -121,13 +121,14 @@ export default function RazorpayPayment({
                 description: description,
                 order_id: orderData.orderId,
                 handler: async (response: any) => {
+                    console.log('✅ Payment completed, verifying...', response);
                     try {
                         // Verify payment
                         const verifyResponse = await fetch('/api/razorpay/verify-payment', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                                'Authorization': `Bearer ${localStorage.getItem('authToken') || localStorage.getItem('token')}`
                             },
                             body: JSON.stringify({
                                 razorpay_payment_id: response.razorpay_payment_id,
@@ -137,13 +138,20 @@ export default function RazorpayPayment({
                         });
 
                         const verifyData = await verifyResponse.json();
+                        console.log('📦 Verification response:', verifyData);
 
                         if (verifyData.success) {
+                            console.log('✅ Payment verified successfully!');
+                            setLoading(false);
                             onSuccess(response.razorpay_payment_id);
                         } else {
+                            console.error('❌ Payment verification failed:', verifyData);
+                            setLoading(false);
                             onError(verifyData.error || 'Payment verification failed');
                         }
                     } catch (error) {
+                        console.error('❌ Payment verification error:', error);
+                        setLoading(false);
                         onError('Payment verification failed');
                     }
                 },
