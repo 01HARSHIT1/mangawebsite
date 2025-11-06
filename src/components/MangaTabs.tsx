@@ -37,12 +37,18 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
         fetch(`/api/comments?mangaId=${mangaId}`)
             .then(res => res.json())
             .then(data => setComments(Array.isArray(data) ? data : []));
-        // Fetch user info
-        const token = localStorage.getItem('token');
+        // Fetch user info - check both token storage keys
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (token) {
             fetch('/api/profile', { headers: { Authorization: `Bearer ${token}` } })
                 .then(res => res.json())
-                .then(data => setUser(data.user || null));
+                .then(data => {
+                    if (data.user) {
+                        setUser(data.user);
+                        console.log('✅ User loaded for reviews:', data.user.username);
+                    }
+                })
+                .catch(err => console.error('Failed to load user:', err));
         }
     }, [mangaId]);
 
@@ -51,7 +57,8 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
         setLoading(true);
         setError('');
         setSuccess('');
-        const token = localStorage.getItem('token');
+        // Check both token storage keys
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (!token) {
             setError('You must be logged in to comment.');
             setLoading(false);
@@ -77,26 +84,10 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
     return (
         <div className="bg-gray-800 rounded-2xl p-6 shadow-xl">
             <h3 className="text-xl font-bold mb-4 text-blue-300">Reviews & Comments</h3>
-            <div className="mb-6">
-                <textarea
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none mb-2"
-                    placeholder="Write your review or comment..."
-                    aria-label="Write a review or comment"
-                />
-                <button
-                    onClick={handlePost}
-                    disabled={loading || !newComment.trim()}
-                    className="mt-2 px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold shadow focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
-                    aria-label="Post comment"
-                >{loading ? 'Posting...' : 'Post'}</button>
-                {error && <div className="text-red-400 animate-pulse font-semibold" role="status" aria-live="polite">{error}</div>}
-                {success && <div className="text-green-400 animate-pulse font-semibold" role="status" aria-live="polite">{success}</div>}
-            </div>
-            <div className="space-y-6">
-                {comments.length === 0 && <div className="text-gray-400">No comments yet. Be the first to review!</div>}
+            
+            {/* Existing Comments List - Show First */}
+            <div className="space-y-4 mb-6">
+                {comments.length === 0 && <div className="text-gray-400 text-center py-6">No comments yet. Be the first to review!</div>}
                 {comments.map((c, i) => (
                     <div key={c._id || i} className="bg-gray-700 rounded-lg p-4">
                         <div className="flex items-center gap-3 mb-2">
@@ -112,6 +103,38 @@ function ReviewComments({ mangaId }: { mangaId: string }) {
                     </div>
                 ))}
             </div>
+
+            {/* Comment Input - Show After Comments */}
+            {user ? (
+                <div className="border-t-2 border-blue-600 pt-6">
+                    <textarea
+                        value={newComment}
+                        onChange={e => setNewComment(e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-400 focus:outline-none mb-2"
+                        placeholder="Write your review or comment..."
+                        aria-label="Write a review or comment"
+                    />
+                    <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">Commenting as <span className="text-blue-400 font-semibold">{user.username}</span></span>
+                        <button
+                            onClick={handlePost}
+                            disabled={loading || !newComment.trim()}
+                            className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold shadow focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                            aria-label="Post comment"
+                        >{loading ? 'Posting...' : 'Post'}</button>
+                    </div>
+                    {error && <div className="text-red-400 animate-pulse font-semibold mt-2" role="status" aria-live="polite">{error}</div>}
+                    {success && <div className="text-green-400 animate-pulse font-semibold mt-2" role="status" aria-live="polite">{success}</div>}
+                </div>
+            ) : (
+                <div className="bg-gray-700 rounded-lg p-6 text-center border-t-2 border-blue-600">
+                    <p className="text-gray-400 mb-3">Please login to comment</p>
+                    <a href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all">
+                        Login
+                    </a>
+                </div>
+            )}
         </div>
     );
 }
