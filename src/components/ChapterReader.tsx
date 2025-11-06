@@ -439,37 +439,8 @@ export default function ChapterReader({
                         💬 Comments ({comments.length})
                     </h2>
 
-                    {/* Comment Input */}
-                    {isLoggedIn ? (
-                        <div className="bg-gray-900 rounded-lg p-4 mb-6">
-                            <textarea
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Write your comment..."
-                                className="w-full bg-gray-800 text-white rounded-lg p-3 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <div className="flex justify-between items-center mt-3">
-                                <span className="text-gray-400 text-sm">Commenting as {username}</span>
-                                <button
-                                    onClick={handleSubmitComment}
-                                    disabled={submittingComment || !newComment.trim()}
-                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-semibold transition-all"
-                                >
-                                    {submittingComment ? 'Posting...' : 'Post Comment'}
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="bg-gray-900 rounded-lg p-6 mb-6 text-center">
-                            <p className="text-gray-400 mb-3">Please login to comment</p>
-                            <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all">
-                                Login
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* Comments List */}
-                    <div className="space-y-4">
+                    {/* Comments List - SHOW FIRST */}
+                    <div className="space-y-4 mb-6">
                         {comments.length > 0 ? (
                             comments.map((comment) => (
                                 <div key={comment._id} className="bg-gray-900 rounded-lg p-4">
@@ -488,6 +459,35 @@ export default function ChapterReader({
                             </div>
                         )}
                     </div>
+
+                    {/* Comment Input - SHOW AFTER COMMENTS */}
+                    {isLoggedIn ? (
+                        <div className="bg-gray-900 rounded-lg p-4 border-t-2 border-blue-600">
+                            <textarea
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Write your comment..."
+                                className="w-full bg-gray-800 text-white rounded-lg p-3 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="flex justify-between items-center mt-3">
+                                <span className="text-gray-400 text-sm">Commenting as {username}</span>
+                                <button
+                                    onClick={handleSubmitComment}
+                                    disabled={submittingComment || !newComment.trim()}
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-semibold transition-all"
+                                >
+                                    {submittingComment ? 'Posting...' : 'Post Comment'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-gray-900 rounded-lg p-6 text-center border-t-2 border-blue-600">
+                            <p className="text-gray-400 mb-3">Please login to comment</p>
+                            <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all">
+                                Login
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
 

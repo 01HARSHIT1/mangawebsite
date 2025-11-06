@@ -54,8 +54,19 @@ export async function POST(
         try {
             const decoded = jwt.verify(token, secret) as any;
             userId = decoded.userId || decoded.id;
-            username = decoded.username || 'Anonymous';
+            
+            // Fetch username from database to ensure accuracy
+            const client = await clientPromise;
+            const db = client.db();
+            const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+            
+            if (!user) {
+                return NextResponse.json({ error: 'User not found' }, { status: 404 });
+            }
+            
+            username = user.username || 'Anonymous';
         } catch (err) {
+            console.error('Error verifying token or fetching user:', err);
             return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
@@ -71,6 +82,7 @@ export async function POST(
             return NextResponse.json({ error: 'Comment is too long (max 1000 characters)' }, { status: 400 });
         }
 
+        // Client and db already initialized above in try block
         const client = await clientPromise;
         const db = client.db();
 
