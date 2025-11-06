@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FaPlay, FaBookOpen, FaTrendingUp, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaGem, FaRocket, FaSearch, FaHeart, FaEye } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import BuyMeACoffee from '@/components/BuyMeACoffee';
 
 const genresList = [
     { name: "Action", color: "from-red-500 to-orange-500", icon: "⚔️" },
@@ -484,6 +485,70 @@ export default function ImprovedHomePage() {
                     </div>
                 </div>
             </section>
+
+            {/* Buy Me a Coffee Section - Only for logged-in users */}
+            {isAuthenticated && (
+                <section className="py-16 px-4">
+                    <div className="container mx-auto max-w-4xl">
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                            viewport={{ once: true }}
+                            className="text-center"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.6, delay: 0.2 }}
+                                viewport={{ once: true }}
+                                className="bg-gradient-to-br from-slate-800/50 via-slate-700/50 to-slate-800/50 rounded-3xl p-12 border border-slate-700/50 backdrop-blur-sm shadow-2xl"
+                            >
+                                <motion.div
+                                    animate={{ 
+                                        scale: [1, 1.05, 1],
+                                        rotate: [0, 5, -5, 0]
+                                    }}
+                                    transition={{ duration: 4, repeat: Infinity }}
+                                    className="text-7xl mb-6"
+                                >
+                                    ☕
+                                </motion.div>
+                                
+                                <h2 className="text-4xl font-bold mb-4">
+                                    <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">
+                                        Enjoying Our Platform?
+                                    </span>
+                                </h2>
+                                
+                                <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+                                    Your support helps us keep the platform running, add new features, and support manga creators. 
+                                    <span className="block mt-2 text-amber-400 font-semibold">Every contribution matters! 💖</span>
+                                </p>
+
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+                                    <BuyMeACoffee />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 text-sm text-gray-400">
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <span className="text-2xl">🚀</span>
+                                        <span>Support Development</span>
+                                    </div>
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <span className="text-2xl">🎨</span>
+                                        <span>Help Creators</span>
+                                    </div>
+                                    <div className="flex items-center justify-center space-x-2">
+                                        <span className="text-2xl">⚡</span>
+                                        <span>Keep it Free</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    </div>
+                </section>
+            )}
 
             {/* Enhanced Genres Section */}
             <section className="py-16 px-4">
