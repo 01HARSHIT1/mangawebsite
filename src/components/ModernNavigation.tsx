@@ -363,7 +363,7 @@ export default function ModernNavigation() {
                                                                 <span className="text-sm font-medium">Creator Dashboard</span>
                                                             </Link>
                                                             <Link
-                                                                href="/upload"
+                                                                href="/creator/dashboard/upload"
                                                                 className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white"
                                                                 onClick={() => setIsUserMenuOpen(false)}
                                                             >
