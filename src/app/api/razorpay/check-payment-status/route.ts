@@ -34,11 +34,12 @@ export async function POST(request: NextRequest) {
             console.log('📦 Order status:', order.status);
             console.log('📊 Order payments:', order.attempts);
 
-            // Check if order has been paid
-            if (order.status === 'paid') {
+            // Check if order has been paid OR attempted (sometimes payments succeed even when order shows 'attempted')
+            if (order.status === 'paid' || order.status === 'attempted') {
                 // Fetch all payments for this order
                 const payments = await razorpay.orders.fetchPayments(orderId);
                 console.log('💰 Payments found:', payments.count);
+                console.log('📋 Payment details:', JSON.stringify(payments.items, null, 2));
 
                 if (payments.count > 0) {
                     // Find the successful payment
@@ -58,11 +59,21 @@ export async function POST(request: NextRequest) {
                             status: successfulPayment.status,
                             method: successfulPayment.method
                         });
+                    } else {
+                        // Check if there are any failed payments
+                        const failedPayment = payments.items.find(
+                            (payment: any) => payment.status === 'failed'
+                        );
+                        
+                        if (failedPayment) {
+                            console.log('❌ Found failed payment:', failedPayment.id);
+                            console.log('❌ Failure reason:', failedPayment.error_description || 'Unknown');
+                        }
                     }
                 }
             }
 
-            console.log('ℹ️ Order not paid yet');
+            console.log('ℹ️ Order not paid yet, status:', order.status);
             return NextResponse.json({
                 success: true,
                 paymentCompleted: false,
