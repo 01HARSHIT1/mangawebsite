@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface RazorpayPaymentProps {
@@ -29,6 +29,7 @@ export default function RazorpayPayment({
 }: RazorpayPaymentProps) {
     const [loading, setLoading] = useState(false);
     const { user } = useAuth();
+    const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
     const loadRazorpayScript = () => {
         return new Promise((resolve) => {
@@ -116,14 +117,14 @@ export default function RazorpayPayment({
             // This is crucial for QR code payments where the modal stays open on laptop
             // but payment happens on mobile
             const orderId = orderData.orderId;
-            let pollingInterval: NodeJS.Timeout | null = null;
             let pollCount = 0;
             const maxPolls = 120; // Poll for up to 10 minutes (120 x 5 seconds)
 
             const startPaymentPolling = () => {
                 console.log('🔄 Starting payment status polling for order:', orderId);
+                console.log('⏰ Will check every 5 seconds for payment completion');
                 
-                pollingInterval = setInterval(async () => {
+                pollingIntervalRef.current = setInterval(async () => {
                     pollCount++;
                     console.log(`📡 Polling payment status... (attempt ${pollCount}/${maxPolls})`);
 
@@ -138,14 +139,17 @@ export default function RazorpayPayment({
                         });
 
                         const statusData = await statusResponse.json();
+                        console.log(`📊 Poll ${pollCount} result:`, statusData);
 
                         if (statusData.success && statusData.paymentCompleted) {
                             console.log('✅ PAYMENT DETECTED! Payment ID:', statusData.paymentId);
+                            console.log('🎉 SUCCESS! Triggering thank you screen...');
                             
                             // Stop polling
-                            if (pollingInterval) {
-                                clearInterval(pollingInterval);
-                                pollingInterval = null;
+                            if (pollingIntervalRef.current) {
+                                clearInterval(pollingIntervalRef.current);
+                                pollingIntervalRef.current = null;
+                                console.log('⏹️ Polling stopped');
                             }
 
                             // Close Razorpay modal if open
@@ -164,19 +168,22 @@ export default function RazorpayPayment({
                             }
 
                             // Trigger success callback
+                            console.log('🚀 Calling onSuccess callback with payment ID:', statusData.paymentId);
                             setLoading(false);
                             onSuccess(statusData.paymentId);
                         } else if (pollCount >= maxPolls) {
                             console.log('⏱️ Polling timeout reached');
-                            if (pollingInterval) {
-                                clearInterval(pollingInterval);
-                                pollingInterval = null;
+                            if (pollingIntervalRef.current) {
+                                clearInterval(pollingIntervalRef.current);
+                                pollingIntervalRef.current = null;
                             }
                         }
                     } catch (error) {
                         console.error('❌ Error during polling:', error);
                     }
                 }, 5000); // Poll every 5 seconds
+                
+                console.log('✅ Polling interval started with ID:', pollingIntervalRef.current);
             };
 
             // Start polling immediately
@@ -194,10 +201,10 @@ export default function RazorpayPayment({
                     console.log('✅ Payment completed via handler, verifying...', response);
                     
                     // Stop polling since payment was completed via normal handler
-                    if (pollingInterval) {
+                    if (pollingIntervalRef.current) {
                         console.log('⏹️ Stopping polling (handler triggered)');
-                        clearInterval(pollingInterval);
-                        pollingInterval = null;
+                        clearInterval(pollingIntervalRef.current);
+                        pollingIntervalRef.current = null;
                     }
                     
                     try {
@@ -245,10 +252,10 @@ export default function RazorpayPayment({
                         console.log('⚠️ Payment modal dismissed by user');
                         
                         // Stop polling when modal is closed
-                        if (pollingInterval) {
+                        if (pollingIntervalRef.current) {
                             console.log('⏹️ Stopping polling (modal dismissed)');
-                            clearInterval(pollingInterval);
-                            pollingInterval = null;
+                            clearInterval(pollingIntervalRef.current);
+                            pollingIntervalRef.current = null;
                         }
                         
                         setLoading(false);
@@ -268,19 +275,19 @@ export default function RazorpayPayment({
             razorpay.on('payment.success', function (resp: any) {
                 console.log('🎉 Razorpay payment.success event:', resp);
                 // Stop polling
-                if (pollingInterval) {
+                if (pollingIntervalRef.current) {
                     console.log('⏹️ Stopping polling (payment.success event)');
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
+                    clearInterval(pollingIntervalRef.current);
+                    pollingIntervalRef.current = null;
                 }
             });
 
             razorpay.on('payment.failed', function (resp: any) {
                 console.error('❌ Razorpay payment.failed event:', resp);
                 // Stop polling
-                if (pollingInterval) {
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
+                if (pollingIntervalRef.current) {
+                    clearInterval(pollingIntervalRef.current);
+                    pollingIntervalRef.current = null;
                 }
                 setLoading(false);
                 onError(resp.error?.description || 'Payment failed');
@@ -289,9 +296,9 @@ export default function RazorpayPayment({
             razorpay.on('payment.cancelled', function (resp: any) {
                 console.log('⚠️ Razorpay payment.cancelled event:', resp);
                 // Stop polling
-                if (pollingInterval) {
-                    clearInterval(pollingInterval);
-                    pollingInterval = null;
+                if (pollingIntervalRef.current) {
+                    clearInterval(pollingIntervalRef.current);
+                    pollingIntervalRef.current = null;
                 }
                 setLoading(false);
             });
