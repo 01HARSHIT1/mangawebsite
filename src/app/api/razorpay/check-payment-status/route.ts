@@ -32,14 +32,31 @@ export async function POST(request: NextRequest) {
             // Fetch order details from Razorpay
             const order = await razorpay.orders.fetch(orderId);
             console.log('📦 Order status:', order.status);
-            console.log('📊 Order payments:', order.attempts);
+            console.log('📊 Order attempts:', order.attempts);
+            console.log('📊 Full order details:', JSON.stringify(order, null, 2));
+
+            // ALWAYS fetch payments to see what's there, regardless of order status
+            const payments = await razorpay.orders.fetchPayments(orderId);
+            console.log('💰 Total payments found:', payments.count);
+            
+            if (payments.count > 0) {
+                console.log('📋 All payment items:', JSON.stringify(payments.items, null, 2));
+                
+                // Log each payment's status
+                payments.items.forEach((payment: any, index: number) => {
+                    console.log(`💳 Payment ${index + 1}:`, {
+                        id: payment.id,
+                        status: payment.status,
+                        method: payment.method,
+                        amount: payment.amount / 100,
+                        error: payment.error_description || 'none'
+                    });
+                });
+            }
 
             // Check if order has been paid OR attempted (sometimes payments succeed even when order shows 'attempted')
             if (order.status === 'paid' || order.status === 'attempted') {
-                // Fetch all payments for this order
-                const payments = await razorpay.orders.fetchPayments(orderId);
-                console.log('💰 Payments found:', payments.count);
-                console.log('📋 Payment details:', JSON.stringify(payments.items, null, 2));
+                console.log('🔍 Checking for successful payments in attempted/paid order...');
 
                 if (payments.count > 0) {
                     // Find the successful payment
