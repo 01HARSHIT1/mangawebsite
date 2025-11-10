@@ -1,6 +1,6 @@
-import dynamic from 'next/dynamic';
+import NextDynamic from 'next/dynamic';
 
-const SeriesListPage = dynamic(() => import('@/components/creator/SeriesListPage'), {
+const SeriesListPage = NextDynamic(() => import('@/components/creator/SeriesListPage'), {
     ssr: false,
     loading: () => (
         <div className="flex items-center justify-center min-h-screen bg-slate-900">

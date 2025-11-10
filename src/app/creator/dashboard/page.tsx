@@ -1,6 +1,6 @@
-import dynamic from 'next/dynamic';
+import NextDynamic from 'next/dynamic';
 
-const CreatorDashboardClient = dynamic(() => import('./CreatorDashboardClient'), {
+const CreatorDashboardClient = NextDynamic(() => import('./CreatorDashboardClient'), {
     ssr: false,
     loading: () => (
         <div className="flex items-center justify-center min-h-screen bg-slate-900">

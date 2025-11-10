@@ -1,6 +1,6 @@
-import dynamic from 'next/dynamic';
+import NextDynamic from 'next/dynamic';
 
-const ChapterEditor = dynamic(() => import('@/components/creator/ChapterEditor'), {
+const ChapterEditor = NextDynamic(() => import('@/components/creator/ChapterEditor'), {
     ssr: false,
     loading: () => (
         <div className="flex items-center justify-center min-h-screen bg-slate-900">
