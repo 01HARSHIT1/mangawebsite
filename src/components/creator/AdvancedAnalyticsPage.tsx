@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
     FaChartLine, FaDownload, FaCalendar, FaFilter, FaEye,
-    FaUsers, FaClock, FaHeart, FaTrendingUp, FaBookOpen
+    FaUsers, FaClock, FaHeart, FaBookOpen
 } from 'react-icons/fa';
 import DashboardLayout from './DashboardLayout';
 
@@ -186,7 +186,7 @@ export default function AdvancedAnalyticsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-                            <FaTrendingUp className="mr-3 text-blue-400" />
+                            <FaChartLine className="mr-3 text-blue-400" />
                             Views Over Time
                         </h3>
                         <div className="h-64 flex items-center justify-center bg-slate-900/50 rounded-xl">
