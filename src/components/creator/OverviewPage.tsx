@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { 
-    FaBookOpen, FaEye, FaHeart, FaDollarSign, FaTrendingUp, 
+    FaBookOpen, FaEye, FaHeart, FaDollarSign, 
     FaUsers, FaClock, FaChartLine, FaArrowUp, FaArrowDown,
-    FaUpload, FaEdit, FaChartBar
+    FaUpload, FaEdit, FaChartBar, FaQuestionCircle
 } from 'react-icons/fa';
 
 interface KPIData {
@@ -148,7 +148,11 @@ export default function OverviewPage() {
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {kpiCards.map((card, index) => {
-                    const Icon = card.icon;
+                    const IconComponent = card.icon;
+                    const Icon =
+                        typeof IconComponent === 'function'
+                            ? IconComponent
+                            : FaQuestionCircle;
                     return (
                         <motion.div
                             key={card.title}
@@ -189,7 +193,11 @@ export default function OverviewPage() {
             {/* Quick Stats Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {quickStats.map((stat, index) => {
-                    const Icon = stat.icon;
+                    const IconComponent = stat.icon;
+                    const Icon =
+                        typeof IconComponent === 'function'
+                            ? IconComponent
+                            : FaQuestionCircle;
                     return (
                         <motion.div
                             key={stat.label}
@@ -214,7 +222,7 @@ export default function OverviewPage() {
             <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-white flex items-center">
-                        <FaTrendingUp className="mr-3 text-yellow-400" />
+                        <FaChartLine className="mr-3 text-yellow-400" />
                         Top Performing Series
                     </h2>
                     <Link
