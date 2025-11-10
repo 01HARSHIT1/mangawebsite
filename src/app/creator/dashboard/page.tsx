@@ -1,18 +1,48 @@
-import { Suspense } from 'react';
-import { requireCreator } from '@/lib/auth';
-import CreatorDashboardClient from './CreatorDashboardClient';
+'use client';
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import DashboardLayout from '@/components/creator/DashboardLayout';
+import OverviewPage from '@/components/creator/OverviewPage';
 
-export default async function CreatorDashboard() {
-    // This will be called on the server side
-    // For now, we'll handle auth in the client component
+export default function CreatorDashboard() {
+    const { isAuthenticated, isCreator, isLoading } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (isLoading) {
+            return;
+        }
+
+        if (!isAuthenticated) {
+            router.replace('/login');
+            return;
+        }
+
+        if (!isCreator) {
+            router.replace('/upload');
+        }
+    }, [isAuthenticated, isCreator, isLoading, router]);
+
+    if (isLoading || !isAuthenticated || !isCreator) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-slate-900">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400">
+                        {isLoading ? 'Checking access...' : 'Redirecting...'}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                <CreatorDashboardClient />
-            </Suspense>
+        <div className="min-h-screen bg-slate-900">
+            <DashboardLayout>
+                <OverviewPage />
+            </DashboardLayout>
         </div>
     );
 }
