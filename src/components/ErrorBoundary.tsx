@@ -166,9 +166,15 @@ class ErrorBoundary extends Component<Props, State> {
             <h1 className="text-2xl font-bold text-white mb-4">
               Oops! Something went wrong
             </h1>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-400 mb-4">
               We encountered an unexpected error. Our team has been notified and is working to fix it.
             </p>
+            {error?.message && (
+              <div className="bg-gray-800/60 border border-red-500/30 rounded-lg p-3 mb-6 text-left">
+                <p className="text-xs text-gray-300 uppercase tracking-wide mb-1">Error message</p>
+                <p className="text-sm text-red-300 break-words">{error.message}</p>
+              </div>
+            )}
 
             {/* Error ID */}
             {errorId && (
