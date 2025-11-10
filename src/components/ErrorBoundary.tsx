@@ -55,10 +55,8 @@ class ErrorBoundary extends Component<Props, State> {
       errorId
     });
 
-    // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by boundary:', error, errorInfo);
-    }
+    // Always log for debugging (helps decode minified errors in production)
+    console.error('Error caught by boundary:', error, errorInfo);
 
     // Send error to monitoring service
     this.logError(error, errorInfo, errorId);
