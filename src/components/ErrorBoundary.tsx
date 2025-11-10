@@ -167,10 +167,22 @@ class ErrorBoundary extends Component<Props, State> {
             <p className="text-gray-400 mb-4">
               We encountered an unexpected error. Our team has been notified and is working to fix it.
             </p>
-            {error?.message && (
-              <div className="bg-gray-800/60 border border-red-500/30 rounded-lg p-3 mb-6 text-left">
-                <p className="text-xs text-gray-300 uppercase tracking-wide mb-1">Error message</p>
-                <p className="text-sm text-red-300 break-words">{error.message}</p>
+            {(error?.message || this.state.errorInfo?.componentStack) && (
+              <div className="bg-gray-800/60 border border-red-500/30 rounded-lg p-3 mb-6 text-left space-y-2">
+                {error?.message && (
+                  <>
+                    <p className="text-xs text-gray-300 uppercase tracking-wide">Error message</p>
+                    <p className="text-sm text-red-300 break-words">{error.message}</p>
+                  </>
+                )}
+                {this.state.errorInfo?.componentStack && (
+                  <>
+                    <p className="text-xs text-gray-300 uppercase tracking-wide pt-2 border-t border-slate-700/60">Component stack</p>
+                    <pre className="text-xs text-purple-200 whitespace-pre-wrap leading-5">
+                      {this.state.errorInfo.componentStack}
+                    </pre>
+                  </>
+                )}
               </div>
             )}
 
