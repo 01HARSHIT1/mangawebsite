@@ -174,7 +174,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     >
                         <nav className="p-4 space-y-2">
                             {navigationItems.map((item) => {
-                                const Icon = item.icon;
+                                const IconComponent = item.icon;
+                                const Icon =
+                                    typeof IconComponent === 'function'
+                                        ? IconComponent
+                                        : FaQuestionCircle;
                                 const active = isActive(item.href);
                                 
                                 return (
@@ -252,7 +256,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         >
                             <nav className="p-4 space-y-2">
                                 {navigationItems.map((item) => {
-                                    const Icon = item.icon;
+                                    const IconComponent = item.icon;
+                                    const Icon =
+                                        typeof IconComponent === 'function'
+                                            ? IconComponent
+                                            : FaQuestionCircle;
                                     const active = isActive(item.href);
                                     
                                     return (

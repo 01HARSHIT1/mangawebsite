@@ -77,6 +77,32 @@ export async function GET(req: NextRequest) {
         
     const seriesIds = series.map(s => s._id.toString());
         console.log('📚 Processing', series.length, 'series with', episodes.length, 'episodes');
+
+    const monetizationPlans = await db.collection('monetizationPlans')
+        .find({ creatorId: user._id.toString() })
+        .toArray();
+
+    const paidChaptersCount = episodes.filter((ep) => (ep.coinPrice || 0) > 0).length;
+
+    const payments30d = seriesIds.length
+        ? await db.collection('payments')
+            .find({
+                mangaId: { $in: seriesIds },
+                timestamp: { $gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) }
+            })
+            .toArray()
+        : [];
+
+    const subscriptionPayments = payments30d.filter((payment: any) => payment.type === 'subscription');
+    const coinPayments = payments30d.filter((payment: any) => payment.type === 'chapter' || payment.type === 'coins');
+
+    const paidSubscribers = new Set(subscriptionPayments.map((p: any) => p.userId?.toString()).filter(Boolean)).size;
+    const mrr30d = subscriptionPayments.reduce((sum: number, p: any) => sum + (typeof p.amount === 'number' ? p.amount : 0), 0);
+    const coinRevenue30d = coinPayments.reduce((sum: number, p: any) => sum + (typeof p.amount === 'number' ? p.amount : 0), 0);
+    const activePlans = monetizationPlans.filter((plan: any) => plan.isActive !== false);
+    const averagePlanPrice = activePlans.length
+        ? Math.round((activePlans.reduce((sum: number, plan: any) => sum + (plan.price || 0), 0) / activePlans.length) * 100) / 100
+        : 0;
         
     // Count total pages
     const totalPages = episodes.reduce((sum, ep) => sum + (Array.isArray(ep.pages) ? ep.pages.length : 0), 0);
@@ -432,6 +458,25 @@ export async function GET(req: NextRequest) {
         campaigns: campaignCounts,
         cohorts: cohortCounts,
             detailedSeries: enhancedDetailedSeries,
+        monetization: {
+            planCount: monetizationPlans.length,
+            activePlans: activePlans.length,
+            averagePlanPrice,
+            paidChapters: paidChaptersCount,
+            paidSubscribers,
+            monthlyRecurringRevenue: Math.round(mrr30d * 100) / 100,
+            coinRevenue30d: Math.round(coinRevenue30d * 100) / 100,
+            plans: monetizationPlans.map((plan: any) => ({
+                _id: plan._id.toString(),
+                name: plan.name,
+                price: plan.price,
+                interval: plan.interval,
+                currency: plan.currency || 'INR',
+                isActive: plan.isActive !== false,
+                createdAt: plan.createdAt,
+                updatedAt: plan.updatedAt
+            }))
+        },
         };
 
         console.log('📊 Returning analytics data:', {

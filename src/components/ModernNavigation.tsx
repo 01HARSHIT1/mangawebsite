@@ -172,7 +172,7 @@ export default function ModernNavigation() {
                                     className="relative ml-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2 shadow-lg"
                                 >
                                     <motion.div
-                                        animate={{ 
+                                        animate={{
                                             rotate: [0, 5, -5, 0],
                                             scale: [1, 1.1, 1]
                                         }}
@@ -629,7 +629,7 @@ function BuyMeACoffeeNav({ onClose }: { onClose: () => void }) {
 
     const handleContinue = () => {
         const amountNum = parseFloat(amount);
-        
+
         if (!amount || isNaN(amountNum) || amountNum < 1) {
             setError('Please enter an amount of at least ₹1');
             return;
@@ -647,11 +647,11 @@ function BuyMeACoffeeNav({ onClose }: { onClose: () => void }) {
     const handlePaymentSuccess = async (paymentId: string) => {
         console.log('🎉 Payment successful! Payment ID:', paymentId);
         console.log('💰 Recording donation of ₹', amount);
-        
+
         setSuccess('Payment successful! Recording your donation... 🎉');
         setError('');
         setShowPayment(false);
-        
+
         try {
             const response = await fetch('/api/donations', {
                 method: 'POST',
@@ -675,7 +675,7 @@ function BuyMeACoffeeNav({ onClose }: { onClose: () => void }) {
                 setSuccess('Thank you for your generous support! ❤️');
                 setAmount('');
                 setCustomMessage('');
-                
+
                 setTimeout(() => {
                     setShowModal(false);
                     onClose();
@@ -777,7 +777,7 @@ function BuyMeACoffeeNav({ onClose }: { onClose: () => void }) {
                                     >
                                         🎉
                                     </motion.div>
-                                    <motion.p 
+                                    <motion.p
                                         initial={{ y: 20, opacity: 0 }}
                                         animate={{ y: 0, opacity: 1 }}
                                         transition={{ delay: 0.3 }}
@@ -861,11 +861,10 @@ function BuyMeACoffeeNav({ onClose }: { onClose: () => void }) {
                                                     whileHover={{ scale: 1.05 }}
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => handleQuickAmount(value)}
-                                                    className={`py-3 rounded-xl font-bold transition-all ${
-                                                        amount === value.toString()
+                                                    className={`py-3 rounded-xl font-bold transition-all ${amount === value.toString()
                                                             ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
                                                             : 'bg-slate-800/50 hover:bg-slate-700/50 text-gray-300 border border-slate-700/50'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     ₹{value}
                                                 </motion.button>
