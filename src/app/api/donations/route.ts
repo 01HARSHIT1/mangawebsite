@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
+import { executeCreatorPayout, ensureCreatorRazorpayAccount, CreatorDocument } from '@/lib/razorpay/payouts';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,9 @@ export async function POST(request: NextRequest) {
             paymentId: paymentId || null,
             type: donationType,
             status: 'completed',
+            payoutStatus: null,
+            payoutId: null,
+            payoutMessage: '',
             createdAt: new Date(),
             updatedAt: new Date()
         };
@@ -90,11 +94,132 @@ export async function POST(request: NextRequest) {
             message: message
         });
 
-        return NextResponse.json({ 
-            success: true, 
-            donationId: result.insertedId.toString(),
-            message: 'Thank you for your support! ❤️'
-        }, { status: 201 });
+        let payoutStatus: string | null = null;
+        let payoutMessage: string | undefined;
+        let payoutId: string | undefined;
+
+        if (donationType === 'creator-tip') {
+            try {
+                const creator = await db.collection('users').findOne({ _id: new ObjectId(targetRecipientId) });
+
+                if (creator) {
+                    const syncResult = await ensureCreatorRazorpayAccount({
+                        creator: creator as CreatorDocument,
+                    });
+
+                    if (syncResult.payoutInfoUpdates) {
+                        const syncUpdates: Record<string, unknown> = {};
+                        for (const [key, value] of Object.entries(syncResult.payoutInfoUpdates)) {
+                            syncUpdates[`payoutInfo.${key}`] = value;
+                        }
+                        if (Object.keys(syncUpdates).length > 0) {
+                            await db.collection('users').updateOne(
+                                { _id: creator._id },
+                                { $set: syncUpdates }
+                            );
+                        }
+                    }
+
+                    if (syncResult.status === 'verified' || syncResult.status === 'pending') {
+                        const refreshedCreator = await db.collection('users').findOne({ _id: creator._id });
+                        const execution = await executeCreatorPayout({
+                            creator: refreshedCreator as CreatorDocument,
+                            amount,
+                            referenceId: `don_${result.insertedId.toString()}`,
+                            narration: mangaTitle ? `Tip: ${mangaTitle}` : 'Creator Tip',
+                            notes: {
+                                donation_id: result.insertedId.toString(),
+                                creator_id: targetRecipientId,
+                                manga_id: mangaId || '',
+                            },
+                        });
+
+                        payoutStatus = execution.status;
+                        payoutMessage = execution.message;
+                        payoutId = execution.payoutId;
+
+                        await db.collection('payouts').insertOne({
+                            donationId: result.insertedId.toString(),
+                            creatorId: targetRecipientId,
+                            amount,
+                            currency: 'INR',
+                            status: execution.status,
+                            razorpayPayoutId: execution.payoutId || null,
+                            fundAccountId:
+                                execution.success && refreshedCreator?.payoutInfo?.razorpayFundAccountId
+                                    ? refreshedCreator.payoutInfo.razorpayFundAccountId
+                                    : null,
+                            mode: execution.mode || (refreshedCreator?.payoutInfo?.method === 'upi' ? 'UPI' : 'IMPS'),
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                            notes: {
+                                type: 'creator-tip',
+                                mangaId,
+                                mangaTitle,
+                            },
+                            error: execution.success ? null : execution.message,
+                        });
+
+                        await db.collection('donations').updateOne(
+                            { _id: result.insertedId },
+                            {
+                                $set: {
+                                    payoutId: execution.payoutId || null,
+                                    payoutStatus: execution.status,
+                                    payoutMessage: execution.message || '',
+                                },
+                            }
+                        );
+                    } else {
+                        payoutStatus = syncResult.status;
+                        payoutMessage =
+                            syncResult.message ||
+                            'Creator payout account is not ready yet. We will retry automatically.';
+                        await db.collection('donations').updateOne(
+                            { _id: result.insertedId },
+                            {
+                                $set: {
+                                    payoutStatus: syncResult.status,
+                                    payoutMessage: payoutMessage,
+                                },
+                            }
+                        );
+                    }
+                } else {
+                    payoutStatus = 'failed';
+                    payoutMessage = 'Creator account not found for payout.';
+                }
+            } catch (payoutError) {
+                console.error('❌ Failed to trigger creator payout:', payoutError);
+                payoutStatus = 'failed';
+                payoutMessage =
+                    payoutError instanceof Error
+                        ? payoutError.message
+                        : 'Failed to trigger creator payout.';
+
+                await db.collection('donations').updateOne(
+                    { _id: result.insertedId },
+                    {
+                        $set: {
+                            payoutStatus: 'failed',
+                            payoutMessage,
+                        },
+                    }
+                );
+            }
+        }
+
+        return NextResponse.json(
+            { 
+                success: true, 
+                donationId: result.insertedId.toString(),
+                message: 'Thank you for your support! ❤️',
+                payoutStatus,
+                payoutMessage,
+                payoutId,
+            }, 
+            { status: 201 }
+        );
 
     } catch (error) {
         console.error('Error recording donation:', error);

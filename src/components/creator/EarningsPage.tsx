@@ -20,6 +20,9 @@ interface EarningsData {
         username: string;
         type?: string;
         mangaTitle?: string | null;
+        payoutStatus?: string | null;
+        payoutMessage?: string | null;
+        payoutId?: string | null;
     }>;
     payouts: Array<{
         _id: string;
@@ -27,6 +30,12 @@ interface EarningsData {
         status: string;
         createdAt: string;
         completedAt?: string;
+        razorpayPayoutId?: string | null;
+        fundAccountId?: string | null;
+        mode?: string | null;
+        notes?: Record<string, string> | null;
+        error?: string | null;
+        donationId?: string | null;
     }>;
 }
 
@@ -231,6 +240,19 @@ export default function EarningsPage() {
                                             {donation.type === 'creator-tip' ? 'Creator Tip' : donation.type}
                                         </p>
                                     )}
+                                        {donation.payoutStatus && (
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                Payout:{' '}
+                                                <span className="capitalize text-gray-200">
+                                                    {donation.payoutStatus}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {donation.payoutMessage && (
+                                            <p className="text-xs text-gray-500 italic mt-1">
+                                                {donation.payoutMessage}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -289,6 +311,24 @@ export default function EarningsPage() {
                                         {payout.completedAt && (
                                             <p className="text-xs text-gray-500">
                                                 Completed: {new Date(payout.completedAt).toLocaleDateString()}
+                                            </p>
+                                        )}
+                                        {payout.razorpayPayoutId && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Ref:{' '}
+                                                <span className="text-gray-300">
+                                                    {payout.razorpayPayoutId}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {payout.mode && (
+                                            <p className="text-xs text-gray-500 mt-1 uppercase">
+                                                Mode: {payout.mode}
+                                            </p>
+                                        )}
+                                        {payout.error && (
+                                            <p className="text-xs text-red-400 mt-1">
+                                                {payout.error}
                                             </p>
                                         )}
                                     </div>

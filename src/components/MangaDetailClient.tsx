@@ -198,7 +198,15 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                 console.warn('Tip recorded payment but failed to log donation:', responseData);
                 setTipSuccess('Payment successful! We will reconcile your tip shortly.');
             } else {
-                setTipSuccess('Thank you for tipping the creator! 🎉');
+                const statusMessage = responseData.payoutStatus
+                    ? responseData.payoutStatus === 'failed'
+                        ? 'Tip recorded! Creator payout will be retried shortly.'
+                        : `Tip recorded! Payout status: ${responseData.payoutStatus}.`
+                    : 'Thank you for tipping the creator! 🎉';
+                const fullMessage = responseData.payoutMessage
+                    ? `${statusMessage} ${responseData.payoutMessage}`
+                    : statusMessage;
+                setTipSuccess(fullMessage);
             }
         } catch (error) {
             console.error('Failed to record tip donation:', error);

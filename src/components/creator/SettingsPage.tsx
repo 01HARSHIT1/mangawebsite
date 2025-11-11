@@ -14,7 +14,7 @@ interface CreatorProfile {
 }
 
 interface PayoutInfo {
-    method: 'upi' | 'bank';
+    method: 'razorpay' | 'upi' | 'bank';
     upiId?: string;
     bank?:
         | {
@@ -26,7 +26,12 @@ interface PayoutInfo {
         | null;
     taxId?: string;
     razorpayAccountId?: string;
+    razorpayFundAccountId?: string;
+    razorpayContactId?: string;
+    razorpayAccountStatus?: string;
     verificationStatus: 'pending' | 'verified' | 'rejected';
+    lastSyncedAt?: string | null;
+    lastSyncMessage?: string;
     updatedAt?: string | null;
 }
 
@@ -70,6 +75,8 @@ export default function SettingsPage() {
     const [savingNotifications, setSavingNotifications] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'payout' | 'notifications'>('profile');
     const [authToken, setAuthToken] = useState<string | null>(null);
+    const [payoutSyncStatus, setPayoutSyncStatus] = useState<string>('');
+    const [payoutSyncMessage, setPayoutSyncMessage] = useState<string>('');
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -114,6 +121,11 @@ export default function SettingsPage() {
             if (payoutRes.ok) {
                 const payoutData = await payoutRes.json();
                 setPayout(payoutData.payout);
+                setPayoutSyncStatus(payoutData.syncStatus || payoutData.payout?.verificationStatus || '');
+                setPayoutSyncMessage(payoutData.syncMessage || payoutData.payout?.lastSyncMessage || '');
+            } else {
+                setPayoutSyncStatus('');
+                setPayoutSyncMessage('');
             }
 
             if (notificationsRes.ok) {
@@ -169,14 +181,34 @@ export default function SettingsPage() {
         try {
             setSavingPayout(true);
 
+            if (payout.method === 'razorpay' && !payout.razorpayAccountId) {
+                alert('Please paste your Razorpay beneficiary ID (fa_...)');
+                return;
+            }
+            if (payout.method === 'upi' && !(payout.upiId && payout.upiId.trim())) {
+                alert('Please enter your UPI ID.');
+                return;
+            }
+            if (
+                payout.method === 'bank' &&
+                (!payout.bank ||
+                    !payout.bank.accountHolder ||
+                    !payout.bank.accountNumber ||
+                    !payout.bank.ifsc ||
+                    !payout.bank.bankName)
+            ) {
+                alert('Please fill in all bank account details.');
+                return;
+            }
+
             const payload: any = {
                 method: payout.method,
                 taxId: payout.taxId,
-                razorpayAccountId: payout.razorpayAccountId
+                razorpayAccountId: payout.razorpayAccountId?.trim()
             };
 
             if (payout.method === 'upi') {
-                payload.upiId = payout.upiId;
+                payload.upiId = payout.upiId?.trim();
             } else if (payout.method === 'bank' && payout.bank) {
                 payload.accountHolder = payout.bank.accountHolder;
                 payload.accountNumber = payout.bank.accountNumber;
@@ -201,6 +233,8 @@ export default function SettingsPage() {
 
             const data = await response.json();
             setPayout(data.payout);
+            setPayoutSyncStatus(data.syncStatus || data.payout?.verificationStatus || '');
+            setPayoutSyncMessage(data.syncMessage || data.payout?.lastSyncMessage || '');
             alert('Payout information updated!');
         } catch (error) {
             console.error('Failed to update payout info', error);
@@ -334,28 +368,47 @@ export default function SettingsPage() {
         </div>
     );
 
+    const markPayoutDirty = (updater: (prev: PayoutInfo) => PayoutInfo) => {
+        setPayout((prev) => {
+            if (!prev) return prev;
+            const next = updater(prev);
+            return {
+                ...next,
+                verificationStatus: 'pending',
+                razorpayFundAccountId: undefined,
+                razorpayContactId: undefined,
+                razorpayAccountStatus:
+                    next.method === 'razorpay' && next.razorpayAccountId ? 'pending' : '',
+                lastSyncedAt: null,
+                lastSyncMessage: '',
+            };
+        });
+        setPayoutSyncStatus('pending');
+        setPayoutSyncMessage('Save to sync your payout changes with Razorpay.');
+    };
+
     const renderPayoutForm = () => {
         if (!payout) return null;
 
-        const handleMethodChange = (method: 'upi' | 'bank') => {
-            setPayout((prev) =>
-                prev
-                    ? {
-                          ...prev,
-                          method,
-                          upiId: method === 'upi' ? prev.upiId || '' : '',
-                          bank:
-                              method === 'bank'
-                                  ? prev.bank || {
-                                        accountHolder: '',
-                                        accountNumber: '',
-                                        ifsc: '',
-                                        bankName: ''
-                                    }
-                                  : null
-                      }
-                    : prev
-            );
+        const handleMethodChange = (method: 'razorpay' | 'upi' | 'bank') => {
+            markPayoutDirty((prev) => ({
+                ...prev,
+                method,
+                upiId: method === 'upi' ? prev.upiId || '' : '',
+                bank:
+                    method === 'bank'
+                        ? prev.bank || {
+                              accountHolder: '',
+                              accountNumber: '',
+                              ifsc: '',
+                              bankName: '',
+                          }
+                        : null,
+                razorpayAccountStatus:
+                    method === 'razorpay'
+                        ? prev.razorpayAccountStatus || (prev.razorpayAccountId ? 'pending' : '')
+                        : prev.razorpayAccountStatus,
+            }));
         };
 
         return (
@@ -369,6 +422,30 @@ export default function SettingsPage() {
                             )}
                             <span className="capitalize">{payout.verificationStatus}</span>
                         </p>
+                        {payout.razorpayAccountStatus && (
+                            <p className="text-xs text-gray-400 mt-1">
+                                Razorpay status:{' '}
+                                <span className="uppercase tracking-wide text-purple-300">
+                                    {payout.razorpayAccountStatus}
+                                </span>
+                            </p>
+                        )}
+                        {payoutSyncStatus && payoutSyncStatus !== payout.verificationStatus && (
+                            <p className="text-xs text-purple-300">
+                                Sync status: <span className="capitalize">{payoutSyncStatus}</span>
+                            </p>
+                        )}
+                        {payout.lastSyncedAt && (
+                            <p className="text-xs text-gray-500 mt-1">
+                                Synced {new Date(payout.lastSyncedAt).toLocaleString()}
+                            </p>
+                        )}
+                        {payoutSyncMessage && (
+                            <p className="text-xs text-gray-400 mt-1">{payoutSyncMessage}</p>
+                        )}
+                        {payout.lastSyncMessage && (
+                            <p className="text-xs text-gray-500 mt-1">{payout.lastSyncMessage}</p>
+                        )}
                         {payout.updatedAt && (
                             <p className="text-xs text-gray-500 mt-1">
                                 Last reviewed {new Date(payout.updatedAt).toLocaleDateString()}
@@ -387,25 +464,48 @@ export default function SettingsPage() {
                     <input
                         value={payout.razorpayAccountId || ''}
                         onChange={(e) =>
-                            setPayout((prev) =>
-                                prev ? { ...prev, razorpayAccountId: e.target.value } : prev
-                            )
+                            markPayoutDirty((prev) => ({
+                                ...prev,
+                                razorpayAccountId: e.target.value,
+                            }))
                         }
-                        placeholder="acc_1234567890abcdef"
+                        placeholder="fa_1234567890abcdef"
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                        Paste the payout account ID generated in your Razorpay dashboard. We will
-                        review and connect it before releasing creator payouts.
+                        {payout.method === 'razorpay'
+                            ? 'Paste the Razorpay fund account ID (fa_...) so we can route tips directly to it.'
+                            : 'Optional: add your Razorpay beneficiary ID if you already created one in the dashboard.'}
                     </p>
                 </div>
+
+                {(payout.razorpayFundAccountId || payout.razorpayContactId) && (
+                    <div className="bg-slate-900/40 border border-slate-700/40 rounded-xl p-4 text-sm text-gray-400 space-y-2">
+                        {payout.razorpayFundAccountId && (
+                            <div>
+                                <span className="font-semibold text-gray-300">Fund Account:</span>{' '}
+                                <code className="text-purple-300 break-all">
+                                    {payout.razorpayFundAccountId}
+                                </code>
+                            </div>
+                        )}
+                        {payout.razorpayContactId && (
+                            <div>
+                                <span className="font-semibold text-gray-300">Contact ID:</span>{' '}
+                                <code className="text-purple-300 break-all">
+                                    {payout.razorpayContactId}
+                                </code>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-sm font-semibold text-gray-400 mb-2">
                         Preferred Method
                     </label>
                     <div className="flex space-x-3">
-                        {(['upi', 'bank'] as const).map((method) => (
+                        {(['razorpay', 'upi', 'bank'] as const).map((method) => (
                             <button
                                 key={method}
                                 onClick={() => handleMethodChange(method)}
@@ -415,7 +515,11 @@ export default function SettingsPage() {
                                         : 'bg-slate-800 text-gray-400 hover:text-white'
                                 }`}
                             >
-                                {method === 'upi' ? 'UPI' : 'Bank Transfer'}
+                                {method === 'razorpay'
+                                    ? 'Razorpay ID'
+                                    : method === 'upi'
+                                    ? 'UPI'
+                                    : 'Bank Transfer'}
                             </button>
                         ))}
                     </div>
@@ -429,9 +533,10 @@ export default function SettingsPage() {
                         <input
                             value={payout.upiId || ''}
                             onChange={(e) =>
-                                setPayout((prev) =>
-                                    prev ? { ...prev, upiId: e.target.value } : prev
-                                )
+                                markPayoutDirty((prev) => ({
+                                    ...prev,
+                                    upiId: e.target.value,
+                                }))
                             }
                             placeholder="yourname@upi"
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
@@ -448,22 +553,18 @@ export default function SettingsPage() {
                             <input
                                 value={payout.bank?.accountHolder || ''}
                                 onChange={(e) =>
-                                    setPayout((prev) =>
-                                        prev
-                                            ? {
-                                                  ...prev,
-                                                  bank: {
-                                                      ...(prev.bank || {
-                                                          accountHolder: '',
-                                                          accountNumber: '',
-                                                          ifsc: '',
-                                                          bankName: ''
-                                                      }),
-                                                      accountHolder: e.target.value
-                                                  }
-                                              }
-                                            : prev
-                                    )
+                                    markPayoutDirty((prev) => ({
+                                        ...prev,
+                                        bank: {
+                                            ...(prev.bank || {
+                                                accountHolder: '',
+                                                accountNumber: '',
+                                                ifsc: '',
+                                                bankName: '',
+                                            }),
+                                            accountHolder: e.target.value,
+                                        },
+                                    }))
                                 }
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
                             />
@@ -475,22 +576,18 @@ export default function SettingsPage() {
                             <input
                                 value={payout.bank?.accountNumber || ''}
                                 onChange={(e) =>
-                                    setPayout((prev) =>
-                                        prev
-                                            ? {
-                                                  ...prev,
-                                                  bank: {
-                                                      ...(prev.bank || {
-                                                          accountHolder: '',
-                                                          accountNumber: '',
-                                                          ifsc: '',
-                                                          bankName: ''
-                                                      }),
-                                                      accountNumber: e.target.value
-                                                  }
-                                              }
-                                            : prev
-                                    )
+                                    markPayoutDirty((prev) => ({
+                                        ...prev,
+                                        bank: {
+                                            ...(prev.bank || {
+                                                accountHolder: '',
+                                                accountNumber: '',
+                                                ifsc: '',
+                                                bankName: '',
+                                            }),
+                                            accountNumber: e.target.value,
+                                        },
+                                    }))
                                 }
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
                             />
@@ -502,22 +599,18 @@ export default function SettingsPage() {
                             <input
                                 value={payout.bank?.ifsc || ''}
                                 onChange={(e) =>
-                                    setPayout((prev) =>
-                                        prev
-                                            ? {
-                                                  ...prev,
-                                                  bank: {
-                                                      ...(prev.bank || {
-                                                          accountHolder: '',
-                                                          accountNumber: '',
-                                                          ifsc: '',
-                                                          bankName: ''
-                                                      }),
-                                                      ifsc: e.target.value.toUpperCase()
-                                                  }
-                                              }
-                                            : prev
-                                    )
+                                    markPayoutDirty((prev) => ({
+                                        ...prev,
+                                        bank: {
+                                            ...(prev.bank || {
+                                                accountHolder: '',
+                                                accountNumber: '',
+                                                ifsc: '',
+                                                bankName: '',
+                                            }),
+                                            ifsc: e.target.value.toUpperCase(),
+                                        },
+                                    }))
                                 }
                                 placeholder="HDFC0001234"
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 uppercase"
@@ -530,22 +623,18 @@ export default function SettingsPage() {
                             <input
                                 value={payout.bank?.bankName || ''}
                                 onChange={(e) =>
-                                    setPayout((prev) =>
-                                        prev
-                                            ? {
-                                                  ...prev,
-                                                  bank: {
-                                                      ...(prev.bank || {
-                                                          accountHolder: '',
-                                                          accountNumber: '',
-                                                          ifsc: '',
-                                                          bankName: ''
-                                                      }),
-                                                      bankName: e.target.value
-                                                  }
-                                              }
-                                            : prev
-                                    )
+                                    markPayoutDirty((prev) => ({
+                                        ...prev,
+                                        bank: {
+                                            ...(prev.bank || {
+                                                accountHolder: '',
+                                                accountNumber: '',
+                                                ifsc: '',
+                                                bankName: '',
+                                            }),
+                                            bankName: e.target.value,
+                                        },
+                                    }))
                                 }
                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
                             />
@@ -560,9 +649,10 @@ export default function SettingsPage() {
                     <input
                         value={payout.taxId || ''}
                         onChange={(e) =>
-                            setPayout((prev) =>
-                                prev ? { ...prev, taxId: e.target.value.toUpperCase() } : prev
-                            )
+                            markPayoutDirty((prev) => ({
+                                ...prev,
+                                taxId: e.target.value.toUpperCase(),
+                            }))
                         }
                         placeholder="ABCDE1234F"
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500 uppercase"

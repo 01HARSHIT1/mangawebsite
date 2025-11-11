@@ -50,7 +50,10 @@ export async function GET(req: NextRequest) {
             username: donation.donorUsername || 'Supporter',
             type: donation.type || 'donation',
             mangaId: donation.mangaId || null,
-            mangaTitle: donation.mangaTitle || null
+            mangaTitle: donation.mangaTitle || null,
+            payoutStatus: donation.payoutStatus || null,
+            payoutMessage: donation.payoutMessage || '',
+            payoutId: donation.payoutId || null
         }));
 
         const payoutResponse = payouts.map((payout: any) => ({
@@ -59,7 +62,13 @@ export async function GET(req: NextRequest) {
             status: payout.status || 'requested',
             createdAt: payout.createdAt ? payout.createdAt.toISOString() : new Date().toISOString(),
             updatedAt: payout.updatedAt ? payout.updatedAt.toISOString() : null,
-            completedAt: payout.completedAt ? payout.completedAt.toISOString() : null
+            completedAt: payout.completedAt ? payout.completedAt.toISOString() : null,
+            razorpayPayoutId: payout.razorpayPayoutId || null,
+            fundAccountId: payout.fundAccountId || null,
+            mode: payout.mode || null,
+            notes: payout.notes || null,
+            error: payout.error || null,
+            donationId: payout.donationId || null
         }));
 
         return NextResponse.json({
