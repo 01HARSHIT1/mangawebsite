@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { amount, message, paymentId } = body;
+        const { amount, message, paymentId, recipientId } = body;
 
         if (!amount || amount < 1) {
             return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
@@ -49,11 +49,14 @@ export async function POST(request: NextRequest) {
         const client = await clientPromise;
         const db = client.db();
 
+        const targetRecipientId = recipientId || user._id.toString();
+
         // Create donation record
         const donationDoc = {
-            userId: user._id.toString(),
-            username: user.username,
-            email: user.email,
+            donorId: user._id.toString(),
+            donorUsername: user.username,
+            donorEmail: user.email,
+            recipientId: targetRecipientId,
             amount: amount,
             message: message || '',
             paymentId: paymentId || null,
@@ -67,19 +70,11 @@ export async function POST(request: NextRequest) {
 
         console.log('✅ Donation recorded:', {
             donationId: result.insertedId.toString(),
-            userId: user._id.toString(),
+            donorId: user._id.toString(),
+            recipientId: targetRecipientId,
             amount: amount,
             message: message
         });
-
-        // Optionally, you could add coins or a special badge to the user
-        // await db.collection('users').updateOne(
-        //     { _id: user._id },
-        //     { 
-        //         $inc: { donationTotal: amount },
-        //         $set: { lastDonation: new Date() }
-        //     }
-        // );
 
         return NextResponse.json({ 
             success: true, 
@@ -107,14 +102,18 @@ export async function GET(request: NextRequest) {
 
         const client = await clientPromise;
         const db = client.db();
+        const view = request.nextUrl.searchParams.get('view') || 'donor';
+
+        const query = view === 'recipient'
+            ? { recipientId: user._id.toString() }
+            : { donorId: user._id.toString() };
 
         const donations = await db.collection('donations')
-            .find({ userId: user._id.toString() })
+            .find(query)
             .sort({ createdAt: -1 })
             .limit(50)
             .toArray();
 
-        // Calculate total donations
         const totalDonations = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
 
         return NextResponse.json({ 

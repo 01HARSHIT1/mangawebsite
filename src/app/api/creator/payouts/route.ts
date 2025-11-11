@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
         // Calculate available balance
         const donations = await db.collection('donations')
-            .find({ userId: user._id.toString() })
+            .find({ recipientId: user._id.toString() })
             .toArray();
 
         const totalBalance = donations.reduce((sum, d) => sum + (d.amount || 0), 0);

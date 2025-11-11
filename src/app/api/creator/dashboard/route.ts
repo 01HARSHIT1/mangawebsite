@@ -35,19 +35,26 @@ export async function GET(request: NextRequest) {
         }
 
         // Get recent manga with additional info
-        const recentManga = await Promise.all(
-            manga.slice(0, 5).map(async (m) => {
+        const series = await Promise.all(
+            manga.map(async (m) => {
                 const chapterCount = await db.collection('chapters')
                     .countDocuments({ mangaId: m._id.toString() });
 
                 return {
                     _id: m._id.toString(),
                     title: m.title,
-                    coverImage: m.coverImage,
+                    description: m.description || '',
+                    status: m.status || 'draft',
+                    coverImage: typeof m.coverImage === 'string'
+                        ? m.coverImage
+                        : m.coverImage?.secure_url || '',
                     views: m.views || 0,
-                    likes: m.likes || 0,
+                    likes: Array.isArray(m.likes) ? m.likes.length : m.likes || 0,
+                    genres: m.genres || [],
                     chapterCount,
                     createdAt: m.createdAt,
+                    updatedAt: m.updatedAt || m.createdAt,
+                    lastPublishedAt: m.lastPublishedAt || null
                 };
             })
         );
@@ -59,7 +66,7 @@ export async function GET(request: NextRequest) {
                 totalViews,
                 totalLikes,
             },
-            recentManga,
+            series,
         });
 
     } catch (error) {

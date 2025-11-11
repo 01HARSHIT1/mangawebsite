@@ -6,6 +6,7 @@ import path from 'path';
 import sharp from 'sharp';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '@/lib/config';
+import { requireAuth, requireCreator } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,6 +16,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { chapterId
     const client = await clientPromise;
     const db = client.db();
     const chapterId = params.chapterId;
+
+    const user = await requireCreator(req);
+    const chapter = await db.collection('chapters').findOne({ _id: new ObjectId(chapterId) });
+
+    if (!chapter) {
+        return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
+    }
+
+    if (chapter.uploaderId?.toString() !== user._id.toString()) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await db.collection('chapters').deleteOne({ _id: new ObjectId(chapterId) });
     return NextResponse.json({ success: true });
 }
@@ -23,6 +36,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
     const client = await clientPromise;
     const db = client.db();
     const chapterId = params.chapterId;
+
+    const chapter = await db.collection('chapters').findOne({ _id: new ObjectId(chapterId) });
+    if (!chapter) {
+        return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
+    }
+
+    let creatorUser: Awaited<ReturnType<typeof requireCreator>> | null = null;
+    try {
+        creatorUser = await requireCreator(req);
+    } catch {
+        creatorUser = null;
+    }
+
     let update: any = {};
     let isJson = false;
     let body: any;
@@ -33,29 +59,38 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
         // Not JSON, try FormData
     }
     if (isJson) {
+        if (body.action === 'like' || body.action === 'unlike') {
+            const viewer = await requireAuth(req);
+            const operator = body.action === 'like' ? '$addToSet' : '$pull';
+            await db.collection('chapters').updateOne(
+                { _id: new ObjectId(chapterId) },
+                { [operator]: { likes: viewer._id } }
+            );
+            return NextResponse.json({ success: true });
+        }
+
+        if (!creatorUser || chapter.uploaderId?.toString() !== creatorUser._id.toString()) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         if (body.title) update.title = body.title;
         if (body.description) update.description = body.description;
         if (body.tags) update.tags = body.tags;
         if (body.publishDate) update.publishDate = body.publishDate;
         if (typeof body.order === 'number') update.order = body.order;
-        if (Array.isArray(body.likes)) update.likes = body.likes;
         if (Array.isArray(body.comments)) update.comments = body.comments;
         if (Array.isArray(body.ratings)) update.ratings = body.ratings;
         if (typeof body.coinPrice === 'number') update.coinPrice = body.coinPrice;
-        // Like/unlike logic
-        if (body.action === 'like' && body.userId) {
-            await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $addToSet: { likes: body.userId } });
-        } else if (body.action === 'unlike' && body.userId) {
-            await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $pull: { likes: body.userId } });
-        }
     } else {
+        if (!creatorUser || chapter.uploaderId?.toString() !== creatorUser._id.toString()) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
         const formData = await req.formData();
         if (formData.get('title')) update.title = formData.get('title');
         if (formData.get('description')) update.description = formData.get('description');
         if (formData.get('tags')) update.tags = formData.get('tags');
         if (formData.get('publishDate')) update.publishDate = formData.get('publishDate');
         if (formData.get('order')) update.order = Number(formData.get('order'));
-        if (formData.get('likes')) update.likes = JSON.parse(formData.get('likes'));
         if (formData.get('comments')) update.comments = JSON.parse(formData.get('comments'));
         if (formData.get('ratings')) update.ratings = JSON.parse(formData.get('ratings'));
         // Bulk image upload for pages
@@ -74,7 +109,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
             }
         }
     }
-    await db.collection('chapters').updateOne({ _id: new ObjectId(chapterId) }, { $set: update });
+    if (Object.keys(update).length > 0) {
+        await db.collection('chapters').updateOne(
+            { _id: new ObjectId(chapterId) },
+            { $set: { ...update, updatedAt: new Date() } }
+        );
+    }
     return NextResponse.json({ success: true });
 }
 

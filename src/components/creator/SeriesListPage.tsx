@@ -44,7 +44,8 @@ export default function SeriesListPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                setSeries(data.recentManga || []);
+                const normalized = Array.isArray(data.series) ? data.series : data.recentManga || [];
+                setSeries(normalized);
             }
         } catch (error) {
             console.error('Error fetching series:', error);

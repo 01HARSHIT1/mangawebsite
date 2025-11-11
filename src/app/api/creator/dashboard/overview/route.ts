@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         // Fetch donations/revenue (from donations collection)
         const donations = await db.collection('donations')
             .find({ 
-                userId: user._id.toString(),
+                recipientId: user._id.toString(),
                 createdAt: { $gte: startDate }
             })
             .toArray();
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         
         // Calculate total balance (all-time donations)
         const allDonations = await db.collection('donations')
-            .find({ userId: user._id.toString() })
+            .find({ recipientId: user._id.toString() })
             .toArray();
         
         const currentBalance = allDonations.reduce((sum, d) => sum + (d.amount || 0), 0);

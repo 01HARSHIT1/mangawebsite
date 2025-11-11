@@ -662,7 +662,8 @@ function BuyMeACoffeeNav({ onClose }: { onClose: () => void }) {
                 body: JSON.stringify({
                     amount: parseFloat(amount),
                     message: customMessage,
-                    paymentId
+                    paymentId,
+                    recipientId: process.env.NEXT_PUBLIC_DONATION_RECIPIENT_ID || undefined
                 })
             });
 

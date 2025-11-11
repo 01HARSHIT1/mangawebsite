@@ -43,19 +43,18 @@ export default function EarningsPage() {
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             
-            // Fetch donations
-            const donationsRes = await fetch('/api/donations', {
+            const response = await fetch('/api/creator/earnings', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
-            if (donationsRes.ok) {
-                const data = await donationsRes.json();
+            if (response.ok) {
+                const data = await response.json();
                 setEarnings({
-                    currentBalance: data.totalDonations || 0,
-                    pendingBalance: 0,
-                    totalEarnings: data.totalDonations || 0,
+                    currentBalance: data.currentBalance || 0,
+                    pendingBalance: data.pendingBalance || 0,
+                    totalEarnings: data.totalEarnings || 0,
                     donations: data.donations || [],
-                    payouts: [] // TODO: Implement payouts API
+                    payouts: data.payouts || []
                 });
             }
         } catch (error) {
@@ -252,12 +251,16 @@ export default function EarningsPage() {
                                                 ? 'bg-green-900/30' 
                                                 : payout.status === 'processing'
                                                 ? 'bg-blue-900/30'
+                                                : payout.status === 'requested'
+                                                ? 'bg-amber-900/30'
                                                 : 'bg-red-900/30'
                                         }`}>
                                             {payout.status === 'completed' ? (
                                                 <FaCheckCircle className="text-green-400" />
                                             ) : payout.status === 'processing' ? (
                                                 <FaClock className="text-blue-400" />
+                                            ) : payout.status === 'requested' ? (
+                                                <FaClock className="text-amber-400" />
                                             ) : (
                                                 <FaExclamationCircle className="text-red-400" />
                                             )}

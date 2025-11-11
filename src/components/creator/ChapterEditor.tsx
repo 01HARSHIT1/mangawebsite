@@ -75,7 +75,7 @@ export default function ChapterEditor({ seriesId, chapterId }: ChapterEditorProp
         }
 
         setUploading(true);
-        setUploadProgress(0);
+        setUploadProgress(5);
 
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
@@ -102,6 +102,7 @@ export default function ChapterEditor({ seriesId, chapterId }: ChapterEditorProp
             });
 
             if (response.ok) {
+                setUploadProgress(100);
                 alert('Chapter uploaded successfully!');
                 router.push(`/creator/dashboard/series/${seriesId}`);
             } else {
@@ -113,7 +114,7 @@ export default function ChapterEditor({ seriesId, chapterId }: ChapterEditorProp
             alert('Failed to upload chapter');
         } finally {
             setUploading(false);
-            setUploadProgress(0);
+            setTimeout(() => setUploadProgress(0), 500);
         }
     };
 

@@ -64,8 +64,11 @@ export default function AdvancedAnalyticsPage() {
             ['Metric', 'Value'],
             ['Total Views', analytics.totalViews || 0],
             ['Total Likes', analytics.totalLikes || 0],
-            ['Total Chapters', analytics.totalChapters || 0],
-            ['Avg Read Time', `${analytics.avgReadTime || 0} minutes`],
+            ['Total Series', analytics.totalSeries || 0],
+            ['Total Episodes', analytics.totalEpisodes || 0],
+            ['Total Pages', analytics.totalPages || 0],
+            ['Growth Rate (%)', analytics.growthRate || 0],
+            ['Engagement Rate (%)', analytics.totalEngagementRate || 0],
             ['Date Range', dateRange]
         ];
 
@@ -92,11 +95,32 @@ export default function AdvancedAnalyticsPage() {
         );
     }
 
+    const averageMinutes = (() => {
+        if (!analytics?.detailedSeries?.length) return 0;
+        const total = analytics.detailedSeries.reduce((sum: number, series: any) => {
+            const chapters = series.chapters || [];
+            if (!chapters.length) return sum;
+            const seriesAverage = chapters.reduce((acc: number, chapter: any) => {
+                if (typeof chapter.avgReadTime === 'string' && chapter.avgReadTime.includes('m')) {
+                    const [minutes] = chapter.avgReadTime.split('m');
+                    const parsed = parseInt(minutes.trim(), 10);
+                    if (!isNaN(parsed)) {
+                        return acc + parsed;
+                    }
+                }
+                return acc;
+            }, 0);
+            return sum + (seriesAverage / chapters.length || 0);
+        }, 0);
+        const computed = total / analytics.detailedSeries.length;
+        return Number.isFinite(computed) ? Math.round(computed) : 0;
+    })();
+
     const metrics = [
-        { label: 'Total Views', value: analytics?.totalViews || 0, icon: FaEye, color: 'text-blue-400', change: '+12%' },
-        { label: 'Unique Readers', value: analytics?.uniqueReaders || 0, icon: FaUsers, color: 'text-green-400', change: '+8%' },
-        { label: 'Avg Read Time', value: `${analytics?.avgReadTime || 0}m`, icon: FaClock, color: 'text-purple-400', change: '+5%' },
-        { label: 'Total Likes', value: analytics?.totalLikes || 0, icon: FaHeart, color: 'text-pink-400', change: '+15%' }
+        { label: 'Total Views', value: analytics?.totalViews || 0, icon: FaEye, color: 'text-blue-400', change: analytics?.growthRate ? Math.round(analytics.growthRate) : undefined },
+        { label: 'Unique Readers', value: analytics?.topReaders?.length || 0, icon: FaUsers, color: 'text-green-400', change: undefined },
+        { label: 'Avg Read Time', value: `${averageMinutes}m`, icon: FaClock, color: 'text-purple-400', change: undefined },
+        { label: 'Total Likes', value: analytics?.totalLikes || 0, icon: FaHeart, color: 'text-pink-400', change: undefined }
     ];
 
     return (
@@ -217,7 +241,7 @@ export default function AdvancedAnalyticsPage() {
                 <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
                     <h3 className="text-lg font-bold text-white mb-4">Top Performing Chapters</h3>
                     <div className="space-y-3">
-                        {analytics?.topChapters?.slice(0, 5).map((chapter: any, index: number) => (
+                        {analytics?.topPerformingChapters?.slice(0, 5).map((chapter: any, index: number) => (
                             <div
                                 key={chapter._id}
                                 className="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl"
@@ -228,7 +252,10 @@ export default function AdvancedAnalyticsPage() {
                                     </div>
                                     <div>
                                         <p className="font-semibold text-white">{chapter.title}</p>
-                                        <p className="text-sm text-gray-400">Chapter {chapter.chapterNumber}</p>
+                                        <p className="text-sm text-gray-400">
+                                            {chapter.manga ? `${chapter.manga} • ` : ''}
+                                            {chapter.chapterNumber ? `Chapter ${chapter.chapterNumber}` : ''}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="text-right">
