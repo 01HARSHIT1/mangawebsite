@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaPlay, FaBookOpen, FaTrendingUp, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaGem, FaRocket } from 'react-icons/fa';
+import { FaPlay, FaBookOpen, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaGem, FaRocket } from 'react-icons/fa';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import TrendingMangaAsync from '@/components/TrendingMangaAsync';

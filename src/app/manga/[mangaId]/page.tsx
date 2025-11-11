@@ -70,6 +70,16 @@ export default async function MangaDetailPage({ params }: { params: { mangaId: s
             ...mangaRaw,
             _id: mangaRaw._id.toString(),
             createdAt: mangaRaw.createdAt ? mangaRaw.createdAt.toString() : null,
+            uploaderId: mangaRaw.uploaderId
+                ? (typeof mangaRaw.uploaderId === 'string'
+                    ? mangaRaw.uploaderId
+                    : mangaRaw.uploaderId.toString())
+                : null,
+            creatorId: mangaRaw.creatorId
+                ? (typeof mangaRaw.creatorId === 'string'
+                    ? mangaRaw.creatorId
+                    : mangaRaw.creatorId.toString())
+                : null,
         } as any; // Type as any to handle dynamic properties
 
         // Fetch chapters for this manga

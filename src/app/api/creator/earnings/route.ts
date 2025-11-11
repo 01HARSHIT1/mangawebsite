@@ -47,7 +47,10 @@ export async function GET(req: NextRequest) {
             amount: donation.amount || 0,
             message: donation.message || '',
             createdAt: donation.createdAt ? donation.createdAt.toISOString() : new Date().toISOString(),
-            username: donation.donorUsername || 'Supporter'
+            username: donation.donorUsername || 'Supporter',
+            type: donation.type || 'donation',
+            mangaId: donation.mangaId || null,
+            mangaTitle: donation.mangaTitle || null
         }));
 
         const payoutResponse = payouts.map((payout: any) => ({

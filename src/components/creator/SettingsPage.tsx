@@ -16,13 +16,16 @@ interface CreatorProfile {
 interface PayoutInfo {
     method: 'upi' | 'bank';
     upiId?: string;
-    bank?: {
-        accountHolder: string;
-        accountNumber: string;
-        ifsc: string;
-        bankName: string;
-    } | null;
+    bank?:
+        | {
+              accountHolder: string;
+              accountNumber: string;
+              ifsc: string;
+              bankName: string;
+          }
+        | null;
     taxId?: string;
+    razorpayAccountId?: string;
     verificationStatus: 'pending' | 'verified' | 'rejected';
     updatedAt?: string | null;
 }
@@ -168,7 +171,8 @@ export default function SettingsPage() {
 
             const payload: any = {
                 method: payout.method,
-                taxId: payout.taxId
+                taxId: payout.taxId,
+                razorpayAccountId: payout.razorpayAccountId
             };
 
             if (payout.method === 'upi') {
@@ -365,9 +369,34 @@ export default function SettingsPage() {
                             )}
                             <span className="capitalize">{payout.verificationStatus}</span>
                         </p>
+                        {payout.updatedAt && (
+                            <p className="text-xs text-gray-500 mt-1">
+                                Last reviewed {new Date(payout.updatedAt).toLocaleDateString()}
+                            </p>
+                        )}
                     </div>
                     <p className="text-xs text-gray-500">
                         Updates automatically when support verifies your payout method.
+                    </p>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-semibold text-gray-400 mb-2">
+                        Razorpay Beneficiary ID
+                    </label>
+                    <input
+                        value={payout.razorpayAccountId || ''}
+                        onChange={(e) =>
+                            setPayout((prev) =>
+                                prev ? { ...prev, razorpayAccountId: e.target.value } : prev
+                            )
+                        }
+                        placeholder="acc_1234567890abcdef"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-purple-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                        Paste the payout account ID generated in your Razorpay dashboard. We will
+                        review and connect it before releasing creator payouts.
                     </p>
                 </div>
 

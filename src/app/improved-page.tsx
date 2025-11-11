@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaPlay, FaBookOpen, FaTrendingUp, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaGem, FaRocket, FaSearch, FaHeart, FaEye } from 'react-icons/fa';
+import { FaPlay, FaBookOpen, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaGem, FaRocket, FaSearch, FaHeart, FaEye } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import BuyMeACoffee from '@/components/BuyMeACoffee';

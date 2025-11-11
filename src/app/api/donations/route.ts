@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { amount, message, paymentId, recipientId } = body;
+        const { amount, message, paymentId, recipientId, type, mangaId, mangaTitle, metadata } = body;
 
         if (!amount || amount < 1) {
             return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
@@ -52,7 +52,11 @@ export async function POST(request: NextRequest) {
         const targetRecipientId = recipientId || user._id.toString();
 
         // Create donation record
-        const donationDoc = {
+        const allowedTypes = new Set(['coffee', 'creator-tip', 'subscription', 'coin-topup']);
+        const donationType =
+            typeof type === 'string' && allowedTypes.has(type) ? type : 'coffee';
+
+        const donationDoc: Record<string, any> = {
             donorId: user._id.toString(),
             donorUsername: user.username,
             donorEmail: user.email,
@@ -60,11 +64,21 @@ export async function POST(request: NextRequest) {
             amount: amount,
             message: message || '',
             paymentId: paymentId || null,
-            type: 'coffee',
+            type: donationType,
             status: 'completed',
             createdAt: new Date(),
             updatedAt: new Date()
         };
+
+        if (mangaId) {
+            donationDoc.mangaId = mangaId;
+        }
+        if (mangaTitle) {
+            donationDoc.mangaTitle = mangaTitle;
+        }
+        if (metadata && typeof metadata === 'object') {
+            donationDoc.metadata = metadata;
+        }
 
         const result = await db.collection('donations').insertOne(donationDoc);
 

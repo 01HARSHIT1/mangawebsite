@@ -8,13 +8,15 @@ import OptimizedImage from './OptimizedImage';
 import LiveChat from './LiveChat';
 import LiveReactions from './LiveReactions';
 import { useWebSocket } from '@/contexts/WebSocketContext';
+import RazorpayPayment from './RazorpayPayment';
 
 export default function MangaDetailClient({ manga, chapters, ratings, favorites, author, lastUpdate, status, type, genres, tags }: any) {
     const [bookmarked, setBookmarked] = useState(false);
     const [loading, setLoading] = useState(true);
     const [showTip, setShowTip] = useState(false);
-    const [tipAmount, setTipAmount] = useState(100);
-    const [tipLoading, setTipLoading] = useState(false);
+    const [showTipPayment, setShowTipPayment] = useState(false);
+    const [tipAmount, setTipAmount] = useState('250');
+    const [tipMessage, setTipMessage] = useState('');
     const [tipSuccess, setTipSuccess] = useState('');
     const [tipError, setTipError] = useState('');
     const [showLiveChat, setShowLiveChat] = useState(false);
@@ -106,29 +108,114 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
         }
     };
 
-    const handleTip = async () => {
-        setTipLoading(true);
+    const creatorId =
+        manga?.uploaderId ||
+        manga?.creatorId ||
+        manga?.creator?._id ||
+        null;
+
+    const TIP_MIN_AMOUNT = 10;
+    const TIP_MAX_AMOUNT = 100000;
+    const USD_TO_INR_RATE = 83;
+    const quickTipAmounts = [100, 250, 500, 1000];
+
+    const resetTipState = () => {
         setTipError('');
         setTipSuccess('');
-        const token = localStorage.getItem('token');
+        setShowTipPayment(false);
+        setTipAmount('250');
+    };
+
+    const handleTipContinue = () => {
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (!token) {
-            setTipError('You must be logged in.');
-            setTipLoading(false);
+            setTipError('You must be logged in to tip the creator.');
             return;
         }
-        const res = await fetch(`/api/manga/${manga._id}/tip`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ amount: tipAmount })
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-            setTipSuccess('Thank you for supporting the creator!');
-            setTimeout(() => { setShowTip(false); setTipSuccess(''); }, 1500);
-        } else {
-            setTipError(data.error || 'Failed to send tip');
+
+        const amountValue = Number(tipAmount);
+        if (Number.isNaN(amountValue)) {
+            setTipError('Please enter a valid amount.');
+            return;
         }
-        setTipLoading(false);
+        if (amountValue < TIP_MIN_AMOUNT) {
+            setTipError(`Minimum tip amount is ₹${TIP_MIN_AMOUNT}.`);
+            return;
+        }
+        if (amountValue > TIP_MAX_AMOUNT) {
+            setTipError(`Maximum tip amount is ₹${TIP_MAX_AMOUNT.toLocaleString()}.`);
+            return;
+        }
+        if (!creatorId) {
+            setTipError('This series is not linked to a creator payout account yet.');
+            return;
+        }
+
+        setTipError('');
+        setShowTipPayment(true);
+    };
+
+    const handleTipPaymentSuccess = async (paymentId: string) => {
+        const amountValue = Number(tipAmount);
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+
+        setShowTipPayment(false);
+        setTipError('');
+        setTipSuccess('Payment received! Recording your tip…');
+
+        if (!token) {
+            setTipSuccess('Payment received! Please log in again so we can record it under your account.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/donations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    amount: amountValue,
+                    message: tipMessage,
+                    paymentId,
+                    recipientId: creatorId,
+                    type: 'creator-tip',
+                    mangaId: manga?._id,
+                    mangaTitle: manga?.title,
+                    metadata: {
+                        source: 'creator-tip',
+                        mangaTitle: manga?.title,
+                        creatorId,
+                        mangaId: manga?._id
+                    }
+                })
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                console.warn('Tip recorded payment but failed to log donation:', responseData);
+                setTipSuccess('Payment successful! We will reconcile your tip shortly.');
+            } else {
+                setTipSuccess('Thank you for tipping the creator! 🎉');
+            }
+        } catch (error) {
+            console.error('Failed to record tip donation:', error);
+            setTipSuccess('Payment successful! We will sync it to the creator in a moment.');
+        } finally {
+            setTimeout(() => {
+                setShowTip(false);
+                setTipSuccess('');
+                setTipMessage('');
+                setTipAmount('250');
+            }, 4000);
+        }
+    };
+
+    const handleTipPaymentError = (message: string) => {
+        setShowTipPayment(false);
+        setTipError(message || 'Payment was cancelled. Please try again.');
     };
 
     return (
@@ -173,7 +260,11 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                             </button>
 
                             <button
-                                onClick={() => setShowTip(true)}
+                                onClick={() => {
+                                    resetTipState();
+                                    setTipMessage('');
+                                    setShowTip(true);
+                                }}
                                 className="w-full bg-pink-500 hover:bg-pink-600 text-white border-none rounded-lg py-4 font-bold text-lg mt-3 flex items-center justify-center gap-2 transition-colors"
                                 aria-label="Tip the Creator"
                             >
@@ -244,10 +335,24 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
 
             {/* Tip Modal */}
             {showTip && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-                    <div className="bg-gray-800 rounded-xl p-8 min-w-80 max-w-md shadow-2xl relative">
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4"
+                    onClick={() => {
+                        setShowTip(false);
+                        resetTipState();
+                        setTipMessage('');
+                    }}
+                >
+                    <div
+                        className="bg-gray-800 rounded-xl p-8 min-w-80 max-w-md shadow-2xl relative w-full"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <button
-                            onClick={() => setShowTip(false)}
+                            onClick={() => {
+                                setShowTip(false);
+                                resetTipState();
+                                setTipMessage('');
+                            }}
                             className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl font-bold cursor-pointer"
                             aria-label="Close"
                         >
@@ -256,31 +361,124 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
 
                         <h3 className="text-2xl font-bold text-pink-400 mb-4">Tip the Creator</h3>
 
-                        <div className="mb-4">
-                            <label htmlFor="tip-amount" className="font-semibold mb-2 block">Amount (Coins)</label>
-                            <input
-                                id="tip-amount"
-                                type="number"
-                                min={10}
-                                step={10}
-                                value={tipAmount}
-                                onChange={e => setTipAmount(Number(e.target.value))}
-                                className="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white text-base"
-                                aria-label="Tip amount"
-                            />
-                        </div>
+                        {tipSuccess ? (
+                            <div className="text-green-400 mb-3 text-center font-semibold" role="status">
+                                {tipSuccess}
+                            </div>
+                        ) : showTipPayment ? (
+                            <div className="space-y-4">
+                                <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-gray-400">Amount</span>
+                                        <span className="text-xl font-bold text-pink-300">₹{Number(tipAmount).toLocaleString()}</span>
+                                    </div>
+                                    {tipMessage && (
+                                        <div className="mt-3 text-sm text-gray-400 italic">
+                                            “{tipMessage}”
+                                        </div>
+                                    )}
+                                </div>
 
-                        {tipError && <div className="text-red-400 mb-3" role="status">{tipError}</div>}
-                        {tipSuccess && <div className="text-green-400 mb-3" role="status">{tipSuccess}</div>}
+                                <RazorpayPayment
+                                    amount={Number(tipAmount) / USD_TO_INR_RATE}
+                                    description={`Tip for ${manga?.title || 'your favorite creator'}`}
+                                    onSuccess={handleTipPaymentSuccess}
+                                    onError={handleTipPaymentError}
+                                    metadata={{
+                                        type: 'creator-tip',
+                                        creatorId,
+                                        mangaId: manga?._id,
+                                        mangaTitle: manga?.title,
+                                        amountINR: Number(tipAmount)
+                                    }}
+                                />
 
-                        <button
-                            onClick={handleTip}
-                            disabled={tipLoading || tipAmount < 10}
-                            className="w-full bg-pink-500 hover:bg-pink-600 disabled:opacity-50 text-white border-none rounded-lg py-3 font-bold text-lg transition-colors"
-                            aria-label="Confirm tip"
-                        >
-                            {tipLoading ? 'Sending...' : `Send ${tipAmount} Coins`}
-                        </button>
+                                <button
+                                    onClick={() => setShowTipPayment(false)}
+                                    className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-semibold transition-colors"
+                                >
+                                    Back
+                                </button>
+
+                                {tipError && (
+                                    <div className="text-red-400 text-sm" role="status">
+                                        {tipError}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block font-semibold mb-2 text-sm text-gray-300">
+                                        Choose an amount
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {quickTipAmounts.map((amount) => (
+                                            <button
+                                                key={amount}
+                                                onClick={() => {
+                                                    setTipAmount(amount.toString());
+                                                    setTipError('');
+                                                }}
+                                                className={`py-3 rounded-lg font-semibold transition-all ${
+                                                    Number(tipAmount) === amount
+                                                        ? 'bg-pink-500 text-white shadow-lg'
+                                                        : 'bg-gray-900 border border-gray-700 text-gray-300 hover:border-pink-400 hover:text-white'
+                                                }`}
+                                            >
+                                                ₹{amount.toLocaleString()}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="tip-amount" className="font-semibold mb-2 block text-sm text-gray-300">
+                                        Custom amount (₹{TIP_MIN_AMOUNT} - ₹{TIP_MAX_AMOUNT.toLocaleString()})
+                                    </label>
+                                    <input
+                                        id="tip-amount"
+                                        type="number"
+                                        min={TIP_MIN_AMOUNT}
+                                        max={TIP_MAX_AMOUNT}
+                                        value={tipAmount}
+                                        onChange={(e) => {
+                                            setTipAmount(e.target.value);
+                                            setTipError('');
+                                        }}
+                                        className="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white text-base"
+                                        aria-label="Tip amount"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="font-semibold mb-2 block text-sm text-gray-300">
+                                        Message to the creator (optional)
+                                    </label>
+                                    <textarea
+                                        value={tipMessage}
+                                        onChange={(e) => setTipMessage(e.target.value)}
+                                        rows={3}
+                                        maxLength={200}
+                                        className="w-full p-3 rounded-lg border border-gray-600 bg-gray-700 text-white text-base resize-none"
+                                        placeholder="Let them know why you loved their work!"
+                                    />
+                                    <div className="text-xs text-gray-500 text-right">
+                                        {tipMessage.length}/200
+                                    </div>
+                                </div>
+
+                                {tipError && <div className="text-red-400" role="status">{tipError}</div>}
+
+                                <button
+                                    onClick={handleTipContinue}
+                                    className="w-full bg-pink-500 hover:bg-pink-600 text-white border-none rounded-lg py-3 font-bold text-lg transition-colors"
+                                    aria-label="Continue to payment"
+                                >
+                                    Continue to Payment
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -862,8 +862,8 @@ function BuyMeACoffeeNav({ onClose }: { onClose: () => void }) {
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => handleQuickAmount(value)}
                                                     className={`py-3 rounded-xl font-bold transition-all ${amount === value.toString()
-                                                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
-                                                            : 'bg-slate-800/50 hover:bg-slate-700/50 text-gray-300 border border-slate-700/50'
+                                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+                                                        : 'bg-slate-800/50 hover:bg-slate-700/50 text-gray-300 border border-slate-700/50'
                                                         }`}
                                                 >
                                                     ₹{value}

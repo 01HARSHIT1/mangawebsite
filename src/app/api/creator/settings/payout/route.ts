@@ -27,6 +27,7 @@ function sanitizePayoutPayload(body: any) {
         } else {
             update['payoutInfo.upiId'] = body.upiId.trim();
         }
+        update['payoutInfo.bank'] = null;
     }
 
     if (method === 'bank') {
@@ -52,6 +53,18 @@ function sanitizePayoutPayload(body: any) {
     const taxId = typeof body.taxId === 'string' ? body.taxId.trim() : '';
     if (taxId) {
         update['payoutInfo.taxId'] = taxId;
+    } else {
+        update['payoutInfo.taxId'] = '';
+    }
+
+    if (body.razorpayAccountId !== undefined) {
+        if (body.razorpayAccountId === null || body.razorpayAccountId === '') {
+            update['payoutInfo.razorpayAccountId'] = '';
+        } else if (typeof body.razorpayAccountId === 'string') {
+            update['payoutInfo.razorpayAccountId'] = body.razorpayAccountId.trim();
+        } else {
+            errors.razorpayAccountId = 'Razorpay account id must be a string';
+        }
     }
 
     if (body.verificationStatus && allowedVerificationStatuses.includes(body.verificationStatus)) {
@@ -99,6 +112,7 @@ export async function GET(request: NextRequest) {
                 upiId: payoutInfo.upiId || '',
                 bank: payoutInfo.bank || null,
                 taxId: payoutInfo.taxId || '',
+                razorpayAccountId: payoutInfo.razorpayAccountId || '',
                 verificationStatus: payoutInfo.verificationStatus || 'pending',
                 updatedAt: payoutInfo.updatedAt || null
             }
@@ -143,6 +157,7 @@ export async function PUT(request: NextRequest) {
                 upiId: payoutInfo.upiId || '',
                 bank: payoutInfo.bank || null,
                 taxId: payoutInfo.taxId || '',
+                razorpayAccountId: payoutInfo.razorpayAccountId || '',
                 verificationStatus: payoutInfo.verificationStatus || 'pending',
                 updatedAt: payoutInfo.updatedAt || null
             }

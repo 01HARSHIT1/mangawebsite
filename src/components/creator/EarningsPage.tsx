@@ -18,6 +18,8 @@ interface EarningsData {
         message: string;
         createdAt: string;
         username: string;
+        type?: string;
+        mangaTitle?: string | null;
     }>;
     payouts: Array<{
         _id: string;
@@ -212,6 +214,11 @@ export default function EarningsPage() {
                                             {donation.message && (
                                                 <p className="text-sm text-gray-400 italic">"{donation.message}"</p>
                                             )}
+                                        {donation.mangaTitle && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                For <span className="text-gray-300">{donation.mangaTitle}</span>
+                                            </p>
+                                        )}
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -219,6 +226,11 @@ export default function EarningsPage() {
                                         <p className="text-xs text-gray-500">
                                             {new Date(donation.createdAt).toLocaleDateString()}
                                         </p>
+                                    {donation.type && (
+                                        <p className="text-xs text-purple-300 uppercase tracking-wide mt-1">
+                                            {donation.type === 'creator-tip' ? 'Creator Tip' : donation.type}
+                                        </p>
+                                    )}
                                     </div>
                                 </div>
                             ))}
