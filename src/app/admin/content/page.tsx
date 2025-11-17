@@ -220,7 +220,26 @@ export default function AdminContentManagement() {
         }
 
         setViewingEarnings({ creatorId, mangaId, chapterId });
+        setSelectedEarningsChapterId(chapterId || null);
         setLoadingEarnings(true);
+
+        // Fetch chapters if mangaId is provided
+        if (mangaId && !chapterId) {
+            try {
+                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                const chaptersResponse = await fetch(`/api/admin/manga/${mangaId}/chapters`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (chaptersResponse.ok) {
+                    const chaptersData = await chaptersResponse.json();
+                    setEarningsChapters(chaptersData.chapters || []);
+                }
+            } catch (error) {
+                console.error('Failed to fetch chapters:', error);
+            }
+        } else {
+            setEarningsChapters([]);
+        }
 
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
@@ -247,6 +266,40 @@ export default function AdminContentManagement() {
             console.error('Failed to fetch earnings:', error);
             alert('Failed to fetch earnings');
             setViewingEarnings(null);
+        } finally {
+            setLoadingEarnings(false);
+        }
+    };
+
+    const handleEarningsChapterChange = async (newChapterId: string | null) => {
+        if (!viewingEarnings) return;
+
+        setSelectedEarningsChapterId(newChapterId);
+        setLoadingEarnings(true);
+
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const url = new URL(`/api/admin/creators/${viewingEarnings.creatorId}/earnings`, window.location.origin);
+            url.searchParams.append('period', 'all');
+            if (viewingEarnings.mangaId) url.searchParams.append('mangaId', viewingEarnings.mangaId);
+            if (newChapterId) url.searchParams.append('chapterId', newChapterId);
+
+            const response = await fetch(url.toString(), {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setEarningsData(data);
+                // Update viewingEarnings to include new chapterId
+                setViewingEarnings({ ...viewingEarnings, chapterId: newChapterId || undefined });
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Failed to fetch earnings');
+            }
+        } catch (error) {
+            console.error('Failed to fetch earnings:', error);
+            alert('Failed to fetch earnings');
         } finally {
             setLoadingEarnings(false);
         }
@@ -687,9 +740,14 @@ export default function AdminContentManagement() {
                     creatorId={viewingEarnings.creatorId}
                     mangaId={viewingEarnings.mangaId}
                     chapterId={viewingEarnings.chapterId}
+                    chapters={earningsChapters}
+                    selectedChapterId={selectedEarningsChapterId}
+                    onChapterChange={handleEarningsChapterChange}
                     onClose={() => {
                         setViewingEarnings(null);
                         setEarningsData(null);
+                        setEarningsChapters([]);
+                        setSelectedEarningsChapterId(null);
                     }}
                 />
             )}
@@ -821,6 +879,9 @@ function EarningsModal({
     creatorId, 
     mangaId, 
     chapterId, 
+    chapters,
+    selectedChapterId,
+    onChapterChange,
     onClose 
 }: { 
     earnings: any; 
@@ -828,6 +889,9 @@ function EarningsModal({
     creatorId: string; 
     mangaId?: string; 
     chapterId?: string; 
+    chapters?: Chapter[];
+    selectedChapterId?: string | null;
+    onChapterChange?: (chapterId: string | null) => void;
     onClose: () => void;
 }) {
     if (loading) {
@@ -864,7 +928,7 @@ function EarningsModal({
             <div className="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold text-purple-400">
-                        Earnings {mangaId ? '(Manga)' : chapterId ? '(Chapter)' : '(Creator)'}
+                        Earnings {mangaId ? '(Manga)' : chapterId || selectedChapterId ? '(Chapter)' : '(Creator)'}
                     </h2>
                     <button
                         onClick={onClose}
@@ -873,6 +937,33 @@ function EarningsModal({
                         <FaTimes className="text-xl" />
                     </button>
                 </div>
+
+                {/* Chapter Selector - Only show if mangaId is provided and chapters are available */}
+                {mangaId && chapters && chapters.length > 0 && onChapterChange && (
+                    <div className="mb-6 bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+                        <label className="block text-sm text-gray-400 mb-2">
+                            <FaFileAlt className="inline mr-2" /> Filter by Chapter
+                        </label>
+                        <select
+                            value={selectedChapterId || 'all'}
+                            onChange={(e) => {
+                                const chapterId = e.target.value === 'all' ? null : e.target.value;
+                                onChapterChange(chapterId);
+                            }}
+                            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                            <option value="all">All Chapters (Total Manga Earnings)</option>
+                            {chapters.map((chapter) => (
+                                <option key={chapter._id} value={chapter._id}>
+                                    Chapter {chapter.chapterNumber}: {chapter.title}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-2">
+                            Select a specific chapter to view its individual earnings
+                        </p>
+                    </div>
+                )}
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
