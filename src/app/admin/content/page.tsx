@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser, FaCheck, FaChevronDown, FaChevronUp, FaFileAlt, FaTimes } from 'react-icons/fa';
+import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser, FaCheck, FaChevronDown, FaChevronUp, FaFileAlt, FaTimes, FaMoneyBillWave } from 'react-icons/fa';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +55,9 @@ export default function AdminContentManagement() {
     const [chaptersData, setChaptersData] = useState<Record<string, Chapter[]>>({});
     const [loadingChapters, setLoadingChapters] = useState<Set<string>>(new Set());
     const [editingManga, setEditingManga] = useState<Manga | null>(null);
+    const [viewingEarnings, setViewingEarnings] = useState<{creatorId: string; mangaId?: string; chapterId?: string} | null>(null);
+    const [earningsData, setEarningsData] = useState<any>(null);
+    const [loadingEarnings, setLoadingEarnings] = useState(false);
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
@@ -603,13 +606,22 @@ export default function AdminContentManagement() {
                                                                                 <span>{chapter.likes} likes</span>
                                                                             </div>
                                                                         </div>
-                                                                        <button
-                                                                            onClick={() => handleDeleteChapter(m._id, chapter._id, chapter.chapterNumber)}
-                                                                            className="p-1.5 bg-red-600/20 hover:bg-red-600/40 rounded text-red-400 transition-colors flex-shrink-0"
-                                                                            title="Delete Chapter"
-                                                                        >
-                                                                            <FaTrash className="text-xs" />
-                                                                        </button>
+                                                                        <div className="flex gap-1">
+                                                                            <button
+                                                                                onClick={() => handleViewEarnings(m.creatorId, m._id, chapter._id)}
+                                                                                className="p-1.5 bg-yellow-600/20 hover:bg-yellow-600/40 rounded text-yellow-400 transition-colors flex-shrink-0"
+                                                                                title="View Chapter Earnings"
+                                                                            >
+                                                                                <FaMoneyBillWave className="text-xs" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleDeleteChapter(m._id, chapter._id, chapter.chapterNumber)}
+                                                                                className="p-1.5 bg-red-600/20 hover:bg-red-600/40 rounded text-red-400 transition-colors flex-shrink-0"
+                                                                                title="Delete Chapter"
+                                                                            >
+                                                                                <FaTrash className="text-xs" />
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ))}
