@@ -56,6 +56,9 @@ export default function AdminCreatorsPage() {
     const [earningsData, setEarningsData] = useState<EarningsData | null>(null);
     const [loadingEarnings, setLoadingEarnings] = useState(false);
     const [earningsPeriod, setEarningsPeriod] = useState<'all' | 'weekly' | 'monthly' | 'yearly'>('all');
+    const [selectedMangaId, setSelectedMangaId] = useState<string | null>(null);
+    const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+    const [creatorManga, setCreatorManga] = useState<Array<{_id: string; title: string; chapters: Array<{_id: string; chapterNumber: number; title: string}>}>>([]);
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
@@ -119,19 +122,65 @@ export default function AdminCreatorsPage() {
         }
     };
 
+    const fetchCreatorManga = async (creatorId: string) => {
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(`/api/admin/manga?creatorId=${creatorId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const mangaList = data.manga || [];
+                
+                // Fetch chapters for each manga
+                const mangaWithChapters = await Promise.all(
+                    mangaList.map(async (m: any) => {
+                        const chaptersResponse = await fetch(`/api/admin/manga/${m._id}/chapters`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        const chaptersData = chaptersResponse.ok ? await chaptersResponse.json() : { chapters: [] };
+                        return {
+                            _id: m._id,
+                            title: m.title,
+                            chapters: chaptersData.chapters || []
+                        };
+                    })
+                );
+                
+                setCreatorManga(mangaWithChapters);
+            }
+        } catch (error) {
+            console.error('Failed to fetch creator manga:', error);
+        }
+    };
+
     const handleViewEarnings = async (creatorId: string) => {
         if (earningsCreatorId === creatorId && earningsData) {
             // Toggle off if already showing
             setEarningsCreatorId(null);
             setEarningsData(null);
+            setSelectedMangaId(null);
+            setSelectedChapterId(null);
+            setCreatorManga([]);
             return;
         }
 
         setEarningsCreatorId(creatorId);
+        setSelectedMangaId(null);
+        setSelectedChapterId(null);
         setLoadingEarnings(true);
+        
+        // Fetch creator's manga first
+        await fetchCreatorManga(creatorId);
+        
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-            const response = await fetch(`/api/admin/creators/${creatorId}/earnings?period=${earningsPeriod}`, {
+            const url = new URL(`/api/admin/creators/${creatorId}/earnings`, window.location.origin);
+            url.searchParams.append('period', earningsPeriod);
+            if (selectedMangaId) url.searchParams.append('mangaId', selectedMangaId);
+            if (selectedChapterId) url.searchParams.append('chapterId', selectedChapterId);
+            
+            const response = await fetch(url.toString(), {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (response.ok) {
@@ -145,13 +194,35 @@ export default function AdminCreatorsPage() {
         }
     };
 
-    // Refetch earnings when period changes
+    // Refetch earnings when period, manga, or chapter changes
     useEffect(() => {
         if (earningsCreatorId) {
-            handleViewEarnings(earningsCreatorId);
+            const fetchEarnings = async () => {
+                setLoadingEarnings(true);
+                try {
+                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                    const url = new URL(`/api/admin/creators/${earningsCreatorId}/earnings`, window.location.origin);
+                    url.searchParams.append('period', earningsPeriod);
+                    if (selectedMangaId) url.searchParams.append('mangaId', selectedMangaId);
+                    if (selectedChapterId) url.searchParams.append('chapterId', selectedChapterId);
+                    
+                    const response = await fetch(url.toString(), {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setEarningsData(data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch earnings:', error);
+                } finally {
+                    setLoadingEarnings(false);
+                }
+            };
+            fetchEarnings();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [earningsPeriod]);
+    }, [earningsPeriod, selectedMangaId, selectedChapterId]);
 
     const filteredCreators = creators.filter(creator =>
         creator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -258,13 +329,18 @@ export default function AdminCreatorsPage() {
                                                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
                                                             <p className="text-gray-400 mt-2">Loading earnings...</p>
                                                         </div>
-                                                    ) : earningsData ? (
-                                                        <EarningsDetailsView 
-                                                            earnings={earningsData} 
-                                                            period={earningsPeriod}
-                                                            onPeriodChange={setEarningsPeriod}
-                                                        />
-                                                    ) : (
+                                                ) : earningsData ? (
+                                                    <EarningsDetailsView 
+                                                        earnings={earningsData} 
+                                                        period={earningsPeriod}
+                                                        onPeriodChange={setEarningsPeriod}
+                                                        creatorManga={creatorManga}
+                                                        selectedMangaId={selectedMangaId}
+                                                        selectedChapterId={selectedChapterId}
+                                                        onMangaChange={setSelectedMangaId}
+                                                        onChapterChange={setSelectedChapterId}
+                                                    />
+                                                ) : (
                                                         <div className="text-center py-4 text-gray-400">
                                                             Failed to load earnings data
                                                         </div>
@@ -367,30 +443,95 @@ function CreatorSettingsModal({ creator, onSave, onClose }: {
     );
 }
 
-function EarningsDetailsView({ earnings, period, onPeriodChange }: {
+function EarningsDetailsView({ 
+    earnings, 
+    period, 
+    onPeriodChange,
+    creatorManga,
+    selectedMangaId,
+    selectedChapterId,
+    onMangaChange,
+    onChapterChange
+}: {
     earnings: EarningsData;
     period: string;
     onPeriodChange: (period: 'all' | 'weekly' | 'monthly' | 'yearly') => void;
+    creatorManga: Array<{_id: string; title: string; chapters: Array<{_id: string; chapterNumber: number; title: string}>}>;
+    selectedMangaId: string | null;
+    selectedChapterId: string | null;
+    onMangaChange: (mangaId: string | null) => void;
+    onChapterChange: (chapterId: string | null) => void;
 }) {
+    const selectedManga = creatorManga.find(m => m._id === selectedMangaId);
+    const availableChapters = selectedManga?.chapters || [];
     return (
         <div className="space-y-6">
-            {/* Period Selector */}
-            <div className="flex items-center justify-between border-b border-slate-700 pb-4">
-                <h3 className="text-lg font-bold text-purple-400">Earnings Breakdown</h3>
-                <div className="flex gap-2">
-                    {(['all', 'weekly', 'monthly', 'yearly'] as const).map((p) => (
-                        <button
-                            key={p}
-                            onClick={() => onPeriodChange(p)}
-                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                                period === p
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-                            }`}
+            {/* Period Selector and Filters */}
+            <div className="space-y-4 border-b border-slate-700 pb-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-purple-400">Earnings Breakdown</h3>
+                    <div className="flex gap-2">
+                        {(['all', 'weekly', 'monthly', 'yearly'] as const).map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => onPeriodChange(p)}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                                    period === p
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                                }`}
+                            >
+                                {p.charAt(0).toUpperCase() + p.slice(1)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                
+                {/* Manga and Chapter Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-2">
+                            <FaBook className="inline mr-2" /> Filter by Manga
+                        </label>
+                        <select
+                            value={selectedMangaId || 'all'}
+                            onChange={(e) => {
+                                const mangaId = e.target.value === 'all' ? null : e.target.value;
+                                onMangaChange(mangaId);
+                                onChapterChange(null); // Reset chapter when manga changes
+                            }}
+                            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
-                            {p.charAt(0).toUpperCase() + p.slice(1)}
-                        </button>
-                    ))}
+                            <option value="all">All Manga</option>
+                            {creatorManga.map((manga) => (
+                                <option key={manga._id} value={manga._id}>
+                                    {manga.title}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-2">
+                            <FaFileAlt className="inline mr-2" /> Filter by Chapter
+                        </label>
+                        <select
+                            value={selectedChapterId || 'all'}
+                            onChange={(e) => {
+                                const chapterId = e.target.value === 'all' ? null : e.target.value;
+                                onChapterChange(chapterId);
+                            }}
+                            disabled={!selectedMangaId || availableChapters.length === 0}
+                            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <option value="all">All Chapters</option>
+                            {availableChapters.map((chapter) => (
+                                <option key={chapter._id} value={chapter._id}>
+                                    Chapter {chapter.chapterNumber}: {chapter.title}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 

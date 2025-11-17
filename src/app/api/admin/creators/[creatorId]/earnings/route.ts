@@ -27,6 +27,7 @@ export async function GET(
         const { searchParams } = new URL(request.url);
         const period = searchParams.get('period') || 'all'; // 'all', 'weekly', 'monthly', 'yearly'
         const mangaId = searchParams.get('mangaId') || null;
+        const chapterId = searchParams.get('chapterId') || null;
 
         // Connect to database
         const client = await clientPromise;
@@ -156,13 +157,19 @@ export async function GET(
                                 };
                             });
 
+                            // If chapterId filter is specified, only include that chapter
+                            let filteredChapters = Object.values(chapterEarnings);
+                            if (chapterId && ObjectId.isValid(chapterId)) {
+                                filteredChapters = filteredChapters.filter(ch => ch.chapterId === chapterId);
+                            }
+
                             return {
                                 mangaId: mangaIdKey,
                                 mangaTitle: manga.title || earningsByManga[mangaIdKey].mangaTitle,
                                 totalEarnings: earningsByManga[mangaIdKey].totalEarnings,
                                 donationCount: earningsByManga[mangaIdKey].donationCount,
                                 chapterCount: chapters.length,
-                                chapters: Object.values(chapterEarnings),
+                                chapters: filteredChapters,
                                 donations: earningsByManga[mangaIdKey].donations
                             };
                         }
@@ -174,21 +181,45 @@ export async function GET(
             })
         );
 
-        // Filter out null values
-        const mangaEarningsDetails = mangaDetails.filter(m => m !== null);
-
-        // Add general tips (donations without mangaId)
-        const generalTips = earningsByManga['general'] || null;
-        if (generalTips && generalTips.totalEarnings > 0) {
-            mangaEarningsDetails.push({
-                mangaId: 'general',
-                mangaTitle: 'General Tips',
-                totalEarnings: generalTips.totalEarnings,
-                donationCount: generalTips.donationCount,
-                chapterCount: 0,
-                chapters: [],
-                donations: generalTips.donations
+        // Filter out null values and apply manga/chapter filters
+        let mangaEarningsDetails = mangaDetails.filter(m => m !== null);
+        
+        // If mangaId filter is specified, only show that manga
+        if (mangaId && ObjectId.isValid(mangaId)) {
+            mangaEarningsDetails = mangaEarningsDetails.filter(m => m && m.mangaId === mangaId);
+        }
+        
+        // If chapterId is specified, calculate earnings for that specific chapter
+        if (chapterId && mangaEarningsDetails.length > 0) {
+            mangaEarningsDetails = mangaEarningsDetails.map(m => {
+                if (!m) return m;
+                const chapter = m.chapters.find((ch: any) => ch.chapterId === chapterId);
+                if (chapter) {
+                    return {
+                        ...m,
+                        totalEarnings: chapter.totalEarnings,
+                        donationCount: chapter.donationCount,
+                        chapters: [chapter] // Only show the selected chapter
+                    };
+                }
+                return m;
             });
+        }
+
+        // Add general tips (donations without mangaId) - only if no manga filter is applied
+        if (!mangaId) {
+            const generalTips = earningsByManga['general'] || null;
+            if (generalTips && generalTips.totalEarnings > 0) {
+                mangaEarningsDetails.push({
+                    mangaId: 'general',
+                    mangaTitle: 'General Tips',
+                    totalEarnings: generalTips.totalEarnings,
+                    donationCount: generalTips.donationCount,
+                    chapterCount: 0,
+                    chapters: [],
+                    donations: generalTips.donations
+                });
+            }
         }
 
         // Calculate period summaries
