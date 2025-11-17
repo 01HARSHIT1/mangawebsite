@@ -58,6 +58,8 @@ export default function AdminContentManagement() {
     const [viewingEarnings, setViewingEarnings] = useState<{creatorId: string; mangaId?: string; chapterId?: string} | null>(null);
     const [earningsData, setEarningsData] = useState<any>(null);
     const [loadingEarnings, setLoadingEarnings] = useState(false);
+    const [earningsChapters, setEarningsChapters] = useState<Chapter[]>([]);
+    const [selectedEarningsChapterId, setSelectedEarningsChapterId] = useState<string | null>(null);
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
