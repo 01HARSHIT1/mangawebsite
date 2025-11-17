@@ -216,6 +216,45 @@ export default function AdminContentManagement() {
         }
     };
 
+    const handleViewEarnings = async (creatorId: string, mangaId?: string, chapterId?: string) => {
+        if (!creatorId || creatorId === '' || creatorId === 'undefined') {
+            alert('Creator ID is missing. Cannot view earnings.');
+            return;
+        }
+
+        setViewingEarnings({ creatorId, mangaId, chapterId });
+        setLoadingEarnings(true);
+
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const url = new URL(`/api/admin/creators/${creatorId}/earnings`, window.location.origin);
+            url.searchParams.append('period', 'all');
+            if (mangaId) url.searchParams.append('mangaId', mangaId);
+            if (chapterId) url.searchParams.append('chapterId', chapterId);
+
+            const response = await fetch(url.toString(), {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setEarningsData(data);
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Failed to fetch earnings');
+                setViewingEarnings(null);
+            }
+        } catch (error) {
+            console.error('Failed to fetch earnings:', error);
+            alert('Failed to fetch earnings');
+            setViewingEarnings(null);
+        } finally {
+            setLoadingEarnings(false);
+        }
+    };
+
 
     const filteredManga = manga.filter(m => {
         const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -520,6 +559,13 @@ export default function AdminContentManagement() {
                                                     {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                                                 </button>
                                                 <button
+                                                    onClick={() => handleViewEarnings(m.creatorId, m._id)}
+                                                    className="p-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors"
+                                                    title="View Earnings"
+                                                >
+                                                    <FaMoneyBillWave />
+                                                </button>
+                                                <button
                                                     onClick={() => handleViewCreatorDashboard(m.creatorId)}
                                                     className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
                                                     title="View Creator Dashboard"
@@ -644,6 +690,21 @@ export default function AdminContentManagement() {
                     manga={editingManga}
                     onSave={handleSaveManga}
                     onClose={() => setEditingManga(null)}
+                />
+            )}
+
+            {/* Earnings Modal */}
+            {viewingEarnings && (
+                <EarningsModal
+                    earnings={earningsData}
+                    loading={loadingEarnings}
+                    creatorId={viewingEarnings.creatorId}
+                    mangaId={viewingEarnings.mangaId}
+                    chapterId={viewingEarnings.chapterId}
+                    onClose={() => {
+                        setViewingEarnings(null);
+                        setEarningsData(null);
+                    }}
                 />
             )}
         </div>
