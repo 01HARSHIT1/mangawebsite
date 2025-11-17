@@ -20,6 +20,9 @@ interface Manga {
     views: number;
     rating: number;
     createdAt: string;
+    description?: string;
+    genre?: string;
+    tags?: string[] | string;
 }
 
 interface Creator {
