@@ -289,9 +289,9 @@ export default function AdminContentManagement() {
                                                     }`}>
                                                     {m.status}
                                                 </span>
-                                                <span>{m.chapters} chapters</span>
-                                                <span>{m.views.toLocaleString()} views</span>
-                                                <span>⭐ {m.rating.toFixed(1)}</span>
+                                                <span>{m.chapters || 0} chapters</span>
+                                                <span>{(m.views || 0).toLocaleString()} views</span>
+                                                {m.rating && <span>⭐ {m.rating.toFixed(1)}</span>}
                                             </div>
                                             <p className="text-xs text-gray-500">
                                                 Created: {new Date(m.createdAt).toLocaleDateString()}

@@ -42,15 +42,20 @@ export async function GET(request: NextRequest) {
             .limit(limit)
             .toArray();
 
-        // Get creator info for each manga
+        // Get creator info and chapter count for each manga
         const mangaWithCreators = await Promise.all(
             manga.map(async (m) => {
                 const creator = await db.collection('users').findOne({ _id: m.uploaderId });
+                const chapterCount = await db.collection('chapters').countDocuments({ mangaId: m._id.toString() });
+                
                 return {
                     ...m,
                     _id: m._id.toString(),
                     creator: creator?.nickname || creator?.username || 'Unknown',
-                    creatorId: creator?._id?.toString() || ''
+                    creatorId: creator?._id?.toString() || '',
+                    chapters: chapterCount,
+                    views: m.views || 0,
+                    rating: m.rating || 0
                 };
             })
         );
