@@ -6,7 +6,7 @@ import path from 'path';
 import sharp from 'sharp';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '@/lib/config';
-import { requireAuth, requireCreator } from '@/lib/auth';
+import { requireAuth, requireCreator, verifyToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
