@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaCrown, FaCheckCircle, FaTimesCircle, FaEdit, FaUserCheck, FaMoneyBillWave, FaChartLine, FaChevronDown, FaChevronUp, FaBook, FaFileAlt, FaCalendar } from 'react-icons/fa';
@@ -201,76 +201,78 @@ export default function AdminCreatorsPage() {
                             </thead>
                             <tbody className="divide-y divide-slate-700">
                                 {filteredCreators.map((creator) => (
-                                    <tr key={creator._id} className="hover:bg-slate-700/50">
-                                        <td className="px-6 py-4">
-                                            <div>
-                                                <div className="font-semibold">{creator.username}</div>
-                                                <div className="text-sm text-gray-400">{creator.email}</div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                creator.isVerified
-                                                    ? 'bg-green-500/20 text-green-300'
-                                                    : 'bg-yellow-500/20 text-yellow-300'
-                                            }`}>
-                                                {creator.isVerified ? 'Verified' : 'Pending'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">{creator.seriesCount || 0}</td>
-                                        <td className="px-6 py-4">{creator.totalViews?.toLocaleString() || 0}</td>
-                                        <td className="px-6 py-4">₹{(creator.earnings || 0).toLocaleString()}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => handleViewEarnings(creator._id)}
-                                                    className="p-2 text-purple-400 hover:text-purple-300"
-                                                    title="View Earnings Details"
-                                                >
-                                                    <FaMoneyBillWave />
-                                                </button>
-                                                {!creator.isVerified && (
+                                    <React.Fragment key={creator._id}>
+                                        <tr className="hover:bg-slate-700/50">
+                                            <td className="px-6 py-4">
+                                                <div>
+                                                    <div className="font-semibold">{creator.username}</div>
+                                                    <div className="text-sm text-gray-400">{creator.email}</div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    creator.isVerified
+                                                        ? 'bg-green-500/20 text-green-300'
+                                                        : 'bg-yellow-500/20 text-yellow-300'
+                                                }`}>
+                                                    {creator.isVerified ? 'Verified' : 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">{creator.seriesCount || 0}</td>
+                                            <td className="px-6 py-4">{creator.totalViews?.toLocaleString() || 0}</td>
+                                            <td className="px-6 py-4">₹{(creator.earnings || 0).toLocaleString()}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => handleVerifyCreator(creator._id)}
-                                                        className="p-2 text-green-400 hover:text-green-300"
-                                                        title="Verify Creator"
+                                                        onClick={() => handleViewEarnings(creator._id)}
+                                                        className="p-2 text-purple-400 hover:text-purple-300"
+                                                        title="View Earnings Details"
                                                     >
-                                                        <FaCheckCircle />
+                                                        <FaMoneyBillWave />
                                                     </button>
-                                                )}
-                                                <button
-                                                    onClick={() => setSelectedCreator(creator)}
-                                                    className="p-2 text-blue-400 hover:text-blue-300"
-                                                    title="Edit Settings"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {/* Earnings Details Row */}
-                                    {earningsCreatorId === creator._id && (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-4 bg-slate-900/50">
-                                                {loadingEarnings ? (
-                                                    <div className="text-center py-8">
-                                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
-                                                        <p className="text-gray-400 mt-2">Loading earnings...</p>
-                                                    </div>
-                                                ) : earningsData ? (
-                                                    <EarningsDetailsView 
-                                                        earnings={earningsData} 
-                                                        period={earningsPeriod}
-                                                        onPeriodChange={setEarningsPeriod}
-                                                    />
-                                                ) : (
-                                                    <div className="text-center py-4 text-gray-400">
-                                                        Failed to load earnings data
-                                                    </div>
-                                                )}
+                                                    {!creator.isVerified && (
+                                                        <button
+                                                            onClick={() => handleVerifyCreator(creator._id)}
+                                                            className="p-2 text-green-400 hover:text-green-300"
+                                                            title="Verify Creator"
+                                                        >
+                                                            <FaCheckCircle />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => setSelectedCreator(creator)}
+                                                        className="p-2 text-blue-400 hover:text-blue-300"
+                                                        title="Edit Settings"
+                                                    >
+                                                        <FaEdit />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
-                                    )}
+                                        {/* Earnings Details Row */}
+                                        {earningsCreatorId === creator._id && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-4 bg-slate-900/50">
+                                                    {loadingEarnings ? (
+                                                        <div className="text-center py-8">
+                                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                                                            <p className="text-gray-400 mt-2">Loading earnings...</p>
+                                                        </div>
+                                                    ) : earningsData ? (
+                                                        <EarningsDetailsView 
+                                                            earnings={earningsData} 
+                                                            period={earningsPeriod}
+                                                            onPeriodChange={setEarningsPeriod}
+                                                        />
+                                                    ) : (
+                                                        <div className="text-center py-4 text-gray-400">
+                                                            Failed to load earnings data
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
                                 ))}
                             </tbody>
                         </table>
