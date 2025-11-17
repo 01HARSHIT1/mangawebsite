@@ -32,6 +32,8 @@ export async function GET(request: NextRequest) {
             pendingReports,
             activeUsers,
             storageStats,
+            totalCreators,
+            totalRevenue,
         ] = await Promise.all([
             db.collection('users').countDocuments(),
             db.collection('manga').countDocuments({ status: { $ne: 'removed' } }),
@@ -43,6 +45,11 @@ export async function GET(request: NextRequest) {
             db.collection('reports').countDocuments({ status: 'pending' }),
             db.collection('users').countDocuments({ lastLogin: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
             Promise.resolve({ used: 2.4 * 1024 * 1024 * 1024, total: 10 * 1024 * 1024 * 1024 }), // 2.4GB used, 10GB total
+            db.collection('users').countDocuments({ role: 'creator' }),
+            db.collection('donations').aggregate([
+                { $match: { status: 'completed' } },
+                { $group: { _id: null, total: { $sum: '$amount' } } }
+            ]).toArray().then(result => result[0]?.total || 0),
         ]);
         // Calculate system health based on various metrics
         let systemHealth: 'good' | 'warning' | 'critical' = 'good';
@@ -74,6 +81,8 @@ export async function GET(request: NextRequest) {
             newMangaToday,
             totalReports,
             pendingReports,
+            totalCreators,
+            totalRevenue: totalRevenue || 0,
             systemHealth,
             storageUsed: storageStats.used,
             storageTotal: storageStats.total,
