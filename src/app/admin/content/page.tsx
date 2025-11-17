@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser, FaCheck, FaChevronDown, FaChevronUp, FaFileAlt } from 'react-icons/fa';
+import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser, FaCheck, FaChevronDown, FaChevronUp, FaFileAlt, FaTimes } from 'react-icons/fa';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +51,7 @@ export default function AdminContentManagement() {
     const [expandedManga, setExpandedManga] = useState<Set<string>>(new Set());
     const [chaptersData, setChaptersData] = useState<Record<string, Chapter[]>>({});
     const [loadingChapters, setLoadingChapters] = useState<Set<string>>(new Set());
+    const [editingManga, setEditingManga] = useState<Manga | null>(null);
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
@@ -230,12 +231,43 @@ export default function AdminContentManagement() {
 
     const handleViewCreatorDashboard = (creatorId: string) => {
         // Admin can view creator's dashboard
-        router.push(`/admin/creator/${creatorId}`);
+        router.push(`/admin/creator-view/${creatorId}`);
     };
 
     const handleEditManga = (mangaId: string) => {
-        // Admin can edit any manga
-        router.push(`/admin/manga/${mangaId}/edit`);
+        // Open edit modal
+        const mangaToEdit = manga.find(m => m._id === mangaId);
+        if (mangaToEdit) {
+            setEditingManga(mangaToEdit);
+        }
+    };
+
+    const handleSaveManga = async (updatedManga: Partial<Manga>) => {
+        if (!editingManga) return;
+
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(`/api/admin/manga/${editingManga._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedManga)
+            });
+
+            if (response.ok) {
+                alert('Manga updated successfully');
+                setEditingManga(null);
+                fetchManga();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to update manga');
+            }
+        } catch (error) {
+            console.error('Update error:', error);
+            alert('Failed to update manga');
+        }
     };
 
     const handleDeleteManga = async (mangaId: string) => {
@@ -582,6 +614,133 @@ export default function AdminContentManagement() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Edit Manga Modal */}
+            {editingManga && (
+                <EditMangaModal
+                    manga={editingManga}
+                    onSave={handleSaveManga}
+                    onClose={() => setEditingManga(null)}
+                />
+            )}
+        </div>
+    );
+}
+
+function EditMangaModal({ manga, onSave, onClose }: {
+    manga: Manga;
+    onSave: (updatedManga: Partial<Manga>) => void;
+    onClose: () => void;
+}) {
+    const [formData, setFormData] = useState({
+        title: manga.title || '',
+        description: (manga as any).description || '',
+        status: manga.status || 'ongoing',
+        genre: (manga as any).genre || '',
+        tags: Array.isArray((manga as any).tags) ? (manga as any).tags.join(', ') : ((manga as any).tags || '')
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(t => t);
+        onSave({
+            title: formData.title,
+            description: formData.description,
+            status: formData.status as 'ongoing' | 'completed' | 'hiatus',
+            genre: formData.genre,
+            tags: tagsArray
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-purple-400">Edit Manga: {manga.title}</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white transition-colors"
+                    >
+                        <FaTimes className="text-xl" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-2">Title</label>
+                        <input
+                            type="text"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-2">Description</label>
+                        <textarea
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            rows={4}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Status</label>
+                            <select
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            >
+                                <option value="ongoing">Ongoing</option>
+                                <option value="completed">Completed</option>
+                                <option value="hiatus">Hiatus</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Genre</label>
+                            <input
+                                type="text"
+                                value={formData.genre}
+                                onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="e.g., Action, Romance"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-gray-400 mb-2">Tags (comma-separated)</label>
+                        <input
+                            type="text"
+                            value={formData.tags}
+                            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="tag1, tag2, tag3"
+                        />
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                        <button
+                            type="submit"
+                            className="flex-1 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg font-semibold transition-colors"
+                        >
+                            Save Changes
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-semibold transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

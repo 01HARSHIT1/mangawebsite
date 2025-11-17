@@ -58,7 +58,11 @@ export async function GET(request: NextRequest) {
                     creatorId: creator?._id?.toString() || '',
                     chapters: chapterCount,
                     views: m.views || 0,
-                    rating: m.rating || 0
+                    rating: m.rating || 0,
+                    description: m.description || '',
+                    genre: m.genre || '',
+                    tags: m.tags || [],
+                    status: m.status || 'ongoing'
                 };
             })
         );
