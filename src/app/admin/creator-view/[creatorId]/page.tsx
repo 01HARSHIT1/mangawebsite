@@ -63,14 +63,14 @@ export default function AdminCreatorView({ params }: { params: { creatorId: stri
                 const statsData = await statsResponse.json();
                 setStats(statsData);
             } else {
-                // Mock stats
+                // Set empty stats if API fails
                 setStats({
-                    totalManga: 5,
-                    totalChapters: 87,
-                    totalViews: 25000,
-                    totalLikes: 1200,
-                    totalComments: 450,
-                    followers: 340
+                    totalManga: 0,
+                    totalChapters: 0,
+                    totalViews: 0,
+                    totalLikes: 0,
+                    totalComments: 0,
+                    followers: 0
                 });
             }
 
@@ -85,15 +85,15 @@ export default function AdminCreatorView({ params }: { params: { creatorId: stri
             }
         } catch (error) {
             console.error('Failed to fetch creator data:', error);
-            // Use mock data
-            setCreator({ username: 'Creator', email: 'creator@example.com' });
+            // Set empty data if fetch fails
+            setCreator({ username: 'Unknown', email: '' });
             setStats({
-                totalManga: 5,
-                totalChapters: 87,
-                totalViews: 25000,
-                totalLikes: 1200,
-                totalComments: 450,
-                followers: 340
+                totalManga: 0,
+                totalChapters: 0,
+                totalViews: 0,
+                totalLikes: 0,
+                totalComments: 0,
+                followers: 0
             });
         } finally {
             setLoading(false);
