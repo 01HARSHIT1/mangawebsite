@@ -106,10 +106,31 @@ export default function AdminNotificationsPage() {
                 </div>
 
                 <div className="bg-slate-800/50 rounded-2xl p-6 backdrop-blur-sm">
-                    <h2 className="text-xl font-bold mb-4">Notification History</h2>
-                    <div className="text-gray-400">
-                        {notifications.length === 0 ? 'No notifications sent yet' : `${notifications.length} notifications`}
-                    </div>
+                    <h2 className="text-xl font-bold mb-4">Notification History ({notifications.length})</h2>
+                    {notifications.length === 0 ? (
+                        <div className="text-gray-400 text-center py-8">No notifications sent yet</div>
+                    ) : (
+                        <div className="space-y-4">
+                            {notifications.map((notification) => (
+                                <div key={notification._id} className="bg-slate-700/50 rounded-lg p-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold mb-1">{notification.title}</h3>
+                                            <p className="text-gray-300 text-sm mb-2">{notification.message}</p>
+                                            <div className="flex items-center gap-4 text-xs text-gray-400">
+                                                <span>Type: {notification.type}</span>
+                                                <span>Target: {notification.target}</span>
+                                                <span>Status: {notification.status}</span>
+                                                {notification.sentAt && (
+                                                    <span>Sent: {new Date(notification.sentAt).toLocaleDateString()}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {showModal && (
