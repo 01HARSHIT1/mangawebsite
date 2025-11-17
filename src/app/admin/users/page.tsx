@@ -38,62 +38,44 @@ export default function AdminUsers() {
 
     const fetchUsers = async () => {
         try {
-            const response = await fetch('/api/admin/users');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch('/api/admin/users', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
             if (response.ok) {
                 const data = await response.json();
-                setUsers(data.users || []);
+                // Transform the data to match the interface
+                const transformedUsers = (data.users || []).map((u: any) => ({
+                    _id: u._id?.toString() || '',
+                    username: u.nickname || u.username || 'Unknown',
+                    email: u.email || '',
+                    role: u.role || 'reader',
+                    status: u.isBanned ? 'banned' : (u.isVerified ? 'active' : 'pending'),
+                    createdAt: u.createdAt || new Date().toISOString(),
+                    lastLogin: u.lastLogin || '',
+                    mangaCount: u.mangaCount || 0
+                }));
+                setUsers(transformedUsers);
             } else {
-                // Use mock data if API fails
-                setUsers(mockUsers);
+                console.error('Failed to fetch users:', response.statusText);
+                setUsers([]);
             }
         } catch (error) {
             console.error('Failed to fetch users:', error);
-            // Use mock data
-            setUsers(mockUsers);
+            setUsers([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const mockUsers: User[] = [
-        {
-            _id: '1',
-            username: 'john_reader',
-            email: 'john@example.com',
-            role: 'reader',
-            status: 'active',
-            createdAt: '2024-01-15T10:30:00Z',
-            lastLogin: '2024-01-20T14:25:00Z'
-        },
-        {
-            _id: '2',
-            username: 'manga_creator_01',
-            email: 'creator@example.com',
-            role: 'creator',
-            status: 'active',
-            createdAt: '2024-01-10T08:15:00Z',
-            lastLogin: '2024-01-20T16:45:00Z',
-            mangaCount: 5
-        },
-        {
-            _id: '3',
-            username: 'admin_user',
-            email: 'admin@mangasite.com',
-            role: 'admin',
-            status: 'active',
-            createdAt: '2024-01-01T00:00:00Z',
-            lastLogin: '2024-01-20T18:30:00Z'
-        },
-        {
-            _id: '4',
-            username: 'banned_user',
-            email: 'banned@example.com',
-            role: 'reader',
-            status: 'banned',
-            createdAt: '2024-01-12T12:00:00Z',
-            lastLogin: '2024-01-18T10:00:00Z'
-        }
-    ];
 
     const filteredUsers = users.filter(user => {
         const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||

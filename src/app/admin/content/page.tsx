@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser } from 'react-icons/fa';
+import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser, FaCheck } from 'react-icons/fa';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,7 +47,12 @@ export default function AdminContentManagement() {
 
     const fetchManga = async () => {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
             const response = await fetch('/api/admin/manga', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -58,56 +63,17 @@ export default function AdminContentManagement() {
                 const data = await response.json();
                 setManga(data.manga || []);
             } else {
-                // Use mock data if API fails
-                setManga(mockManga);
+                console.error('Failed to fetch manga:', response.statusText);
+                setManga([]);
             }
         } catch (error) {
             console.error('Failed to fetch manga:', error);
-            // Use mock data
-            setManga(mockManga);
+            setManga([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const mockManga: Manga[] = [
-        {
-            _id: '1',
-            title: 'Dragon Quest Chronicles',
-            creator: 'manga_creator_01',
-            creatorId: '2',
-            coverImage: '/placeholder.svg',
-            status: 'ongoing',
-            chapters: 45,
-            views: 12500,
-            rating: 4.8,
-            createdAt: '2024-01-10T08:15:00Z'
-        },
-        {
-            _id: '2',
-            title: 'Mystic Academy',
-            creator: 'creator_jane',
-            creatorId: '5',
-            coverImage: '/placeholder.svg',
-            status: 'ongoing',
-            chapters: 32,
-            views: 8900,
-            rating: 4.6,
-            createdAt: '2024-01-15T10:30:00Z'
-        },
-        {
-            _id: '3',
-            title: 'Shadow Warriors',
-            creator: 'manga_creator_01',
-            creatorId: '2',
-            coverImage: '/placeholder.svg',
-            status: 'completed',
-            chapters: 120,
-            views: 45000,
-            rating: 4.9,
-            createdAt: '2023-12-01T00:00:00Z'
-        }
-    ];
 
     const filteredManga = manga.filter(m => {
         const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,7 +99,7 @@ export default function AdminContentManagement() {
         }
 
         try {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const response = await fetch(`/api/admin/manga/${mangaId}`, {
                 method: 'DELETE',
                 headers: {
@@ -145,7 +111,8 @@ export default function AdminContentManagement() {
                 alert('Manga deleted successfully');
                 fetchManga();
             } else {
-                alert('Failed to delete manga');
+                const data = await response.json();
+                alert(data.error || 'Failed to delete manga');
             }
         } catch (error) {
             console.error('Delete error:', error);
@@ -155,8 +122,9 @@ export default function AdminContentManagement() {
 
     const handleToggleVisibility = async (mangaId: string, currentStatus: string) => {
         try {
-            const token = localStorage.getItem('authToken');
-            const newStatus = currentStatus === 'published' ? 'hidden' : 'published';
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const currentManga = manga.find(m => m._id === mangaId);
+            const newStatus = currentManga?.status === 'ongoing' ? 'hiatus' : 'ongoing';
 
             const response = await fetch(`/api/admin/manga/${mangaId}`, {
                 method: 'PATCH',
@@ -168,10 +136,11 @@ export default function AdminContentManagement() {
             });
 
             if (response.ok) {
-                alert(`Manga ${newStatus === 'published' ? 'published' : 'hidden'} successfully`);
+                alert(`Manga status updated to ${newStatus}`);
                 fetchManga();
             } else {
-                alert('Failed to update manga status');
+                const data = await response.json();
+                alert(data.error || 'Failed to update manga status');
             }
         } catch (error) {
             console.error('Toggle visibility error:', error);
@@ -231,7 +200,7 @@ export default function AdminContentManagement() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-gray-400 text-sm">Total Views</p>
-                                <p className="text-2xl font-bold text-yellow-400">{manga.reduce((sum, m) => sum + m.views, 0).toLocaleString()}</p>
+                                <p className="text-2xl font-bold text-yellow-400">{manga.reduce((sum, m) => sum + (m.views || 0), 0).toLocaleString()}</p>
                             </div>
                             <FaChartLine className="text-yellow-400 text-2xl" />
                         </div>
