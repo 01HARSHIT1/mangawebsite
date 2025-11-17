@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import OnboardingTutorial from "@/components/OnboardingTutorial";
 import { HelpCircle } from "lucide-react";
 import Image from "next/image";
@@ -28,6 +29,7 @@ export default function ClientLayoutShell({ children }: { children: React.ReactN
 }
 
 function ClientLayoutContent({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
     const [dark, setDark] = useState(true);
     const [coins, setCoins] = useState<number>(0);
     const [showBuy, setShowBuy] = useState(false);
@@ -38,6 +40,11 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
+
+    // Hide main navigation on creator/admin dashboard pages
+    const hideMainNav = pathname?.startsWith('/creator/dashboard') || 
+                       pathname?.startsWith('/admin') ||
+                       pathname?.startsWith('/admin-dashboard');
 
     useEffect(() => {
         if (dark) {
@@ -67,9 +74,9 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
     return (
         <ErrorBoundary>
             <PerformanceMonitor />
-            <ModernNavigation />
+            {!hideMainNav && <ModernNavigation />}
             <main role="main">{children}</main>
-            <Footer />
+            {!hideMainNav && <Footer />}
             <PushNotifications />
             <PWAInstaller />
         </ErrorBoundary>

@@ -112,24 +112,24 @@ export default function ModernNavigation() {
                 ? 'glass-strong shadow-xl border-b border-white/10'
                 : 'bg-transparent'
                 }`}>
-                <div className="container-fluid">
-                    <div className="flex items-center justify-between h-16">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16 gap-4">
                         {/* Logo */}
-                        <Link href="/" className="flex items-center space-x-3 group">
+                        <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
                             <div className="relative">
                                 <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
                                     <span className="text-white font-bold text-lg">M</span>
                                 </div>
                                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
                             </div>
-                            <div className="hidden md:block">
-                                <h1 className="text-xl font-bold text-gradient">MangaReader</h1>
-                                <p className="text-xs text-gray-400 -mt-1">Professional Platform</p>
+                            <div className="hidden md:block min-w-0">
+                                <h1 className="text-lg sm:text-xl font-bold text-gradient truncate">MangaReader</h1>
+                                <p className="text-xs text-gray-400 -mt-1 truncate">Professional Platform</p>
                             </div>
                         </Link>
 
                         {/* Desktop Navigation */}
-                        <div className="hidden lg:flex items-center space-x-1">
+                        <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center max-w-2xl">
                             {navItems.map((item) => (
                                 <Link
                                     key={item.href}
@@ -169,7 +169,7 @@ export default function ModernNavigation() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setShowCoffeeModal(true)}
-                                    className="relative ml-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2 shadow-lg"
+                                    className="relative ml-2 sm:ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 sm:px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 shadow-lg whitespace-nowrap flex-shrink-0"
                                 >
                                     <motion.div
                                         animate={{
@@ -192,7 +192,7 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Search & Actions */}
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 flex-shrink-0">
                             {/* Search */}
                             <div className="relative">
                                 <button

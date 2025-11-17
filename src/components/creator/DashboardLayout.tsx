@@ -90,12 +90,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Top Bar */}
             <div className="fixed top-0 left-0 right-0 h-16 bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 z-40">
-                <div className="flex items-center justify-between h-full px-4">
+                <div className="flex items-center justify-between h-full px-4 sm:px-6 lg:px-8">
                     {/* Left: Logo & Menu Toggle */}
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4 flex-shrink-0">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="hidden lg:block p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                            aria-label="Toggle sidebar"
                         >
                             <FaBars className="text-gray-400" />
                         </button>
@@ -103,27 +104,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             className="lg:hidden p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                            aria-label="Toggle mobile menu"
                         >
                             <FaBars className="text-gray-400" />
                         </button>
 
-                        <Link href="/creator/dashboard" className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                        <Link href="/creator/dashboard" className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
                                 <span className="text-white font-bold text-lg">C</span>
                             </div>
-                            <div className="hidden md:block">
-                                <h1 className="text-lg font-bold text-white">Creator Studio</h1>
-                                <p className="text-xs text-gray-400 -mt-1">Professional Dashboard</p>
+                            <div className="hidden sm:block min-w-0">
+                                <h1 className="text-base sm:text-lg font-bold text-white truncate">Creator Studio</h1>
+                                <p className="text-xs text-gray-400 -mt-1 truncate">Professional Dashboard</p>
                             </div>
                         </Link>
                     </div>
 
                     {/* Right: Actions & User */}
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 flex-shrink-0 ml-2">
                         {/* Back to Site */}
                         <Link
                             href="/"
-                            className="hidden md:flex items-center space-x-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 transition-colors"
+                            className="hidden md:flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 transition-colors whitespace-nowrap"
                         >
                             <FaHome className="text-gray-400 text-sm" />
                             <span className="text-sm text-gray-300">Back to Site</span>
@@ -132,7 +134,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {/* Notifications */}
                         <Link
                             href="/notifications"
-                            className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                            className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors flex-shrink-0"
+                            aria-label="Notifications"
                         >
                             <FaBell className="text-gray-400" />
                             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -141,21 +144,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {/* Help */}
                         <Link
                             href="/help"
-                            className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                            className="p-2 rounded-lg hover:bg-slate-800 transition-colors flex-shrink-0"
+                            aria-label="Help"
                         >
                             <FaQuestionCircle className="text-gray-400" />
                         </Link>
 
                         {/* User Menu */}
-                        <div className="flex items-center space-x-3 px-4 py-2 rounded-lg bg-slate-800 border border-slate-600">
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+                        <div className="flex items-center space-x-2 sm:space-x-3 px-2 sm:px-4 py-2 rounded-lg bg-slate-800 border border-slate-600 flex-shrink-0">
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
                                 <span className="text-white font-bold text-sm">
-                                    {user?.username?.charAt(0).toUpperCase() || 'U'}
+                                    {user?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                                 </span>
                             </div>
-                            <div className="hidden md:block">
-                                <p className="text-sm font-semibold text-white">{user?.username}</p>
-                                <p className="text-xs text-gray-400">Creator</p>
+                            <div className="hidden lg:block min-w-0">
+                                <p className="text-sm font-semibold text-white truncate max-w-[120px]">
+                                    {user?.username || user?.email || 'User'}
+                                </p>
+                                <p className="text-xs text-gray-400 truncate">
+                                    {user?.role === 'admin' ? 'Admin' : 'Creator'}
+                                </p>
                             </div>
                         </div>
                     </div>
