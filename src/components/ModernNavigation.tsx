@@ -100,9 +100,16 @@ export default function ModernNavigation() {
         { href: '/coins', label: 'Coins', icon: FaCoins },
     ] : [];
 
-    const creatorNavItems = isCreator ? [
+    // Check if user is admin
+    const isAdmin = user?.role === 'admin';
+
+    const creatorNavItems = isCreator && !isAdmin ? [
         { href: '/upload', label: 'Upload', icon: FaUpload },
         { href: '/creator/dashboard', label: 'Dashboard', icon: FaCrown },
+    ] : [];
+
+    const adminNavItems = isAdmin ? [
+        { href: '/admin/dashboard', label: 'Admin Dashboard', icon: FaShieldAlt },
     ] : [];
 
     return (
@@ -157,6 +164,17 @@ export default function ModernNavigation() {
                                     key={item.href}
                                     href={item.href}
                                     className="nav-link flex items-center space-x-2 px-4 py-2"
+                                >
+                                    <item.icon className="text-sm" />
+                                    <span>{item.label}</span>
+                                </Link>
+                            ))}
+
+                            {adminNavItems.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="nav-link flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg"
                                 >
                                     <item.icon className="text-sm" />
                                     <span>{item.label}</span>
@@ -352,7 +370,20 @@ export default function ModernNavigation() {
                                                         <span className="text-sm font-medium">My Library</span>
                                                     </Link>
 
-                                                    {isCreator && (
+                                                    {/* Admin Dashboard Link */}
+                                                    {isAdmin && (
+                                                        <Link
+                                                            href="/admin/dashboard"
+                                                            className="flex items-center space-x-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-gray-300 hover:text-white bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-l-2 border-purple-500"
+                                                            onClick={() => setIsUserMenuOpen(false)}
+                                                        >
+                                                            <FaShieldAlt className="text-purple-400 w-4" />
+                                                            <span className="text-sm font-medium">Admin Dashboard</span>
+                                                        </Link>
+                                                    )}
+
+                                                    {/* Creator Dashboard Link */}
+                                                    {isCreator && !isAdmin && (
                                                         <>
                                                             <Link
                                                                 href="/creator/dashboard"

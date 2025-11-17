@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/creator/DashboardLayout';
 import OverviewPage from '@/components/creator/OverviewPage';
 
 export default function CreatorDashboardShell() {
-    const { isAuthenticated, isCreator, isLoading } = useAuth();
+    const { isAuthenticated, isCreator, isLoading, user } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -20,10 +20,16 @@ export default function CreatorDashboardShell() {
             return;
         }
 
+        // Redirect admins to admin dashboard
+        if (user?.role === 'admin') {
+            router.replace('/admin/dashboard');
+            return;
+        }
+
         if (!isCreator) {
             router.replace('/upload');
         }
-    }, [isAuthenticated, isCreator, isLoading, router]);
+    }, [isAuthenticated, isCreator, isLoading, user, router]);
 
     if (isLoading || !isAuthenticated || !isCreator) {
         return (
