@@ -25,7 +25,13 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
         try {
             const success = await login(email, password);
             if (success) {
-                onSuccess?.();
+                // Check if user is admin and redirect accordingly
+                const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                if (userData.role === 'admin') {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    onSuccess?.();
+                }
             } else {
                 setError('Invalid email or password');
             }

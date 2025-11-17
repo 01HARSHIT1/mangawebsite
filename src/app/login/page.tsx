@@ -8,15 +8,20 @@ import RegisterForm from '@/components/RegisterForm';
 
 export default function LoginPage() {
     const [showRegister, setShowRegister] = useState(false);
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const router = useRouter();
 
     // Redirect if already authenticated
     useEffect(() => {
         if (isAuthenticated) {
-            router.push('/');
+            // If admin, redirect to admin dashboard
+            if (user?.role === 'admin') {
+                router.push('/admin/dashboard');
+            } else {
+                router.push('/');
+            }
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, user, router]);
 
     if (isAuthenticated) {
         return null;

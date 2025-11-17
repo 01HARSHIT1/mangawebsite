@@ -54,8 +54,8 @@ export default function AdminLoginPage() {
                 localStorage.setItem('user', JSON.stringify(data.user));
             }
 
-            // Redirect to admin dashboard
-            router.push('/admin/dashboard');
+            // Force page reload to update AuthContext
+            window.location.href = '/admin/dashboard';
         } catch (err) {
             console.error('Admin login error:', err);
             setError('Network error. Please try again.');
