@@ -234,6 +234,13 @@ export default function AdminContentManagement() {
 
     const handleViewCreatorDashboard = (creatorId: string) => {
         // Admin can view creator's dashboard
+        console.log('View Creator Dashboard clicked with creatorId:', creatorId);
+        if (!creatorId || creatorId === '' || creatorId === 'undefined' || creatorId === 'null') {
+            alert('Creator ID is missing. Cannot view creator dashboard. Please check if the manga has an assigned creator.');
+            console.error('Invalid creatorId:', creatorId);
+            return;
+        }
+        console.log('Navigating to:', `/admin/creator-view/${creatorId}`);
         router.push(`/admin/creator-view/${creatorId}`);
     };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { FaChartLine, FaBook, FaEye, FaHeart, FaComment, FaArrowLeft } from 'react-icons/fa';
 import Link from 'next/link';
@@ -17,7 +17,9 @@ interface CreatorStats {
     followers: number;
 }
 
-export default function AdminCreatorView({ params }: { params: { creatorId: string } }) {
+export default function AdminCreatorView() {
+    const params = useParams();
+    const creatorId = params?.creatorId as string;
     const [creator, setCreator] = useState<any>(null);
     const [stats, setStats] = useState<CreatorStats | null>(null);
     const [manga, setManga] = useState<any[]>([]);
@@ -37,15 +39,27 @@ export default function AdminCreatorView({ params }: { params: { creatorId: stri
             return;
         }
 
+        // Check if creatorId is present
+        if (!creatorId || creatorId === '') {
+            console.error('Creator ID is missing from URL');
+            router.push('/admin/content');
+            return;
+        }
+
         fetchCreatorData();
-    }, [isAuthenticated, user, router, params.creatorId]);
+    }, [isAuthenticated, user, router, creatorId]);
 
     const fetchCreatorData = async () => {
+        if (!creatorId) {
+            setLoading(false);
+            return;
+        }
+
         try {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
 
             // Fetch creator info
-            const creatorResponse = await fetch(`/api/admin/users/${params.creatorId}`, {
+            const creatorResponse = await fetch(`/api/admin/users/${creatorId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -55,7 +69,7 @@ export default function AdminCreatorView({ params }: { params: { creatorId: stri
             }
 
             // Fetch creator stats
-            const statsResponse = await fetch(`/api/admin/creator-stats/${params.creatorId}`, {
+            const statsResponse = await fetch(`/api/admin/creator-stats/${creatorId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -75,7 +89,7 @@ export default function AdminCreatorView({ params }: { params: { creatorId: stri
             }
 
             // Fetch creator's manga
-            const mangaResponse = await fetch(`/api/manga?creatorId=${params.creatorId}`, {
+            const mangaResponse = await fetch(`/api/manga?creatorId=${creatorId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
