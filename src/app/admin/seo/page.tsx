@@ -27,8 +27,19 @@ export default function AdminSEOPage() {
 
     const fetchSEOSettings = async () => {
         try {
-            // Fetch SEO settings from API
-            // Mock data for now
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch('/api/admin/seo', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setSeoSettings(data.seoSettings || seoSettings);
+            }
         } catch (error) {
             console.error('Failed to fetch SEO settings:', error);
         } finally {
@@ -39,10 +50,25 @@ export default function AdminSEOPage() {
     const handleSave = async () => {
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-            // Save SEO settings via API
-            alert('SEO settings saved!');
+            if (!token) return;
+
+            const response = await fetch('/api/admin/seo', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ seoSettings })
+            });
+
+            if (response.ok) {
+                alert('SEO settings saved successfully!');
+            } else {
+                alert('Failed to save SEO settings');
+            }
         } catch (error) {
             console.error('Failed to save SEO settings:', error);
+            alert('Failed to save SEO settings');
         }
     };
 

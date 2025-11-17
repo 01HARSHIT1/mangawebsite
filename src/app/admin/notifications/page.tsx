@@ -34,8 +34,19 @@ export default function AdminNotificationsPage() {
 
     const fetchNotifications = async () => {
         try {
-            // Fetch notifications from API
-            setNotifications([]);
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch('/api/admin/notifications', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setNotifications(data.notifications || []);
+            }
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
         } finally {
@@ -104,9 +115,29 @@ export default function AdminNotificationsPage() {
                 {showModal && (
                     <NotificationModal
                         onClose={() => setShowModal(false)}
-                        onSave={(notification) => {
-                            setNotifications([...notifications, { ...notification, _id: Date.now().toString() }]);
-                            setShowModal(false);
+                        onSave={async (notification) => {
+                            try {
+                                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                if (!token) return;
+
+                                const response = await fetch('/api/admin/notifications', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(notification)
+                                });
+                                if (response.ok) {
+                                    fetchNotifications();
+                                    setShowModal(false);
+                                } else {
+                                    alert('Failed to send notification');
+                                }
+                            } catch (error) {
+                                console.error('Failed to send notification:', error);
+                                alert('Failed to send notification');
+                            }
                         }}
                     />
                 )}

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaComments, FaStar, FaFlag, FaTrash, FaBan, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaComments, FaStar, FaFlag, FaTrash, FaBan, FaCheck, FaTimes, FaEye } from 'react-icons/fa';
+import Link from 'next/link';
 
 interface Comment {
     _id: string;
@@ -35,10 +36,28 @@ export default function AdminCommunityPage() {
     const fetchData = async () => {
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-            // Fetch comments and reports
-            // Mock data for now
-            setComments([]);
-            setReports([]);
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            // Fetch comments
+            const commentsRes = await fetch('/api/admin/community/comments', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (commentsRes.ok) {
+                const commentsData = await commentsRes.json();
+                setComments(commentsData.comments || []);
+            }
+
+            // Fetch reports
+            const reportsRes = await fetch('/api/admin/reports?status=pending', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (reportsRes.ok) {
+                const reportsData = await reportsRes.json();
+                setReports(reportsData.reports || []);
+            }
         } catch (error) {
             console.error('Failed to fetch community data:', error);
         } finally {
@@ -47,9 +66,24 @@ export default function AdminCommunityPage() {
     };
 
     const handleDeleteComment = async (commentId: string) => {
-        if (confirm('Are you sure you want to delete this comment?')) {
-            // Delete comment via API
-            setComments(comments.filter(c => c._id !== commentId));
+        if (!confirm('Are you sure you want to delete this comment?')) return;
+
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch(`/api/admin/community/comments?id=${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setComments(comments.filter(c => c._id !== commentId));
+            } else {
+                alert('Failed to delete comment');
+            }
+        } catch (error) {
+            console.error('Failed to delete comment:', error);
+            alert('Failed to delete comment');
         }
     };
 
@@ -94,10 +128,40 @@ export default function AdminCommunityPage() {
 
                 {activeTab === 'comments' && (
                     <div className="bg-slate-800/50 rounded-2xl p-6 backdrop-blur-sm">
-                        <h2 className="text-xl font-bold mb-4">Comment Moderation</h2>
-                        <div className="text-gray-400">
-                            {comments.length === 0 ? 'No comments to moderate' : `${comments.length} comments`}
-                        </div>
+                        <h2 className="text-xl font-bold mb-4">Comment Moderation ({comments.length})</h2>
+                        {comments.length === 0 ? (
+                            <div className="text-gray-400 text-center py-8">No comments to moderate</div>
+                        ) : (
+                            <div className="space-y-4">
+                                {comments.map((comment) => (
+                                    <div key={comment._id} className="bg-slate-700/50 rounded-lg p-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="font-semibold">{comment.username}</span>
+                                                    <span className="text-xs text-gray-400">
+                                                        {new Date(comment.createdAt).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                                <p className="text-gray-300">{comment.content}</p>
+                                                {comment.mangaId && (
+                                                    <p className="text-xs text-gray-500 mt-2">
+                                                        Manga ID: {comment.mangaId}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteComment(comment._id)}
+                                                className="p-2 text-red-400 hover:text-red-300"
+                                                title="Delete Comment"
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -110,10 +174,51 @@ export default function AdminCommunityPage() {
 
                 {activeTab === 'reports' && (
                     <div className="bg-slate-800/50 rounded-2xl p-6 backdrop-blur-sm">
-                        <h2 className="text-xl font-bold mb-4">User Reports</h2>
-                        <div className="text-gray-400">
-                            {reports.length === 0 ? 'No reports to review' : `${reports.length} reports pending`}
-                        </div>
+                        <h2 className="text-xl font-bold mb-4">User Reports ({reports.length})</h2>
+                        {reports.length === 0 ? (
+                            <div className="text-gray-400 text-center py-8">No reports to review</div>
+                        ) : (
+                            <div className="space-y-4">
+                                {reports.map((report: any) => (
+                                    <div key={report._id} className="bg-slate-700/50 rounded-lg p-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <FaFlag className="text-red-400" />
+                                                    <span className="font-semibold">{report.type}</span>
+                                                    <span className={`px-2 py-1 rounded text-xs ${
+                                                        report.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                                                        report.status === 'resolved' ? 'bg-green-500/20 text-green-300' :
+                                                        'bg-gray-500/20 text-gray-300'
+                                                    }`}>
+                                                        {report.status}
+                                                    </span>
+                                                </div>
+                                                <p className="text-gray-300 mb-2">{report.reason}</p>
+                                                {report.description && (
+                                                    <p className="text-sm text-gray-400 mb-2">{report.description}</p>
+                                                )}
+                                                <p className="text-xs text-gray-500">
+                                                    Target: {report.targetType} - {report.targetId}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Created: {new Date(report.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Link
+                                                    href={`/admin/moderation`}
+                                                    className="p-2 text-blue-400 hover:text-blue-300"
+                                                    title="View Details"
+                                                >
+                                                    <FaEye />
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

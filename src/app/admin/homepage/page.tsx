@@ -44,16 +44,28 @@ export default function AdminHomepagePage() {
     const fetchHomepageData = async () => {
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-            // Fetch banners and sections from API
-            // For now, using mock data structure
-            setBanners([
-                { _id: '1', title: 'Featured Manga', imageUrl: '/banner1.jpg', linkUrl: '/manga/1', order: 1, isActive: true },
-            ]);
-            setSections([
-                { _id: '1', type: 'popular', title: 'Popular Today', order: 1, isActive: true },
-                { _id: '2', type: 'trending', title: 'Trending This Week', order: 2, isActive: true },
-                { _id: '3', type: 'new', title: 'New Releases', order: 3, isActive: true },
-            ]);
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            // Fetch banners
+            const bannersRes = await fetch('/api/admin/homepage/banners', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (bannersRes.ok) {
+                const bannersData = await bannersRes.json();
+                setBanners(bannersData.banners || []);
+            }
+
+            // Fetch sections
+            const sectionsRes = await fetch('/api/admin/homepage/sections', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (sectionsRes.ok) {
+                const sectionsData = await sectionsRes.json();
+                setSections(sectionsData.sections || []);
+            }
         } catch (error) {
             console.error('Failed to fetch homepage data:', error);
         } finally {
@@ -62,23 +74,68 @@ export default function AdminHomepagePage() {
     };
 
     const handleSaveBanner = async (banner: Banner) => {
-        // Save banner via API
-        if (editingBanner) {
-            setBanners(banners.map(b => b._id === editingBanner._id ? banner : b));
-        } else {
-            setBanners([...banners, { ...banner, _id: Date.now().toString() }]);
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) return;
+
+            if (editingBanner && editingBanner._id) {
+                // Update existing banner
+                const response = await fetch('/api/admin/homepage/banners', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ _id: editingBanner._id, ...banner })
+                });
+                if (response.ok) {
+                    fetchHomepageData();
+                }
+            } else {
+                // Create new banner
+                const response = await fetch('/api/admin/homepage/banners', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(banner)
+                });
+                if (response.ok) {
+                    fetchHomepageData();
+                }
+            }
+            setShowBannerModal(false);
+            setEditingBanner(null);
+        } catch (error) {
+            console.error('Failed to save banner:', error);
+            alert('Failed to save banner');
         }
-        setShowBannerModal(false);
-        setEditingBanner(null);
     };
 
-    const handleDeleteBanner = (bannerId: string) => {
-        if (confirm('Are you sure you want to delete this banner?')) {
-            setBanners(banners.filter(b => b._id !== bannerId));
+    const handleDeleteBanner = async (bannerId: string) => {
+        if (!confirm('Are you sure you want to delete this banner?')) return;
+
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch(`/api/admin/homepage/banners?id=${bannerId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                fetchHomepageData();
+            } else {
+                alert('Failed to delete banner');
+            }
+        } catch (error) {
+            console.error('Failed to delete banner:', error);
+            alert('Failed to delete banner');
         }
     };
 
-    const handleReorderSection = (sectionId: string, direction: 'up' | 'down') => {
+    const handleReorderSection = async (sectionId: string, direction: 'up' | 'down') => {
         const section = sections.find(s => s._id === sectionId);
         if (!section) return;
 
@@ -86,10 +143,29 @@ export default function AdminHomepagePage() {
         const swapSection = sections.find(s => s.order === newOrder);
         
         if (swapSection) {
-            setSections(sections.map(s => 
+            const updatedSections = sections.map(s => 
                 s._id === sectionId ? { ...s, order: newOrder } :
                 s._id === swapSection._id ? { ...s, order: section.order } : s
-            ));
+            );
+
+            try {
+                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                if (!token) return;
+
+                const response = await fetch('/api/admin/homepage/sections', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sections: updatedSections })
+                });
+                if (response.ok) {
+                    setSections(updatedSections);
+                }
+            } catch (error) {
+                console.error('Failed to reorder sections:', error);
+            }
         }
     };
 

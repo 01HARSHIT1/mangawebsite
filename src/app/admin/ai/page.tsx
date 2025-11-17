@@ -27,7 +27,19 @@ export default function AdminAIPage() {
 
     const fetchAISettings = async () => {
         try {
-            // Fetch AI settings from API
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch('/api/admin/ai', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setAiSettings(data.aiSettings || aiSettings);
+            }
         } catch (error) {
             console.error('Failed to fetch AI settings:', error);
         } finally {
@@ -37,10 +49,26 @@ export default function AdminAIPage() {
 
     const handleSave = async () => {
         try {
-            // Save AI settings via API
-            alert('AI settings saved!');
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch('/api/admin/ai', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ aiSettings })
+            });
+
+            if (response.ok) {
+                alert('AI settings saved successfully!');
+            } else {
+                alert('Failed to save AI settings');
+            }
         } catch (error) {
             console.error('Failed to save AI settings:', error);
+            alert('Failed to save AI settings');
         }
     };
 
