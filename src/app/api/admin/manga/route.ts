@@ -48,14 +48,67 @@ export async function GET(request: NextRequest) {
         // Get creator info and chapter count for each manga
         const mangaWithCreators = await Promise.all(
             manga.map(async (m) => {
-                const creator = await db.collection('users').findOne({ _id: m.uploaderId });
+                // Try to find creator - handle both ObjectId and string formats
+                let creator = null;
+                let creatorId = '';
+                
+                // Check if manga has uploaderId or creatorId
+                const uploaderId = m.uploaderId || m.creatorId;
+                
+                if (uploaderId) {
+                    // Try as ObjectId first
+                    if (ObjectId.isValid(uploaderId)) {
+                        try {
+                            creator = await db.collection('users').findOne({ 
+                                _id: new ObjectId(uploaderId) 
+                            });
+                            if (creator) {
+                                creatorId = creator._id.toString();
+                            } else {
+                                // If not found as ObjectId, try as string
+                                creator = await db.collection('users').findOne({ 
+                                    _id: uploaderId.toString() 
+                                });
+                                if (creator) {
+                                    creatorId = creator._id.toString();
+                                } else {
+                                    // Use uploaderId as fallback
+                                    creatorId = uploaderId.toString();
+                                }
+                            }
+                        } catch (error) {
+                            // If ObjectId conversion fails, try as string
+                            creator = await db.collection('users').findOne({ 
+                                _id: uploaderId.toString() 
+                            });
+                            if (creator) {
+                                creatorId = creator._id.toString();
+                            } else {
+                                // Use uploaderId as fallback
+                                creatorId = uploaderId.toString();
+                            }
+                        }
+                    } else {
+                        // Try as string
+                        creator = await db.collection('users').findOne({ 
+                            _id: uploaderId.toString() 
+                        });
+                        if (creator) {
+                            creatorId = creator._id.toString();
+                        } else {
+                            // Use uploaderId as fallback
+                            creatorId = uploaderId.toString();
+                        }
+                    }
+                }
+                
                 const chapterCount = await db.collection('chapters').countDocuments({ mangaId: m._id.toString() });
                 
                 return {
                     ...m,
                     _id: m._id.toString(),
-                    creator: creator?.nickname || creator?.username || 'Unknown',
-                    creatorId: creator?._id?.toString() || '',
+                    creator: creator?.nickname || creator?.username || m.creator || 'Unknown',
+                    creatorId: creatorId || m.uploaderId?.toString() || m.creatorId?.toString() || '',
                     chapters: chapterCount,
                     views: m.views || 0,
                     rating: m.rating || 0,
