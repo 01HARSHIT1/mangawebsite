@@ -69,7 +69,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
             return NextResponse.json({ success: true });
         }
 
-        if (!creatorUser || chapter.uploaderId?.toString() !== creatorUser._id.toString()) {
+        // Check if user is admin
+        let isAdmin = false;
+        try {
+            const adminUser = await verifyToken(req.headers.get('authorization')?.replace('Bearer ', '') || '');
+            isAdmin = adminUser?.role === 'admin';
+        } catch {
+            isAdmin = false;
+        }
+
+        if (!isAdmin && (!creatorUser || chapter.uploaderId?.toString() !== creatorUser._id.toString())) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -81,8 +90,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { chapterId:
         if (Array.isArray(body.comments)) update.comments = body.comments;
         if (Array.isArray(body.ratings)) update.ratings = body.ratings;
         if (typeof body.coinPrice === 'number') update.coinPrice = body.coinPrice;
+        if (body.status) update.status = body.status; // Allow status updates (for hide/show)
     } else {
-        if (!creatorUser || chapter.uploaderId?.toString() !== creatorUser._id.toString()) {
+        // Check if user is admin
+        let isAdmin = false;
+        try {
+            const adminUser = await verifyToken(req.headers.get('authorization')?.replace('Bearer ', '') || '');
+            isAdmin = adminUser?.role === 'admin';
+        } catch {
+            isAdmin = false;
+        }
+
+        if (!isAdmin && (!creatorUser || chapter.uploaderId?.toString() !== creatorUser._id.toString())) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
         const formData = await req.formData();
