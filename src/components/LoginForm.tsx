@@ -46,6 +46,14 @@ export default function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormPr
                     Welcome Back
                 </h2>
                 <p className="text-gray-400 mt-2">Sign in to your account</p>
+                <div className="mt-4">
+                    <a 
+                        href="/admin/login" 
+                        className="text-sm text-purple-400 hover:text-purple-300 underline"
+                    >
+                        Admin? Sign in here
+                    </a>
+                </div>
             </div>
 
             {error && (

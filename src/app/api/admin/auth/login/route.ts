@@ -77,17 +77,37 @@ export async function POST(request: NextRequest) {
                 _id: result.insertedId 
             });
         } else {
-            // Update last login
-            await db.collection('users').updateOne(
-                { _id: adminUser._id },
-                { 
-                    $set: { 
-                        lastLogin: new Date(),
-                        failedLoginAttempts: 0,
-                        accountLocked: false
-                    } 
-                }
-            );
+            // Verify password for existing admin account
+            const bcrypt = require('bcryptjs');
+            const isValidPassword = await bcrypt.compare(ADMIN_PASSWORD, adminUser.password);
+            
+            if (!isValidPassword) {
+                // If password doesn't match, update it (in case env var changed)
+                const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 12);
+                await db.collection('users').updateOne(
+                    { _id: adminUser._id },
+                    { 
+                        $set: { 
+                            password: hashedPassword,
+                            lastLogin: new Date(),
+                            failedLoginAttempts: 0,
+                            accountLocked: false
+                        } 
+                    }
+                );
+            } else {
+                // Update last login
+                await db.collection('users').updateOne(
+                    { _id: adminUser._id },
+                    { 
+                        $set: { 
+                            lastLogin: new Date(),
+                            failedLoginAttempts: 0,
+                            accountLocked: false
+                        } 
+                    }
+                );
+            }
         }
 
         if (!adminUser) {
