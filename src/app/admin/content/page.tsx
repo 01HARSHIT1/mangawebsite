@@ -156,12 +156,9 @@ export default function AdminContentManagement() {
                     [mangaId]: data.chapters || []
                 }));
                 toggleMangaExpand(mangaId);
-            } else {
-                alert('Failed to fetch chapters');
             }
         } catch (error) {
             console.error('Failed to fetch chapters:', error);
-            alert('Failed to fetch chapters');
         } finally {
             setLoadingChapters(prev => {
                 const newSet = new Set(prev);
@@ -260,7 +257,10 @@ export default function AdminContentManagement() {
         const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.creator.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || m.status === filterStatus;
-        const matchesCreator = filterCreator === 'all' || m.creatorId === filterCreator;
+        // Compare both creatorId formats (string and ObjectId string)
+        const matchesCreator = filterCreator === 'all' || 
+            m.creatorId === filterCreator || 
+            m.creatorId?.toString() === filterCreator?.toString();
 
         return matchesSearch && matchesStatus && matchesCreator;
     });
@@ -436,11 +436,10 @@ export default function AdminContentManagement() {
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="bg-slate-800/50 rounded-3xl p-6 backdrop-blur-sm mb-8 border border-purple-500/20">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* Search */}
-                        <div className="relative">
+                {/* Search and Filters */}
+                <div className="bg-slate-800/50 rounded-2xl p-4 mb-8 backdrop-blur-sm border border-purple-500/20">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 relative">
                             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
@@ -450,43 +449,30 @@ export default function AdminContentManagement() {
                                 className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
-
-                        {/* Creator Filter */}
-                        <div className="relative">
-                            <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <div className="flex gap-2">
                             <select
                                 value={filterCreator}
                                 onChange={(e) => setFilterCreator(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="all">All Creators</option>
-                                {creators.map((creator) => (
-                                    <option key={creator._id} value={creator._id}>
-                                        {creator.username}
-                                    </option>
+                                {creators.map(creator => (
+                                    <option key={creator._id} value={creator._id}>{creator.username}</option>
                                 ))}
                             </select>
-                        </div>
-
-                        {/* Status Filter */}
-                        <div className="relative">
-                            <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                             <select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                             >
                                 <option value="all">All Status</option>
                                 <option value="ongoing">Ongoing</option>
                                 <option value="completed">Completed</option>
                                 <option value="hiatus">Hiatus</option>
                             </select>
-                        </div>
-
-                        <div className="text-right">
                             <button
                                 onClick={fetchManga}
-                                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors"
+                                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition-colors"
                             >
                                 Refresh
                             </button>
@@ -588,7 +574,7 @@ export default function AdminContentManagement() {
                                                 </button>
                                                 <button
                                                     onClick={() => handleToggleVisibility(m._id, 'published')}
-                                                    className="p-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors"
+                                                    className="p-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors"
                                                     title="Toggle Visibility"
                                                 >
                                                     <FaEyeSlash />
@@ -824,6 +810,168 @@ function EditMangaModal({ manga, onSave, onClose }: {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+}
+
+function EarningsModal({ 
+    earnings, 
+    loading, 
+    creatorId, 
+    mangaId, 
+    chapterId, 
+    onClose 
+}: { 
+    earnings: any; 
+    loading: boolean; 
+    creatorId: string; 
+    mangaId?: string; 
+    chapterId?: string; 
+    onClose: () => void;
+}) {
+    if (loading) {
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full">
+                    <div className="text-white text-center">Loading earnings data...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!earnings) {
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-800 rounded-2xl p-6 max-w-2xl w-full">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-2xl font-bold text-purple-400">Earnings</h2>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-white transition-colors"
+                        >
+                            <FaTimes className="text-xl" />
+                        </button>
+                    </div>
+                    <div className="text-gray-400 text-center py-8">No earnings data available</div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-purple-400">
+                        Earnings {mangaId ? '(Manga)' : chapterId ? '(Chapter)' : '(Creator)'}
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white transition-colors"
+                    >
+                        <FaTimes className="text-xl" />
+                    </button>
+                </div>
+
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+                        <p className="text-gray-400 text-sm mb-1">Total Earnings</p>
+                        <p className="text-2xl font-bold text-purple-400">
+                            ₹{earnings.totalEarnings?.toLocaleString() || '0'}
+                        </p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+                        <p className="text-gray-400 text-sm mb-1">Total Donations</p>
+                        <p className="text-2xl font-bold text-green-400">
+                            {earnings.totalDonations || 0}
+                        </p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+                        <p className="text-gray-400 text-sm mb-1">Weekly</p>
+                        <p className="text-2xl font-bold text-yellow-400">
+                            ₹{earnings.periodSummaries?.weekly?.total?.toLocaleString() || '0'}
+                        </p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-lg p-4 border border-purple-500/20">
+                        <p className="text-gray-400 text-sm mb-1">Monthly</p>
+                        <p className="text-2xl font-bold text-blue-400">
+                            ₹{earnings.periodSummaries?.monthly?.total?.toLocaleString() || '0'}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Earnings by Manga */}
+                {earnings.earningsByManga && earnings.earningsByManga.length > 0 && (
+                    <div className="mb-6">
+                        <h3 className="text-xl font-bold text-white mb-4">Earnings by Manga</h3>
+                        <div className="space-y-3">
+                            {earnings.earningsByManga.map((manga: any) => (
+                                <div key={manga.mangaId} className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-semibold text-white">{manga.mangaTitle}</h4>
+                                            <p className="text-sm text-gray-400">
+                                                {manga.chapterCount} chapters • {manga.donationCount} donations
+                                            </p>
+                                        </div>
+                                        <p className="text-xl font-bold text-purple-400">
+                                            ₹{manga.totalEarnings?.toLocaleString() || '0'}
+                                        </p>
+                                    </div>
+                                    {manga.chapters && manga.chapters.length > 0 && (
+                                        <div className="mt-3 space-y-2">
+                                            {manga.chapters.map((chapter: any) => (
+                                                <div key={chapter.chapterId} className="bg-slate-800/50 rounded p-2 flex justify-between items-center">
+                                                    <span className="text-sm text-gray-300">
+                                                        Ch. {chapter.chapterNumber}: {chapter.chapterTitle}
+                                                    </span>
+                                                    <span className="text-sm font-semibold text-yellow-400">
+                                                        ₹{chapter.totalEarnings?.toLocaleString() || '0'} ({chapter.donationCount || 0} donations)
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Recent Donations */}
+                {earnings.recentDonations && earnings.recentDonations.length > 0 && (
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-4">Recent Donations</h3>
+                        <div className="space-y-2">
+                            {earnings.recentDonations.slice(0, 10).map((donation: any, index: number) => (
+                                <div key={index} className="bg-slate-700/50 rounded-lg p-3 border border-slate-600 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-sm text-white">
+                                            {donation.message || 'No message'}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {new Date(donation.createdAt).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <p className="text-lg font-bold text-green-400">
+                                        ₹{donation.amount?.toLocaleString() || '0'}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-6 flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold transition-colors"
+                    >
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     );

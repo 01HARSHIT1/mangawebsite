@@ -33,8 +33,21 @@ export async function GET(request: NextRequest) {
         // Build query
         const query: any = {};
         if (status) query.status = status;
-        if (creatorId && ObjectId.isValid(creatorId)) {
-            query.uploaderId = new ObjectId(creatorId);
+        if (creatorId && creatorId !== 'all') {
+            // Try both ObjectId and string formats
+            if (ObjectId.isValid(creatorId)) {
+                query.$or = [
+                    { uploaderId: new ObjectId(creatorId) },
+                    { uploaderId: creatorId },
+                    { creatorId: new ObjectId(creatorId) },
+                    { creatorId: creatorId }
+                ];
+            } else {
+                query.$or = [
+                    { uploaderId: creatorId },
+                    { creatorId: creatorId }
+                ];
+            }
         }
 
         // Fetch manga with creator info

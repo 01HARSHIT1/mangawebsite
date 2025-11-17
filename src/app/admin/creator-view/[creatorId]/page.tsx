@@ -88,13 +88,14 @@ export default function AdminCreatorView() {
                 });
             }
 
-            // Fetch creator's manga
-            const mangaResponse = await fetch(`/api/manga?creatorId=${creatorId}`, {
+            // Fetch creator's manga with chapter counts
+            const mangaResponse = await fetch(`/api/admin/manga?creatorId=${creatorId}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (mangaResponse.ok) {
                 const mangaData = await mangaResponse.json();
+                // The API already includes chapter counts
                 setManga(mangaData.manga || []);
             }
         } catch (error) {
