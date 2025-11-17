@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
+import { ObjectId } from 'mongodb';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -32,7 +33,9 @@ export async function GET(request: NextRequest) {
         // Build query
         const query: any = {};
         if (status) query.status = status;
-        if (creatorId) query.uploaderId = creatorId;
+        if (creatorId && ObjectId.isValid(creatorId)) {
+            query.uploaderId = new ObjectId(creatorId);
+        }
 
         // Fetch manga with creator info
         const manga = await db.collection('manga')

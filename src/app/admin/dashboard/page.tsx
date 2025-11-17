@@ -271,6 +271,12 @@ export default function AdminDashboard() {
                                         href="/admin/analytics"
                                     />
                                     <QuickAction
+                                        icon={<FaCrown />}
+                                        title="Creator Earnings"
+                                        description="View detailed creator earnings & revenue"
+                                        href="/admin/creators"
+                                    />
+                                    <QuickAction
                                         icon={<FaCog />}
                                         title="System Settings"
                                         description="Configure platform settings"

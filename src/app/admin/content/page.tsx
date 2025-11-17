@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser, FaCheck } from 'react-icons/fa';
+import { FaBook, FaSearch, FaFilter, FaEdit, FaTrash, FaEye, FaEyeSlash, FaChartLine, FaUser, FaCheck, FaChevronDown, FaChevronUp, FaFileAlt } from 'react-icons/fa';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,11 +22,35 @@ interface Manga {
     createdAt: string;
 }
 
+interface Creator {
+    _id: string;
+    username: string;
+}
+
+interface Chapter {
+    _id: string;
+    title: string;
+    chapterNumber: number;
+    subtitle?: string;
+    description?: string;
+    pageCount: number;
+    views: number;
+    likes: number;
+    status: string;
+    coinPrice: number;
+    createdAt: string;
+}
+
 export default function AdminContentManagement() {
     const [manga, setManga] = useState<Manga[]>([]);
+    const [creators, setCreators] = useState<Creator[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [filterCreator, setFilterCreator] = useState<string>('all');
+    const [expandedManga, setExpandedManga] = useState<Set<string>>(new Set());
+    const [chaptersData, setChaptersData] = useState<Record<string, Chapter[]>>({});
+    const [loadingChapters, setLoadingChapters] = useState<Set<string>>(new Set());
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
@@ -43,6 +67,7 @@ export default function AdminContentManagement() {
         }
 
         fetchManga();
+        fetchCreators();
     }, [isAuthenticated, user, router]);
 
     const fetchManga = async () => {
@@ -53,7 +78,12 @@ export default function AdminContentManagement() {
                 return;
             }
 
-            const response = await fetch('/api/admin/manga', {
+            const url = new URL('/api/admin/manga', window.location.origin);
+            if (filterCreator !== 'all') {
+                url.searchParams.append('creatorId', filterCreator);
+            }
+
+            const response = await fetch(url.toString(), {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -74,14 +104,129 @@ export default function AdminContentManagement() {
         }
     };
 
+    const fetchCreators = async () => {
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch('/api/admin/creators', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setCreators(data.creators || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch creators:', error);
+        }
+    };
+
+    const fetchChapters = async (mangaId: string) => {
+        if (chaptersData[mangaId]) {
+            // Already loaded, just toggle
+            toggleMangaExpand(mangaId);
+            return;
+        }
+
+        setLoadingChapters(prev => new Set(prev).add(mangaId));
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch(`/api/admin/manga/${mangaId}/chapters`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setChaptersData(prev => ({
+                    ...prev,
+                    [mangaId]: data.chapters || []
+                }));
+                toggleMangaExpand(mangaId);
+            } else {
+                alert('Failed to fetch chapters');
+            }
+        } catch (error) {
+            console.error('Failed to fetch chapters:', error);
+            alert('Failed to fetch chapters');
+        } finally {
+            setLoadingChapters(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(mangaId);
+                return newSet;
+            });
+        }
+    };
+
+    const toggleMangaExpand = (mangaId: string) => {
+        setExpandedManga(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(mangaId)) {
+                newSet.delete(mangaId);
+            } else {
+                newSet.add(mangaId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleDeleteChapter = async (mangaId: string, chapterId: string, chapterNumber: number) => {
+        if (!confirm(`Are you sure you want to delete Chapter ${chapterNumber}? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(`/api/admin/chapters/${chapterId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                alert('Chapter deleted successfully');
+                // Remove chapter from local state
+                setChaptersData(prev => ({
+                    ...prev,
+                    [mangaId]: (prev[mangaId] || []).filter(ch => ch._id !== chapterId)
+                }));
+                // Refresh manga list to update chapter count
+                fetchManga();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to delete chapter');
+            }
+        } catch (error) {
+            console.error('Delete chapter error:', error);
+            alert('Failed to delete chapter');
+        }
+    };
+
 
     const filteredManga = manga.filter(m => {
         const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.creator.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || m.status === filterStatus;
+        const matchesCreator = filterCreator === 'all' || m.creatorId === filterCreator;
 
-        return matchesSearch && matchesStatus;
+        return matchesSearch && matchesStatus && matchesCreator;
     });
+
+    // Update manga when creator filter changes
+    useEffect(() => {
+        if (isAuthenticated && user?.role === 'admin') {
+            setLoading(true);
+            fetchManga();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterCreator]);
 
     const handleViewCreatorDashboard = (creatorId: string) => {
         // Admin can view creator's dashboard
@@ -209,7 +354,7 @@ export default function AdminContentManagement() {
 
                 {/* Filters */}
                 <div className="bg-slate-800/50 rounded-3xl p-6 backdrop-blur-sm mb-8 border border-purple-500/20">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {/* Search */}
                         <div className="relative">
                             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -220,6 +365,23 @@ export default function AdminContentManagement() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
+                        </div>
+
+                        {/* Creator Filter */}
+                        <div className="relative">
+                            <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                            <select
+                                value={filterCreator}
+                                onChange={(e) => setFilterCreator(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            >
+                                <option value="all">All Creators</option>
+                                {creators.map((creator) => (
+                                    <option key={creator._id} value={creator._id}>
+                                        {creator.username}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* Status Filter */}
@@ -259,86 +421,164 @@ export default function AdminContentManagement() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredManga.map((m) => (
-                                <div
-                                    key={m._id}
-                                    className="bg-slate-700/50 rounded-2xl p-4 hover:bg-slate-700 transition-all border border-slate-600"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        {/* Cover Image */}
-                                        <div className="relative w-20 h-28 flex-shrink-0">
-                                            <Image
-                                                src={m.coverImage || '/placeholder.svg'}
-                                                alt={m.title}
-                                                fill
-                                                className="object-cover rounded-lg"
-                                            />
-                                        </div>
+                            {filteredManga.map((m) => {
+                                const isExpanded = expandedManga.has(m._id);
+                                const chapters = chaptersData[m._id] || [];
+                                const isLoadingChapters = loadingChapters.has(m._id);
 
-                                        {/* Manga Info */}
-                                        <div className="flex-1">
-                                            <h3 className="text-lg font-bold text-white mb-1">{m.title}</h3>
-                                            <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
-                                                <span className="flex items-center gap-1">
-                                                    <FaUser className="text-xs" />
-                                                    {m.creator}
-                                                </span>
-                                                <span className={`px-2 py-1 rounded text-xs font-semibold ${m.status === 'ongoing' ? 'bg-green-500/20 text-green-400' :
-                                                        m.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
-                                                            'bg-yellow-500/20 text-yellow-400'
-                                                    }`}>
-                                                    {m.status}
-                                                </span>
-                                                <span>{m.chapters || 0} chapters</span>
-                                                <span>{(m.views || 0).toLocaleString()} views</span>
-                                                {m.rating && <span>⭐ {m.rating.toFixed(1)}</span>}
+                                return (
+                                    <div
+                                        key={m._id}
+                                        className="bg-slate-700/50 rounded-2xl p-4 hover:bg-slate-700 transition-all border border-slate-600"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            {/* Cover Image */}
+                                            <div className="relative w-20 h-28 flex-shrink-0">
+                                                <Image
+                                                    src={m.coverImage || '/placeholder.svg'}
+                                                    alt={m.title}
+                                                    fill
+                                                    className="object-cover rounded-lg"
+                                                />
                                             </div>
-                                            <p className="text-xs text-gray-500">
-                                                Created: {new Date(m.createdAt).toLocaleDateString()}
-                                            </p>
+
+                                            {/* Manga Info */}
+                                            <div className="flex-1">
+                                                <h3 className="text-lg font-bold text-white mb-1">{m.title}</h3>
+                                                <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                                                    <span className="flex items-center gap-1">
+                                                        <FaUser className="text-xs" />
+                                                        {m.creator}
+                                                    </span>
+                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${m.status === 'ongoing' ? 'bg-green-500/20 text-green-400' :
+                                                            m.status === 'completed' ? 'bg-blue-500/20 text-blue-400' :
+                                                                'bg-yellow-500/20 text-yellow-400'
+                                                        }`}>
+                                                        {m.status}
+                                                    </span>
+                                                    <span>{m.chapters || 0} chapters</span>
+                                                    <span>{(m.views || 0).toLocaleString()} views</span>
+                                                    {m.rating && <span>⭐ {m.rating.toFixed(1)}</span>}
+                                                </div>
+                                                <p className="text-xs text-gray-500">
+                                                    Created: {new Date(m.createdAt).toLocaleDateString()}
+                                                </p>
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => fetchChapters(m._id)}
+                                                    className="p-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                                                    title="View Chapters"
+                                                >
+                                                    {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleViewCreatorDashboard(m.creatorId)}
+                                                    className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                                                    title="View Creator Dashboard"
+                                                >
+                                                    <FaChartLine />
+                                                </button>
+                                                <Link
+                                                    href={`/manga/${m._id}`}
+                                                    className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                                    title="View Manga"
+                                                >
+                                                    <FaEye />
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleEditManga(m._id)}
+                                                    className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                                                    title="Edit Manga"
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleToggleVisibility(m._id, 'published')}
+                                                    className="p-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors"
+                                                    title="Toggle Visibility"
+                                                >
+                                                    <FaEyeSlash />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteManga(m._id)}
+                                                    className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                                    title="Delete Manga"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        {/* Actions */}
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleViewCreatorDashboard(m.creatorId)}
-                                                className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
-                                                title="View Creator Dashboard"
-                                            >
-                                                <FaChartLine />
-                                            </button>
-                                            <Link
-                                                href={`/manga/${m._id}`}
-                                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                                                title="View Manga"
-                                            >
-                                                <FaEye />
-                                            </Link>
-                                            <button
-                                                onClick={() => handleEditManga(m._id)}
-                                                className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                                                title="Edit Manga"
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                onClick={() => handleToggleVisibility(m._id, 'published')}
-                                                className="p-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors"
-                                                title="Toggle Visibility"
-                                            >
-                                                <FaEyeSlash />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteManga(m._id)}
-                                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                                                title="Delete Manga"
-                                            >
-                                                <FaTrash />
-                                            </button>
-                                        </div>
+                                        {/* Chapters Section */}
+                                        {isExpanded && (
+                                            <div className="mt-4 pt-4 border-t border-slate-600">
+                                                {isLoadingChapters ? (
+                                                    <div className="text-center py-8 text-gray-400">
+                                                        Loading chapters...
+                                                    </div>
+                                                ) : chapters.length === 0 ? (
+                                                    <div className="text-center py-8 text-gray-400">
+                                                        <FaFileAlt className="text-4xl mx-auto mb-2 opacity-50" />
+                                                        <p>No chapters found</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-sm font-semibold text-purple-400 mb-3">
+                                                            Chapters ({chapters.length})
+                                                        </h4>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                            {chapters.map((chapter) => (
+                                                                <div
+                                                                    key={chapter._id}
+                                                                    className="bg-slate-800/50 rounded-lg p-3 border border-slate-600 hover:border-purple-500/50 transition-all"
+                                                                >
+                                                                    <div className="flex items-start justify-between gap-2">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="flex items-center gap-2 mb-1">
+                                                                                <span className="text-xs font-semibold text-purple-400">
+                                                                                    Ch. {chapter.chapterNumber}
+                                                                                </span>
+                                                                                {chapter.coinPrice > 0 && (
+                                                                                    <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
+                                                                                        {chapter.coinPrice} coins
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            <p className="text-sm text-white font-medium truncate">
+                                                                                {chapter.title}
+                                                                            </p>
+                                                                            {chapter.subtitle && (
+                                                                                <p className="text-xs text-gray-400 truncate mt-1">
+                                                                                    {chapter.subtitle}
+                                                                                </p>
+                                                                            )}
+                                                                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                                                                                <span>{chapter.pageCount} pages</span>
+                                                                                <span>{chapter.views} views</span>
+                                                                                <span>{chapter.likes} likes</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => handleDeleteChapter(m._id, chapter._id, chapter.chapterNumber)}
+                                                                            className="p-1.5 bg-red-600/20 hover:bg-red-600/40 rounded text-red-400 transition-colors flex-shrink-0"
+                                                                            title="Delete Chapter"
+                                                                        >
+                                                                            <FaTrash className="text-xs" />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>

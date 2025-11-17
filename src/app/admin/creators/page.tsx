@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaCrown, FaCheckCircle, FaTimesCircle, FaEdit, FaUserCheck, FaMoneyBillWave, FaChartLine } from 'react-icons/fa';
+import { FaCrown, FaCheckCircle, FaTimesCircle, FaEdit, FaUserCheck, FaMoneyBillWave, FaChartLine, FaChevronDown, FaChevronUp, FaBook, FaFileAlt, FaCalendar } from 'react-icons/fa';
 
 interface Creator {
     _id: string;
@@ -18,11 +18,44 @@ interface Creator {
     revenueShare?: number;
 }
 
+interface EarningsData {
+    creatorId: string;
+    period: string;
+    totalEarnings: number;
+    totalDonations: number;
+    periodSummaries: {
+        weekly: { total: number; count: number };
+        monthly: { total: number; count: number };
+        yearly: { total: number; count: number };
+        all: { total: number; count: number };
+    };
+    earningsByManga: Array<{
+        mangaId: string;
+        mangaTitle: string;
+        totalEarnings: number;
+        donationCount: number;
+        chapterCount: number;
+        chapters: Array<{
+            chapterId: string;
+            chapterNumber: number;
+            chapterTitle: string;
+            totalEarnings: number;
+            donationCount: number;
+        }>;
+        donations: any[];
+    }>;
+    recentDonations: any[];
+}
+
 export default function AdminCreatorsPage() {
     const [creators, setCreators] = useState<Creator[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
+    const [earningsCreatorId, setEarningsCreatorId] = useState<string | null>(null);
+    const [earningsData, setEarningsData] = useState<EarningsData | null>(null);
+    const [loadingEarnings, setLoadingEarnings] = useState(false);
+    const [earningsPeriod, setEarningsPeriod] = useState<'all' | 'weekly' | 'monthly' | 'yearly'>('all');
     const { user, isAuthenticated } = useAuth();
     const router = useRouter();
 
@@ -85,6 +118,40 @@ export default function AdminCreatorsPage() {
             console.error('Failed to update creator settings:', error);
         }
     };
+
+    const handleViewEarnings = async (creatorId: string) => {
+        if (earningsCreatorId === creatorId && earningsData) {
+            // Toggle off if already showing
+            setEarningsCreatorId(null);
+            setEarningsData(null);
+            return;
+        }
+
+        setEarningsCreatorId(creatorId);
+        setLoadingEarnings(true);
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(`/api/admin/creators/${creatorId}/earnings?period=${earningsPeriod}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setEarningsData(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch earnings:', error);
+        } finally {
+            setLoadingEarnings(false);
+        }
+    };
+
+    // Refetch earnings when period changes
+    useEffect(() => {
+        if (earningsCreatorId) {
+            handleViewEarnings(earningsCreatorId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [earningsPeriod]);
 
     const filteredCreators = creators.filter(creator =>
         creator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -155,6 +222,13 @@ export default function AdminCreatorsPage() {
                                         <td className="px-6 py-4">₹{(creator.earnings || 0).toLocaleString()}</td>
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleViewEarnings(creator._id)}
+                                                    className="p-2 text-purple-400 hover:text-purple-300"
+                                                    title="View Earnings Details"
+                                                >
+                                                    <FaMoneyBillWave />
+                                                </button>
                                                 {!creator.isVerified && (
                                                     <button
                                                         onClick={() => handleVerifyCreator(creator._id)}
@@ -174,6 +248,29 @@ export default function AdminCreatorsPage() {
                                             </div>
                                         </td>
                                     </tr>
+                                    {/* Earnings Details Row */}
+                                    {earningsCreatorId === creator._id && (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-4 bg-slate-900/50">
+                                                {loadingEarnings ? (
+                                                    <div className="text-center py-8">
+                                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                                                        <p className="text-gray-400 mt-2">Loading earnings...</p>
+                                                    </div>
+                                                ) : earningsData ? (
+                                                    <EarningsDetailsView 
+                                                        earnings={earningsData} 
+                                                        period={earningsPeriod}
+                                                        onPeriodChange={setEarningsPeriod}
+                                                    />
+                                                ) : (
+                                                    <div className="text-center py-4 text-gray-400">
+                                                        Failed to load earnings data
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )}
                                 ))}
                             </tbody>
                         </table>
@@ -264,6 +361,162 @@ function CreatorSettingsModal({ creator, onSave, onClose }: {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function EarningsDetailsView({ earnings, period, onPeriodChange }: {
+    earnings: EarningsData;
+    period: string;
+    onPeriodChange: (period: 'all' | 'weekly' | 'monthly' | 'yearly') => void;
+}) {
+    return (
+        <div className="space-y-6">
+            {/* Period Selector */}
+            <div className="flex items-center justify-between border-b border-slate-700 pb-4">
+                <h3 className="text-lg font-bold text-purple-400">Earnings Breakdown</h3>
+                <div className="flex gap-2">
+                    {(['all', 'weekly', 'monthly', 'yearly'] as const).map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => onPeriodChange(p)}
+                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                                period === p
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
+                            }`}
+                        >
+                            {p.charAt(0).toUpperCase() + p.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-purple-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                        <FaMoneyBillWave className="text-purple-400" />
+                        <p className="text-gray-400 text-sm">Total Earnings</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">₹{earnings.totalEarnings.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{earnings.totalDonations} donations</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-green-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                        <FaCalendar className="text-green-400" />
+                        <p className="text-gray-400 text-sm">Weekly</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">₹{earnings.periodSummaries.weekly.total.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{earnings.periodSummaries.weekly.count} donations</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                        <FaCalendar className="text-blue-400" />
+                        <p className="text-gray-400 text-sm">Monthly</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">₹{earnings.periodSummaries.monthly.total.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{earnings.periodSummaries.monthly.count} donations</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-4 border border-yellow-500/20">
+                    <div className="flex items-center gap-2 mb-2">
+                        <FaCalendar className="text-yellow-400" />
+                        <p className="text-gray-400 text-sm">Yearly</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">₹{earnings.periodSummaries.yearly.total.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{earnings.periodSummaries.yearly.count} donations</p>
+                </div>
+            </div>
+
+            {/* Earnings by Manga */}
+            {earnings.earningsByManga.length > 0 && (
+                <div>
+                    <h4 className="text-md font-semibold text-purple-400 mb-3 flex items-center gap-2">
+                        <FaBook /> Earnings by Manga
+                    </h4>
+                    <div className="space-y-3">
+                        {earnings.earningsByManga.map((manga) => (
+                            <div key={manga.mangaId} className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+                                <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h5 className="font-semibold text-white">{manga.mangaTitle}</h5>
+                                        <p className="text-sm text-gray-400">
+                                            {manga.chapterCount} chapters • {manga.donationCount} donations
+                                        </p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xl font-bold text-purple-400">
+                                            ₹{manga.totalEarnings.toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Chapters Breakdown */}
+                                {manga.chapters.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-slate-700">
+                                        <p className="text-xs text-gray-400 mb-2">Earnings by Chapter:</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                            {manga.chapters.map((chapter) => (
+                                                <div key={chapter.chapterId} className="bg-slate-900/50 rounded p-2 text-xs">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-gray-300">
+                                                            Ch. {chapter.chapterNumber}: {chapter.chapterTitle}
+                                                        </span>
+                                                        <span className="text-purple-400 font-semibold">
+                                                            ₹{chapter.totalEarnings.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-gray-500 mt-1">{chapter.donationCount} donations</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Recent Donations */}
+            {earnings.recentDonations.length > 0 && (
+                <div>
+                    <h4 className="text-md font-semibold text-purple-400 mb-3 flex items-center gap-2">
+                        <FaFileAlt /> Recent Donations
+                    </h4>
+                    <div className="bg-slate-800/50 rounded-lg overflow-hidden border border-slate-700">
+                        <table className="min-w-full divide-y divide-slate-700">
+                            <thead className="bg-slate-900/50">
+                                <tr>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Donor</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Amount</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Manga</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-300">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700">
+                                {earnings.recentDonations.map((donation) => (
+                                    <tr key={donation._id}>
+                                        <td className="px-4 py-2 text-sm text-white">{donation.donorUsername}</td>
+                                        <td className="px-4 py-2 text-sm font-semibold text-purple-400">₹{donation.amount}</td>
+                                        <td className="px-4 py-2 text-sm text-gray-400">{donation.mangaTitle || 'General Tip'}</td>
+                                        <td className="px-4 py-2 text-sm text-gray-400">
+                                            {new Date(donation.createdAt).toLocaleDateString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {earnings.earningsByManga.length === 0 && earnings.recentDonations.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                    <FaMoneyBillWave className="text-4xl mx-auto mb-2 opacity-50" />
+                    <p>No earnings data available for this period</p>
+                </div>
+            )}
         </div>
     );
 }
