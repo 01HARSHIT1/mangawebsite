@@ -209,6 +209,11 @@ export default function AIMetricsPage() {
                                 {modeNote}
                             </div>
                         )}
+                        <div className="mt-2 p-3 rounded-lg bg-orange-500/20 border border-orange-500/50 text-orange-300 text-sm">
+                            <strong>⚠️ Implementation Status:</strong> Some features use basic algorithms (not full deep learning). 
+                            Eye tracking is placeholder. Recommendations now use real database data. 
+                            See <code className="bg-slate-800 px-1 rounded">AI_FEATURES_STATUS.md</code> for details.
+                        </div>
                     </div>
                     <div className="flex items-center gap-3">
                         {/* Mode Toggle */}

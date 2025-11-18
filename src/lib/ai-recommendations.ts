@@ -1,6 +1,9 @@
 // AI-Powered Recommendation Engine for Manga Website
 // Uses collaborative filtering, content-based filtering, and machine learning
 
+import clientPromise from './mongodb';
+import { ObjectId } from 'mongodb';
+
 interface UserBehavior {
     userId: string;
     mangaId: string;
@@ -447,124 +450,151 @@ export class AIRecommendationEngine {
         }));
     }
 
-    // Get user behavior data
+    // Get user behavior data from database
     private async getUserBehavior(userId: string): Promise<UserBehavior[]> {
         if (this.userBehaviorCache.has(userId)) {
             return this.userBehaviorCache.get(userId)!;
         }
 
         try {
-            // In a real implementation, this would query the database
-            // For now, return mock behavior data
-            const mockBehavior: UserBehavior[] = [
-                {
-                    userId,
-                    mangaId: '1',
-                    rating: 5,
-                    readingTime: 1200,
-                    completionRate: 0.9,
-                    lastReadAt: new Date(),
-                    bookmarked: true,
-                    liked: true,
-                    shared: false,
-                    commented: true
-                },
-                {
-                    userId,
-                    mangaId: '2',
-                    rating: 4,
-                    readingTime: 800,
-                    completionRate: 0.7,
-                    lastReadAt: new Date(Date.now() - 86400000),
-                    bookmarked: false,
-                    liked: true,
-                    shared: true,
-                    commented: false
-                }
-            ];
+            const client = await clientPromise;
+            const db = client.db('mangawebsite');
+            const users = db.collection('users');
+            
+            // Get user document
+            const user = await users.findOne({ _id: new ObjectId(userId) });
+            if (!user) {
+                return [];
+            }
 
-            this.userBehaviorCache.set(userId, mockBehavior);
-            return mockBehavior;
+            const behavior: UserBehavior[] = [];
+            const readingHistory = user.readingHistory || [];
+            const bookmarks = user.bookmarks || [];
+            const likes = user.likes || [];
+            const dislikedManga = (user.dislikedManga || []).map((f: any) => 
+                typeof f === 'string' ? f : f.mangaId
+            );
+
+            // Process reading history
+            const mangaIds = new Set<string>();
+            readingHistory.forEach((entry: any) => {
+                if (entry.mangaId) {
+                    mangaIds.add(entry.mangaId.toString());
+                }
+            });
+
+            // Get manga details for reading history
+            if (mangaIds.size > 0) {
+                const mangaCollection = db.collection('manga');
+                const mangaDocs = await mangaCollection
+                    .find({ _id: { $in: Array.from(mangaIds).map(id => new ObjectId(id)) } })
+                    .toArray();
+
+                readingHistory.forEach((entry: any) => {
+                    if (!entry.mangaId) return;
+                    
+                    const mangaId = entry.mangaId.toString();
+                    const manga = mangaDocs.find((m: any) => m._id.toString() === mangaId);
+                    if (!manga) return;
+
+                    // Calculate completion rate from reading history
+                    const totalChapters = manga.chapters || 0;
+                    const readChapters = entry.chapterNumber || 0;
+                    const completionRate = totalChapters > 0 ? readChapters / totalChapters : 0;
+
+                    // Estimate reading time (simplified: 5 minutes per chapter)
+                    const readingTime = readChapters * 300; // 5 minutes = 300 seconds
+
+                    behavior.push({
+                        userId,
+                        mangaId,
+                        rating: entry.rating || manga.rating || 0,
+                        readingTime,
+                        completionRate: Math.min(completionRate, 1),
+                        lastReadAt: entry.timestamp ? new Date(entry.timestamp) : new Date(),
+                        bookmarked: bookmarks.some((b: any) => {
+                            const bid = typeof b === 'string' ? b : b.mangaId || b;
+                            return bid.toString() === mangaId;
+                        }),
+                        liked: likes.some((l: any) => {
+                            const lid = typeof l === 'string' ? l : l.mangaId || l;
+                            return lid.toString() === mangaId;
+                        }),
+                        shared: false, // Can be tracked separately if needed
+                        commented: false // Can be tracked separately if needed
+                    });
+                });
+            }
+
+            // Cache the behavior
+            this.userBehaviorCache.set(userId, behavior);
+            return behavior;
         } catch (error) {
-            console.error('Failed to get user behavior:', error);
+            console.error('Failed to get user behavior from database:', error);
             return [];
         }
     }
 
-    // Get all manga features
+    // Get all manga features from database
     private async getAllMangaFeatures(): Promise<MangaFeatures[]> {
         try {
-            // Mock manga features for demonstration
-            return [
-                {
-                    mangaId: '1',
-                    genres: ['Fantasy', 'Adventure', 'Action'],
-                    tags: ['dragons', 'magic', 'epic'],
-                    status: 'ongoing',
-                    rating: 4.8,
-                    views: 15420,
-                    popularity: 8500,
-                    createdAt: new Date('2024-01-15'),
-                    targetAudience: 'teen'
-                },
-                {
-                    mangaId: '2',
-                    genres: ['Romance', 'Slice of Life', 'Drama'],
-                    tags: ['school', 'friendship', 'love'],
-                    status: 'ongoing',
-                    rating: 4.6,
-                    views: 8930,
-                    popularity: 6200,
-                    createdAt: new Date('2024-01-10'),
-                    targetAudience: 'teen'
-                },
-                {
-                    mangaId: '3',
-                    genres: ['Sci-Fi', 'Action', 'Cyberpunk'],
-                    tags: ['future', 'technology', 'ninja'],
-                    status: 'ongoing',
-                    rating: 4.7,
-                    views: 12750,
-                    popularity: 7800,
-                    createdAt: new Date('2024-01-08'),
-                    targetAudience: 'adult'
-                },
-                {
-                    mangaId: '4',
-                    genres: ['Fantasy', 'Magic', 'School'],
-                    tags: ['academy', 'magic', 'friendship'],
-                    status: 'ongoing',
-                    rating: 4.5,
-                    views: 9840,
-                    popularity: 5900,
-                    createdAt: new Date('2024-01-12'),
-                    targetAudience: 'teen'
-                },
-                {
-                    mangaId: '5',
-                    genres: ['Sci-Fi', 'Adventure', 'Space'],
-                    tags: ['pirates', 'space', 'treasure'],
-                    status: 'completed',
-                    rating: 4.4,
-                    views: 7650,
-                    popularity: 4500,
-                    createdAt: new Date('2023-12-01'),
-                    targetAudience: 'teen'
-                },
-                {
-                    mangaId: '6',
-                    genres: ['Cooking', 'Comedy', 'Slice of Life'],
-                    tags: ['food', 'competition', 'friendship'],
-                    status: 'ongoing',
-                    rating: 4.3,
-                    views: 6420,
-                    popularity: 3800,
-                    createdAt: new Date('2024-01-05'),
-                    targetAudience: 'all'
-                }
-            ];
+            const client = await clientPromise;
+            const db = client.db('mangawebsite');
+            const mangaCollection = db.collection('manga');
+            
+            // Get all manga with necessary fields
+            const allManga = await mangaCollection
+                .find({})
+                .project({
+                    _id: 1,
+                    title: 1,
+                    genres: 1,
+                    tags: 1,
+                    status: 1,
+                    rating: 1,
+                    views: 1,
+                    likes: 1,
+                    chapters: 1,
+                    createdAt: 1,
+                    author: 1
+                })
+                .limit(1000) // Limit for performance
+                .toArray();
+
+            // Transform to MangaFeatures format
+            const features: MangaFeatures[] = allManga.map((manga: any) => {
+                // Calculate popularity score (combination of views, likes, rating)
+                const popularity = (
+                    (manga.views || 0) * 0.4 +
+                    (manga.likes || 0) * 0.3 +
+                    (manga.rating || 0) * 1000 * 0.3
+                );
+
+                return {
+                    mangaId: manga._id.toString(),
+                    genres: manga.genres || [],
+                    tags: manga.tags || [],
+                    status: manga.status || 'ongoing',
+                    rating: manga.rating || 0,
+                    views: manga.views || 0,
+                    popularity,
+                    createdAt: manga.createdAt || new Date(),
+                    authorStyle: manga.author || '',
+                    artStyle: undefined, // Can be added later
+                    storyComplexity: undefined, // Can be calculated later
+                    targetAudience: undefined // Can be inferred from genres/tags
+                };
+            });
+
+            // Cache the features
+            this.mangaFeaturesCache.clear();
+            features.forEach(f => {
+                this.mangaFeaturesCache.set(f.mangaId, f);
+            });
+
+            return features;
         } catch (error) {
-            console.error('Failed to get manga features:', error);
+            console.error('Failed to get manga features from database:', error);
             return [];
         }
     }
