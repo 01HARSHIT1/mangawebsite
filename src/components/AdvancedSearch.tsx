@@ -81,6 +81,81 @@ export default function AdvancedSearch({ onSearch, initialFilters }: AdvancedSea
         setError(null);
 
         try {
+            // Check if semantic search is enabled
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            let useSemanticSearch = false;
+            
+            if (token && searchFilters.query && searchFilters.query.trim().length > 0) {
+                try {
+                    const prefsRes = await fetch('/api/user/ai-preferences', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (prefsRes.ok) {
+                        const prefsData = await prefsRes.json();
+                        useSemanticSearch = prefsData.preferences?.semanticSearch ?? false;
+                    }
+                } catch (e) {
+                    // If check fails, use regular search
+                }
+            }
+
+            // Use semantic search if enabled and query is natural language
+            if (useSemanticSearch && searchFilters.query && searchFilters.query.split(' ').length > 1) {
+                const semanticRes = await fetch('/api/search/semantic', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { Authorization: `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        query: searchFilters.query,
+                        limit: 50
+                    })
+                });
+
+                if (semanticRes.ok) {
+                    const semanticData = await semanticRes.json();
+                    let semanticResults = semanticData.results || [];
+
+                    // Apply additional filters (genres, status, rating, year)
+                    if (searchFilters.genres.length > 0) {
+                        semanticResults = semanticResults.filter((m: Manga) =>
+                            searchFilters.genres.some(g => m.genres?.includes(g))
+                        );
+                    }
+                    if (searchFilters.status.length > 0) {
+                        semanticResults = semanticResults.filter((m: Manga) =>
+                            searchFilters.status.includes(m.status)
+                        );
+                    }
+                    if (searchFilters.rating > 0) {
+                        semanticResults = semanticResults.filter((m: Manga) =>
+                            m.rating >= searchFilters.rating
+                        );
+                    }
+                    if (searchFilters.yearFrom > 1990 || searchFilters.yearTo < new Date().getFullYear()) {
+                        semanticResults = semanticResults.filter((m: Manga) =>
+                            (!m.year || (m.year >= searchFilters.yearFrom && m.year <= searchFilters.yearTo))
+                        );
+                    }
+
+                    // Apply sorting
+                    semanticResults.sort((a: Manga, b: Manga) => {
+                        const aScore = (a as any).searchScore || 0;
+                        const bScore = (b as any).searchScore || 0;
+                        return searchFilters.sortOrder === 'desc' ? bScore - aScore : aScore - bScore;
+                    });
+
+                    setResults(semanticResults);
+                    if (onSearch) {
+                        onSearch(semanticResults, searchFilters);
+                    }
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Fallback to regular search
             const params = new URLSearchParams();
             
             if (searchFilters.query) params.append('q', searchFilters.query);

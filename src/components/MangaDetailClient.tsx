@@ -9,6 +9,7 @@ import LiveChat from './LiveChat';
 import LiveReactions from './LiveReactions';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import RazorpayPayment from './RazorpayPayment';
+import MangaFeedbackButtons from './MangaFeedbackButtons';
 
 export default function MangaDetailClient({ manga, chapters, ratings, favorites, author, lastUpdate, status, type, genres, tags }: any) {
     const [bookmarked, setBookmarked] = useState(false);
@@ -284,6 +285,9 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                             <span className="text-yellow-400 font-bold text-lg">★ {ratings}</span>
                             <span className="text-blue-400 font-bold text-lg">♥ {favorites.toLocaleString()}</span>
                         </div>
+
+                        {/* AI Feedback Buttons */}
+                        <MangaFeedbackButtons mangaId={manga._id} />
 
                         <div className="mt-6 text-sm text-white bg-gray-800 rounded-xl p-5 space-y-2">
                             <div><span className="font-semibold">Status:</span> <span className="text-green-400 font-medium">{status}</span></div>

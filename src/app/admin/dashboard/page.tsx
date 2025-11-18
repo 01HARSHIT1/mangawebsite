@@ -70,6 +70,7 @@ export default function AdminDashboard() {
         { id: 'notifications', label: 'Notifications', icon: FaBell, href: '/admin/notifications' },
         { id: 'settings', label: 'Settings', icon: FaCog, href: '/admin/settings' },
         { id: 'ai', label: 'AI Features', icon: FaRobot, href: '/admin/ai' },
+        { id: 'ai-metrics', label: 'AI Metrics', icon: FaChartLine, href: '/admin/ai-metrics' },
     ];
 
     if (loading) {

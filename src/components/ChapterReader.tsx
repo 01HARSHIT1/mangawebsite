@@ -1,8 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FaChevronLeft, FaChevronRight, FaHome, FaChevronDown, FaFacebook, FaTwitter, FaInstagram, FaDiscord, FaWhatsapp, FaShareAlt } from 'react-icons/fa';
 import { socialMediaLinks, websiteInfo } from '@/config/socialMedia';
+import VoiceAssistant from './VoiceAssistant';
+import EyeTracking from './EyeTracking';
+import LightDetection from './LightDetection';
+import { useAIFeatures } from '@/hooks/useAIFeatures';
 
 interface ChapterReaderProps {
     manga: any;
@@ -91,6 +96,59 @@ export default function ChapterReader({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Handle voice commands
+    const handleVoiceCommand = (command: string, params?: any) => {
+        switch (command) {
+            case 'next':
+                if (nextChapter) {
+                    router.push(`/manga/${mangaId}/chapter/${nextChapter._id}`);
+                }
+                break;
+            case 'previous':
+                if (prevChapter) {
+                    router.push(`/manga/${mangaId}/chapter/${prevChapter._id}`);
+                }
+                break;
+            case 'goToChapter':
+                if (params?.chapterNumber) {
+                    const targetChapter = allChapters.find(ch => ch.chapterNumber === params.chapterNumber);
+                    if (targetChapter) {
+                        router.push(`/manga/${mangaId}/chapter/${targetChapter._id}`);
+                    }
+                }
+                break;
+            case 'bookmark':
+                // Trigger bookmark action
+                const bookmarkBtn = document.querySelector('[data-bookmark-btn]');
+                if (bookmarkBtn) {
+                    (bookmarkBtn as HTMLElement).click();
+                }
+                break;
+            case 'toggleTheme':
+                // Toggle dark mode
+                document.documentElement.classList.toggle('dark');
+                break;
+            case 'scroll':
+                if (params?.direction === 'down') {
+                    window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+                } else {
+                    window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+                }
+                break;
+            case 'zoom':
+                // Zoom functionality would go here
+                break;
+            case 'share':
+                handleShare();
+                break;
+            case 'close':
+                router.push(`/manga/${mangaId}`);
+                break;
+            default:
+                console.log('Unknown voice command:', command);
+        }
+    };
 
     // Check if user is logged in
     useEffect(() => {
@@ -513,6 +571,36 @@ export default function ChapterReader({
                     </div>
                 </div>
             </div>
+
+            {/* Voice Assistant */}
+            {voiceAssistantEnabled && (
+                <VoiceAssistant
+                    onCommand={handleVoiceCommand}
+                    enabled={voiceAssistantEnabled}
+                    showUI={true}
+                />
+            )}
+
+            {/* Eye Tracking */}
+            {eyeTrackingEnabled && (
+                <EyeTracking
+                    onGazeDetected={(direction) => {
+                        if (direction === 'down' && isFeatureEnabled('autoScroll')) {
+                            window.scrollBy({ top: window.innerHeight * 0.5, behavior: 'smooth' });
+                        }
+                    }}
+                    enabled={eyeTrackingEnabled}
+                    showUI={true}
+                />
+            )}
+
+            {/* Light Detection */}
+            {autoBrightnessEnabled && (
+                <LightDetection
+                    enabled={autoBrightnessEnabled}
+                    showUI={true}
+                />
+            )}
         </div>
     );
 }

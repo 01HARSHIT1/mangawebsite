@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { FaUser, FaBell, FaLock, FaEye, FaPalette, FaSave, FaSpinner } from 'react-icons/fa';
+import { FaUser, FaBell, FaLock, FaEye, FaPalette, FaSave, FaSpinner, FaRobot } from 'react-icons/fa';
+import { AI_FEATURES, DEFAULT_AI_PREFERENCES, type UserAIPreferences } from '@/lib/ai-features-config';
 
 export default function SettingsPage() {
     const { user, isAuthenticated } = useAuth();
@@ -29,6 +30,9 @@ export default function SettingsPage() {
         autoplay: false,
     });
 
+    const [aiPreferences, setAiPreferences] = useState<Partial<UserAIPreferences>>(DEFAULT_AI_PREFERENCES);
+    const [loadingAIPrefs, setLoadingAIPrefs] = useState(false);
+
     useEffect(() => {
         if (!isAuthenticated) {
             router.push('/login');
@@ -45,7 +49,66 @@ export default function SettingsPage() {
                 confirmPassword: '',
             });
         }
+
+        // Load AI preferences
+        loadAIPreferences();
     }, [isAuthenticated, user, router]);
+
+    const loadAIPreferences = async () => {
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch('/api/user/ai-preferences', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.preferences) {
+                    setAiPreferences(data.preferences);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load AI preferences:', error);
+        }
+    };
+
+    const handleAIPreferenceChange = (key: keyof UserAIPreferences) => {
+        setAiPreferences(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const handleSaveAIPreferences = async () => {
+        setLoadingAIPrefs(true);
+        setSaveMessage('');
+
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch('/api/user/ai-preferences', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ preferences: aiPreferences }),
+            });
+
+            if (response.ok) {
+                setSaveMessage('✅ AI preferences saved successfully!');
+                setTimeout(() => setSaveMessage(''), 3000);
+            } else {
+                const data = await response.json();
+                setSaveMessage(`❌ ${data.error || 'Failed to save AI preferences'}`);
+            }
+        } catch (error) {
+            setSaveMessage('❌ Error saving AI preferences');
+        } finally {
+            setLoadingAIPrefs(false);
+        }
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -218,6 +281,17 @@ export default function SettingsPage() {
                     >
                         <FaPalette />
                         <span>Preferences</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('ai-features')}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                            activeTab === 'ai-features'
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-slate-700/50'
+                        }`}
+                    >
+                        <FaRobot />
+                        <span>AI Features</span>
                     </button>
                 </div>
 
@@ -458,6 +532,168 @@ export default function SettingsPage() {
                             >
                                 {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                 <span>Save Preferences</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* AI Features Tab */}
+                    {activeTab === 'ai-features' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-2">AI-Powered Features</h2>
+                                <p className="text-gray-400">Enable or disable advanced AI features to enhance your reading experience</p>
+                            </div>
+
+                            {/* Discovery Features */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">Discovery & Recommendations</h3>
+                                
+                                {AI_FEATURES.filter(f => f.category === 'discovery').map(feature => {
+                                    const key = feature.id === 'smart-recommendations' ? 'smartRecommendations' :
+                                                feature.id === 'semantic-search' ? 'semanticSearch' :
+                                                feature.id === 'personalized-filtering' ? 'personalizedFiltering' :
+                                                feature.id === 'mood-discovery' ? 'moodBasedDiscovery' : null;
+                                    
+                                    if (!key) return null;
+                                    
+                                    return (
+                                        <div key={feature.id} className="flex items-start justify-between p-4 bg-slate-700/30 rounded-lg">
+                                            <div className="flex-1">
+                                                <h4 className="text-white font-medium mb-1">{feature.name}</h4>
+                                                <p className="text-sm text-gray-400">{feature.description}</p>
+                                                {feature.requiresPermission && (
+                                                    <p className="text-xs text-yellow-400 mt-1">⚠️ Requires permission</p>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => key && handleAIPreferenceChange(key as keyof UserAIPreferences)}
+                                                className={`ml-4 relative w-12 h-6 rounded-full transition-colors ${
+                                                    aiPreferences[key as keyof UserAIPreferences] ? 'bg-indigo-600' : 'bg-slate-600'
+                                                }`}
+                                            >
+                                                <div
+                                                    className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
+                                                        aiPreferences[key as keyof UserAIPreferences] ? 'translate-x-6' : 'translate-x-0.5'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Reading Features */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">Reading Enhancements</h3>
+                                
+                                {AI_FEATURES.filter(f => f.category === 'reading').map(feature => {
+                                    const key = feature.id === 'eye-tracking' ? 'eyeTracking' :
+                                                feature.id === 'auto-brightness' ? 'autoBrightness' :
+                                                feature.id === 'chapter-summaries' ? 'chapterSummaries' :
+                                                feature.id === 'previously-on' ? 'previouslyOnRecap' : null;
+                                    
+                                    if (!key) return null;
+                                    
+                                    return (
+                                        <div key={feature.id} className="flex items-start justify-between p-4 bg-slate-700/30 rounded-lg">
+                                            <div className="flex-1">
+                                                <h4 className="text-white font-medium mb-1">{feature.name}</h4>
+                                                <p className="text-sm text-gray-400">{feature.description}</p>
+                                                {feature.requiresPermission && (
+                                                    <p className="text-xs text-yellow-400 mt-1">⚠️ Requires permission</p>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => key && handleAIPreferenceChange(key as keyof UserAIPreferences)}
+                                                className={`ml-4 relative w-12 h-6 rounded-full transition-colors ${
+                                                    aiPreferences[key as keyof UserAIPreferences] ? 'bg-indigo-600' : 'bg-slate-600'
+                                                }`}
+                                            >
+                                                <div
+                                                    className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
+                                                        aiPreferences[key as keyof UserAIPreferences] ? 'translate-x-6' : 'translate-x-0.5'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Accessibility Features */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">Accessibility</h3>
+                                
+                                {AI_FEATURES.filter(f => f.category === 'accessibility').map(feature => {
+                                    const key = feature.id === 'voice-assistant' ? 'voiceAssistant' : null;
+                                    
+                                    if (!key) return null;
+                                    
+                                    return (
+                                        <div key={feature.id} className="flex items-start justify-between p-4 bg-slate-700/30 rounded-lg">
+                                            <div className="flex-1">
+                                                <h4 className="text-white font-medium mb-1">{feature.name}</h4>
+                                                <p className="text-sm text-gray-400">{feature.description}</p>
+                                                {feature.requiresPermission && (
+                                                    <p className="text-xs text-yellow-400 mt-1">⚠️ Requires permission</p>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => key && handleAIPreferenceChange(key as keyof UserAIPreferences)}
+                                                className={`ml-4 relative w-12 h-6 rounded-full transition-colors ${
+                                                    aiPreferences[key as keyof UserAIPreferences] ? 'bg-indigo-600' : 'bg-slate-600'
+                                                }`}
+                                            >
+                                                <div
+                                                    className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
+                                                        aiPreferences[key as keyof UserAIPreferences] ? 'translate-x-6' : 'translate-x-0.5'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Analytics Features */}
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">Analytics & Stats</h3>
+                                
+                                {AI_FEATURES.filter(f => f.category === 'analytics').map(feature => {
+                                    const key = feature.id === 'reading-stats' ? 'readingStats' : null;
+                                    
+                                    if (!key) return null;
+                                    
+                                    return (
+                                        <div key={feature.id} className="flex items-start justify-between p-4 bg-slate-700/30 rounded-lg">
+                                            <div className="flex-1">
+                                                <h4 className="text-white font-medium mb-1">{feature.name}</h4>
+                                                <p className="text-sm text-gray-400">{feature.description}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => key && handleAIPreferenceChange(key as keyof UserAIPreferences)}
+                                                className={`ml-4 relative w-12 h-6 rounded-full transition-colors ${
+                                                    aiPreferences[key as keyof UserAIPreferences] ? 'bg-indigo-600' : 'bg-slate-600'
+                                                }`}
+                                            >
+                                                <div
+                                                    className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
+                                                        aiPreferences[key as keyof UserAIPreferences] ? 'translate-x-6' : 'translate-x-0.5'
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={handleSaveAIPreferences}
+                                disabled={loadingAIPrefs}
+                                className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {loadingAIPrefs ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                                <span>Save AI Preferences</span>
                             </button>
                         </div>
                     )}
