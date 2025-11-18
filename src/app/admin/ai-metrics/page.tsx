@@ -55,6 +55,8 @@ export default function AIMetricsPage() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mode, setMode] = useState<'real' | 'simulated'>('simulated'); // Default to simulated
+    const [modeNote, setModeNote] = useState<string>('');
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -68,7 +70,7 @@ export default function AIMetricsPage() {
         }
 
         loadMetrics();
-    }, [isAuthenticated, user, router]);
+    }, [isAuthenticated, user, router, mode]);
 
     const loadMetrics = async () => {
         try {
@@ -76,13 +78,14 @@ export default function AIMetricsPage() {
             setError(null);
             
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-            const response = await fetch('/api/ai/metrics', {
+            const response = await fetch(`/api/ai/metrics?mode=${mode}`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
 
             if (response.ok) {
                 const data = await response.json();
                 setMetrics(data.metrics);
+                setModeNote(data.note || '');
             } else {
                 const errorData = await response.json();
                 setError(errorData.error || 'Failed to load metrics');
@@ -132,22 +135,41 @@ export default function AIMetricsPage() {
     // Prepare chart data
     const precisionData = metrics.recommendations.precisionAtK.map(m => ({
         k: `P@${m.k}`,
-        value: (m.value * 100).toFixed(2)
+        value: parseFloat((m.value * 100).toFixed(2))
     }));
 
     const recallData = metrics.recommendations.recallAtK.map(m => ({
         k: `R@${m.k}`,
-        value: (m.value * 100).toFixed(2)
+        value: parseFloat((m.value * 100).toFixed(2))
     }));
+
+    const combinedPrecisionRecall = [
+        ...metrics.recommendations.precisionAtK.map(m => ({
+            k: `P@${m.k}`,
+            precision: parseFloat((m.value * 100).toFixed(2)),
+            recall: 0
+        })),
+        ...metrics.recommendations.recallAtK.map(m => ({
+            k: `R@${m.k}`,
+            precision: 0,
+            recall: parseFloat((m.value * 100).toFixed(2))
+        }))
+    ];
 
     const ndcgData = metrics.recommendations.ndcg.map(m => ({
         k: `NDCG@${m.k}`,
-        value: (m.value * 100).toFixed(2)
+        value: parseFloat((m.value * 100).toFixed(2))
     }));
 
     const hitRateData = metrics.recommendations.hitRate.map(m => ({
         k: `HR@${m.k}`,
-        value: (m.value * 100).toFixed(2)
+        value: parseFloat((m.value * 100).toFixed(2))
+    }));
+
+    const combinedNDCGHitRate = metrics.recommendations.ndcg.map((ndcg, index) => ({
+        k: `@${ndcg.k}`,
+        ndcg: parseFloat((ndcg.value * 100).toFixed(2)),
+        hitRate: parseFloat((metrics.recommendations.hitRate[index].value * 100).toFixed(2))
     }));
 
     const searchTopKData = metrics.semanticSearch.topKAccuracy.map(m => ({
@@ -178,15 +200,49 @@ export default function AIMetricsPage() {
                                 Last updated: {new Date(metrics.timestamp).toLocaleString()}
                             </p>
                         )}
+                        {modeNote && (
+                            <div className={`mt-2 p-2 rounded-lg text-sm ${
+                                mode === 'simulated' 
+                                    ? 'bg-yellow-500/20 border border-yellow-500/50 text-yellow-300'
+                                    : 'bg-blue-500/20 border border-blue-500/50 text-blue-300'
+                            }`}>
+                                {modeNote}
+                            </div>
+                        )}
                     </div>
-                    <button
-                        onClick={handleRefresh}
-                        disabled={refreshing}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                    >
-                        <FaSync className={refreshing ? 'animate-spin' : ''} />
-                        Refresh
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {/* Mode Toggle */}
+                        <div className="flex items-center gap-2 bg-slate-700/50 rounded-lg p-1">
+                            <button
+                                onClick={() => setMode('simulated')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    mode === 'simulated'
+                                        ? 'bg-yellow-600 text-white'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                Simulated
+                            </button>
+                            <button
+                                onClick={() => setMode('real')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    mode === 'real'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                Real Data
+                            </button>
+                        </div>
+                        <button
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            <FaSync className={refreshing ? 'animate-spin' : ''} />
+                            Refresh
+                        </button>
+                    </div>
                 </div>
 
                 {/* Overall Accuracy */}
@@ -244,26 +300,36 @@ export default function AIMetricsPage() {
                         <div>
                             <h3 className="text-lg font-semibold text-white mb-3">Precision@K & Recall@K</h3>
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={[...precisionData, ...recallData]}>
+                                <BarChart data={metrics.recommendations.precisionAtK.map((p, i) => ({
+                                    k: `K=${p.k}`,
+                                    Precision: parseFloat((p.value * 100).toFixed(2)),
+                                    Recall: parseFloat((metrics.recommendations.recallAtK[i].value * 100).toFixed(2))
+                                }))}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                     <XAxis dataKey="k" stroke="#9CA3AF" />
                                     <YAxis stroke="#9CA3AF" />
                                     <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
                                     <Legend />
-                                    <Bar dataKey="value" fill="#3B82F6" name="Precision %" />
+                                    <Bar dataKey="Precision" fill="#3B82F6" />
+                                    <Bar dataKey="Recall" fill="#10B981" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-white mb-3">NDCG@K & Hit Rate@K</h3>
                             <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={[...ndcgData, ...hitRateData]}>
+                                <LineChart data={metrics.recommendations.ndcg.map((n, i) => ({
+                                    k: `K=${n.k}`,
+                                    NDCG: parseFloat((n.value * 100).toFixed(2)),
+                                    'Hit Rate': parseFloat((metrics.recommendations.hitRate[i].value * 100).toFixed(2))
+                                }))}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                     <XAxis dataKey="k" stroke="#9CA3AF" />
                                     <YAxis stroke="#9CA3AF" />
                                     <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
                                     <Legend />
-                                    <Line type="monotone" dataKey="value" stroke="#8B5CF6" strokeWidth={2} name="NDCG %" />
+                                    <Line type="monotone" dataKey="NDCG" stroke="#8B5CF6" strokeWidth={2} />
+                                    <Line type="monotone" dataKey="Hit Rate" stroke="#F59E0B" strokeWidth={2} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -319,7 +385,10 @@ export default function AIMetricsPage() {
                         <div>
                             <h3 className="text-lg font-semibold text-white mb-3">Top-K Accuracy</h3>
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={searchTopKData}>
+                                <BarChart data={metrics.semanticSearch.topKAccuracy.map(m => ({
+                                    k: `Top-${m.k}`,
+                                    accuracy: parseFloat((m.accuracy * 100).toFixed(2))
+                                }))}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                                     <XAxis dataKey="k" stroke="#9CA3AF" />
                                     <YAxis stroke="#9CA3AF" />

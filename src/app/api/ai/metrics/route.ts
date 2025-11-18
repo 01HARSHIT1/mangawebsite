@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
+import { generateSimulatedMetrics } from '@/lib/ai-metrics-simulator';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -566,6 +567,9 @@ async function calculateFilteringMetrics(): Promise<FilteringMetrics> {
 // GET: Fetch AI metrics
 export async function GET(request: NextRequest) {
     try {
+        const { searchParams } = new URL(request.url);
+        const mode = searchParams.get('mode') || 'real'; // 'real' or 'simulated'
+        
         // Verify admin access (optional - can be made public for transparency)
         const auth = request.headers.get('authorization');
         let isAdmin = false;
@@ -585,7 +589,22 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Calculate all metrics
+        // If simulated mode, return simulated metrics
+        if (mode === 'simulated') {
+            const simulatedMetrics = generateSimulatedMetrics();
+            const metrics: AIMetrics = {
+                ...simulatedMetrics,
+                timestamp: new Date()
+            };
+            return NextResponse.json({ 
+                metrics, 
+                isAdmin,
+                mode: 'simulated',
+                note: 'These are simulated metrics based on expected performance with sample data'
+            });
+        }
+
+        // Calculate real metrics from database
         const [recommendations, semanticSearch, personalizedFiltering, featureAdoption] = await Promise.all([
             calculateRecommendationMetrics(),
             calculateSearchMetrics(),
@@ -609,7 +628,12 @@ export async function GET(request: NextRequest) {
             timestamp: new Date()
         };
 
-        return NextResponse.json({ metrics, isAdmin });
+        return NextResponse.json({ 
+            metrics, 
+            isAdmin,
+            mode: 'real',
+            note: 'These are real metrics calculated from actual user data'
+        });
     } catch (error) {
         console.error('Error calculating AI metrics:', error);
         return NextResponse.json(
