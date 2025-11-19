@@ -604,26 +604,45 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // Calculate real metrics from database
-        const [recommendations, semanticSearch, personalizedFiltering, featureAdoption] = await Promise.all([
+        // Calculate real metrics from database - ONLY for fully implemented features
+        const [recommendations, personalizedFiltering, featureAdoption] = await Promise.all([
             calculateRecommendationMetrics(),
-            calculateSearchMetrics(),
             calculateFilteringMetrics(),
             calculateFeatureAdoptionMetrics()
         ]);
 
-        // Calculate overall accuracy (weighted average)
+        // Calculate overall accuracy (weighted average) - only from fully implemented features
         const overallAccuracy = (
-            recommendations.averagePrecision * 0.4 +
-            semanticSearch.averagePrecision * 0.3 +
-            personalizedFiltering.filteringF1Score * 0.3
+            recommendations.averagePrecision * 0.6 +
+            personalizedFiltering.filteringF1Score * 0.4
         );
 
+        // Only include metrics for fully implemented features
         const metrics: AIMetrics = {
             recommendations,
-            semanticSearch,
+            semanticSearch: {
+                averagePrecision: 0,
+                meanReciprocalRank: 0,
+                normalizedDiscountedCumulativeGain: 0,
+                retrievalAccuracy: 0,
+                querySuccessRate: 0,
+                averageRelevanceScore: 0,
+                topKAccuracy: []
+            }, // Placeholder - not fully implemented
             personalizedFiltering,
-            featureAdoption,
+            featureAdoption: {
+                // Only show adoption for fully implemented features
+                smartRecommendations: featureAdoption.smartRecommendations,
+                semanticSearch: { enabled: 0, total: 0, adoptionRate: 0 }, // Not fully implemented
+                personalizedFiltering: featureAdoption.personalizedFiltering,
+                voiceAssistant: { enabled: 0, total: 0, adoptionRate: 0 }, // Basic only
+                eyeTracking: { enabled: 0, total: 0, adoptionRate: 0 }, // Placeholder
+                autoBrightness: { enabled: 0, total: 0, adoptionRate: 0 }, // Basic only
+                overallAdoptionRate: (
+                    featureAdoption.smartRecommendations.adoptionRate +
+                    featureAdoption.personalizedFiltering.adoptionRate
+                ) / 2 // Only count fully implemented features
+            },
             overallAccuracy,
             timestamp: new Date()
         };

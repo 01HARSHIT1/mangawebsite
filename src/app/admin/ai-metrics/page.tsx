@@ -353,7 +353,8 @@ export default function AIMetricsPage() {
                     </div>
                 </div>
 
-                {/* Semantic Search Metrics */}
+                {/* Semantic Search Metrics - HIDDEN (Not Fully Implemented) */}
+                {false && (
                 <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
                     <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                         <FaSearch className="text-green-400" />
@@ -422,16 +423,17 @@ export default function AIMetricsPage() {
                     </div>
                 </div>
 
-                {/* Feature Adoption Metrics */}
+                {/* Feature Adoption Metrics - Only Fully Implemented Features */}
                 <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
                     <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                         <FaBrain className="text-yellow-400" />
                         AI Features Adoption & Usage
+                        <span className="text-sm text-gray-400 font-normal ml-2">(Fully Implemented Features Only)</span>
                     </h2>
                     
                     <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-gray-400">Overall Adoption Rate</span>
+                            <span className="text-gray-400">Overall Adoption Rate (Fully Implemented Features)</span>
                             <span className="text-2xl font-bold text-yellow-400">
                                 {metrics.featureAdoption.overallAdoptionRate.toFixed(2)}%
                             </span>
@@ -444,7 +446,8 @@ export default function AIMetricsPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Only show fully implemented features */}
                         <AdoptionCard
                             title="Smart Recommendations"
                             enabled={metrics.featureAdoption.smartRecommendations.enabled}
@@ -453,40 +456,15 @@ export default function AIMetricsPage() {
                             color="blue"
                         />
                         <AdoptionCard
-                            title="Semantic Search"
-                            enabled={metrics.featureAdoption.semanticSearch.enabled}
-                            total={metrics.featureAdoption.semanticSearch.total}
-                            adoptionRate={metrics.featureAdoption.semanticSearch.adoptionRate}
-                            color="green"
-                        />
-                        <AdoptionCard
                             title="Personalized Filtering"
                             enabled={metrics.featureAdoption.personalizedFiltering.enabled}
                             total={metrics.featureAdoption.personalizedFiltering.total}
                             adoptionRate={metrics.featureAdoption.personalizedFiltering.adoptionRate}
                             color="purple"
                         />
-                        <AdoptionCard
-                            title="Voice Assistant"
-                            enabled={metrics.featureAdoption.voiceAssistant.enabled}
-                            total={metrics.featureAdoption.voiceAssistant.total}
-                            adoptionRate={metrics.featureAdoption.voiceAssistant.adoptionRate}
-                            color="red"
-                        />
-                        <AdoptionCard
-                            title="Eye Tracking"
-                            enabled={metrics.featureAdoption.eyeTracking.enabled}
-                            total={metrics.featureAdoption.eyeTracking.total}
-                            adoptionRate={metrics.featureAdoption.eyeTracking.adoptionRate}
-                            color="orange"
-                        />
-                        <AdoptionCard
-                            title="Auto Brightness"
-                            enabled={metrics.featureAdoption.autoBrightness.enabled}
-                            total={metrics.featureAdoption.autoBrightness.total}
-                            adoptionRate={metrics.featureAdoption.autoBrightness.adoptionRate}
-                            color="yellow"
-                        />
+                    </div>
+                    <div className="mt-4 p-3 bg-slate-700/50 rounded-lg text-sm text-gray-400">
+                        <strong>Note:</strong> Only fully implemented features are shown. Other features (Semantic Search, Voice Assistant, Eye Tracking, Auto Brightness) are in development or use basic implementations.
                     </div>
                 </div>
 
