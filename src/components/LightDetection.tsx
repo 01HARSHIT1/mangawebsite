@@ -95,10 +95,56 @@ export default function LightDetection({ enabled = false, showUI = true }: Light
         adjustBrightness(isNight ? 10 : 500);
     };
 
+    // User preference learning
+    const [userPreferences, setUserPreferences] = useState<{
+        minBrightness: number;
+        maxBrightness: number;
+        preferredBrightness: { [lux: number]: number };
+    }>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('lightDetectionPrefs');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    // Invalid data, use defaults
+                }
+            }
+        }
+        return {
+            minBrightness: 20,
+            maxBrightness: 100,
+            preferredBrightness: {}
+        };
+    });
+
+    // Save preferences to localStorage
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('lightDetectionPrefs', JSON.stringify(userPreferences));
+        }
+    }, [userPreferences]);
+
     const adjustBrightness = (illuminance: number) => {
-        // Adjust screen brightness based on ambient light
-        // Low light (< 50 lux) = darker theme
+        // Enhanced brightness adjustment with learning
+        // Low light (< 50 lux) = darker theme, lower brightness
         // High light (> 200 lux) = lighter theme
+        
+        // Check if we have learned preference for this light level
+        const luxKey = Math.round(illuminance / 10) * 10; // Round to nearest 10
+        let brightness = userPreferences.preferredBrightness[luxKey];
+        
+        // If no learned preference, calculate based on light level
+        if (brightness === undefined) {
+            // Map illuminance (0-1000 lux) to brightness (20-100%)
+            brightness = Math.max(
+                userPreferences.minBrightness,
+                Math.min(
+                    userPreferences.maxBrightness,
+                    20 + (illuminance / 1000) * 80
+                )
+            );
+        }
         
         const shouldBeDark = illuminance < 50;
         
@@ -108,28 +154,30 @@ export default function LightDetection({ enabled = false, showUI = true }: Light
             // Apply dark mode class
             if (shouldBeDark) {
                 document.documentElement.classList.add('dark');
-                // Also adjust CSS filter for brightness
-                document.documentElement.style.filter = 'brightness(0.9)';
             } else {
                 document.documentElement.classList.remove('dark');
-                document.documentElement.style.filter = 'brightness(1.0)';
             }
         }
 
-        // Adjust brightness filter based on light level
-        if (illuminance < 20) {
-            // Very dark - reduce brightness more
-            document.documentElement.style.filter = 'brightness(0.8)';
-        } else if (illuminance < 50) {
-            // Dark - slightly reduce brightness
-            document.documentElement.style.filter = 'brightness(0.9)';
-        } else if (illuminance > 500) {
-            // Very bright - increase brightness slightly
-            document.documentElement.style.filter = 'brightness(1.1)';
-        } else {
-            // Normal - reset brightness
-            document.documentElement.style.filter = 'brightness(1.0)';
-        }
+        // Apply brightness filter with smooth transition
+        const brightnessValue = brightness / 100;
+        document.documentElement.style.transition = 'filter 0.3s ease-in-out';
+        document.documentElement.style.filter = `brightness(${brightnessValue})`;
+        
+        // Learn from user adjustments (if user manually changes brightness, we'll learn it)
+        // This can be triggered by user interaction
+    };
+
+    // Function to learn user preference (can be called when user manually adjusts)
+    const learnPreference = (lux: number, brightness: number) => {
+        const luxKey = Math.round(lux / 10) * 10;
+        setUserPreferences(prev => ({
+            ...prev,
+            preferredBrightness: {
+                ...prev.preferredBrightness,
+                [luxKey]: brightness
+            }
+        }));
     };
 
     const stopDetection = () => {

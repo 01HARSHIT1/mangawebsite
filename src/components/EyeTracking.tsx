@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAIFeatures } from '@/hooks/useAIFeatures';
+import { EyeTrackingEngine } from '@/lib/eye-tracking';
 
 interface EyeTrackingProps {
     onGazeDetected?: (direction: 'up' | 'down' | 'left' | 'right' | 'center') => void;
@@ -23,7 +24,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
-    const animationFrameRef = useRef<number | null>(null);
+    const eyeTrackingEngineRef = useRef<EyeTrackingEngine | null>(null);
     const lastScrollTime = useRef<number>(0);
     const scrollCooldown = 1000; // 1 second between scrolls
 
@@ -52,6 +53,12 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
     const startTracking = async () => {
         try {
+            if (!videoRef.current) {
+                setError('Video element not available');
+                return;
+            }
+
+            // Request camera access
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: 'user',
@@ -64,28 +71,53 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                videoRef.current.play();
+                await videoRef.current.play();
             }
 
-            // Start gaze detection loop
-            detectGaze();
+            // Initialize MediaPipe Eye Tracking Engine
+            const engine = new EyeTrackingEngine();
+            eyeTrackingEngineRef.current = engine;
+
+            await engine.initialize(videoRef.current, (gaze) => {
+                // Handle gaze detection
+                setGazeDirection(gaze.direction);
+                onGazeDetected?.(gaze.direction);
+
+                // Auto-scroll if enabled and confidence is high
+                if (autoScrollEnabled && gaze.confidence > 0.5) {
+                    const now = Date.now();
+                    if (now - lastScrollTime.current > scrollCooldown) {
+                        if (gaze.direction === 'down') {
+                            window.scrollBy({ top: window.innerHeight * 0.3, behavior: 'smooth' });
+                            lastScrollTime.current = now;
+                        } else if (gaze.direction === 'up') {
+                            window.scrollBy({ top: -window.innerHeight * 0.3, behavior: 'smooth' });
+                            lastScrollTime.current = now;
+                        }
+                    }
+                }
+            });
+
+            setError(null);
         } catch (err: any) {
-            console.error('Failed to access camera:', err);
+            console.error('Failed to start eye tracking:', err);
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 setError('Camera permission denied. Please enable camera access.');
             } else {
-                setError('Failed to access camera. Please check your camera settings.');
+                setError(`Failed to start eye tracking: ${err.message}`);
             }
             setIsActive(false);
         }
     };
 
     const stopTracking = () => {
-        if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-            animationFrameRef.current = null;
+        // Stop eye tracking engine
+        if (eyeTrackingEngineRef.current) {
+            eyeTrackingEngineRef.current.stop();
+            eyeTrackingEngineRef.current = null;
         }
 
+        // Stop camera stream
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop());
             streamRef.current = null;
@@ -94,78 +126,11 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
+
+        setGazeDirection(null);
     };
 
-    const detectGaze = () => {
-        if (!videoRef.current || !canvasRef.current) return;
-
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) return;
-
-        // Set canvas size to match video
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-
-        // Simplified gaze detection using face detection
-        // In a real implementation, you would use a proper face/eye detection library
-        // like MediaPipe, TensorFlow.js, or a dedicated eye tracking library
-        
-        const detect = () => {
-            if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
-                animationFrameRef.current = requestAnimationFrame(detect);
-                return;
-            }
-
-            // Draw video frame to canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // Simplified detection: Check if face is in center, upper, or lower portion
-            // This is a placeholder - real implementation would use ML models
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            
-            // For now, we'll use a simple heuristic based on video analysis
-            // In production, integrate with MediaPipe Face Mesh or similar
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            // Sample center region for brightness/color analysis
-            const sampleSize = 50;
-            const sampleX = Math.floor(centerX - sampleSize / 2);
-            const sampleY = Math.floor(centerY - sampleSize / 2);
-            
-            // This is a simplified approach - real eye tracking would analyze eye position
-            // For demonstration, we'll simulate based on scroll position and time
-            const now = Date.now();
-            if (now - lastScrollTime.current > scrollCooldown) {
-                // Simulate gaze detection based on scroll position
-                const scrollY = window.scrollY;
-                const windowHeight = window.innerHeight;
-                const documentHeight = document.documentElement.scrollHeight;
-                const scrollPercentage = scrollY / (documentHeight - windowHeight);
-
-                // If user is near bottom, detect "down" gaze
-                if (scrollPercentage > 0.8 && autoScrollEnabled) {
-                    setGazeDirection('down');
-                    onGazeDetected?.('down');
-                    window.scrollBy({ top: windowHeight * 0.3, behavior: 'smooth' });
-                    lastScrollTime.current = now;
-                } else if (scrollPercentage < 0.2) {
-                    setGazeDirection('up');
-                    onGazeDetected?.('up');
-                } else {
-                    setGazeDirection('center');
-                    onGazeDetected?.('center');
-                }
-            }
-
-            animationFrameRef.current = requestAnimationFrame(detect);
-        };
-
-        detect();
-    };
+    // Gaze detection is now handled by EyeTrackingEngine
 
     const toggleTracking = () => {
         if (!isSupported) {

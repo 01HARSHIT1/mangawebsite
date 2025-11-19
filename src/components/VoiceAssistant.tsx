@@ -27,28 +27,29 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     const recognitionRef = useRef<any>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
 
-    // Voice command patterns
+    // Enhanced voice command patterns with better recognition
     const commands: VoiceCommand[] = [
+        // Navigation commands
         {
-            pattern: /next\s+(page|chapter)/i,
+            pattern: /(next|forward|advance|skip)\s+(page|chapter|episode)?/i,
             action: 'next'
         },
         {
-            pattern: /previous\s+(page|chapter)|back|go\s+back/i,
+            pattern: /(previous|back|go\s+back|return|rewind)\s+(page|chapter|episode)?/i,
             action: 'previous'
         },
         {
-            pattern: /bookmark\s+(this|current|page|chapter)?/i,
-            action: 'bookmark'
+            pattern: /(first|beginning|start)\s+(page|chapter)?/i,
+            action: 'first'
         },
         {
-            pattern: /remove\s+bookmark|unbookmark/i,
-            action: 'removeBookmark'
+            pattern: /(last|end|final)\s+(page|chapter)?/i,
+            action: 'last'
         },
         {
-            pattern: /go\s+to\s+chapter\s+(\d+)/i,
+            pattern: /go\s+to\s+(chapter|episode|page)\s+(\d+)/i,
             action: 'goToChapter',
-            params: (matches) => ({ chapterNumber: parseInt(matches[1]) })
+            params: (matches) => ({ chapterNumber: parseInt(matches[2]) })
         },
         {
             pattern: /go\s+to\s+page\s+(\d+)/i,
@@ -88,6 +89,39 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         {
             pattern: /(help|what\s+can\s+you\s+do|commands)/i,
             action: 'help'
+        },
+        // Bookmark commands
+        {
+            pattern: /(bookmark|save|mark)\s+(this|current|page|chapter)?/i,
+            action: 'bookmark'
+        },
+        {
+            pattern: /(remove|delete|unbookmark)\s+bookmark/i,
+            action: 'removeBookmark'
+        },
+        // Search commands
+        {
+            pattern: /(search|find)\s+(for\s+)?(.+)/i,
+            action: 'search',
+            params: (matches) => ({ query: matches[3] })
+        },
+        // Reading mode commands
+        {
+            pattern: /(fullscreen|full\s+screen|enter\s+fullscreen)/i,
+            action: 'fullscreen'
+        },
+        {
+            pattern: /(exit\s+fullscreen|leave\s+fullscreen)/i,
+            action: 'exitFullscreen'
+        },
+        // Speed control
+        {
+            pattern: /(faster|speed\s+up|increase\s+speed)/i,
+            action: 'increaseSpeed'
+        },
+        {
+            pattern: /(slower|slow\s+down|decrease\s+speed)/i,
+            action: 'decreaseSpeed'
         }
     ];
 

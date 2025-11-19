@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import jwt from 'jsonwebtoken';
-import { getSemanticSearchEngine } from '@/lib/semantic-search';
+import { getDeepSemanticSearchEngine } from '@/lib/semantic-search-v2';
 import { DEFAULT_AI_PREFERENCES } from '@/lib/ai-features-config';
 
 export const dynamic = 'force-dynamic';
@@ -77,14 +77,17 @@ export async function POST(request: NextRequest) {
                             }
                         }
 
-                        // Get disliked genres from disliked manga
-                        const dislikedManga = (user.dislikedManga || []).map((f: any) => 
+                        // Get disliked manga IDs and genres
+                        const dislikedMangaIds = (user.dislikedManga || []).map((f: any) => 
                             typeof f === 'string' ? f : f.mangaId
-                        ).slice(0, 5);
+                        ).filter(Boolean);
                         
-                        if (dislikedManga.length > 0) {
+                        userPreferences.dislikedMangaIds = dislikedMangaIds;
+                        userPreferences.excludeDislikedManga = aiPrefs.excludeDislikedManga || false;
+                        
+                        if (dislikedMangaIds.length > 0) {
                             const dislikedMangaDocs = await db.collection('manga')
-                                .find({ _id: { $in: dislikedManga.map((id: string) => new ObjectId(id)) } })
+                                .find({ _id: { $in: dislikedMangaIds.slice(0, 10).map((id: string) => new ObjectId(id)) } })
                                 .project({ genres: 1 })
                                 .toArray();
                             
@@ -137,12 +140,18 @@ export async function POST(request: NextRequest) {
             rating: m.rating || 0
         }));
 
-        // Perform semantic search
-        const searchEngine = getSemanticSearchEngine();
+        // Perform deep learning semantic search
+        const searchEngine = getDeepSemanticSearchEngine();
         const results = await searchEngine.searchWithPreferences(
             query,
             mangaDocuments,
-            userPreferences,
+            {
+                preferredGenres: userPreferences.preferredGenres,
+                dislikedGenres: userPreferences.dislikedGenres,
+                minRating: userPreferences.minRating,
+                excludeDislikedManga: userPreferences.excludeDislikedManga || false,
+                dislikedMangaIds: userPreferences.dislikedMangaIds || []
+            },
             limit
         );
 
