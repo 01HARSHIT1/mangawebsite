@@ -30,6 +30,12 @@ const nextConfig = {
   },
   // Minimal config to prevent stack overflow
   swcMinify: true,
+  // Exclude packages with native binaries from server-side bundling
+  serverComponentsExternalPackages: [
+    '@xenova/transformers',
+    'sharp',
+    'onnxruntime-node',
+  ],
   webpack: (config, { isServer }) => {
     // Exclude native binaries from client-side bundle
     // These are only used in API routes (server-side)
@@ -48,12 +54,14 @@ const nextConfig = {
       use: 'ignore-loader',
     });
 
-    // Exclude sharp and onnxruntime-node native binaries
-    config.externals = config.externals || [];
-    config.externals.push({
-      'sharp': 'commonjs sharp',
-      'onnxruntime-node': 'commonjs onnxruntime-node',
-    });
+    // Exclude problematic native modules from bundling
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'sharp': 'commonjs sharp',
+        'onnxruntime-node': 'commonjs onnxruntime-node',
+      });
+    }
 
     // Ignore specific problematic modules
     config.resolve.alias = {
