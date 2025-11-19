@@ -354,74 +354,7 @@ export default function AIMetricsPage() {
                 </div>
 
                 {/* Semantic Search Metrics - HIDDEN (Not Fully Implemented) */}
-                {false && (
-                <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
-                    <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                        <FaSearch className="text-green-400" />
-                        Semantic Search Metrics
-                    </h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <MetricCard
-                            title="Average Precision"
-                            value={(metrics.semanticSearch.averagePrecision * 100).toFixed(2)}
-                            unit="%"
-                            color="green"
-                        />
-                        <MetricCard
-                            title="MRR"
-                            value={metrics.semanticSearch.meanReciprocalRank.toFixed(4)}
-                            color="blue"
-                        />
-                        <MetricCard
-                            title="Retrieval Accuracy"
-                            value={(metrics.semanticSearch.retrievalAccuracy * 100).toFixed(2)}
-                            unit="%"
-                            color="purple"
-                        />
-                        <MetricCard
-                            title="Query Success Rate"
-                            value={(metrics.semanticSearch.querySuccessRate * 100).toFixed(2)}
-                            unit="%"
-                            color="orange"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                            <h3 className="text-lg font-semibold text-white mb-3">Top-K Accuracy</h3>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={metrics.semanticSearch.topKAccuracy.map(m => ({
-                                    k: `Top-${m.k}`,
-                                    accuracy: parseFloat((m.accuracy * 100).toFixed(2))
-                                }))}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                    <XAxis dataKey="k" stroke="#9CA3AF" />
-                                    <YAxis stroke="#9CA3AF" />
-                                    <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }} />
-                                    <Bar dataKey="accuracy" fill="#10B981" name="Accuracy %" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="bg-slate-700/50 rounded-lg p-4">
-                            <h3 className="text-lg font-semibold text-white mb-3">Additional Metrics</h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <div className="text-sm text-gray-400 mb-1">NDCG</div>
-                                    <div className="text-xl font-bold text-white">
-                                        {metrics.semanticSearch.normalizedDiscountedCumulativeGain.toFixed(4)}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-sm text-gray-400 mb-1">Average Relevance Score</div>
-                                    <div className="text-xl font-bold text-white">
-                                        {(metrics.semanticSearch.averageRelevanceScore * 100).toFixed(2)}%
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {/* Hidden until semantic search is fully implemented with deep learning */}
 
                 {/* Feature Adoption Metrics - Only Fully Implemented Features */}
                 <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
