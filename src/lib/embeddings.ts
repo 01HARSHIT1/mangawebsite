@@ -1,17 +1,32 @@
 // Deep Learning Embeddings Service for Semantic Search
 // Uses Sentence Transformers for generating text embeddings
+// NOTE: This is server-side only (API routes), not for client-side use
 
-import { pipeline, Pipeline } from '@xenova/transformers';
+// Dynamic import to avoid bundling issues in Next.js
+let pipeline: any = null;
+let Pipeline: any = null;
 
-let embeddingPipeline: Pipeline | null = null;
+async function loadTransformers() {
+    if (!pipeline || !Pipeline) {
+        const transformers = await import('@xenova/transformers');
+        pipeline = transformers.pipeline;
+        Pipeline = transformers.Pipeline;
+    }
+    return { pipeline, Pipeline };
+}
+
+let embeddingPipeline: any = null;
 
 // Initialize the embedding model (lazy loading)
-async function getEmbeddingPipeline(): Promise<Pipeline> {
+async function getEmbeddingPipeline(): Promise<any> {
     if (!embeddingPipeline) {
         try {
+            // Load transformers dynamically (server-side only)
+            const { pipeline: pipelineFn } = await loadTransformers();
+            
             // Use a lightweight multilingual model for better performance
             // 'Xenova/all-MiniLM-L6-v2' is a good balance of speed and accuracy
-            embeddingPipeline = await pipeline(
+            embeddingPipeline = await pipelineFn(
                 'feature-extraction',
                 'Xenova/all-MiniLM-L6-v2',
                 {

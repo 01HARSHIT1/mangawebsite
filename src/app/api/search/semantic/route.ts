@@ -7,6 +7,7 @@ import { DEFAULT_AI_PREFERENCES } from '@/lib/ai-features-config';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+// This API route is server-side only, using native Node.js modules
 
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
