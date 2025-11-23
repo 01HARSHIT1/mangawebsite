@@ -64,6 +64,7 @@ RUN chown -R nextjs:nodejs public/manga-images public/manga-covers
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
 
@@ -76,4 +77,5 @@ ENV HOSTNAME="0.0.0.0"
 ENV MONGODB_URI=mongodb://admin:password123@mongo:27017/mangawebsite?authSource=admin
 ENV JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
+# Use standalone server.js if available, otherwise fall back to npm start
 CMD ["node", "server.js"]

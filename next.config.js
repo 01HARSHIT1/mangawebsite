@@ -30,6 +30,8 @@ const nextConfig = {
   },
   // Minimal config to prevent stack overflow
   swcMinify: true,
+  // Enable standalone output for Docker optimization
+  output: 'standalone',
   // Exclude packages with native binaries from server-side bundling
   serverComponentsExternalPackages: [
     '@xenova/transformers',

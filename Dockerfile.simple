@@ -2,6 +2,7 @@
 FROM node:18-alpine
 
 # Install system dependencies for canvas and other native modules
+# Also install wget for health checks
 RUN apk add --no-cache \
     libc6-compat \
     python3 \
@@ -14,7 +15,8 @@ RUN apk add --no-cache \
     pixman-dev \
     pangomm-dev \
     libjpeg-turbo-dev \
-    freetype-dev
+    freetype-dev \
+    wget
 
 # Set working directory
 WORKDIR /app
