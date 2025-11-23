@@ -8,6 +8,12 @@ export interface GazeDirection {
     direction: 'up' | 'down' | 'left' | 'right' | 'center';
     confidence: number;
     eyePosition?: { x: number; y: number };
+    // New: Screen position where user is looking (0-1, normalized to viewport)
+    screenPosition?: { x: number; y: number };
+    // New: Viewport zone (top, middle, bottom)
+    viewportZone?: 'top' | 'middle' | 'bottom';
+    // New: Scroll intensity (-1 to 1, negative = scroll up, positive = scroll down)
+    scrollIntensity?: number;
 }
 
 export class EyeTrackingEngine {
@@ -107,19 +113,16 @@ export class EyeTrackingEngine {
     }
 
     private detectGaze(landmarks: any[]): GazeDirection {
-        // Enhanced gaze detection using eye landmarks and iris position
-        // More accurate for manga reading scenarios
+        // Enhanced gaze detection that calculates screen position and viewport zones
+        // This allows smooth, proportional scrolling based on where user is looking
         
-        // Key eye landmarks for better accuracy
-        // Left eye corners: 33 (left), 133 (right)
-        // Right eye corners: 362 (left), 263 (right)
-        // Eye centers: 468 (left), 473 (right) - if available
+        // Key eye landmarks
         const leftEyeLeft = landmarks[33];
         const leftEyeRight = landmarks[133];
         const rightEyeLeft = landmarks[362];
         const rightEyeRight = landmarks[263];
         
-        // Calculate eye centers more accurately
+        // Calculate eye centers
         const leftEyeCenter = {
             x: (leftEyeLeft.x + leftEyeRight.x) / 2,
             y: (leftEyeLeft.y + leftEyeRight.y) / 2
@@ -129,11 +132,11 @@ export class EyeTrackingEngine {
             y: (rightEyeLeft.y + rightEyeRight.y) / 2
         };
         
-        // Average eye position
+        // Average eye position (normalized 0-1 in MediaPipe coordinates)
         const eyeX = (leftEyeCenter.x + rightEyeCenter.x) / 2;
         const eyeY = (leftEyeCenter.y + rightEyeCenter.y) / 2;
         
-        // Get face bounding box for normalization
+        // Get face bounding box
         const faceMinX = Math.min(...landmarks.map(l => l.x));
         const faceMaxX = Math.max(...landmarks.map(l => l.x));
         const faceMinY = Math.min(...landmarks.map(l => l.y));
@@ -144,50 +147,74 @@ export class EyeTrackingEngine {
         const faceCenterX = (faceMinX + faceMaxX) / 2;
         const faceCenterY = (faceMinY + faceMaxY) / 2;
         
-        // Normalize eye position relative to face
+        // Normalize eye position relative to face center
+        // This gives us how far the eyes have moved from face center
         const normalizedX = (eyeX - faceCenterX) / faceWidth;
         const normalizedY = (eyeY - faceCenterY) / faceHeight;
         
-        // Enhanced thresholds for manga reading (more sensitive for scrolling)
-        const verticalThreshold = 0.02; // More sensitive for up/down (manga scrolling) - lowered from 0.03
-        const horizontalThreshold = 0.05; // Less sensitive for left/right
+        // Map eye movement to screen position
+        // When eyes move down (normalizedY > 0), user is looking at lower part of screen
+        // When eyes move up (normalizedY < 0), user is looking at upper part of screen
+        // We'll map this to viewport zones
         
-        // Determine direction with priority for vertical (manga reading)
-        let direction: 'up' | 'down' | 'left' | 'right' | 'center' = 'center';
+        // Calculate screen position (0-1, where 0.5 is center)
+        // Invert Y because MediaPipe Y increases downward, but screen Y increases downward too
+        // So we need to map: eye down (normalizedY > 0) → screen bottom (screenY > 0.5)
+        const screenX = 0.5 + (normalizedX * 2); // Scale and center
+        const screenY = 0.5 + (normalizedY * 2); // Scale and center
         
-        // Prioritize vertical movement for manga scrolling
-        // IMPORTANT: The coordinate system might be inverted!
-        // Based on user feedback: looking down scrolls to top, so directions are inverted
-        // Let's INVERT the logic: if normalizedY > 0, treat as "up", if < 0, treat as "down"
-        if (Math.abs(normalizedY) > verticalThreshold) {
-            // INVERTED LOGIC: User reports looking down scrolls to top, so we need to flip
-            if (normalizedY > 0) {
-                // Eye is below center = INVERTED: treat as looking UP = scroll UP
-                direction = 'up';
-            } else {
-                // Eye is above center = INVERTED: treat as looking DOWN = scroll DOWN
-                direction = 'down';
-            }
-        } else if (Math.abs(normalizedX) > horizontalThreshold) {
-            if (normalizedX > 0) {
-                direction = 'right';
-            } else {
-                direction = 'left';
-            }
+        // Clamp to 0-1
+        const clampedScreenX = Math.max(0, Math.min(1, screenX));
+        const clampedScreenY = Math.max(0, Math.min(1, screenY));
+        
+        // Determine viewport zone based on screen Y position
+        // Top 30% = scroll up zone
+        // Middle 40% = dead zone (no scroll)
+        // Bottom 30% = scroll down zone
+        const TOP_ZONE_THRESHOLD = 0.3;
+        const BOTTOM_ZONE_THRESHOLD = 0.7;
+        
+        let viewportZone: 'top' | 'middle' | 'bottom' = 'middle';
+        let scrollIntensity = 0;
+        
+        if (clampedScreenY < TOP_ZONE_THRESHOLD) {
+            // Looking at top part of screen → scroll up
+            viewportZone = 'top';
+            // Calculate intensity: 0 at threshold, -1 at top (0)
+            scrollIntensity = -((TOP_ZONE_THRESHOLD - clampedScreenY) / TOP_ZONE_THRESHOLD);
+        } else if (clampedScreenY > BOTTOM_ZONE_THRESHOLD) {
+            // Looking at bottom part of screen → scroll down
+            viewportZone = 'bottom';
+            // Calculate intensity: 0 at threshold, 1 at bottom (1)
+            scrollIntensity = (clampedScreenY - BOTTOM_ZONE_THRESHOLD) / (1 - BOTTOM_ZONE_THRESHOLD);
+        } else {
+            // Middle zone → no scroll
+            viewportZone = 'middle';
+            scrollIntensity = 0;
         }
         
-        // Calculate confidence based on movement magnitude and consistency
-        const verticalMagnitude = Math.abs(normalizedY);
-        const horizontalMagnitude = Math.abs(normalizedX);
-        const maxMagnitude = Math.max(verticalMagnitude, horizontalMagnitude);
+        // Determine direction for backward compatibility
+        let direction: 'up' | 'down' | 'left' | 'right' | 'center' = 'center';
+        const verticalThreshold = 0.02;
+        const horizontalThreshold = 0.05;
         
-        // Higher confidence for stronger movements - increased multiplier for better sensitivity
-        const confidence = Math.min(maxMagnitude * 20, 1.0); // Increased from 15 to 20
+        if (Math.abs(normalizedY) > verticalThreshold) {
+            direction = normalizedY > 0 ? 'down' : 'up';
+        } else if (Math.abs(normalizedX) > horizontalThreshold) {
+            direction = normalizedX > 0 ? 'right' : 'left';
+        }
+        
+        // Calculate confidence based on how far from center
+        const distanceFromCenter = Math.sqrt(normalizedX ** 2 + normalizedY ** 2);
+        const confidence = Math.min(distanceFromCenter * 10, 1.0);
         
         return {
             direction,
             confidence,
-            eyePosition: { x: eyeX, y: eyeY }
+            eyePosition: { x: eyeX, y: eyeY },
+            screenPosition: { x: clampedScreenX, y: clampedScreenY },
+            viewportZone,
+            scrollIntensity
         };
     }
 

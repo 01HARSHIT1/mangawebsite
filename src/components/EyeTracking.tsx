@@ -134,79 +134,69 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 setGazeDirection(gaze.direction);
                 onGazeDetected?.(gaze.direction);
 
-                // Enhanced auto-scroll for manga reading
+                // Enhanced auto-scroll based on viewport zones
                 // Skip if user is manually scrolling
                 if (isManualScrolling.current) {
                     return; // Don't interfere with manual scrolling
                 }
                 
-                // Lower confidence threshold and more responsive scrolling
-                if (autoScrollEnabled && gaze.confidence > 0.2) { // Lowered from 0.4 to 0.2
+                // Use new zone-based scrolling system
+                if (autoScrollEnabled && gaze.viewportZone && gaze.scrollIntensity !== undefined) {
                     const now = Date.now();
-                    const dynamicCooldown = Math.max(300, scrollCooldown - (gaze.confidence * 700)); // Faster response
+                    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
                     
-                    if (now - lastScrollTime.current > dynamicCooldown) {
-                        // Calculate scroll amount - more noticeable for manga reading
-                        const scrollMultiplier = 0.3 + (gaze.confidence * 0.5); // 0.3 to 0.8 of viewport
-                        const scrollAmount = window.innerHeight * scrollMultiplier;
-                        
-                        // Prevent multiple scrolls from interfering
-                        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-                        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                        
-                        // DEBUG: Log the actual direction being detected
-                        console.log('👁️ Eye tracking: Gaze detected', {
-                            direction: gaze.direction,
-                            confidence: gaze.confidence.toFixed(2),
-                            normalizedY: 'check console for MediaPipe output',
-                            currentScroll: Math.round(currentScroll),
-                            maxScroll: Math.round(maxScroll),
-                            isManualScrolling: isManualScrolling.current
-                        });
-                        
-                        if (gaze.direction === 'down') {
-                            // Looking down = scroll DOWN (read more content)
-                            // Only scroll if not at bottom
-                            if (currentScroll < maxScroll - 100) {
-                                // Use requestAnimationFrame to prevent scroll conflicts
-                                requestAnimationFrame(() => {
-                                    window.scrollBy({ 
-                                        top: scrollAmount, 
-                                        behavior: 'smooth' 
-                                    });
+                    // Continuous smooth scrolling based on intensity
+                    // Scroll speed is proportional to how far from center they're looking
+                    const baseScrollSpeed = 0.5; // pixels per frame
+                    const maxScrollSpeed = 3.0; // maximum pixels per frame
+                    const scrollSpeed = baseScrollSpeed + (Math.abs(gaze.scrollIntensity) * (maxScrollSpeed - baseScrollSpeed));
+                    
+                    // Only scroll if we have significant intensity and not at boundaries
+                    if (Math.abs(gaze.scrollIntensity) > 0.1) {
+                        if (gaze.viewportZone === 'bottom' && currentScroll < maxScroll - 50) {
+                            // Looking at bottom → scroll down
+                            const scrollAmount = scrollSpeed * gaze.scrollIntensity; // positive
+                            requestAnimationFrame(() => {
+                                window.scrollBy({ 
+                                    top: scrollAmount, 
+                                    behavior: 'auto' // Use 'auto' for smooth continuous scrolling
                                 });
-                                lastScrollTime.current = now;
-                                console.log('👁️ Eye tracking: ✅ Scrolling DOWN (looking down)', { 
-                                    direction: gaze.direction, 
-                                    confidence: gaze.confidence.toFixed(2),
-                                    scrollAmount: Math.round(scrollAmount),
-                                    currentScroll: Math.round(currentScroll),
-                                    maxScroll: Math.round(maxScroll)
-                                });
-                            } else {
-                                console.log('👁️ Eye tracking: At bottom, not scrolling');
-                            }
-                        } else if (gaze.direction === 'up') {
-                            // Looking up = scroll UP (go back)
-                            // Only scroll if not at top
-                            if (currentScroll > 100) {
-                                // Use requestAnimationFrame to prevent scroll conflicts
-                                requestAnimationFrame(() => {
-                                    window.scrollBy({ 
-                                        top: -scrollAmount, 
-                                        behavior: 'smooth' 
-                                    });
-                                });
-                                lastScrollTime.current = now;
-                                console.log('👁️ Eye tracking: ✅ Scrolling UP (looking up)', { 
-                                    direction: gaze.direction, 
-                                    confidence: gaze.confidence.toFixed(2),
-                                    scrollAmount: Math.round(scrollAmount),
+                            });
+                            
+                            // Log occasionally to avoid spam
+                            if (Math.random() < 0.1) { // 10% of frames
+                                console.log('👁️ Eye tracking: Scrolling DOWN', {
+                                    zone: gaze.viewportZone,
+                                    intensity: gaze.scrollIntensity.toFixed(2),
+                                    screenY: gaze.screenPosition?.y.toFixed(2),
+                                    scrollSpeed: scrollSpeed.toFixed(2),
                                     currentScroll: Math.round(currentScroll)
                                 });
-                            } else {
-                                console.log('👁️ Eye tracking: At top, not scrolling');
                             }
+                        } else if (gaze.viewportZone === 'top' && currentScroll > 50) {
+                            // Looking at top → scroll up
+                            const scrollAmount = scrollSpeed * gaze.scrollIntensity; // negative
+                            requestAnimationFrame(() => {
+                                window.scrollBy({ 
+                                    top: scrollAmount, 
+                                    behavior: 'auto' // Use 'auto' for smooth continuous scrolling
+                                });
+                            });
+                            
+                            // Log occasionally to avoid spam
+                            if (Math.random() < 0.1) { // 10% of frames
+                                console.log('👁️ Eye tracking: Scrolling UP', {
+                                    zone: gaze.viewportZone,
+                                    intensity: gaze.scrollIntensity.toFixed(2),
+                                    screenY: gaze.screenPosition?.y.toFixed(2),
+                                    scrollSpeed: scrollSpeed.toFixed(2),
+                                    currentScroll: Math.round(currentScroll)
+                                });
+                            }
+                        } else if (gaze.viewportZone === 'middle') {
+                            // Middle zone → no scrolling (dead zone)
+                            // This gives user a comfortable reading zone
                         }
                     }
                 }
