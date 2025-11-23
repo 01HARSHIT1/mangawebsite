@@ -32,19 +32,33 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         // Check if getUserMedia is supported
         if (typeof window !== 'undefined') {
             const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+            console.log('👁️ Eye Tracking: Browser support check', {
+                hasGetUserMedia,
+                hasMediaDevices: !!navigator.mediaDevices,
+                userAgent: navigator.userAgent.substring(0, 50)
+            });
             setIsSupported(hasGetUserMedia);
         }
     }, []);
 
     useEffect(() => {
+        console.log('👁️ Eye Tracking: useEffect triggered', {
+            eyeTrackingEnabled,
+            isSupported,
+            isActive,
+            shouldStart: eyeTrackingEnabled && isSupported && isActive
+        });
+        
         // Only start tracking if all conditions are met
         if (!eyeTrackingEnabled || !isSupported || !isActive) {
+            console.log('👁️ Eye Tracking: Conditions not met, stopping tracking');
             stopTracking();
             return;
         }
 
         // Start tracking when active
         if (isActive && eyeTrackingEnabled && isSupported) {
+            console.log('👁️ Eye Tracking: ✅ All conditions met, starting tracking!');
             startTracking();
         }
 
