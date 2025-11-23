@@ -43,8 +43,14 @@ export default async function ChapterPage({
         }
 
         // Get all chapters for navigation
+        // Handle both string and ObjectId formats for mangaId
         const allChapters = await db.collection('chapters')
-            .find({ mangaId: params.mangaId })
+            .find({ 
+                $or: [
+                    { mangaId: params.mangaId },
+                    { mangaId: new ObjectId(params.mangaId) }
+                ]
+            })
             .sort({ chapterNumber: 1 })
             .toArray();
 
@@ -103,12 +109,13 @@ export default async function ChapterPage({
                 currentIndex={currentIndex}
             />
         );
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error loading chapter:', error);
         return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
             <div className="text-center">
                 <h1 className="text-2xl font-bold mb-4">Error Loading Chapter</h1>
                 <p className="text-gray-400">Something went wrong. Please try again.</p>
+                <p className="text-gray-500 text-sm mt-2">Error: {error?.message || 'Unknown error'}</p>
             </div>
         </div>;
     }

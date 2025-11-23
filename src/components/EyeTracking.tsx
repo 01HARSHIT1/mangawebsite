@@ -37,12 +37,14 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     }, []);
 
     useEffect(() => {
+        // Only start tracking if all conditions are met
         if (!eyeTrackingEnabled || !isSupported || !isActive) {
             stopTracking();
             return;
         }
 
-        if (isActive) {
+        // Start tracking when active
+        if (isActive && eyeTrackingEnabled && isSupported) {
             startTracking();
         }
 
@@ -174,10 +176,29 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
     // Gaze detection is now handled by EyeTrackingEngine
 
-    const toggleTracking = () => {
+    const toggleTracking = async () => {
         if (!isSupported) {
             setError('Eye tracking not supported in this browser');
             return;
+        }
+
+        if (!isActive) {
+            // Starting tracking - request camera permission
+            try {
+                // Request permission first
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Immediately stop it - we just wanted permission
+                stream.getTracks().forEach(track => track.stop());
+                console.log('✅ Camera permission granted');
+            } catch (err: any) {
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    setError('Camera permission denied. Please allow camera access in your browser settings.');
+                    return;
+                } else {
+                    setError(`Failed to access camera: ${err.message}`);
+                    return;
+                }
+            }
         }
 
         setIsActive(!isActive);
@@ -190,13 +211,25 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const path = window.location.pathname;
-            setIsChapterPage(path.includes('/chapter/'));
+            const checkChapterPage = () => {
+                const path = window.location.pathname;
+                setIsChapterPage(path.includes('/chapter/'));
+            };
+            checkChapterPage();
+            // Also check on route changes
+            window.addEventListener('popstate', checkChapterPage);
+            return () => window.removeEventListener('popstate', checkChapterPage);
         }
     }, []);
 
-    // Don't show or work if not on chapter page
-    if (!isChapterPage || !showUI) {
+    // Always show UI on chapter pages, even if not enabled
+    // This allows users to enable it from the chapter page itself
+    if (!showUI) {
+        return null;
+    }
+    
+    // Show UI on chapter pages, or if explicitly enabled
+    if (!isChapterPage && !eyeTrackingEnabled) {
         return null;
     }
 
@@ -216,16 +249,31 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         <div className="fixed bottom-32 right-4 z-50">
             <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border border-slate-700 shadow-xl p-4 max-w-sm">
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-white font-semibold text-sm">Eye Tracking</h3>
+                    <div>
+                        <h3 className="text-white font-semibold text-sm">Eye Tracking</h3>
+                        {!eyeTrackingEnabled && (
+                            <p className="text-xs text-gray-400 mt-0.5">Enable in top-right toggle</p>
+                        )}
+                    </div>
                     <button
                         onClick={toggleTracking}
-                        disabled={!eyeTrackingEnabled}
+                        disabled={!eyeTrackingEnabled || !isSupported}
                         className={`p-2 rounded-full transition-all ${
                             isActive
                                 ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse'
-                                : 'bg-slate-700 hover:bg-slate-600 text-gray-300'
-                        } ${!eyeTrackingEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={isActive ? 'Stop tracking' : 'Start tracking'}
+                                : eyeTrackingEnabled
+                                ? 'bg-slate-700 hover:bg-slate-600 text-gray-300'
+                                : 'bg-slate-800 text-gray-500'
+                        } ${(!eyeTrackingEnabled || !isSupported) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={
+                            !eyeTrackingEnabled 
+                                ? 'Enable eye tracking from top-right toggle first'
+                                : !isSupported
+                                ? 'Not supported in this browser'
+                                : isActive 
+                                ? 'Stop tracking' 
+                                : 'Start tracking (will request camera permission)'
+                        }
                     >
                         {isActive ? <FaEye /> : <FaEyeSlash />}
                     </button>
