@@ -68,7 +68,9 @@ export async function PUT(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { preferences } = body;
+        
+        // Support both { preferences: {...} } and direct field updates { eyeTracking: true }
+        const preferences = body.preferences || body;
 
         if (!preferences || typeof preferences !== 'object') {
             return NextResponse.json({ error: 'Invalid preferences data' }, { status: 400 });
@@ -77,15 +79,24 @@ export async function PUT(request: NextRequest) {
         const client = await clientPromise;
         const db = client.db('mangawebsite');
         
+        // Get existing preferences first
+        const userDoc = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+        const existingPreferences = userDoc?.aiPreferences || {};
+        
+        // Merge with existing preferences (partial update support)
+        const updatedPreferences = {
+            ...DEFAULT_AI_PREFERENCES,
+            ...existingPreferences,
+            ...preferences,
+            updatedAt: new Date()
+        };
+        
         // Update user AI preferences
         await db.collection('users').updateOne(
             { _id: new ObjectId(userId) },
             {
                 $set: {
-                    aiPreferences: {
-                        ...preferences,
-                        updatedAt: new Date()
-                    }
+                    aiPreferences: updatedPreferences
                 }
             }
         );

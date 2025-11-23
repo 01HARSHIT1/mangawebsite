@@ -83,15 +83,30 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 setGazeDirection(gaze.direction);
                 onGazeDetected?.(gaze.direction);
 
-                // Auto-scroll if enabled and confidence is high
-                if (autoScrollEnabled && gaze.confidence > 0.5) {
+                // Enhanced auto-scroll for manga reading
+                // More responsive and natural scrolling based on gaze
+                if (autoScrollEnabled && gaze.confidence > 0.4) {
                     const now = Date.now();
-                    if (now - lastScrollTime.current > scrollCooldown) {
+                    const dynamicCooldown = Math.max(500, scrollCooldown - (gaze.confidence * 500)); // Faster for high confidence
+                    
+                    if (now - lastScrollTime.current > dynamicCooldown) {
+                        // Calculate scroll amount based on confidence (more confident = bigger scroll)
+                        const scrollMultiplier = 0.2 + (gaze.confidence * 0.4); // 0.2 to 0.6 of viewport
+                        const scrollAmount = window.innerHeight * scrollMultiplier;
+                        
                         if (gaze.direction === 'down') {
-                            window.scrollBy({ top: window.innerHeight * 0.3, behavior: 'smooth' });
+                            // Scroll down for manga reading (next content)
+                            window.scrollBy({ 
+                                top: scrollAmount, 
+                                behavior: 'smooth' 
+                            });
                             lastScrollTime.current = now;
                         } else if (gaze.direction === 'up') {
-                            window.scrollBy({ top: -window.innerHeight * 0.3, behavior: 'smooth' });
+                            // Scroll up (previous content)
+                            window.scrollBy({ 
+                                top: -scrollAmount, 
+                                behavior: 'smooth' 
+                            });
                             lastScrollTime.current = now;
                         }
                     }

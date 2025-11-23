@@ -10,6 +10,8 @@ import LiveReactions from './LiveReactions';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import RazorpayPayment from './RazorpayPayment';
 import MangaFeedbackButtons from './MangaFeedbackButtons';
+import PreviouslyOnRecap from './PreviouslyOnRecap';
+import { useAIFeatures } from '@/hooks/useAIFeatures';
 
 export default function MangaDetailClient({ manga, chapters, ratings, favorites, author, lastUpdate, status, type, genres, tags }: any) {
     const [bookmarked, setBookmarked] = useState(false);
@@ -288,6 +290,11 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
 
                         {/* AI Feedback Buttons */}
                         <MangaFeedbackButtons mangaId={manga._id} />
+
+                        {/* Previously On Recap */}
+                        <div className="mt-4">
+                            <PreviouslyOnRecap mangaId={manga._id} enabled={true} />
+                        </div>
 
                         <div className="mt-6 text-sm text-white bg-gray-800 rounded-xl p-5 space-y-2">
                             <div><span className="font-semibold">Status:</span> <span className="text-green-400 font-medium">{status}</span></div>

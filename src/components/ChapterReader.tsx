@@ -7,6 +7,8 @@ import { socialMediaLinks, websiteInfo } from '@/config/socialMedia';
 import VoiceAssistant from './VoiceAssistant';
 import EyeTracking from './EyeTracking';
 import LightDetection from './LightDetection';
+import ChapterSummary from './ChapterSummary';
+import PreviouslyOnRecap from './PreviouslyOnRecap';
 import { useAIFeatures } from '@/hooks/useAIFeatures';
 
 interface ChapterReaderProps {
@@ -33,6 +35,7 @@ export default function ChapterReader({
     const [username, setUsername] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const synthRef = useRef<SpeechSynthesis | null>(null);
 
     const mangaId = typeof manga._id === 'string' ? manga._id : manga._id?.toString() || '';
     const chapterId = typeof chapter._id === 'string' ? chapter._id : chapter._id?.toString() || '';
@@ -46,9 +49,9 @@ export default function ChapterReader({
     const [failedPages, setFailedPages] = useState(0);
     const maxPages = 100; // Maximum pages to try loading
     const maxConsecutiveFailures = 3; // Stop after 3 consecutive failures
-    
+
     const chapterImages: string[] = [];
-    
+
     if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
         // Cloudinary PDF to image transformation
         // We'll try loading pages until we hit consecutive failures
@@ -67,7 +70,7 @@ export default function ChapterReader({
             }
         });
     }
-    
+
     // Track image load errors
     const handleImageError = (pageIndex: number) => {
         setFailedPages(prev => {
@@ -79,14 +82,20 @@ export default function ChapterReader({
             return newFailedCount;
         });
     };
-    
+
     const handleImageLoad = (pageIndex: number) => {
         setLoadedPageCount(pageIndex + 1);
         setFailedPages(0); // Reset consecutive failures
     };
 
-    // Close dropdown when clicking outside
+    // Initialize speech synthesis and close dropdown when clicking outside
     useEffect(() => {
+        // Initialize speech synthesis
+        if (typeof window !== 'undefined') {
+            synthRef.current = window.speechSynthesis;
+        }
+
+        // Close dropdown when clicking outside
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowChapterDropdown(false);
@@ -144,6 +153,41 @@ export default function ChapterReader({
                 break;
             case 'close':
                 router.push(`/manga/${mangaId}`);
+                break;
+            // Manga-specific commands
+            case 'startReading':
+                // Scroll to top of chapter content
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                break;
+            case 'pauseReading':
+                // Could pause autoplay if implemented
+                break;
+            case 'currentChapter':
+                // Announce current chapter (could use text-to-speech)
+                if (synthRef.current) {
+                    const utterance = new SpeechSynthesisUtterance(`You are reading Chapter ${chapter.chapterNumber}`);
+                    synthRef.current.speak(utterance);
+                }
+                break;
+            case 'goToManga':
+                router.push(`/manga/${mangaId}`);
+                break;
+            case 'increaseBrightness':
+                // Increase screen brightness
+                const currentBrightness = parseFloat(getComputedStyle(document.documentElement).filter.match(/brightness\(([^)]+)\)/)?.[1] || '1');
+                const newBrightness = Math.min(1.5, currentBrightness + 0.1);
+                document.documentElement.style.filter = `brightness(${newBrightness})`;
+                break;
+            case 'decreaseBrightness':
+                // Decrease screen brightness
+                const currentBright = parseFloat(getComputedStyle(document.documentElement).filter.match(/brightness\(([^)]+)\)/)?.[1] || '1');
+                const newBright = Math.max(0.3, currentBright - 0.1);
+                document.documentElement.style.filter = `brightness(${newBright})`;
+                break;
+            case 'toggleEyeTracking':
+                // Toggle eye tracking (would need to communicate with EyeTracking component)
+                // This could be handled via a custom event or context
+                window.dispatchEvent(new CustomEvent('toggleEyeTracking'));
                 break;
             default:
                 console.log('Unknown voice command:', command);
@@ -317,11 +361,10 @@ export default function ChapterReader({
                                             <Link
                                                 key={ch._id}
                                                 href={`/manga/${mangaId}/chapter/${ch._id}`}
-                                                className={`block px-4 py-3 hover:bg-gray-800 transition-colors ${
-                                                    ch._id === chapterId
+                                                className={`block px-4 py-3 hover:bg-gray-800 transition-colors ${ch._id === chapterId
                                                         ? 'bg-blue-600 text-white font-bold'
                                                         : 'text-gray-300'
-                                                }`}
+                                                    }`}
                                                 onClick={() => setShowChapterDropdown(false)}
                                             >
                                                 Chapter {ch.chapterNumber}
@@ -336,6 +379,20 @@ export default function ChapterReader({
                 </div>
             </div>
 
+            {/* AI Features: Previously On Recap & Chapter Summary */}
+            <div className="w-full max-w-4xl mx-auto px-4 pt-4">
+                {previouslyOnEnabled && (
+                    <PreviouslyOnRecap mangaId={mangaId} enabled={previouslyOnEnabled} />
+                )}
+                {chapterSummariesEnabled && (
+                    <ChapterSummary
+                        chapterId={chapterId}
+                        chapterNumber={chapter.chapterNumber}
+                        enabled={chapterSummariesEnabled}
+                    />
+                )}
+            </div>
+
             {/* Manga Content */}
             <div className="w-full max-w-4xl mx-auto py-8 px-4">
                 {chapterImages.length > 0 ? (
@@ -345,7 +402,7 @@ export default function ChapterReader({
                             if (index > loadedPageCount + maxConsecutiveFailures) {
                                 return null;
                             }
-                            
+
                             return (
                                 <img
                                     key={index}

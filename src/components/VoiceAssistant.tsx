@@ -122,6 +122,39 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         {
             pattern: /(slower|slow\s+down|decrease\s+speed)/i,
             action: 'decreaseSpeed'
+        },
+        // Manga-specific commands
+        {
+            pattern: /(read|start\s+reading|begin\s+reading)/i,
+            action: 'startReading'
+        },
+        {
+            pattern: /(pause\s+reading|stop\s+reading|take\s+a\s+break)/i,
+            action: 'pauseReading'
+        },
+        {
+            pattern: /(bookmark\s+here|save\s+position|remember\s+this)/i,
+            action: 'bookmark'
+        },
+        {
+            pattern: /(what\s+chapter|current\s+chapter|which\s+chapter)/i,
+            action: 'currentChapter'
+        },
+        {
+            pattern: /(go\s+to\s+manga|open\s+manga|show\s+manga)/i,
+            action: 'goToManga'
+        },
+        {
+            pattern: /(brightness\s+up|increase\s+brightness|make\s+brighter)/i,
+            action: 'increaseBrightness'
+        },
+        {
+            pattern: /(brightness\s+down|decrease\s+brightness|make\s+darker)/i,
+            action: 'decreaseBrightness'
+        },
+        {
+            pattern: /(toggle\s+eye\s+tracking|enable\s+eye\s+tracking|disable\s+eye\s+tracking)/i,
+            action: 'toggleEyeTracking'
         }
     ];
 

@@ -72,54 +72,76 @@ export class EyeTrackingEngine {
     }
 
     private detectGaze(landmarks: any[]): GazeDirection {
-        // Face Mesh landmark indices for eyes
-        // Left eye: 33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246
-        // Right eye: 362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398
+        // Enhanced gaze detection using eye landmarks and iris position
+        // More accurate for manga reading scenarios
         
-        const leftEyeIndices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
-        const rightEyeIndices = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398];
+        // Key eye landmarks for better accuracy
+        // Left eye corners: 33 (left), 133 (right)
+        // Right eye corners: 362 (left), 263 (right)
+        // Eye centers: 468 (left), 473 (right) - if available
+        const leftEyeLeft = landmarks[33];
+        const leftEyeRight = landmarks[133];
+        const rightEyeLeft = landmarks[362];
+        const rightEyeRight = landmarks[263];
         
-        // Get eye center points
-        const leftEyeCenter = this.getEyeCenter(landmarks, leftEyeIndices);
-        const rightEyeCenter = this.getEyeCenter(landmarks, rightEyeIndices);
+        // Calculate eye centers more accurately
+        const leftEyeCenter = {
+            x: (leftEyeLeft.x + leftEyeRight.x) / 2,
+            y: (leftEyeLeft.y + leftEyeRight.y) / 2
+        };
+        const rightEyeCenter = {
+            x: (rightEyeLeft.x + rightEyeRight.x) / 2,
+            y: (rightEyeLeft.y + rightEyeRight.y) / 2
+        };
         
-        // Calculate average eye position
+        // Average eye position
         const eyeX = (leftEyeCenter.x + rightEyeCenter.x) / 2;
         const eyeY = (leftEyeCenter.y + rightEyeCenter.y) / 2;
         
-        // Get nose tip (landmark 4) for reference
-        const noseTip = landmarks[4];
+        // Get face bounding box for normalization
+        const faceMinX = Math.min(...landmarks.map(l => l.x));
+        const faceMaxX = Math.max(...landmarks.map(l => l.x));
+        const faceMinY = Math.min(...landmarks.map(l => l.y));
+        const faceMaxY = Math.max(...landmarks.map(l => l.y));
         
-        // Calculate gaze direction based on eye position relative to face center
-        const faceCenterX = 0.5; // Normalized coordinates
-        const faceCenterY = 0.5;
+        const faceWidth = faceMaxX - faceMinX;
+        const faceHeight = faceMaxY - faceMinY;
+        const faceCenterX = (faceMinX + faceMaxX) / 2;
+        const faceCenterY = (faceMinY + faceMaxY) / 2;
         
-        const deltaX = eyeX - faceCenterX;
-        const deltaY = eyeY - faceCenterY;
+        // Normalize eye position relative to face
+        const normalizedX = (eyeX - faceCenterX) / faceWidth;
+        const normalizedY = (eyeY - faceCenterY) / faceHeight;
         
-        // Determine direction
+        // Enhanced thresholds for manga reading (more sensitive for scrolling)
+        const verticalThreshold = 0.03; // More sensitive for up/down (manga scrolling)
+        const horizontalThreshold = 0.05; // Less sensitive for left/right
+        
+        // Determine direction with priority for vertical (manga reading)
         let direction: 'up' | 'down' | 'left' | 'right' | 'center' = 'center';
-        const threshold = 0.05; // Sensitivity threshold
         
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            // Horizontal movement
-            if (deltaX > threshold) {
-                direction = 'right';
-            } else if (deltaX < -threshold) {
-                direction = 'left';
+        // Prioritize vertical movement for manga scrolling
+        if (Math.abs(normalizedY) > verticalThreshold) {
+            if (normalizedY > 0) {
+                direction = 'down'; // Looking down = scroll down
+            } else {
+                direction = 'up'; // Looking up = scroll up
             }
-        } else {
-            // Vertical movement
-            if (deltaY > threshold) {
-                direction = 'down';
-            } else if (deltaY < -threshold) {
-                direction = 'up';
+        } else if (Math.abs(normalizedX) > horizontalThreshold) {
+            if (normalizedX > 0) {
+                direction = 'right';
+            } else {
+                direction = 'left';
             }
         }
         
-        // Calculate confidence based on movement magnitude
-        const magnitude = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        const confidence = Math.min(magnitude * 10, 1.0);
+        // Calculate confidence based on movement magnitude and consistency
+        const verticalMagnitude = Math.abs(normalizedY);
+        const horizontalMagnitude = Math.abs(normalizedX);
+        const maxMagnitude = Math.max(verticalMagnitude, horizontalMagnitude);
+        
+        // Higher confidence for stronger movements
+        const confidence = Math.min(maxMagnitude * 15, 1.0);
         
         return {
             direction,

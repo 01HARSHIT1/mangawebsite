@@ -44,45 +44,70 @@ export default function LightDetection({ enabled = false, showUI = true }: Light
 
     const startDetection = async () => {
         try {
+            // Enhanced ambient light detection with better scanning
             // Request permission for ambient light sensor
             if ('permissions' in navigator) {
-                const permission = await (navigator.permissions as any).query({ name: 'ambient-light-sensor' });
-                if (permission.state === 'denied') {
-                    setError('Ambient light sensor permission denied');
-                    return;
+                try {
+                    const permission = await (navigator.permissions as any).query({ name: 'ambient-light-sensor' });
+                    if (permission.state === 'denied') {
+                        setError('Ambient light sensor permission denied');
+                        useTimeBasedDetection();
+                        return;
+                    }
+                } catch (permError) {
+                    // Permission API might not support this query, continue anyway
+                    console.log('Permission query not supported, trying sensor directly');
                 }
             }
 
             // Create AmbientLightSensor (if supported)
             if ('AmbientLightSensor' in window) {
-                const sensor = new (window as any).AmbientLightSensor();
+                const sensor = new (window as any).AmbientLightSensor({
+                    frequency: 1 // Sample every second for better accuracy
+                });
+                
+                // Enhanced reading with averaging for stability
+                let readings: number[] = [];
+                const maxReadings = 5; // Average last 5 readings
                 
                 sensor.onreading = () => {
                     const illuminance = sensor.illuminance;
-                    setAmbientLight(illuminance);
-                    adjustBrightness(illuminance);
+                    
+                    // Add to readings array
+                    readings.push(illuminance);
+                    if (readings.length > maxReadings) {
+                        readings.shift();
+                    }
+                    
+                    // Calculate average for smoother adjustments
+                    const avgIlluminance = readings.reduce((sum, val) => sum + val, 0) / readings.length;
+                    
+                    setAmbientLight(avgIlluminance);
+                    adjustBrightness(avgIlluminance);
                 };
 
                 sensor.onerror = (event: any) => {
                     console.error('Ambient light sensor error:', event.error);
-                    setError('Failed to read ambient light');
+                    setError('Failed to read ambient light. Using fallback.');
+                    // Fallback to time-based detection
+                    useTimeBasedDetection();
                 };
 
                 sensor.start();
                 sensorRef.current = sensor;
             } else {
-                // Fallback: Use screen brightness API or time-based detection
-                useTimeBasedDetection();
+                // Fallback: Use enhanced time-based detection with screen analysis
+                useEnhancedFallbackDetection();
             }
         } catch (err: any) {
             console.error('Failed to start light detection:', err);
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                setError('Permission denied. Please enable ambient light sensor access.');
+                setError('Permission denied. Using fallback detection.');
             } else {
-                setError('Failed to start light detection');
-                // Fallback to time-based detection
-                useTimeBasedDetection();
+                setError('Sensor not available. Using fallback detection.');
             }
+            // Fallback to enhanced detection
+            useEnhancedFallbackDetection();
         }
     };
 
@@ -93,6 +118,49 @@ export default function LightDetection({ enabled = false, showUI = true }: Light
         
         setAmbientLight(isNight ? 10 : 500); // Simulated values
         adjustBrightness(isNight ? 10 : 500);
+    };
+
+    const useEnhancedFallbackDetection = () => {
+        // Enhanced fallback: Time-based + screen brightness analysis
+        const hour = new Date().getHours();
+        
+        // More nuanced time-based detection
+        let estimatedLux = 500; // Default daylight
+        
+        if (hour >= 20 || hour < 6) {
+            // Night time
+            estimatedLux = 10;
+        } else if (hour >= 18 || hour < 8) {
+            // Dawn/Dusk
+            estimatedLux = 200;
+        } else if (hour >= 8 && hour < 12) {
+            // Morning
+            estimatedLux = 600;
+        } else if (hour >= 12 && hour < 18) {
+            // Afternoon (brightest)
+            estimatedLux = 800;
+        }
+        
+        // Try to detect screen brightness if available
+        if ('screen' in window && (window.screen as any).brightness !== undefined) {
+            const screenBrightness = (window.screen as any).brightness;
+            // Adjust estimated lux based on screen brightness
+            estimatedLux = estimatedLux * (0.5 + screenBrightness * 0.5);
+        }
+        
+        setAmbientLight(estimatedLux);
+        adjustBrightness(estimatedLux);
+        
+        // Update periodically
+        const interval = setInterval(() => {
+            const newHour = new Date().getHours();
+            if (newHour !== hour) {
+                useEnhancedFallbackDetection();
+            }
+        }, 60000); // Check every minute
+        
+        // Cleanup on unmount
+        return () => clearInterval(interval);
     };
 
     // User preference learning
@@ -126,9 +194,8 @@ export default function LightDetection({ enabled = false, showUI = true }: Light
     }, [userPreferences]);
 
     const adjustBrightness = (illuminance: number) => {
-        // Enhanced brightness adjustment with learning
-        // Low light (< 50 lux) = darker theme, lower brightness
-        // High light (> 200 lux) = lighter theme
+        // Enhanced brightness adjustment optimized for manga reading
+        // Scans environment light and adjusts screen brightness accordingly
         
         // Check if we have learned preference for this light level
         const luxKey = Math.round(illuminance / 10) * 10; // Round to nearest 10
@@ -136,22 +203,46 @@ export default function LightDetection({ enabled = false, showUI = true }: Light
         
         // If no learned preference, calculate based on light level
         if (brightness === undefined) {
-            // Map illuminance (0-1000 lux) to brightness (20-100%)
+            // Enhanced mapping for manga reading comfort
+            // Low light (< 50 lux): Dim screen for night reading
+            // Medium light (50-200 lux): Moderate brightness
+            // High light (> 200 lux): Full brightness
+            
+            if (illuminance < 20) {
+                // Very dark environment (night reading)
+                brightness = Math.max(userPreferences.minBrightness, 30);
+            } else if (illuminance < 50) {
+                // Dark environment
+                brightness = Math.max(userPreferences.minBrightness, 40);
+            } else if (illuminance < 100) {
+                // Low light
+                brightness = 50;
+            } else if (illuminance < 200) {
+                // Medium light
+                brightness = 60 + ((illuminance - 100) / 100) * 20; // 60-80%
+            } else if (illuminance < 500) {
+                // Bright environment
+                brightness = 80 + ((illuminance - 200) / 300) * 15; // 80-95%
+            } else {
+                // Very bright environment (daylight)
+                brightness = Math.min(userPreferences.maxBrightness, 100);
+            }
+            
+            // Ensure within bounds
             brightness = Math.max(
                 userPreferences.minBrightness,
-                Math.min(
-                    userPreferences.maxBrightness,
-                    20 + (illuminance / 1000) * 80
-                )
+                Math.min(userPreferences.maxBrightness, brightness)
             );
         }
         
+        // Determine dark mode based on ambient light
+        // Use threshold that's comfortable for manga reading
         const shouldBeDark = illuminance < 50;
         
         if (shouldBeDark !== isDarkMode) {
             setIsDarkMode(shouldBeDark);
             
-            // Apply dark mode class
+            // Apply dark mode class smoothly
             if (shouldBeDark) {
                 document.documentElement.classList.add('dark');
             } else {
@@ -159,13 +250,15 @@ export default function LightDetection({ enabled = false, showUI = true }: Light
             }
         }
 
-        // Apply brightness filter with smooth transition
+        // Apply brightness filter with smooth transition for manga reading
+        // Use CSS filter for non-intrusive brightness adjustment
         const brightnessValue = brightness / 100;
-        document.documentElement.style.transition = 'filter 0.3s ease-in-out';
+        document.documentElement.style.transition = 'filter 0.5s ease-in-out';
         document.documentElement.style.filter = `brightness(${brightnessValue})`;
         
-        // Learn from user adjustments (if user manually changes brightness, we'll learn it)
-        // This can be triggered by user interaction
+        // Also adjust contrast slightly for better manga readability
+        const contrastValue = 0.95 + (brightness / 100) * 0.1; // Slight contrast adjustment
+        document.documentElement.style.filter = `brightness(${brightnessValue}) contrast(${contrastValue})`;
     };
 
     // Function to learn user preference (can be called when user manually adjusts)

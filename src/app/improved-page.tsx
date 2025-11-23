@@ -7,6 +7,8 @@ import { FaPlay, FaBookOpen, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaG
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import BuyMeACoffee from '@/components/BuyMeACoffee';
+import MoodDiscovery from '@/components/MoodDiscovery';
+import AIFeatureToggles from '@/components/AIFeatureToggles';
 
 const genresList = [
     { name: "Action", color: "from-red-500 to-orange-500", icon: "⚔️" },
@@ -70,6 +72,9 @@ export default function ImprovedHomePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            {/* AI Feature Toggle Buttons - Top Right Corner */}
+            <AIFeatureToggles position="fixed" />
+
             {/* Hero Section */}
             <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
                 {/* Enhanced Background Effects */}
@@ -505,7 +510,7 @@ export default function ImprovedHomePage() {
                                 className="bg-gradient-to-br from-slate-800/50 via-slate-700/50 to-slate-800/50 rounded-3xl p-12 border border-slate-700/50 backdrop-blur-sm shadow-2xl"
                             >
                                 <motion.div
-                                    animate={{ 
+                                    animate={{
                                         scale: [1, 1.05, 1],
                                         rotate: [0, 5, -5, 0]
                                     }}
@@ -514,15 +519,15 @@ export default function ImprovedHomePage() {
                                 >
                                     ☕
                                 </motion.div>
-                                
+
                                 <h2 className="text-4xl font-bold mb-4">
                                     <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-400 bg-clip-text text-transparent">
                                         Enjoying Our Platform?
                                     </span>
                                 </h2>
-                                
+
                                 <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-                                    Your support helps us keep the platform running, add new features, and support manga creators. 
+                                    Your support helps us keep the platform running, add new features, and support manga creators.
                                     <span className="block mt-2 text-amber-400 font-semibold">Every contribution matters! 💖</span>
                                 </p>
 

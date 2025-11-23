@@ -42,9 +42,55 @@ export function useAIFeatures() {
         }
     };
 
+    const updatePreference = async (feature: keyof UserAIPreferences, value: boolean) => {
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                console.warn('No token found, cannot update preferences');
+                return;
+            }
+
+            // Update local state immediately for responsive UI
+            setPreferences(prev => ({
+                ...prev,
+                [feature]: value
+            }));
+
+            // Save to server
+            const response = await fetch('/api/user/ai-preferences', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    [feature]: value
+                })
+            });
+
+            if (!response.ok) {
+                // Revert on error
+                setPreferences(prev => ({
+                    ...prev,
+                    [feature]: !value
+                }));
+                console.error('Failed to update preference');
+            }
+        } catch (error) {
+            console.error('Error updating preference:', error);
+            // Revert on error
+            setPreferences(prev => ({
+                ...prev,
+                [feature]: !value
+            }));
+        }
+    };
+
     return {
+        aiPreferences: preferences,
         preferences,
         loading,
+        updatePreference,
         isFeatureEnabled: (feature: keyof UserAIPreferences) => {
             return preferences[feature] ?? DEFAULT_AI_PREFERENCES[feature] ?? false;
         }
