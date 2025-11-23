@@ -156,22 +156,17 @@ export class EyeTrackingEngine {
         let direction: 'up' | 'down' | 'left' | 'right' | 'center' = 'center';
         
         // Prioritize vertical movement for manga scrolling
-        // Note: In MediaPipe coordinates, Y increases downward
-        // However, when you look DOWN (eyes move down in face), normalizedY becomes POSITIVE
-        // When you look UP (eyes move up in face), normalizedY becomes NEGATIVE
-        // BUT: We need to check if the coordinate system is inverted
-        // Let's test: If normalizedY > 0 (eye below face center), user is looking DOWN = scroll DOWN
-        // If normalizedY < 0 (eye above face center), user is looking UP = scroll UP
+        // IMPORTANT: The coordinate system might be inverted!
+        // Based on user feedback: looking down scrolls to top, so directions are inverted
+        // Let's INVERT the logic: if normalizedY > 0, treat as "up", if < 0, treat as "down"
         if (Math.abs(normalizedY) > verticalThreshold) {
-            // INVERTED: MediaPipe might have inverted Y axis, so we flip the logic
-            // If normalizedY > 0, eyes are BELOW center = looking DOWN = scroll DOWN
-            // If normalizedY < 0, eyes are ABOVE center = looking UP = scroll UP
+            // INVERTED LOGIC: User reports looking down scrolls to top, so we need to flip
             if (normalizedY > 0) {
-                // Eye is below center = looking down = scroll DOWN
-                direction = 'down';
-            } else {
-                // Eye is above center = looking up = scroll UP
+                // Eye is below center = INVERTED: treat as looking UP = scroll UP
                 direction = 'up';
+            } else {
+                // Eye is above center = INVERTED: treat as looking DOWN = scroll DOWN
+                direction = 'down';
             }
         } else if (Math.abs(normalizedX) > horizontalThreshold) {
             if (normalizedX > 0) {

@@ -29,6 +29,8 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const scrollCooldown = 1000; // 1 second between scrolls
     const isManualScrolling = useRef<boolean>(false);
     const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
+    const isManualScrolling = useRef<boolean>(false);
+    const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         // Check if getUserMedia is supported
@@ -40,6 +42,28 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 userAgent: navigator.userAgent.substring(0, 50)
             });
             setIsSupported(hasGetUserMedia);
+            
+            // Detect manual scrolling to prevent interference
+            const handleScroll = () => {
+                isManualScrolling.current = true;
+                if (manualScrollTimeout.current) {
+                    clearTimeout(manualScrollTimeout.current);
+                }
+                // Disable eye tracking scrolling for 3 seconds after manual scroll
+                manualScrollTimeout.current = setTimeout(() => {
+                    isManualScrolling.current = false;
+                    console.log('👁️ Eye Tracking: Manual scroll ended, re-enabling auto-scroll');
+                }, 3000);
+            };
+            
+            window.addEventListener('scroll', handleScroll, { passive: true });
+            window.addEventListener('wheel', handleScroll, { passive: true });
+            
+            return () => {
+                window.removeEventListener('scroll', handleScroll);
+                window.removeEventListener('wheel', handleScroll);
+                if (manualScrollTimeout.current) clearTimeout(manualScrollTimeout.current);
+            };
         }
     }, []);
 
