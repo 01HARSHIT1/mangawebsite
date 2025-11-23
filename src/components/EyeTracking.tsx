@@ -27,6 +27,8 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const eyeTrackingEngineRef = useRef<EyeTrackingEngine | null>(null);
     const lastScrollTime = useRef<number>(0);
     const scrollCooldown = 1000; // 1 second between scrolls
+    const isManualScrolling = useRef<boolean>(false);
+    const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         // Check if getUserMedia is supported
@@ -111,6 +113,11 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 onGazeDetected?.(gaze.direction);
 
                 // Enhanced auto-scroll for manga reading
+                // Skip if user is manually scrolling
+                if (isManualScrolling.current) {
+                    return; // Don't interfere with manual scrolling
+                }
+                
                 // Lower confidence threshold and more responsive scrolling
                 if (autoScrollEnabled && gaze.confidence > 0.2) { // Lowered from 0.4 to 0.2
                     const now = Date.now();
@@ -124,6 +131,16 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                         // Prevent multiple scrolls from interfering
                         const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
                         const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                        
+                        // DEBUG: Log the actual direction being detected
+                        console.log('👁️ Eye tracking: Gaze detected', {
+                            direction: gaze.direction,
+                            confidence: gaze.confidence.toFixed(2),
+                            normalizedY: 'check console for MediaPipe output',
+                            currentScroll: Math.round(currentScroll),
+                            maxScroll: Math.round(maxScroll),
+                            isManualScrolling: isManualScrolling.current
+                        });
                         
                         if (gaze.direction === 'down') {
                             // Looking down = scroll DOWN (read more content)
