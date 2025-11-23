@@ -157,14 +157,30 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         setError(null);
     };
 
-    if (!showUI) {
+    // Only show UI and work on chapter reading pages
+    // Check if we're on a chapter page by checking the URL
+    const [isChapterPage, setIsChapterPage] = useState(false);
+    
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const path = window.location.pathname;
+            setIsChapterPage(path.includes('/chapter/'));
+        }
+    }, []);
+
+    // Don't show or work if not on chapter page
+    if (!isChapterPage || !showUI) {
         return null;
     }
 
     if (!isSupported) {
         return (
-            <div className="text-xs text-gray-400 p-2">
-                Eye tracking not supported in this browser
+            <div className="fixed bottom-32 right-4 z-50">
+                <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border border-slate-700 shadow-xl p-4 max-w-sm">
+                    <div className="text-xs text-gray-400">
+                        Eye tracking not supported in this browser
+                    </div>
+                </div>
             </div>
         );
     }
