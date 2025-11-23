@@ -29,8 +29,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const scrollCooldown = 1000; // 1 second between scrolls
     const isManualScrolling = useRef<boolean>(false);
     const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
-    const isManualScrolling = useRef<boolean>(false);
-    const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         // Check if getUserMedia is supported
