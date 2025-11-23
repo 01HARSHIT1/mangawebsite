@@ -95,10 +95,17 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
             }
 
             // Initialize MediaPipe Eye Tracking Engine
+            console.log('👁️ Eye Tracking: Creating EyeTrackingEngine instance...');
             const engine = new EyeTrackingEngine();
             eyeTrackingEngineRef.current = engine;
 
+            console.log('👁️ Eye Tracking: Initializing engine with video element...');
             await engine.initialize(videoRef.current, (gaze) => {
+                console.log('👁️ Eye Tracking: Gaze callback triggered', {
+                    direction: gaze.direction,
+                    confidence: gaze.confidence.toFixed(2),
+                    hasEyePosition: !!gaze.eyePosition
+                });
                 // Handle gaze detection
                 setGazeDirection(gaze.direction);
                 onGazeDetected?.(gaze.direction);

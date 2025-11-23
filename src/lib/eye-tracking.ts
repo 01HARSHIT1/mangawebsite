@@ -23,21 +23,30 @@ export class EyeTrackingEngine {
         }
 
         try {
-            // Initialize MediaPipe Face Mesh
+            console.log('👁️ Eye Tracking Engine: Initializing MediaPipe Face Mesh...');
+            
+            // Initialize MediaPipe Face Mesh with better error handling
             this.faceMesh = new FaceMesh({
                 locateFile: (file) => {
-                    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    // Use CDN for MediaPipe files
+                    const cdnUrl = `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                    console.log('👁️ Eye Tracking Engine: Loading MediaPipe file:', file, 'from', cdnUrl);
+                    return cdnUrl;
                 }
             });
 
+            console.log('👁️ Eye Tracking Engine: Setting Face Mesh options...');
             this.faceMesh.setOptions({
                 maxNumFaces: 1,
                 refineLandmarks: true,
                 minDetectionConfidence: 0.5,
                 minTrackingConfidence: 0.5
             });
+            
+            console.log('👁️ Eye Tracking Engine: Face Mesh options set successfully');
 
             // Process results
+            console.log('👁️ Eye Tracking Engine: Setting up results handler...');
             this.faceMesh.onResults((results) => {
                 if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                     const gaze = this.detectGaze(results.multiFaceLandmarks[0]);
@@ -48,28 +57,51 @@ export class EyeTrackingEngine {
                     
                     // Use average of recent gaze directions for stability
                     const avgGaze = this.getAverageGaze();
+                    
+                    // Only log significant gaze changes to avoid console spam
+                    if (avgGaze.confidence > 0.3) {
+                        console.log('👁️ Eye Tracking Engine: Gaze detected', {
+                            direction: avgGaze.direction,
+                            confidence: avgGaze.confidence.toFixed(2)
+                        });
+                    }
+                    
                     onResults(avgGaze);
                 } else {
                     // No face detected - return center with low confidence
                     onResults({ direction: 'center', confidence: 0 });
                 }
             });
+            
+            console.log('👁️ Eye Tracking Engine: Results handler set up');
 
             // Initialize camera
+            console.log('👁️ Eye Tracking Engine: Initializing camera...');
             this.camera = new Camera(videoElement, {
                 onFrame: async () => {
                     if (this.faceMesh) {
-                        await this.faceMesh.send({ image: videoElement });
+                        try {
+                            await this.faceMesh.send({ image: videoElement });
+                        } catch (error) {
+                            console.error('👁️ Eye Tracking Engine: Error processing frame:', error);
+                        }
                     }
                 },
                 width: 640,
                 height: 480
             });
 
+            console.log('👁️ Eye Tracking Engine: Starting camera...');
             await this.camera.start();
             this.isInitialized = true;
-        } catch (error) {
-            console.error('Failed to initialize eye tracking:', error);
+            console.log('👁️ Eye Tracking Engine: ✅ Initialization complete! Camera is running.');
+        } catch (error: any) {
+            console.error('👁️ Eye Tracking Engine: ❌ Failed to initialize:', error);
+            console.error('👁️ Eye Tracking Engine: Error details:', {
+                name: error?.name,
+                message: error?.message,
+                stack: error?.stack?.substring(0, 200)
+            });
             throw error;
         }
     }
