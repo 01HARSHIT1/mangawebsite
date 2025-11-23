@@ -259,36 +259,68 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     }
     
     // Show UI on chapter pages, or if explicitly enabled
-    // Always show if eyeTrackingEnabled is true OR if we're on a chapter page
-    const shouldShow = eyeTrackingEnabled || isChapterPage;
+    // ALWAYS show if we're on a chapter page OR if eyeTrackingEnabled is true
+    const shouldShow = isChapterPage || eyeTrackingEnabled;
     
     if (!shouldShow) {
-        console.log('👁️ Eye Tracking: Not showing - not enabled and not on chapter page');
+        console.log('👁️ Eye Tracking: Not showing - not on chapter page and not enabled', {
+            isChapterPage,
+            eyeTrackingEnabled,
+            pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A'
+        });
         return null;
     }
     
-    console.log('👁️ Eye Tracking: Panel should be visible!', {
+    console.log('👁️ Eye Tracking: ✅✅✅ PANEL SHOULD BE VISIBLE NOW! ✅✅✅', {
         isChapterPage,
         eyeTrackingEnabled,
-        isSupported
+        isSupported,
+        showUI,
+        pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A',
+        timestamp: new Date().toISOString()
     });
 
     if (!isSupported) {
+        console.log('👁️ Eye Tracking: Browser not supported, but showing panel anyway');
         return (
-            <div className="fixed bottom-32 right-4 z-50">
-                <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border border-slate-700 shadow-xl p-4 max-w-sm">
-                    <div className="text-xs text-gray-400">
-                        Eye tracking not supported in this browser
+            <div 
+                className="fixed bottom-32 right-4 z-50" 
+                style={{ zIndex: 9999 }}
+                id="eye-tracking-panel-unsupported"
+            >
+                <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-4 max-w-sm">
+                    <div className="text-xs text-yellow-400 font-semibold">
+                        ⚠️ Eye tracking not supported in this browser
+                    </div>
+                    <div className="text-xs text-gray-400 mt-2">
+                        Please use Chrome, Edge, or another modern browser
                     </div>
                 </div>
             </div>
         );
     }
 
-    console.log('👁️ Eye Tracking: Rendering UI panel');
+    console.log('👁️ Eye Tracking: ✅ RENDERING UI PANEL NOW!', {
+        isChapterPage,
+        eyeTrackingEnabled,
+        isSupported,
+        isActive,
+        position: 'bottom-32 right-4',
+        zIndex: 9999,
+        elementId: 'eye-tracking-panel'
+    });
     
     return (
-        <div className="fixed bottom-32 right-4 z-50" style={{ zIndex: 9999 }}>
+        <div 
+            className="fixed bottom-32 right-4 z-50" 
+            style={{ 
+                zIndex: 9999,
+                position: 'fixed',
+                bottom: '8rem',
+                right: '1rem'
+            }}
+            id="eye-tracking-panel"
+        >
             <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-green-500/50 shadow-xl p-4 max-w-sm">
                 <div className="flex items-center justify-between mb-3">
                     <div>
