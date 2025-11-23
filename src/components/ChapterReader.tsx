@@ -643,18 +643,17 @@ export default function ChapterReader({
                 />
             )}
 
-            {/* Eye Tracking */}
-            {eyeTrackingEnabled && (
-                <EyeTracking
-                    onGazeDetected={(direction) => {
-                        if (direction === 'down' && isFeatureEnabled('autoScroll')) {
-                            window.scrollBy({ top: window.innerHeight * 0.5, behavior: 'smooth' });
-                        }
-                    }}
-                    enabled={eyeTrackingEnabled}
-                    showUI={true}
-                />
-            )}
+            {/* Eye Tracking - Always show on chapter pages for visibility */}
+            <EyeTracking
+                onGazeDetected={(direction) => {
+                    console.log('👁️ Eye Tracking: Gaze detected in ChapterReader', direction);
+                    if (direction === 'down' && isFeatureEnabled('autoScroll')) {
+                        window.scrollBy({ top: window.innerHeight * 0.5, behavior: 'smooth' });
+                    }
+                }}
+                enabled={eyeTrackingEnabled}
+                showUI={true}
+            />
 
             {/* Light Detection */}
             {autoBrightnessEnabled && (

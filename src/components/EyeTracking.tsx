@@ -215,31 +215,63 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 const path = window.location.pathname;
                 const isChapter = path.includes('/chapter/');
                 setIsChapterPage(isChapter);
-                console.log('📍 Chapter page check:', { path, isChapter });
+                console.log('👁️ Eye Tracking - Chapter page check:', { 
+                    path, 
+                    isChapter, 
+                    eyeTrackingEnabled,
+                    showUI,
+                    isSupported 
+                });
             };
             checkChapterPage();
             // Check periodically in case of client-side navigation
             const interval = setInterval(checkChapterPage, 1000);
             // Also check on route changes
-            window.addEventListener('popstate', checkChapterPage);
+            const handleRouteChange = () => checkChapterPage();
+            window.addEventListener('popstate', handleRouteChange);
+            // Listen for Next.js route changes
+            window.addEventListener('pushstate', handleRouteChange);
             return () => {
                 clearInterval(interval);
-                window.removeEventListener('popstate', checkChapterPage);
+                window.removeEventListener('popstate', handleRouteChange);
+                window.removeEventListener('pushstate', handleRouteChange);
             };
         }
-    }, []);
+    }, [eyeTrackingEnabled, showUI, isSupported]);
+
+    // Debug logging
+    useEffect(() => {
+        console.log('👁️ Eye Tracking Component State:', {
+            isChapterPage,
+            eyeTrackingEnabled,
+            showUI,
+            isSupported,
+            isActive,
+            shouldShow: (showUI && (eyeTrackingEnabled || isChapterPage))
+        });
+    }, [isChapterPage, eyeTrackingEnabled, showUI, isSupported, isActive]);
 
     // Always show UI on chapter pages, even if not enabled
     // This allows users to enable it from the chapter page itself
     if (!showUI) {
+        console.log('👁️ Eye Tracking: Not showing - showUI is false');
         return null;
     }
     
     // Show UI on chapter pages, or if explicitly enabled
-    // For now, always show if eyeTrackingEnabled is true (from toggle)
-    if (!eyeTrackingEnabled && !isChapterPage) {
+    // Always show if eyeTrackingEnabled is true OR if we're on a chapter page
+    const shouldShow = eyeTrackingEnabled || isChapterPage;
+    
+    if (!shouldShow) {
+        console.log('👁️ Eye Tracking: Not showing - not enabled and not on chapter page');
         return null;
     }
+    
+    console.log('👁️ Eye Tracking: Panel should be visible!', {
+        isChapterPage,
+        eyeTrackingEnabled,
+        isSupported
+    });
 
     if (!isSupported) {
         return (
@@ -253,9 +285,11 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         );
     }
 
+    console.log('👁️ Eye Tracking: Rendering UI panel');
+    
     return (
-        <div className="fixed bottom-32 right-4 z-50">
-            <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border border-slate-700 shadow-xl p-4 max-w-sm">
+        <div className="fixed bottom-32 right-4 z-50" style={{ zIndex: 9999 }}>
+            <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-green-500/50 shadow-xl p-4 max-w-sm">
                 <div className="flex items-center justify-between mb-3">
                     <div>
                         <h3 className="text-white font-semibold text-sm">Eye Tracking</h3>
