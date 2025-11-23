@@ -96,8 +96,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
-        {/* PWA Manifest */}
-        <link rel="manifest" href="/api/manifest" />
+        {/* PWA Manifest - Use direct public file to avoid 401 errors */}
+        <link rel="manifest" href="/manifest.json" />
 
         {/* Favicon and Icons */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

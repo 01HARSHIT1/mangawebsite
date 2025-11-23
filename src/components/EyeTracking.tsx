@@ -121,40 +121,52 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                         const scrollMultiplier = 0.3 + (gaze.confidence * 0.5); // 0.3 to 0.8 of viewport
                         const scrollAmount = window.innerHeight * scrollMultiplier;
                         
+                        // Prevent multiple scrolls from interfering
+                        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                        
                         if (gaze.direction === 'down') {
-                            // Scroll down for manga reading (next content)
-                            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-                            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                            
+                            // Looking down = scroll DOWN (read more content)
                             // Only scroll if not at bottom
-                            if (currentScroll < maxScroll - 50) {
-                                window.scrollBy({ 
-                                    top: scrollAmount, 
-                                    behavior: 'smooth' 
+                            if (currentScroll < maxScroll - 100) {
+                                // Use requestAnimationFrame to prevent scroll conflicts
+                                requestAnimationFrame(() => {
+                                    window.scrollBy({ 
+                                        top: scrollAmount, 
+                                        behavior: 'smooth' 
+                                    });
                                 });
                                 lastScrollTime.current = now;
-                                console.log('👁️ Eye tracking: Scrolling down', { 
+                                console.log('👁️ Eye tracking: ✅ Scrolling DOWN (looking down)', { 
                                     direction: gaze.direction, 
                                     confidence: gaze.confidence.toFixed(2),
-                                    scrollAmount: Math.round(scrollAmount)
+                                    scrollAmount: Math.round(scrollAmount),
+                                    currentScroll: Math.round(currentScroll),
+                                    maxScroll: Math.round(maxScroll)
                                 });
+                            } else {
+                                console.log('👁️ Eye tracking: At bottom, not scrolling');
                             }
                         } else if (gaze.direction === 'up') {
-                            // Scroll up (previous content)
-                            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-                            
+                            // Looking up = scroll UP (go back)
                             // Only scroll if not at top
-                            if (currentScroll > 50) {
-                                window.scrollBy({ 
-                                    top: -scrollAmount, 
-                                    behavior: 'smooth' 
+                            if (currentScroll > 100) {
+                                // Use requestAnimationFrame to prevent scroll conflicts
+                                requestAnimationFrame(() => {
+                                    window.scrollBy({ 
+                                        top: -scrollAmount, 
+                                        behavior: 'smooth' 
+                                    });
                                 });
                                 lastScrollTime.current = now;
-                                console.log('👁️ Eye tracking: Scrolling up', { 
+                                console.log('👁️ Eye tracking: ✅ Scrolling UP (looking up)', { 
                                     direction: gaze.direction, 
                                     confidence: gaze.confidence.toFixed(2),
-                                    scrollAmount: Math.round(scrollAmount)
+                                    scrollAmount: Math.round(scrollAmount),
+                                    currentScroll: Math.round(currentScroll)
                                 });
+                            } else {
+                                console.log('👁️ Eye tracking: At top, not scrolling');
                             }
                         }
                     }

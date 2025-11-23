@@ -156,11 +156,16 @@ export class EyeTrackingEngine {
         let direction: 'up' | 'down' | 'left' | 'right' | 'center' = 'center';
         
         // Prioritize vertical movement for manga scrolling
+        // Note: In MediaPipe coordinates, Y increases downward
+        // normalizedY > 0 means eye is BELOW face center (looking down)
+        // normalizedY < 0 means eye is ABOVE face center (looking up)
         if (Math.abs(normalizedY) > verticalThreshold) {
             if (normalizedY > 0) {
-                direction = 'down'; // Looking down = scroll down
+                // Eye is below center = looking down = should scroll DOWN
+                direction = 'down';
             } else {
-                direction = 'up'; // Looking up = scroll up
+                // Eye is above center = looking up = should scroll UP
+                direction = 'up';
             }
         } else if (Math.abs(normalizedX) > horizontalThreshold) {
             if (normalizedX > 0) {
