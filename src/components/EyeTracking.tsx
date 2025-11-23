@@ -213,12 +213,19 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         if (typeof window !== 'undefined') {
             const checkChapterPage = () => {
                 const path = window.location.pathname;
-                setIsChapterPage(path.includes('/chapter/'));
+                const isChapter = path.includes('/chapter/');
+                setIsChapterPage(isChapter);
+                console.log('📍 Chapter page check:', { path, isChapter });
             };
             checkChapterPage();
+            // Check periodically in case of client-side navigation
+            const interval = setInterval(checkChapterPage, 1000);
             // Also check on route changes
             window.addEventListener('popstate', checkChapterPage);
-            return () => window.removeEventListener('popstate', checkChapterPage);
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('popstate', checkChapterPage);
+            };
         }
     }, []);
 
@@ -229,7 +236,8 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     }
     
     // Show UI on chapter pages, or if explicitly enabled
-    if (!isChapterPage && !eyeTrackingEnabled) {
+    // For now, always show if eyeTrackingEnabled is true (from toggle)
+    if (!eyeTrackingEnabled && !isChapterPage) {
         return null;
     }
 
