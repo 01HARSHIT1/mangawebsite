@@ -191,20 +191,30 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     // Gaze detection is now handled by EyeTrackingEngine
 
     const toggleTracking = async () => {
+        console.log('👁️ Eye Tracking: Toggle button clicked', {
+            isSupported,
+            isActive,
+            eyeTrackingEnabled,
+            willBecomeActive: !isActive
+        });
+        
         if (!isSupported) {
+            console.error('👁️ Eye Tracking: Not supported in this browser');
             setError('Eye tracking not supported in this browser');
             return;
         }
 
         if (!isActive) {
             // Starting tracking - request camera permission
+            console.log('👁️ Eye Tracking: Requesting camera permission...');
             try {
                 // Request permission first
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 // Immediately stop it - we just wanted permission
                 stream.getTracks().forEach(track => track.stop());
-                console.log('✅ Camera permission granted');
+                console.log('✅ Camera permission granted - ready to start tracking');
             } catch (err: any) {
+                console.error('👁️ Eye Tracking: Camera permission error', err);
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                     setError('Camera permission denied. Please allow camera access in your browser settings.');
                     return;
@@ -213,10 +223,13 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     return;
                 }
             }
+        } else {
+            console.log('👁️ Eye Tracking: Stopping tracking...');
         }
 
         setIsActive(!isActive);
         setError(null);
+        console.log('👁️ Eye Tracking: State updated', { isActive: !isActive });
     };
 
     // Only show UI and work on chapter reading pages
