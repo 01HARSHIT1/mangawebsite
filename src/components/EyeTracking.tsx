@@ -21,6 +21,20 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const [error, setError] = useState<string | null>(null);
     const [gazeDirection, setGazeDirection] = useState<string | null>(null);
     
+    // Accuracy tracking metrics
+    const [currentConfidence, setCurrentConfidence] = useState<number>(0);
+    const [averageConfidence, setAverageConfidence] = useState<number>(0);
+    const [detectionRate, setDetectionRate] = useState<number>(0);
+    const [screenPosition, setScreenPosition] = useState<{ x: number; y: number } | null>(null);
+    const [viewportZone, setViewportZone] = useState<string | null>(null);
+    const [scrollIntensity, setScrollIntensity] = useState<number>(0);
+    
+    // Statistics tracking
+    const detectionCountRef = useRef<number>(0);
+    const totalFramesRef = useRef<number>(0);
+    const confidenceHistoryRef = useRef<number[]>([]);
+    const lastUpdateTimeRef = useRef<number>(Date.now());
+    
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
@@ -125,11 +139,50 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
             console.log('👁️ Eye Tracking: Initializing engine with video element...');
             await engine.initialize(videoRef.current, (gaze) => {
+                // Update accuracy metrics
+                totalFramesRef.current += 1;
+                if (gaze.confidence > 0.1) {
+                    detectionCountRef.current += 1;
+                    confidenceHistoryRef.current.push(gaze.confidence);
+                    // Keep only last 100 readings for average
+                    if (confidenceHistoryRef.current.length > 100) {
+                        confidenceHistoryRef.current.shift();
+                    }
+                }
+                
+                // Calculate detection rate (last 1 second)
+                const now = Date.now();
+                if (now - lastUpdateTimeRef.current > 1000) {
+                    const rate = (detectionCountRef.current / totalFramesRef.current) * 100;
+                    setDetectionRate(rate);
+                    
+                    // Calculate average confidence
+                    if (confidenceHistoryRef.current.length > 0) {
+                        const avg = confidenceHistoryRef.current.reduce((a, b) => a + b, 0) / confidenceHistoryRef.current.length;
+                        setAverageConfidence(avg);
+                    }
+                    
+                    // Reset counters
+                    detectionCountRef.current = 0;
+                    totalFramesRef.current = 0;
+                    lastUpdateTimeRef.current = now;
+                }
+                
+                // Update real-time metrics
+                setCurrentConfidence(gaze.confidence);
+                setScreenPosition(gaze.screenPosition || null);
+                setViewportZone(gaze.viewportZone || null);
+                setScrollIntensity(gaze.scrollIntensity || 0);
+                
                 console.log('👁️ Eye Tracking: Gaze callback triggered', {
                     direction: gaze.direction,
                     confidence: gaze.confidence.toFixed(2),
-                    hasEyePosition: !!gaze.eyePosition
+                    hasEyePosition: !!gaze.eyePosition,
+                    screenPosition: gaze.screenPosition,
+                    viewportZone: gaze.viewportZone,
+                    scrollIntensity: gaze.scrollIntensity?.toFixed(2)
                 });
+                
                 // Handle gaze detection
                 setGazeDirection(gaze.direction);
                 onGazeDetected?.(gaze.direction);
@@ -440,11 +493,116 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                             <span>Tracking gaze...</span>
                         </div>
+                        
+                        {/* Accuracy Metrics Section */}
+                        <div className="mt-3 p-2 bg-slate-900/70 rounded border border-slate-700">
+                            <div className="text-xs font-semibold text-cyan-400 mb-2">📊 Accuracy Metrics</div>
+                            
+                            {/* Current Confidence */}
+                            <div className="mb-2">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs text-gray-400">Current Confidence:</span>
+                                    <span className={`text-xs font-bold ${
+                                        currentConfidence > 0.7 ? 'text-green-400' :
+                                        currentConfidence > 0.4 ? 'text-yellow-400' :
+                                        'text-red-400'
+                                    }`}>
+                                        {(currentConfidence * 100).toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div className="w-full bg-slate-800 rounded-full h-1.5">
+                                    <div 
+                                        className={`h-1.5 rounded-full transition-all ${
+                                            currentConfidence > 0.7 ? 'bg-green-500' :
+                                            currentConfidence > 0.4 ? 'bg-yellow-500' :
+                                            'bg-red-500'
+                                        }`}
+                                        style={{ width: `${Math.min(currentConfidence * 100, 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                            
+                            {/* Average Confidence */}
+                            <div className="mb-2">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs text-gray-400">Avg Confidence:</span>
+                                    <span className={`text-xs font-bold ${
+                                        averageConfidence > 0.7 ? 'text-green-400' :
+                                        averageConfidence > 0.4 ? 'text-yellow-400' :
+                                        'text-gray-400'
+                                    }`}>
+                                        {(averageConfidence * 100).toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div className="w-full bg-slate-800 rounded-full h-1.5">
+                                    <div 
+                                        className={`h-1.5 rounded-full transition-all ${
+                                            averageConfidence > 0.7 ? 'bg-green-500' :
+                                            averageConfidence > 0.4 ? 'bg-yellow-500' :
+                                            'bg-gray-500'
+                                        }`}
+                                        style={{ width: `${Math.min(averageConfidence * 100, 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                            
+                            {/* Detection Rate */}
+                            <div className="mb-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-400">Detection Rate:</span>
+                                    <span className={`text-xs font-bold ${
+                                        detectionRate > 80 ? 'text-green-400' :
+                                        detectionRate > 50 ? 'text-yellow-400' :
+                                        'text-red-400'
+                                    }`}>
+                                        {detectionRate.toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {/* Screen Position & Zone */}
+                            {screenPosition && (
+                                <div className="mt-2 pt-2 border-t border-slate-700 space-y-1">
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-gray-400">Screen Position:</span>
+                                        <span className="text-cyan-400 font-mono">
+                                            X: {screenPosition.x.toFixed(2)} Y: {screenPosition.y.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    {viewportZone && (
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-gray-400">Viewport Zone:</span>
+                                            <span className={`font-bold ${
+                                                viewportZone === 'top' ? 'text-blue-400' :
+                                                viewportZone === 'bottom' ? 'text-green-400' :
+                                                'text-yellow-400'
+                                            }`}>
+                                                {viewportZone.toUpperCase()}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {scrollIntensity !== 0 && (
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-gray-400">Scroll Intensity:</span>
+                                            <span className={`font-bold ${
+                                                scrollIntensity > 0 ? 'text-green-400' : 'text-blue-400'
+                                            }`}>
+                                                {scrollIntensity > 0 ? '↓' : '↑'} {Math.abs(scrollIntensity).toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Gaze Direction */}
                         {gazeDirection && (
                             <div className="text-xs text-blue-400">
                                 Direction: <span className="font-bold">{gazeDirection}</span>
                             </div>
                         )}
+                        
+                        {/* Auto-scroll Status */}
                         {autoScrollEnabled && (
                             <div className="text-xs text-yellow-400">
                                 ✓ Auto-scroll enabled
@@ -455,6 +613,21 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                                 ⚠ Enable auto-scroll in settings
                             </div>
                         )}
+                        
+                        {/* Accuracy Rating */}
+                        <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
+                            <div className="font-semibold text-cyan-400 mb-1">Accuracy Rating:</div>
+                            <div className={`text-sm font-bold ${
+                                averageConfidence > 0.7 && detectionRate > 80 ? 'text-green-400' :
+                                averageConfidence > 0.4 && detectionRate > 50 ? 'text-yellow-400' :
+                                'text-red-400'
+                            }`}>
+                                {averageConfidence > 0.7 && detectionRate > 80 ? '🟢 Excellent' :
+                                 averageConfidence > 0.4 && detectionRate > 50 ? '🟡 Good' :
+                                 '🔴 Poor - Check lighting & camera position'}
+                            </div>
+                        </div>
+                        
                         <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
                             💡 Look down to scroll, look up to scroll back
                         </div>
