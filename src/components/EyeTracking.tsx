@@ -320,6 +320,27 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     </div>
                 )}
 
+                {/* Instructions when not active */}
+                {!isActive && eyeTrackingEnabled && (
+                    <div className="mt-3 p-2 bg-slate-900/50 rounded text-xs text-gray-400 border border-slate-700">
+                        <p className="font-semibold text-yellow-400 mb-1">📖 How to use:</p>
+                        <ol className="list-decimal list-inside space-y-0.5 text-xs">
+                            <li>Click the eye icon above to start</li>
+                            <li>Allow camera access when prompted</li>
+                            <li>Look down → page scrolls down</li>
+                            <li>Look up → page scrolls up</li>
+                        </ol>
+                    </div>
+                )}
+                
+                {/* Message when not enabled */}
+                {!eyeTrackingEnabled && (
+                    <div className="mt-3 p-2 bg-slate-900/50 rounded text-xs text-orange-400 border border-orange-700/50">
+                        <p className="font-semibold mb-1">⚠️ Not Enabled</p>
+                        <p className="text-xs">Enable "Eye Tracking" from the toggle button in the top-right corner of the homepage.</p>
+                    </div>
+                )}
+
                 {/* Hidden video and canvas for processing */}
                 <video
                     ref={videoRef}
