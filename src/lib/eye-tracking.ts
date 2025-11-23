@@ -49,6 +49,9 @@ export class EyeTrackingEngine {
                     // Use average of recent gaze directions for stability
                     const avgGaze = this.getAverageGaze();
                     onResults(avgGaze);
+                } else {
+                    // No face detected - return center with low confidence
+                    onResults({ direction: 'center', confidence: 0 });
                 }
             });
 
@@ -114,7 +117,7 @@ export class EyeTrackingEngine {
         const normalizedY = (eyeY - faceCenterY) / faceHeight;
         
         // Enhanced thresholds for manga reading (more sensitive for scrolling)
-        const verticalThreshold = 0.03; // More sensitive for up/down (manga scrolling)
+        const verticalThreshold = 0.02; // More sensitive for up/down (manga scrolling) - lowered from 0.03
         const horizontalThreshold = 0.05; // Less sensitive for left/right
         
         // Determine direction with priority for vertical (manga reading)
@@ -140,8 +143,8 @@ export class EyeTrackingEngine {
         const horizontalMagnitude = Math.abs(normalizedX);
         const maxMagnitude = Math.max(verticalMagnitude, horizontalMagnitude);
         
-        // Higher confidence for stronger movements
-        const confidence = Math.min(maxMagnitude * 15, 1.0);
+        // Higher confidence for stronger movements - increased multiplier for better sensitivity
+        const confidence = Math.min(maxMagnitude * 20, 1.0); // Increased from 15 to 20
         
         return {
             direction,

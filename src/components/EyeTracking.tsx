@@ -58,6 +58,8 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 return;
             }
 
+            console.log('🎥 Requesting camera access...');
+            
             // Request camera access
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
@@ -68,10 +70,12 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
             });
 
             streamRef.current = stream;
+            console.log('✅ Camera access granted');
 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 await videoRef.current.play();
+                console.log('✅ Video stream started');
             }
 
             // Initialize MediaPipe Eye Tracking Engine
@@ -84,34 +88,57 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 onGazeDetected?.(gaze.direction);
 
                 // Enhanced auto-scroll for manga reading
-                // More responsive and natural scrolling based on gaze
-                if (autoScrollEnabled && gaze.confidence > 0.4) {
+                // Lower confidence threshold and more responsive scrolling
+                if (autoScrollEnabled && gaze.confidence > 0.2) { // Lowered from 0.4 to 0.2
                     const now = Date.now();
-                    const dynamicCooldown = Math.max(500, scrollCooldown - (gaze.confidence * 500)); // Faster for high confidence
+                    const dynamicCooldown = Math.max(300, scrollCooldown - (gaze.confidence * 700)); // Faster response
                     
                     if (now - lastScrollTime.current > dynamicCooldown) {
-                        // Calculate scroll amount based on confidence (more confident = bigger scroll)
-                        const scrollMultiplier = 0.2 + (gaze.confidence * 0.4); // 0.2 to 0.6 of viewport
+                        // Calculate scroll amount - more noticeable for manga reading
+                        const scrollMultiplier = 0.3 + (gaze.confidence * 0.5); // 0.3 to 0.8 of viewport
                         const scrollAmount = window.innerHeight * scrollMultiplier;
                         
                         if (gaze.direction === 'down') {
                             // Scroll down for manga reading (next content)
-                            window.scrollBy({ 
-                                top: scrollAmount, 
-                                behavior: 'smooth' 
-                            });
-                            lastScrollTime.current = now;
+                            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                            
+                            // Only scroll if not at bottom
+                            if (currentScroll < maxScroll - 50) {
+                                window.scrollBy({ 
+                                    top: scrollAmount, 
+                                    behavior: 'smooth' 
+                                });
+                                lastScrollTime.current = now;
+                                console.log('👁️ Eye tracking: Scrolling down', { 
+                                    direction: gaze.direction, 
+                                    confidence: gaze.confidence.toFixed(2),
+                                    scrollAmount: Math.round(scrollAmount)
+                                });
+                            }
                         } else if (gaze.direction === 'up') {
                             // Scroll up (previous content)
-                            window.scrollBy({ 
-                                top: -scrollAmount, 
-                                behavior: 'smooth' 
-                            });
-                            lastScrollTime.current = now;
+                            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                            
+                            // Only scroll if not at top
+                            if (currentScroll > 50) {
+                                window.scrollBy({ 
+                                    top: -scrollAmount, 
+                                    behavior: 'smooth' 
+                                });
+                                lastScrollTime.current = now;
+                                console.log('👁️ Eye tracking: Scrolling up', { 
+                                    direction: gaze.direction, 
+                                    confidence: gaze.confidence.toFixed(2),
+                                    scrollAmount: Math.round(scrollAmount)
+                                });
+                            }
                         }
                     }
                 }
             });
+            
+            console.log('✅ Eye tracking engine initialized successfully');
 
             setError(null);
         } catch (err: any) {
@@ -211,21 +238,29 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 )}
 
                 {isActive && (
-                    <div className="mb-2">
+                    <div className="mb-2 space-y-2">
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                             <span>Tracking gaze...</span>
                         </div>
                         {gazeDirection && (
-                            <div className="text-xs text-blue-400 mt-1">
-                                Direction: {gazeDirection}
+                            <div className="text-xs text-blue-400">
+                                Direction: <span className="font-bold">{gazeDirection}</span>
                             </div>
                         )}
                         {autoScrollEnabled && (
-                            <div className="text-xs text-yellow-400 mt-1">
-                                Auto-scroll enabled
+                            <div className="text-xs text-yellow-400">
+                                ✓ Auto-scroll enabled
                             </div>
                         )}
+                        {!autoScrollEnabled && (
+                            <div className="text-xs text-orange-400">
+                                ⚠ Enable auto-scroll in settings
+                            </div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
+                            💡 Look down to scroll, look up to scroll back
+                        </div>
                     </div>
                 )}
 
