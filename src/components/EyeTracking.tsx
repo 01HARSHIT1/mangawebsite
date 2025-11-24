@@ -453,6 +453,16 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             (window as any).__MASTER_CALIBRATION_CODE__ = code;
                             (window as any).__MASTER_CALIBRATION_DATA__ = calibration;
                             
+                            // Also store in localStorage for automatic retrieval
+                            localStorage.setItem('__MASTER_CALIBRATION_FOR_HARDCODING__', JSON.stringify({
+                                code: code,
+                                data: calibration,
+                                timestamp: new Date().toISOString()
+                            }));
+                            
+                            console.log('👁️ Eye Tracking: 💾 Calibration data stored for automatic hardcoding');
+                            console.log('👁️ Eye Tracking: The code above will be automatically applied to the source code');
+                            
                             // Try to copy to clipboard
                             if (navigator.clipboard && navigator.clipboard.writeText) {
                                 navigator.clipboard.writeText(code).then(() => {
