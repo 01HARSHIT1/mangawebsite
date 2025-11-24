@@ -592,6 +592,9 @@ export class EyeTrackingEngine {
             
             // Map normalizedY to screen position for display
             // Use calibrated values to map
+            const scrollUpY = scrollUpData.mean;
+            const scrollDownY = scrollDownData.mean;
+            const noScrollY = noScrollData.mean;
             const minY = Math.min(scrollUpY, scrollDownY, noScrollY);
             const maxY = Math.max(scrollUpY, scrollDownY, noScrollY);
             const rangeY = maxY - minY;
