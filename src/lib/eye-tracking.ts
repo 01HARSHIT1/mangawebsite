@@ -48,8 +48,8 @@ export interface CalibrationData {
 
 // DEFAULT/MASTER CALIBRATION - Used for all users who haven't calibrated
 // This is set once from your samples and used universally
-// TODO: Replace these values with your actual calibration samples
-const DEFAULT_MASTER_CALIBRATION: CalibrationData = {
+// This will be updated when you complete calibration
+let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     scrollUp: {
         normalizedY: 0, // Will be calculated from samples
         samples: [], // Your 5 scroll up samples will go here
@@ -138,8 +138,8 @@ export class EyeTrackingEngine {
             calibrated: true
         };
         
-        // Update the default constant
-        Object.assign(DEFAULT_MASTER_CALIBRATION, masterCalibration);
+        // Update the default/master calibration
+        DEFAULT_MASTER_CALIBRATION = masterCalibration;
         
         console.log('👁️ Eye Tracking: ✅ Master calibration set for all users!', {
             scrollUp: { mean: scrollUpStats.mean.toFixed(4), stdDev: scrollUpStats.stdDev.toFixed(4), range: `${scrollUpStats.min.toFixed(3)}-${scrollUpStats.max.toFixed(3)}` },
