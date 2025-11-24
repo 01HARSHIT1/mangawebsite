@@ -8,16 +8,38 @@ export const runtime = 'nodejs';
 export default async function ChapterPage({
     params
 }: {
-    params: { mangaId: string; chapterId: string }
+    params: Promise<{ mangaId: string; chapterId: string }>
 }) {
     try {
+        // Await params in Next.js 13+ app router
+        const { mangaId, chapterId } = await params;
+        
+        // Validate IDs
+        if (!mangaId || !chapterId) {
+            return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold mb-4">Invalid Chapter URL</h1>
+                    <p className="text-gray-400">The chapter URL is invalid.</p>
+                </div>
+            </div>;
+        }
+
         const client = await clientPromise;
         const db = client.db();
 
-        // Get manga details
-        const manga = await db.collection('manga').findOne({
-            _id: new ObjectId(params.mangaId)
-        });
+        // Get manga details - handle both string and ObjectId
+        let manga;
+        try {
+            manga = await db.collection('manga').findOne({
+                _id: new ObjectId(mangaId)
+            });
+        } catch (error) {
+            console.error('Error fetching manga:', error);
+            // Try as string if ObjectId fails
+            manga = await db.collection('manga').findOne({
+                _id: mangaId
+            });
+        }
 
         if (!manga) {
             return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -28,10 +50,19 @@ export default async function ChapterPage({
             </div>;
         }
 
-        // Get current chapter
-        const chapter = await db.collection('chapters').findOne({
-            _id: new ObjectId(params.chapterId)
-        });
+        // Get current chapter - handle both string and ObjectId
+        let chapter;
+        try {
+            chapter = await db.collection('chapters').findOne({
+                _id: new ObjectId(chapterId)
+            });
+        } catch (error) {
+            console.error('Error fetching chapter:', error);
+            // Try as string if ObjectId fails
+            chapter = await db.collection('chapters').findOne({
+                _id: chapterId
+            });
+        }
 
         if (!chapter) {
             return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -47,15 +78,15 @@ export default async function ChapterPage({
         const allChapters = await db.collection('chapters')
             .find({ 
                 $or: [
-                    { mangaId: params.mangaId },
-                    { mangaId: new ObjectId(params.mangaId) }
+                    { mangaId: mangaId },
+                    { mangaId: new ObjectId(mangaId) }
                 ]
             })
             .sort({ chapterNumber: 1 })
             .toArray();
 
         // Find current chapter index
-        const currentIndex = allChapters.findIndex(ch => ch._id.toString() === params.chapterId);
+        const currentIndex = allChapters.findIndex(ch => ch._id.toString() === chapterId);
         const prevChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : null;
         const nextChapter = currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : null;
 
@@ -111,11 +142,18 @@ export default async function ChapterPage({
         );
     } catch (error: any) {
         console.error('Error loading chapter:', error);
+        console.error('Error stack:', error?.stack);
+        console.error('Error details:', {
+            message: error?.message,
+            name: error?.name,
+            code: error?.code
+        });
         return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
             <div className="text-center">
                 <h1 className="text-2xl font-bold mb-4">Error Loading Chapter</h1>
                 <p className="text-gray-400">Something went wrong. Please try again.</p>
                 <p className="text-gray-500 text-sm mt-2">Error: {error?.message || 'Unknown error'}</p>
+                <p className="text-gray-600 text-xs mt-1">Check the server logs for more details.</p>
             </div>
         </div>;
     }
