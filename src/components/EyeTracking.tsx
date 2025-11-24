@@ -41,7 +41,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const streamRef = useRef<MediaStream | null>(null);
     const eyeTrackingEngineRef = useRef<EyeTrackingEngine | null>(null);
     const lastScrollTime = useRef<number>(0);
-    const scrollCooldown = 30; // 30ms between scrolls for smoother, faster scrolling (reduced from 50ms)
+    const scrollCooldown = 200; // 200ms between scrolls to prevent vibration (increased from 30ms)
     const isManualScrolling = useRef<boolean>(false);
     const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -243,33 +243,35 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     // Looking MIDDLE → no scroll (comfortable reading zone)
                     
                     if (Math.abs(gaze.scrollIntensity) > minIntensity && gaze.confidence >= minConfidence) {
-                        // Add scroll cooldown to prevent vibration (only scroll every 30ms for smoother scrolling)
+                        // INCREASED scroll cooldown significantly to prevent vibration
+                        // 200ms cooldown prevents rapid-fire scrolling that causes vibration
                         const now = Date.now();
-                        if (now - lastScrollTime.current < 30) {
-                            return; // Too soon, skip this frame
+                        if (now - lastScrollTime.current < 200) {
+                            return; // Too soon, skip this frame to prevent vibration
                         }
                         
-                        // SIGNIFICANTLY INCREASED scroll amounts for better page coverage
-                        // Base scroll: 15-60px per scroll (was 3-12px)
+                        // Calculate scroll amount with good page coverage
                         const intensityMultiplier = Math.abs(gaze.scrollIntensity);
-                        const baseScrollAmount = 15.0; // Increased from 3.0 - covers more content
-                        const maxScrollAmount = 60.0; // Increased from 12.0 - covers much more content
-                        const scrollAmount = Math.max(baseScrollAmount, scrollSpeed * intensityMultiplier * 2.5); // 2.5x multiplier for more coverage
+                        const baseScrollAmount = 20.0; // Good page coverage
+                        const maxScrollAmount = 50.0; // Maximum scroll amount
+                        const scrollAmount = Math.max(baseScrollAmount, scrollSpeed * intensityMultiplier * 1.5); // 1.5x multiplier
                         const finalScrollAmount = Math.min(maxScrollAmount, scrollAmount); // Cap at max
                         
+                        // REAL-TIME SCROLL LOGIC: Immediate response based on current zone
+                        // Zone detection is now real-time, so scroll direction changes immediately
                         if (gaze.viewportZone === 'top' && currentScroll > 50) {
-                            // Looking UP (eyes up) → scroll UP (negative scroll to see previous content)
+                            // Looking UP (eyes up, normalizedY more negative) → scroll UP (to previous content)
                             lastScrollTime.current = now;
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
-                                    top: -finalScrollAmount, // Negative = scroll UP (to previous content)
+                                    top: -finalScrollAmount, // Negative = scroll UP (to previous content above)
                                     behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
-                            if (Math.random() < 0.03) { // 3% of frames
-                                console.log('👁️ Eye tracking: Looking UP → Scrolling UP (to previous content)', {
+                            if (Math.random() < 0.02) { // 2% of frames
+                                console.log('👁️ Eye tracking: TOP zone → Scrolling UP (to previous content)', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
                                     scrollAmount: finalScrollAmount.toFixed(2),
@@ -279,18 +281,18 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                                 });
                             }
                         } else if (gaze.viewportZone === 'bottom' && currentScroll < maxScroll - 50) {
-                            // Looking DOWN (eyes down) → scroll DOWN (positive scroll to see new content)
+                            // Looking DOWN (eyes down, normalizedY less negative) → scroll DOWN (to new content)
                             lastScrollTime.current = now;
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
-                                    top: finalScrollAmount, // Positive = scroll DOWN (to new content)
+                                    top: finalScrollAmount, // Positive = scroll DOWN (to new content below)
                                     behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
-                            if (Math.random() < 0.03) { // 3% of frames
-                                console.log('👁️ Eye tracking: Looking DOWN → Scrolling DOWN (to new content)', {
+                            if (Math.random() < 0.02) { // 2% of frames
+                                console.log('👁️ Eye tracking: BOTTOM zone → Scrolling DOWN (to new content)', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
                                     scrollAmount: finalScrollAmount.toFixed(2),
@@ -301,7 +303,9 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                                 });
                             }
                         } else if (gaze.viewportZone === 'middle') {
-                            // Middle zone → no scrolling (dead zone for comfortable reading)
+                            // Middle zone → no scrolling (comfortable reading zone)
+                            // Reset scroll timer when in middle to allow immediate scroll when leaving middle
+                            lastScrollTime.current = now - 150; // Allow scroll sooner when leaving middle
                         }
                     }
                 }

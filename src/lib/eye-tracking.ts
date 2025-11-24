@@ -107,9 +107,9 @@ export class EyeTrackingEngine {
     private gazeHistory: GazeDirection[] = [];
     private readonly historySize = 7; // Increased for better smoothing
     private calibrationData: CalibrationData | null = null;
-    // Smoothing for normalizedY to reduce jitter
+    // Smoothing for normalizedY to reduce jitter (reduced for real-time response)
     private normalizedYHistory: number[] = [];
-    private readonly smoothingHistorySize = 5;
+    private readonly smoothingHistorySize = 3; // Reduced from 5 to 3 for faster, real-time response
     // Zone stability - require multiple frames in same zone before changing
     private currentZone: 'top' | 'middle' | 'bottom' | null = null;
     private zoneConfidence: number = 0;
@@ -528,25 +528,24 @@ export class EyeTrackingEngine {
             const scrollDownData = this.calibrationData.scrollDown;
             const noScrollData = this.calibrationData.noScroll;
             
-            // MAXIMUM PRECISION: Use smoothed normalizedY for stability
-            // Exponential moving average for smooth tracking
+            // REAL-TIME DETECTION: Use minimal smoothing for immediate response
+            // Store history for display purposes only, but use recent value for zone detection
             this.normalizedYHistory.push(normalizedY);
-            if (this.normalizedYHistory.length > this.smoothingHistorySize) {
+            if (this.normalizedYHistory.length > 3) { // Reduced from 5 to 3 for faster response
                 this.normalizedYHistory.shift();
             }
-            // Weighted average (recent samples have more weight)
-            let smoothedY = normalizedY;
+            
+            // Use MOST RECENT value (80% weight) + slight smoothing (20% weight) for real-time response
+            // This gives immediate zone changes while reducing minor jitter
+            let detectionY = normalizedY; // Primary: use raw value for real-time
             if (this.normalizedYHistory.length > 1) {
-                const weights = [0.4, 0.3, 0.15, 0.1, 0.05]; // Recent = more weight
-                smoothedY = this.normalizedYHistory.reduce((sum, val, idx) => {
-                    const weight = weights[Math.min(idx, weights.length - 1)] || 0.05;
-                    return sum + (val * weight);
-                }, 0);
+                const recent = this.normalizedYHistory[this.normalizedYHistory.length - 1];
+                const previous = this.normalizedYHistory[this.normalizedYHistory.length - 2] || recent;
+                // 80% current, 20% previous for minimal smoothing
+                detectionY = (recent * 0.8) + (previous * 0.2);
             }
             
-            // MAXIMUM PRECISION: Use tighter ranges (1.0*stdDev) for highest accuracy
-            // This covers ~68% of samples but provides maximum precision
-            // Only use wider range (1.5*stdDev) as fallback for edge cases
+            // REAL-TIME ZONE DETECTION: Use tighter ranges for immediate, accurate zone detection
             const scrollUpRangeTight = {
                 min: scrollUpData.mean - (1.0 * scrollUpData.stdDev),
                 max: scrollUpData.mean + (1.0 * scrollUpData.stdDev)
@@ -560,7 +559,7 @@ export class EyeTrackingEngine {
                 max: noScrollData.mean + (1.0 * noScrollData.stdDev)
             };
             
-            // Fallback ranges (1.5*stdDev) for edge cases
+            // Wider ranges for fallback (1.5*stdDev)
             const scrollUpRange = {
                 min: scrollUpData.mean - (1.5 * scrollUpData.stdDev),
                 max: scrollUpData.mean + (1.5 * scrollUpData.stdDev)
@@ -573,9 +572,6 @@ export class EyeTrackingEngine {
                 min: noScrollData.mean - (1.5 * noScrollData.stdDev),
                 max: noScrollData.mean + (1.5 * noScrollData.stdDev)
             };
-            
-            // Use smoothed Y for detection (reduces jitter)
-            const detectionY = smoothedY;
             
             // Check if current position is within tight ranges first (maximum precision)
             const inScrollUpRangeTight = detectionY >= scrollUpRangeTight.min && detectionY <= scrollUpRangeTight.max;
@@ -617,32 +613,41 @@ export class EyeTrackingEngine {
             let detectedZone: 'top' | 'middle' | 'bottom';
             let baseIntensity = 0;
             
-            // Use probability-based detection (most accurate)
-            // FURTHER LOWERED thresholds for maximum responsiveness (0.25 -> 0.20)
-            // This ensures zones change quickly and accurately
-            if (normalizedProbNoScroll > normalizedProbUp && normalizedProbNoScroll > normalizedProbDown && normalizedProbNoScroll > 0.20) {
-                // Highest probability is no-scroll
+            // REAL-TIME ZONE DETECTION: Use range-based detection first for immediate response
+            // Check tight ranges first for accurate, real-time zone detection
+            let detectedZone: 'top' | 'middle' | 'bottom';
+            let baseIntensity = 0;
+            
+            // Priority 1: Check tight ranges for immediate, accurate detection
+            if (inScrollUpRangeTight && !inScrollDownRangeTight && !inNoScrollRangeTight) {
+                // Clearly in scroll-up range (looking UP)
+                detectedZone = 'top';
+                const range = Math.abs(scrollUpData.mean - noScrollData.mean);
+                baseIntensity = range > 0 ? -Math.min(1, Math.max(0.5, distToNoScroll / range)) : -0.6;
+            } else if (inScrollDownRangeTight && !inScrollUpRangeTight && !inNoScrollRangeTight) {
+                // Clearly in scroll-down range (looking DOWN)
+                detectedZone = 'bottom';
+                const range = Math.abs(scrollDownData.mean - noScrollData.mean);
+                baseIntensity = range > 0 ? Math.min(1, Math.max(0.5, distToNoScroll / range)) : 0.6;
+            } else if (inNoScrollRangeTight && !inScrollUpRangeTight && !inScrollDownRangeTight) {
+                // Clearly in no-scroll range (looking MIDDLE)
                 detectedZone = 'middle';
                 baseIntensity = 0;
-            } else if (normalizedProbUp > normalizedProbDown && normalizedProbUp > 0.20) {
-                // Highest probability is scroll-up (looking at top)
-                detectedZone = 'top';
-                // Intensity based on probability and distance - increased for more responsiveness
-                const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                const probBasedIntensity = normalizedProbUp;
-                const distBasedIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.5;
-                // Combine both for maximum accuracy - increased multiplier for stronger intensity
-                baseIntensity = -Math.min(1, (probBasedIntensity * 0.7 + distBasedIntensity * 0.3));
-            } else if (normalizedProbDown > normalizedProbUp && normalizedProbDown > 0.20) {
-                // Highest probability is scroll-down (looking at bottom)
-                detectedZone = 'bottom';
-                // Intensity based on probability and distance - increased for more responsiveness
-                const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                const probBasedIntensity = normalizedProbDown;
-                const distBasedIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.5;
-                // Combine both for maximum accuracy - increased multiplier for stronger intensity
-                baseIntensity = Math.min(1, (probBasedIntensity * 0.7 + distBasedIntensity * 0.3));
             } else {
+                // Priority 2: Use probability-based detection for ambiguous cases
+                // Lowered threshold to 0.15 for faster zone changes
+                if (normalizedProbNoScroll > normalizedProbUp && normalizedProbNoScroll > normalizedProbDown && normalizedProbNoScroll > 0.15) {
+                    detectedZone = 'middle';
+                    baseIntensity = 0;
+                } else if (normalizedProbUp > normalizedProbDown && normalizedProbUp > 0.15) {
+                    detectedZone = 'top';
+                    const range = Math.abs(scrollUpData.mean - noScrollData.mean);
+                    baseIntensity = range > 0 ? -Math.min(1, Math.max(0.5, distToNoScroll / range)) : -0.6;
+                } else if (normalizedProbDown > normalizedProbUp && normalizedProbDown > 0.15) {
+                    detectedZone = 'bottom';
+                    const range = Math.abs(scrollDownData.mean - noScrollData.mean);
+                    baseIntensity = range > 0 ? Math.min(1, Math.max(0.5, distToNoScroll / range)) : 0.6;
+                } else {
                 // Ambiguous - use tight range detection as fallback
                 if (inNoScrollRangeTight && !inScrollUpRangeTight && !inScrollDownRangeTight) {
                     detectedZone = 'middle';
@@ -673,19 +678,11 @@ export class EyeTrackingEngine {
                 }
             }
             
-            // Zone stability: More responsive - immediately update zone but smooth intensity
-            // Changed: Always update zone immediately for responsiveness, but smooth intensity
+            // REAL-TIME ZONE UPDATE: Immediately update zone with no delay
+            // No smoothing or stability checks - instant zone changes for real-time response
             viewportZone = detectedZone;
             this.currentZone = detectedZone;
-            
-            // Smooth intensity transitions to prevent vibration
-            if (detectedZone === this.currentZone) {
-                // Same zone - use full intensity
-                scrollIntensity = baseIntensity;
-            } else {
-                // Zone changed - use smoothed intensity to prevent sudden jumps
-                scrollIntensity = baseIntensity * 0.8; // Slight reduction during transition
-            }
+            scrollIntensity = baseIntensity; // Use full intensity immediately for responsive scrolling
             
             // Map normalizedY to screen position for display
             // Use calibrated values to map - FIXED: Use detectionY (smoothed) instead of raw normalizedY
