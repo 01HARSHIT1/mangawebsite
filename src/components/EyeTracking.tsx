@@ -407,7 +407,19 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                             scrollDown: calibration.scrollDown.samples,
                             noScroll: calibration.noScroll.samples
                         });
-                        console.log('👁️ Eye Tracking: ✅ Master calibration set for ALL users! This will be used as default for everyone.');
+                        
+                        // Export the calibration data for hardcoding
+                        const exportedData = EyeTrackingEngine.exportCalibrationForHardcoding();
+                        console.log('👁️ Eye Tracking: ✅ Master calibration set for ALL users!');
+                        console.log('👁️ Eye Tracking: 📋 Copy this data to hardcode into the code:');
+                        console.log('='.repeat(80));
+                        console.log(exportedData);
+                        console.log('='.repeat(80));
+                        console.log('👁️ Eye Tracking: Raw samples:', {
+                            scrollUp: calibration.scrollUp.samples,
+                            scrollDown: calibration.scrollDown.samples,
+                            noScroll: calibration.noScroll.samples
+                        });
                     });
                 }
             }

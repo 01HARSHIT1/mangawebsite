@@ -155,6 +155,29 @@ export class EyeTrackingEngine {
         return DEFAULT_MASTER_CALIBRATION;
     }
     
+    // Export calibration data for hardcoding (call this to get the values)
+    static exportCalibrationForHardcoding(): string {
+        if (typeof window === 'undefined') {
+            return JSON.stringify(DEFAULT_MASTER_CALIBRATION, null, 2);
+        }
+        
+        // Try to get from localStorage first
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (stored) {
+                const data = JSON.parse(stored) as CalibrationData;
+                if (data.calibrated) {
+                    return JSON.stringify(data, null, 2);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to export calibration:', error);
+        }
+        
+        // Fallback to master calibration
+        return JSON.stringify(DEFAULT_MASTER_CALIBRATION, null, 2);
+    }
+    
     // Load calibration from localStorage, or use default master calibration
     loadCalibration(): CalibrationData | null {
         if (typeof window === 'undefined') {
