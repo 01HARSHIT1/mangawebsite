@@ -547,28 +547,31 @@ export class EyeTrackingEngine {
             const distToNoScroll = Math.abs(normalizedY - noScrollData.mean);
             
             // Determine action based on learned patterns
+            // Note: scrollUp mean (-0.1678) is MORE NEGATIVE than scrollDown mean (-0.1539)
+            // This means: looking UP (eyes move up) = more negative = scrollUp
+            //             looking DOWN (eyes move down) = less negative = scrollDown
             // Priority: if within a range, use that; otherwise use closest mean
             if (inNoScrollRange && !inScrollUpRange && !inScrollDownRange) {
                 // Clearly in no-scroll zone
                 viewportZone = 'middle';
                 scrollIntensity = 0;
             } else if (inScrollUpRange && !inScrollDownRange) {
-                // In scroll-up zone
+                // In scroll-up zone (more negative = looking up = scroll page up)
                 viewportZone = 'top';
                 // Intensity based on how far from no-scroll mean (normalized)
                 const range = Math.abs(scrollUpData.mean - noScrollData.mean);
                 if (range > 0) {
-                    scrollIntensity = -Math.min(1, distToNoScroll / range);
+                    scrollIntensity = -Math.min(1, distToNoScroll / range); // Negative for scroll up
                 } else {
                     scrollIntensity = -0.5;
                 }
             } else if (inScrollDownRange && !inScrollUpRange) {
-                // In scroll-down zone
+                // In scroll-down zone (less negative = looking down = scroll page down)
                 viewportZone = 'bottom';
                 // Intensity based on how far from no-scroll mean (normalized)
                 const range = Math.abs(scrollDownData.mean - noScrollData.mean);
                 if (range > 0) {
-                    scrollIntensity = Math.min(1, distToNoScroll / range);
+                    scrollIntensity = Math.min(1, distToNoScroll / range); // Positive for scroll down
                 } else {
                     scrollIntensity = 0.5;
                 }
