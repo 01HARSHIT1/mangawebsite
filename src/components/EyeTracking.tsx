@@ -460,6 +460,26 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                 timestamp: new Date().toISOString()
                             }));
                             
+                            // Automatically save to server file for direct access
+                            fetch('/api/eye-tracking/save-master-calibration', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(calibration)
+                            }).then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    console.log('👁️ Eye Tracking: ✅ Calibration data automatically saved to server file!');
+                                    console.log('👁️ Eye Tracking: 📁 File location: data/master-calibration.json');
+                                    console.log('👁️ Eye Tracking: The system now has direct access to your calibration data');
+                                } else {
+                                    console.warn('👁️ Eye Tracking: ⚠️ Could not save to server file:', result.error);
+                                }
+                            }).catch(error => {
+                                console.warn('👁️ Eye Tracking: ⚠️ Could not save to server file:', error);
+                            });
+                            
                             console.log('👁️ Eye Tracking: 💾 Calibration data stored for automatic hardcoding');
                             console.log('👁️ Eye Tracking: The code above will be automatically applied to the source code');
                             
