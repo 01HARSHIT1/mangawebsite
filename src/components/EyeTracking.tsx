@@ -347,6 +347,72 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         setError(null);
         console.log('👁️ Eye Tracking: State updated', { isActive: !isActive });
     };
+    
+    const startCalibration = () => {
+        if (!isActive) {
+            setError('Please start eye tracking first');
+            return;
+        }
+        setIsCalibrating(true);
+        setCalibrationStep('scrollUp');
+        setCalibrationSamples({ scrollUp: 0, scrollDown: 0, noScroll: 0 });
+        console.log('👁️ Eye Tracking: Starting calibration - Step 1: Look at TOP of screen and click "Scroll Up"');
+    };
+    
+    const addCalibrationSample = (action: 'scrollUp' | 'scrollDown' | 'noScroll') => {
+        if (!eyeTrackingEngineRef.current || currentNormalizedYRef.current === null) {
+            setError('Eye tracking not ready. Please wait a moment.');
+            return;
+        }
+        
+        const normalizedY = currentNormalizedYRef.current;
+        eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
+        
+        // Update sample count
+        setCalibrationSamples(prev => ({
+            ...prev,
+            [action]: prev[action] + 1
+        }));
+        
+        console.log(`👁️ Eye Tracking: Added ${action} sample`, { normalizedY, samples: calibrationSamples[action] + 1 });
+        
+        // Move to next step
+        if (action === 'scrollUp' && calibrationSamples.scrollUp < 4) {
+            // Continue collecting scrollUp samples
+        } else if (action === 'scrollUp' && calibrationSamples.scrollUp >= 4) {
+            setCalibrationStep('scrollDown');
+            console.log('👁️ Eye Tracking: Step 2: Look at BOTTOM of screen and click "Scroll Down"');
+        } else if (action === 'scrollDown' && calibrationSamples.scrollDown < 4) {
+            // Continue collecting scrollDown samples
+        } else if (action === 'scrollDown' && calibrationSamples.scrollDown >= 4) {
+            setCalibrationStep('noScroll');
+            console.log('👁️ Eye Tracking: Step 3: Look at MIDDLE of screen and click "Don\'t Scroll"');
+        } else if (action === 'noScroll' && calibrationSamples.noScroll < 4) {
+            // Continue collecting noScroll samples
+        } else if (action === 'noScroll' && calibrationSamples.noScroll >= 4) {
+            setCalibrationStep('complete');
+            setIsCalibrating(false);
+            console.log('👁️ Eye Tracking: ✅ Calibration complete!');
+        }
+    };
+    
+    const cancelCalibration = () => {
+        setIsCalibrating(false);
+        setCalibrationStep(null);
+        setCalibrationSamples({ scrollUp: 0, scrollDown: 0, noScroll: 0 });
+        if (eyeTrackingEngineRef.current) {
+            eyeTrackingEngineRef.current.clearCalibration();
+        }
+        console.log('👁️ Eye Tracking: Calibration cancelled');
+    };
+    
+    const clearCalibration = () => {
+        if (eyeTrackingEngineRef.current) {
+            eyeTrackingEngineRef.current.clearCalibration();
+            setError(null);
+            console.log('👁️ Eye Tracking: Calibration cleared');
+        }
+    };
 
     // Only show UI and work on chapter reading pages
     // Check if we're on a chapter page by checking the URL
