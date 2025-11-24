@@ -46,6 +46,37 @@ export interface CalibrationData {
     calibrated: boolean;
 }
 
+// DEFAULT/MASTER CALIBRATION - Used for all users who haven't calibrated
+// This is set once from your samples and used universally
+// TODO: Replace these values with your actual calibration samples
+const DEFAULT_MASTER_CALIBRATION: CalibrationData = {
+    scrollUp: {
+        normalizedY: 0, // Will be calculated from samples
+        samples: [], // Your 5 scroll up samples will go here
+        mean: 0,
+        stdDev: 0,
+        min: 0,
+        max: 0
+    },
+    scrollDown: {
+        normalizedY: 0,
+        samples: [], // Your 5 scroll down samples will go here
+        mean: 0,
+        stdDev: 0,
+        min: 0,
+        max: 0
+    },
+    noScroll: {
+        normalizedY: 0,
+        samples: [], // Your 5 no-scroll samples will go here
+        mean: 0,
+        stdDev: 0,
+        min: 0,
+        max: 0
+    },
+    calibrated: false
+};
+
 export class EyeTrackingEngine {
     private faceMesh: FaceMesh | null = null;
     private camera: Camera | null = null;
@@ -54,10 +85,85 @@ export class EyeTrackingEngine {
     private readonly historySize = 5;
     private calibrationData: CalibrationData | null = null;
     
-    // Load calibration from localStorage
+    // Calculate statistics helper (static for use in default calibration)
+    private static calculateStatistics(samples: number[]): { mean: number; stdDev: number; min: number; max: number } {
+        if (samples.length === 0) {
+            return { mean: 0, stdDev: 0, min: 0, max: 0 };
+        }
+        
+        const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+        const variance = samples.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / samples.length;
+        const stdDev = Math.sqrt(variance);
+        const min = Math.min(...samples);
+        const max = Math.max(...samples);
+        
+        return { mean, stdDev, min, max };
+    }
+    
+    // Set master/default calibration from samples (call this once with your samples)
+    static setMasterCalibration(samples: {
+        scrollUp: number[];
+        scrollDown: number[];
+        noScroll: number[];
+    }): CalibrationData {
+        const scrollUpStats = this.calculateStatistics(samples.scrollUp);
+        const scrollDownStats = this.calculateStatistics(samples.scrollDown);
+        const noScrollStats = this.calculateStatistics(samples.noScroll);
+        
+        const masterCalibration: CalibrationData = {
+            scrollUp: {
+                normalizedY: scrollUpStats.mean,
+                samples: samples.scrollUp,
+                mean: scrollUpStats.mean,
+                stdDev: scrollUpStats.stdDev,
+                min: scrollUpStats.min,
+                max: scrollUpStats.max
+            },
+            scrollDown: {
+                normalizedY: scrollDownStats.mean,
+                samples: samples.scrollDown,
+                mean: scrollDownStats.mean,
+                stdDev: scrollDownStats.stdDev,
+                min: scrollDownStats.min,
+                max: scrollDownStats.max
+            },
+            noScroll: {
+                normalizedY: noScrollStats.mean,
+                samples: samples.noScroll,
+                mean: noScrollStats.mean,
+                stdDev: noScrollStats.stdDev,
+                min: noScrollStats.min,
+                max: noScrollStats.max
+            },
+            calibrated: true
+        };
+        
+        // Update the default constant
+        Object.assign(DEFAULT_MASTER_CALIBRATION, masterCalibration);
+        
+        console.log('👁️ Eye Tracking: ✅ Master calibration set for all users!', {
+            scrollUp: { mean: scrollUpStats.mean.toFixed(4), stdDev: scrollUpStats.stdDev.toFixed(4), range: `${scrollUpStats.min.toFixed(3)}-${scrollUpStats.max.toFixed(3)}` },
+            scrollDown: { mean: scrollDownStats.mean.toFixed(4), stdDev: scrollDownStats.stdDev.toFixed(4), range: `${scrollDownStats.min.toFixed(3)}-${scrollDownStats.max.toFixed(3)}` },
+            noScroll: { mean: noScrollStats.mean.toFixed(4), stdDev: noScrollStats.stdDev.toFixed(4), range: `${noScrollStats.min.toFixed(3)}-${noScrollStats.max.toFixed(3)}` }
+        });
+        
+        return masterCalibration;
+    }
+    
+    // Get master/default calibration
+    static getMasterCalibration(): CalibrationData {
+        return DEFAULT_MASTER_CALIBRATION;
+    }
+    
+    // Load calibration from localStorage, or use default master calibration
     loadCalibration(): CalibrationData | null {
-        if (typeof window === 'undefined') return null;
+        if (typeof window === 'undefined') {
+            // Server-side: return master calibration
+            return DEFAULT_MASTER_CALIBRATION.calibrated ? DEFAULT_MASTER_CALIBRATION : null;
+        }
+        
         try {
+            // First, try to load user's personal calibration
             const stored = localStorage.getItem('eyeTrackingCalibration');
             if (stored) {
                 const data = JSON.parse(stored) as CalibrationData;
@@ -92,7 +198,7 @@ export class EyeTrackingEngine {
                 }
                 
                 this.calibrationData = data;
-                console.log('👁️ Eye Tracking: Loaded learned calibration data', {
+                console.log('👁️ Eye Tracking: Loaded user personal calibration', {
                     scrollUp: { mean: data.scrollUp?.mean?.toFixed(4), stdDev: data.scrollUp?.stdDev?.toFixed(4), samples: data.scrollUp?.samples?.length },
                     scrollDown: { mean: data.scrollDown?.mean?.toFixed(4), stdDev: data.scrollDown?.stdDev?.toFixed(4), samples: data.scrollDown?.samples?.length },
                     noScroll: { mean: data.noScroll?.mean?.toFixed(4), stdDev: data.noScroll?.stdDev?.toFixed(4), samples: data.noScroll?.samples?.length },
@@ -100,10 +206,23 @@ export class EyeTrackingEngine {
                 });
                 return data;
             }
+            
+            // No user calibration found - use master/default calibration
+            if (DEFAULT_MASTER_CALIBRATION.calibrated) {
+                this.calibrationData = DEFAULT_MASTER_CALIBRATION;
+                console.log('👁️ Eye Tracking: Using master/default calibration for all users', {
+                    scrollUp: { mean: DEFAULT_MASTER_CALIBRATION.scrollUp.mean.toFixed(4), stdDev: DEFAULT_MASTER_CALIBRATION.scrollUp.stdDev.toFixed(4) },
+                    scrollDown: { mean: DEFAULT_MASTER_CALIBRATION.scrollDown.mean.toFixed(4), stdDev: DEFAULT_MASTER_CALIBRATION.scrollDown.stdDev.toFixed(4) },
+                    noScroll: { mean: DEFAULT_MASTER_CALIBRATION.noScroll.mean.toFixed(4), stdDev: DEFAULT_MASTER_CALIBRATION.noScroll.stdDev.toFixed(4) }
+                });
+                return DEFAULT_MASTER_CALIBRATION;
+            }
         } catch (error) {
             console.error('👁️ Eye Tracking: Failed to load calibration', error);
         }
-        return null;
+        
+        // Fallback to master if available
+        return DEFAULT_MASTER_CALIBRATION.calibrated ? DEFAULT_MASTER_CALIBRATION : null;
     }
     
     // Save calibration to localStorage
@@ -120,17 +239,7 @@ export class EyeTrackingEngine {
     
     // Calculate statistics from samples
     private calculateStatistics(samples: number[]): { mean: number; stdDev: number; min: number; max: number } {
-        if (samples.length === 0) {
-            return { mean: 0, stdDev: 0, min: 0, max: 0 };
-        }
-        
-        const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
-        const variance = samples.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / samples.length;
-        const stdDev = Math.sqrt(variance);
-        const min = Math.min(...samples);
-        const max = Math.max(...samples);
-        
-        return { mean, stdDev, min, max };
+        return EyeTrackingEngine.calculateStatistics(samples);
     }
     
     // Add a calibration sample

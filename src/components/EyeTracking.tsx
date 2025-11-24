@@ -392,6 +392,26 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         } else if (action === 'noScroll' && calibrationSamples.noScroll >= 4) {
             setCalibrationStep('complete');
             setIsCalibrating(false);
+            
+            // Collect all samples and set as master calibration for all users
+            if (eyeTrackingEngineRef.current) {
+                const calibration = eyeTrackingEngineRef.current.getCalibration();
+                if (calibration && calibration.calibrated && 
+                    calibration.scrollUp.samples.length >= 5 &&
+                    calibration.scrollDown.samples.length >= 5 &&
+                    calibration.noScroll.samples.length >= 5) {
+                    // Set master calibration from collected samples
+                    import('@/lib/eye-tracking').then(({ EyeTrackingEngine }) => {
+                        EyeTrackingEngine.setMasterCalibration({
+                            scrollUp: calibration.scrollUp.samples,
+                            scrollDown: calibration.scrollDown.samples,
+                            noScroll: calibration.noScroll.samples
+                        });
+                        console.log('👁️ Eye Tracking: ✅ Master calibration set for ALL users! This will be used as default for everyone.');
+                    });
+                }
+            }
+            
             console.log('👁️ Eye Tracking: ✅ Calibration complete!');
         }
     };
