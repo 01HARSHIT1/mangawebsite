@@ -610,9 +610,6 @@ export class EyeTrackingEngine {
             // This means: looking UP (eyes move up) = more negative = scrollUp
             //             looking DOWN (eyes move down) = less negative = scrollDown
             
-            let detectedZone: 'top' | 'middle' | 'bottom';
-            let baseIntensity = 0;
-            
             // REAL-TIME ZONE DETECTION: Use range-based detection first for immediate response
             // Check tight ranges first for accurate, real-time zone detection
             let detectedZone: 'top' | 'middle' | 'bottom';
