@@ -113,7 +113,7 @@ export class EyeTrackingEngine {
     // Zone stability - require multiple frames in same zone before changing
     private currentZone: 'top' | 'middle' | 'bottom' | null = null;
     private zoneConfidence: number = 0;
-    private readonly zoneStabilityThreshold = 3; // Require 3 frames in same zone
+    private readonly zoneStabilityThreshold = 1; // Require 1 frame for faster response (reduced from 3)
     
     // Calculate statistics helper (static for use in default calibration)
     private static calculateStatistics(samples: number[]): { mean: number; stdDev: number; min: number; max: number } {
@@ -618,11 +618,12 @@ export class EyeTrackingEngine {
             let baseIntensity = 0;
             
             // Use probability-based detection (most accurate)
-            if (normalizedProbNoScroll > normalizedProbUp && normalizedProbNoScroll > normalizedProbDown && normalizedProbNoScroll > 0.4) {
+            // Lowered thresholds for better responsiveness (0.4 -> 0.25, 0.35 -> 0.25)
+            if (normalizedProbNoScroll > normalizedProbUp && normalizedProbNoScroll > normalizedProbDown && normalizedProbNoScroll > 0.25) {
                 // Highest probability is no-scroll
                 detectedZone = 'middle';
                 baseIntensity = 0;
-            } else if (normalizedProbUp > normalizedProbDown && normalizedProbUp > 0.35) {
+            } else if (normalizedProbUp > normalizedProbDown && normalizedProbUp > 0.25) {
                 // Highest probability is scroll-up
                 detectedZone = 'top';
                 // Intensity based on probability and distance
@@ -631,7 +632,7 @@ export class EyeTrackingEngine {
                 const distBasedIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.5;
                 // Combine both for maximum accuracy
                 baseIntensity = -Math.min(1, (probBasedIntensity * 0.6 + distBasedIntensity * 0.4));
-            } else if (normalizedProbDown > normalizedProbUp && normalizedProbDown > 0.35) {
+            } else if (normalizedProbDown > normalizedProbUp && normalizedProbDown > 0.25) {
                 // Highest probability is scroll-down
                 detectedZone = 'bottom';
                 // Intensity based on probability and distance
@@ -697,7 +698,7 @@ export class EyeTrackingEngine {
             }
             
             // Map normalizedY to screen position for display
-            // Use calibrated values to map
+            // Use calibrated values to map - FIXED: Use detectionY (smoothed) instead of raw normalizedY
             const scrollUpY = scrollUpData.mean;
             const scrollDownY = scrollDownData.mean;
             const noScrollY = noScrollData.mean;
@@ -705,7 +706,8 @@ export class EyeTrackingEngine {
             const maxY = Math.max(scrollUpY, scrollDownY, noScrollY);
             const rangeY = maxY - minY;
             if (rangeY > 0) {
-                clampedScreenY = (normalizedY - minY) / rangeY;
+                // Use smoothed detectionY for more accurate screen position
+                clampedScreenY = (detectionY - minY) / rangeY;
             } else {
                 clampedScreenY = 0.5;
             }

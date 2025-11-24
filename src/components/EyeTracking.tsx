@@ -232,24 +232,26 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     
                     // MAXIMUM PRECISION: Higher threshold with confidence requirement
                     // Only scroll if intensity is significant AND confidence is high
-                    const minIntensity = 0.25; // Increased threshold for precision
-                    const minConfidence = 0.6; // Require minimum confidence
+                    const minIntensity = 0.20; // Lowered threshold for better responsiveness (was 0.25)
+                    const minConfidence = 0.55; // Lowered threshold for better responsiveness (was 0.6)
                     
+                    // INVERTED SCROLL LOGIC: User wants looking up to scroll down, looking down to scroll up
+                    // This matches natural reading behavior: look at top → want to see content below → scroll down
                     if (Math.abs(gaze.scrollIntensity) > minIntensity && gaze.confidence >= minConfidence) {
-                        if (gaze.viewportZone === 'bottom' && currentScroll < maxScroll - 50) {
-                            // Looking at bottom → scroll DOWN (positive scroll amount)
-                            // scrollIntensity is already positive for bottom zone
-                            const scrollAmount = Math.abs(scrollSpeed * gaze.scrollIntensity); // Always positive for down
+                        if (gaze.viewportZone === 'top' && currentScroll < maxScroll - 50) {
+                            // Looking at TOP → scroll DOWN (to see content below)
+                            // scrollIntensity is negative for top zone, but we want to scroll DOWN (positive)
+                            const scrollAmount = Math.abs(scrollSpeed * gaze.scrollIntensity); // Make positive for down
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
-                                    top: scrollAmount, 
+                                    top: scrollAmount, // Positive to scroll DOWN
                                     behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
                             if (Math.random() < 0.05) { // 5% of frames
-                                console.log('👁️ Eye tracking: Scrolling DOWN', {
+                                console.log('👁️ Eye tracking: Looking UP → Scrolling DOWN', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
                                     scrollAmount: scrollAmount.toFixed(2),
@@ -258,20 +260,20 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                                     maxScroll: Math.round(maxScroll)
                                 });
                             }
-                        } else if (gaze.viewportZone === 'top' && currentScroll > 50) {
-                            // Looking at top → scroll UP (negative scroll amount)
-                            // scrollIntensity is negative for top zone, so we need positive scrollAmount to go up
+                        } else if (gaze.viewportZone === 'bottom' && currentScroll > 50) {
+                            // Looking at BOTTOM → scroll UP (to see content above)
+                            // scrollIntensity is positive for bottom zone, but we want to scroll UP (negative)
                             const scrollAmount = Math.abs(scrollSpeed * gaze.scrollIntensity); // Make positive
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
-                                    top: -scrollAmount, // Negative to scroll up
+                                    top: -scrollAmount, // Negative to scroll UP
                                     behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
                             if (Math.random() < 0.05) { // 5% of frames
-                                console.log('👁️ Eye tracking: Scrolling UP', {
+                                console.log('👁️ Eye tracking: Looking DOWN → Scrolling UP', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
                                     scrollAmount: scrollAmount.toFixed(2),
@@ -282,6 +284,19 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                         } else if (gaze.viewportZone === 'middle') {
                             // Middle zone → no scrolling (dead zone)
                             // This gives user a comfortable reading zone
+                        }
+                    } else {
+                        // Log why scrolling didn't happen (occasionally)
+                        if (Math.random() < 0.02) { // 2% of frames
+                            console.log('👁️ Eye tracking: Scroll conditions not met', {
+                                zone: gaze.viewportZone,
+                                intensity: Math.abs(gaze.scrollIntensity).toFixed(2),
+                                minIntensity,
+                                confidence: gaze.confidence.toFixed(2),
+                                minConfidence,
+                                meetsIntensity: Math.abs(gaze.scrollIntensity) > minIntensity,
+                                meetsConfidence: gaze.confidence >= minConfidence
+                            });
                         }
                     }
                 }

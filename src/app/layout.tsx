@@ -152,6 +152,61 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }}
           />
         )}
+
+        {/* Global error handler for third-party scripts (e.g., browser extensions) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                // Suppress errors from third-party browser extensions
+                const originalError = window.onerror;
+                window.onerror = function(msg, url, line, col, error) {
+                  // Ignore errors from known third-party extensions
+                  if (url && (
+                    url.includes('liner-core.be.js') ||
+                    url.includes('browser-extension') ||
+                    url.includes('chrome-extension://') ||
+                    url.includes('moz-extension://') ||
+                    url.includes('safari-extension://')
+                  )) {
+                    // Silently ignore third-party extension errors
+                    return true; // Prevent default error handling
+                  }
+                  
+                  // Also suppress 400 errors for Cloudinary PDF transformations
+                  if (msg && typeof msg === 'string' && (
+                    msg.includes('400') ||
+                    msg.includes('Failed to load resource')
+                  )) {
+                    // Check if it's a PDF transformation error
+                    if (url && url.includes('cloudinary.com') && url.includes('.pdf')) {
+                      return true; // Suppress PDF page load errors
+                    }
+                  }
+                  
+                  // Call original error handler for our own errors
+                  if (originalError) {
+                    return originalError.call(this, msg, url, line, col, error);
+                  }
+                  return false; // Allow default error handling for our errors
+                };
+                
+                // Also handle unhandled promise rejections from third-party scripts
+                window.addEventListener('unhandledrejection', function(event) {
+                  const reason = event.reason;
+                  if (reason && typeof reason === 'object' && reason.message) {
+                    const msg = reason.message;
+                    // Suppress PDF 400 errors
+                    if (msg.includes('400') && msg.includes('cloudinary.com') && msg.includes('.pdf')) {
+                      event.preventDefault(); // Suppress the error
+                      return;
+                    }
+                  }
+                });
+              }
+            `
+          }}
+        />
       </head>
       <body className="bg-gray-950 dark:bg-gray-950 text-white dark:text-white min-h-screen font-sans">
         <AuthProvider>

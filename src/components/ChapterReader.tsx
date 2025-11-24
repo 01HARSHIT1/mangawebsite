@@ -52,6 +52,7 @@ export default function ChapterReader({
     // Convert PDF pages to Cloudinary image URLs
     const [loadedPageCount, setLoadedPageCount] = useState(0);
     const [failedPages, setFailedPages] = useState(0);
+    const [maxPageReached, setMaxPageReached] = useState(false);
     const maxPages = 100; // Maximum pages to try loading
     const maxConsecutiveFailures = 3; // Stop after 3 consecutive failures
 
@@ -60,8 +61,11 @@ export default function ChapterReader({
     if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
         // Cloudinary PDF to image transformation
         // We'll try loading pages until we hit consecutive failures
-        for (let i = 1; i <= maxPages; i++) {
+        // Start with a reasonable number of pages, expand if needed
+        const initialPages = Math.min(maxPages, 50); // Start with 50 pages
+        for (let i = 1; i <= initialPages; i++) {
             // Transform: /upload/ -> /upload/f_jpg,pg_{pageNumber},q_auto/
+            // Use proper Cloudinary transformation format
             const imageUrl = pdfUrl.replace('/upload/', `/upload/f_jpg,pg_${i},q_auto/`);
             chapterImages.push(imageUrl);
         }
@@ -77,12 +81,22 @@ export default function ChapterReader({
     }
 
     // Track image load errors
-    const handleImageError = (pageIndex: number) => {
+    const handleImageError = (pageIndex: number, event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+        const img = event.currentTarget;
+        // Silently handle 400/404 errors for non-existent PDF pages
+        if (img.src.includes('cloudinary.com') && (img.src.includes('.pdf') || img.src.includes('f_jpg,pg_'))) {
+            // This is a Cloudinary PDF transformation that failed (page doesn't exist)
+            // Silently hide it - don't log to console to avoid spam
+            img.style.display = 'none';
+            img.style.visibility = 'hidden';
+        }
+        
         setFailedPages(prev => {
             const newFailedCount = prev + 1;
             // If we have too many consecutive failures near the end, we've reached the last page
             if (pageIndex > 5 && newFailedCount >= maxConsecutiveFailures) {
                 console.log(`📄 Detected end of chapter at page ${pageIndex}`);
+                setMaxPageReached(true);
             }
             return newFailedCount;
         });
@@ -403,8 +417,11 @@ export default function ChapterReader({
                 {chapterImages.length > 0 ? (
                     <div className="space-y-2">
                         {chapterImages.map((imageSrc, index) => {
-                            // Stop rendering after too many consecutive failures
-                            if (index > loadedPageCount + maxConsecutiveFailures) {
+                            // Stop rendering after too many consecutive failures or if max page reached
+                            if (maxPageReached && index > loadedPageCount) {
+                                return null;
+                            }
+                            if (index > loadedPageCount + maxConsecutiveFailures && !maxPageReached) {
                                 return null;
                             }
 
@@ -416,9 +433,10 @@ export default function ChapterReader({
                                     className="w-full h-auto"
                                     onLoad={() => handleImageLoad(index)}
                                     onError={(e) => {
-                                        handleImageError(index);
+                                        handleImageError(index, e);
                                         // Hide broken images (pages beyond actual count)
                                         e.currentTarget.style.display = 'none';
+                                        e.currentTarget.style.visibility = 'hidden';
                                     }}
                                     loading="lazy"
                                 />
