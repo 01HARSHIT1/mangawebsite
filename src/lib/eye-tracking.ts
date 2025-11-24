@@ -648,32 +648,33 @@ export class EyeTrackingEngine {
                     const range = Math.abs(scrollDownData.mean - noScrollData.mean);
                     baseIntensity = range > 0 ? Math.min(1, Math.max(0.5, distToNoScroll / range)) : 0.6;
                 } else {
-                // Ambiguous - use tight range detection as fallback
-                if (inNoScrollRangeTight && !inScrollUpRangeTight && !inScrollDownRangeTight) {
-                    detectedZone = 'middle';
-                    baseIntensity = 0;
-                } else if (inScrollUpRangeTight && !inScrollDownRangeTight) {
-                    detectedZone = 'top';
-                    const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                    baseIntensity = range > 0 ? -Math.min(1, Math.max(0.4, distToNoScroll / range)) : -0.5;
-                } else if (inScrollDownRangeTight && !inScrollUpRangeTight) {
-                    detectedZone = 'bottom';
-                    const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                    baseIntensity = range > 0 ? Math.min(1, Math.max(0.4, distToNoScroll / range)) : 0.5;
-                } else {
-                    // Use closest mean as final fallback
-                    const minDist = Math.min(distToUp, distToDown, distToNoScroll);
-                    if (minDist === distToUp) {
-                        detectedZone = 'top';
-                        const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                        baseIntensity = range > 0 ? -Math.min(1, distToNoScroll / range) : -0.4;
-                    } else if (minDist === distToDown) {
-                        detectedZone = 'bottom';
-                        const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                        baseIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.4;
-                    } else {
+                    // Ambiguous - use tight range detection as fallback
+                    if (inNoScrollRangeTight && !inScrollUpRangeTight && !inScrollDownRangeTight) {
                         detectedZone = 'middle';
                         baseIntensity = 0;
+                    } else if (inScrollUpRangeTight && !inScrollDownRangeTight) {
+                        detectedZone = 'top';
+                        const range = Math.abs(scrollUpData.mean - noScrollData.mean);
+                        baseIntensity = range > 0 ? -Math.min(1, Math.max(0.4, distToNoScroll / range)) : -0.5;
+                    } else if (inScrollDownRangeTight && !inScrollUpRangeTight) {
+                        detectedZone = 'bottom';
+                        const range = Math.abs(scrollDownData.mean - noScrollData.mean);
+                        baseIntensity = range > 0 ? Math.min(1, Math.max(0.4, distToNoScroll / range)) : 0.5;
+                    } else {
+                        // Use closest mean as final fallback
+                        const minDist = Math.min(distToUp, distToDown, distToNoScroll);
+                        if (minDist === distToUp) {
+                            detectedZone = 'top';
+                            const range = Math.abs(scrollUpData.mean - noScrollData.mean);
+                            baseIntensity = range > 0 ? -Math.min(1, distToNoScroll / range) : -0.4;
+                        } else if (minDist === distToDown) {
+                            detectedZone = 'bottom';
+                            const range = Math.abs(scrollDownData.mean - noScrollData.mean);
+                            baseIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.4;
+                        } else {
+                            detectedZone = 'middle';
+                            baseIntensity = 0;
+                        }
                     }
                 }
             }
