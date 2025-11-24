@@ -398,17 +398,27 @@ export class EyeTrackingEngine {
                     // Use average of recent gaze directions for stability
                     const avgGaze = this.getAverageGaze();
                     
-                    // Only log significant gaze changes to avoid console spam
-                    if (avgGaze.confidence > 0.3) {
-                        console.log('👁️ Eye Tracking Engine: Gaze detected', {
+                    // Log detection for debugging (reduced frequency)
+                    if (Math.random() < 0.05) { // 5% of frames
+                        console.log('👁️ Eye Tracking Engine: Face detected', {
+                            landmarks: results.multiFaceLandmarks[0].length,
                             direction: avgGaze.direction,
-                            confidence: avgGaze.confidence.toFixed(2)
+                            confidence: avgGaze.confidence.toFixed(2),
+                            hasCalibration: !!this.calibrationData?.calibrated
                         });
                     }
                     
                     onResults(avgGaze);
                 } else {
-                    // No face detected - return center with low confidence
+                    // No face detected - log occasionally for debugging
+                    if (Math.random() < 0.01) { // 1% of frames
+                        console.warn('👁️ Eye Tracking Engine: ⚠️ No face detected in frame', {
+                            hasImage: !!results.image,
+                            imageWidth: results.image?.width,
+                            imageHeight: results.image?.height
+                        });
+                    }
+                    // Return center with low confidence
                     onResults({ direction: 'center', confidence: 0 });
                 }
             });
@@ -450,11 +460,23 @@ export class EyeTrackingEngine {
         // Enhanced gaze detection that calculates screen position and viewport zones
         // This allows smooth, proportional scrolling based on where user is looking
         
+        // Validate landmarks
+        if (!landmarks || landmarks.length < 468) {
+            console.warn('👁️ Eye Tracking: Invalid landmarks array', { length: landmarks?.length });
+            return { direction: 'center', confidence: 0 };
+        }
+        
         // Key eye landmarks
         const leftEyeLeft = landmarks[33];
         const leftEyeRight = landmarks[133];
         const rightEyeLeft = landmarks[362];
         const rightEyeRight = landmarks[263];
+        
+        // Validate eye landmarks exist
+        if (!leftEyeLeft || !leftEyeRight || !rightEyeLeft || !rightEyeRight) {
+            console.warn('👁️ Eye Tracking: Missing eye landmarks');
+            return { direction: 'center', confidence: 0 };
+        }
         
         // Calculate eye centers
         const leftEyeCenter = {
