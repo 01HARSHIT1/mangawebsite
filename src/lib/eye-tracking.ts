@@ -244,6 +244,7 @@ export class EyeTrackingEngine {
         let viewportZone: 'top' | 'middle' | 'bottom' = 'middle';
         let scrollIntensity = 0;
         let clampedScreenY = 0.5; // Default center
+        let clampedScreenX = 0.5; // Default center
         
         if (this.calibrationData && this.calibrationData.calibrated) {
             // Use calibrated thresholds
@@ -296,6 +297,10 @@ export class EyeTrackingEngine {
                 clampedScreenY = 0.5;
             }
             clampedScreenY = Math.max(0, Math.min(1, clampedScreenY));
+            
+            // Calculate screen X position
+            clampedScreenX = 0.5 + (normalizedX * 2);
+            clampedScreenX = Math.max(0, Math.min(1, clampedScreenX));
         } else {
             // Default behavior (no calibration)
             // Map eye movement to screen position
@@ -321,7 +326,6 @@ export class EyeTrackingEngine {
             }
         }
         
-        const clampedScreenX = 0.5 + (normalizedX * 2);
         const finalScreenX = Math.max(0, Math.min(1, clampedScreenX));
         
         // Determine direction for backward compatibility
