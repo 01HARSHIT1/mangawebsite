@@ -61,8 +61,43 @@ export class EyeTrackingEngine {
             const stored = localStorage.getItem('eyeTrackingCalibration');
             if (stored) {
                 const data = JSON.parse(stored) as CalibrationData;
+                
+                // Recalculate statistics if they're missing (for backward compatibility)
+                if (data.scrollUp && data.scrollUp.samples && data.scrollUp.samples.length > 0) {
+                    if (!data.scrollUp.mean || !data.scrollUp.stdDev) {
+                        const stats = this.calculateStatistics(data.scrollUp.samples);
+                        data.scrollUp.mean = stats.mean;
+                        data.scrollUp.stdDev = stats.stdDev;
+                        data.scrollUp.min = stats.min;
+                        data.scrollUp.max = stats.max;
+                    }
+                }
+                if (data.scrollDown && data.scrollDown.samples && data.scrollDown.samples.length > 0) {
+                    if (!data.scrollDown.mean || !data.scrollDown.stdDev) {
+                        const stats = this.calculateStatistics(data.scrollDown.samples);
+                        data.scrollDown.mean = stats.mean;
+                        data.scrollDown.stdDev = stats.stdDev;
+                        data.scrollDown.min = stats.min;
+                        data.scrollDown.max = stats.max;
+                    }
+                }
+                if (data.noScroll && data.noScroll.samples && data.noScroll.samples.length > 0) {
+                    if (!data.noScroll.mean || !data.noScroll.stdDev) {
+                        const stats = this.calculateStatistics(data.noScroll.samples);
+                        data.noScroll.mean = stats.mean;
+                        data.noScroll.stdDev = stats.stdDev;
+                        data.noScroll.min = stats.min;
+                        data.noScroll.max = stats.max;
+                    }
+                }
+                
                 this.calibrationData = data;
-                console.log('👁️ Eye Tracking: Loaded calibration data', data);
+                console.log('👁️ Eye Tracking: Loaded learned calibration data', {
+                    scrollUp: { mean: data.scrollUp?.mean?.toFixed(4), stdDev: data.scrollUp?.stdDev?.toFixed(4), samples: data.scrollUp?.samples?.length },
+                    scrollDown: { mean: data.scrollDown?.mean?.toFixed(4), stdDev: data.scrollDown?.stdDev?.toFixed(4), samples: data.scrollDown?.samples?.length },
+                    noScroll: { mean: data.noScroll?.mean?.toFixed(4), stdDev: data.noScroll?.stdDev?.toFixed(4), samples: data.noScroll?.samples?.length },
+                    calibrated: data.calibrated
+                });
                 return data;
             }
         } catch (error) {
