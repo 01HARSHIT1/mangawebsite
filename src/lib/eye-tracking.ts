@@ -76,38 +76,28 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     calibrated: false
 };
 
+// Import master calibration data (Next.js will bundle this at build time)
+import masterCalibrationData from './master-calibration-data.json';
+
 // Load master calibration from JSON file
 function loadMasterCalibrationFromFile(): CalibrationData | null {
     try {
-        // Import the calibration data file (Next.js will bundle this at build time)
-        // Using dynamic import for client-side, static import for server-side
-        if (typeof window === 'undefined') {
-            // Server-side: use require
-            const calibrationData = require('./master-calibration-data.json') as CalibrationData;
-            if (calibrationData && calibrationData.calibrated) {
-                DEFAULT_MASTER_CALIBRATION = calibrationData;
-                console.log('👁️ Eye Tracking: ✅ Loaded master calibration from file (server-side)');
-                return calibrationData;
-            }
-        } else {
-            // Client-side: try to fetch or use cached
-            // For now, we'll load it synchronously if available
-            // The file will be imported at build time
+        const calibrationData = masterCalibrationData as CalibrationData;
+        if (calibrationData && calibrationData.calibrated) {
+            DEFAULT_MASTER_CALIBRATION = calibrationData;
+            console.log('👁️ Eye Tracking: ✅ Loaded master calibration from JSON file');
+            return calibrationData;
         }
     } catch (error) {
-        // File doesn't exist or not calibrated yet
         console.log('👁️ Eye Tracking: Master calibration file not found or not calibrated yet');
     }
     return null;
 }
 
-// Import calibration data (Next.js will bundle this)
-import masterCalibrationData from './master-calibration-data.json';
-
-// Initialize with imported data
-if (masterCalibrationData && masterCalibrationData.calibrated) {
+// Initialize with imported data on module load
+if (masterCalibrationData && (masterCalibrationData as CalibrationData).calibrated) {
     DEFAULT_MASTER_CALIBRATION = masterCalibrationData as CalibrationData;
-    console.log('👁️ Eye Tracking: ✅ Loaded master calibration from JSON file');
+    console.log('👁️ Eye Tracking: ✅ Master calibration loaded and ready');
 }
 
 export class EyeTrackingEngine {

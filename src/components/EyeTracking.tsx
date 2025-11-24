@@ -35,15 +35,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const confidenceHistoryRef = useRef<number[]>([]);
     const lastUpdateTimeRef = useRef<number>(Date.now());
     
-    // Calibration state
-    const [isCalibrating, setIsCalibrating] = useState(false);
-    const [calibrationStep, setCalibrationStep] = useState<'scrollUp' | 'scrollDown' | 'noScroll' | 'complete' | null>(null);
-    const [calibrationSamples, setCalibrationSamples] = useState<{ scrollUp: number; scrollDown: number; noScroll: number }>({
-        scrollUp: 0,
-        scrollDown: 0,
-        noScroll: 0
-    });
-    const currentNormalizedYRef = useRef<number | null>(null);
     
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -89,40 +80,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         }
     }, []);
 
-    // Automatically save existing calibration data to server file on mount
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const existingCalibration = localStorage.getItem('eyeTrackingCalibration');
-            if (existingCalibration) {
-                try {
-                    const data = JSON.parse(existingCalibration);
-                    if (data.calibrated && 
-                        data.scrollUp?.samples?.length >= 5 &&
-                        data.scrollDown?.samples?.length >= 5 &&
-                        data.noScroll?.samples?.length >= 5) {
-                        // Automatically save to server file
-                        fetch('/api/eye-tracking/save-master-calibration', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(data)
-                        }).then(response => response.json())
-                        .then(result => {
-                            if (result.success) {
-                                console.log('👁️ Eye Tracking: ✅ Existing calibration data automatically saved to server file!');
-                                console.log('👁️ Eye Tracking: 📁 File: data/master-calibration.json');
-                            }
-                        }).catch(error => {
-                            console.warn('👁️ Eye Tracking: Could not auto-save calibration:', error);
-                        });
-                    }
-                } catch (error) {
-                    // Ignore errors
-                }
-            }
-        }
-    }, []); // Run once on mount
 
     useEffect(() => {
         console.log('👁️ Eye Tracking: useEffect triggered', {
@@ -186,7 +143,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
             await engine.initialize(videoRef.current, (gaze) => {
                 // Store current normalized Y for calibration
                 if (gaze.normalizedEyePosition) {
-                    currentNormalizedYRef.current = gaze.normalizedEyePosition.y;
                 }
                 
                 // Update accuracy metrics
@@ -878,83 +834,6 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                     </div>
                 )}
 
-                {/* Calibration UI */}
-                {isCalibrating && (
-                    <div className="mt-3 p-3 bg-purple-900/50 rounded border-2 border-purple-500">
-                        <div className="text-xs font-semibold text-purple-300 mb-2">🎯 Calibration Mode</div>
-                        {calibrationStep === 'scrollUp' && (
-                            <div className="space-y-2">
-                                <p className="text-xs text-yellow-300">Step 1/3: Look at the TOP of your screen</p>
-                                <p className="text-xs text-gray-300">Position your eyes so you're looking at the top part of the manga panel</p>
-                                <button
-                                    onClick={() => addCalibrationSample('scrollUp')}
-                                    className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold"
-                                >
-                                    Scroll Up ({calibrationSamples.scrollUp}/5 samples)
-                                </button>
-                            </div>
-                        )}
-                        {calibrationStep === 'scrollDown' && (
-                            <div className="space-y-2">
-                                <p className="text-xs text-yellow-300">Step 2/3: Look at the BOTTOM of your screen</p>
-                                <p className="text-xs text-gray-300">Position your eyes so you're looking at the bottom part of the manga panel</p>
-                                <button
-                                    onClick={() => addCalibrationSample('scrollDown')}
-                                    className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold"
-                                >
-                                    Scroll Down ({calibrationSamples.scrollDown}/5 samples)
-                                </button>
-                            </div>
-                        )}
-                        {calibrationStep === 'noScroll' && (
-                            <div className="space-y-2">
-                                <p className="text-xs text-yellow-300">Step 3/3: Look at the MIDDLE of your screen</p>
-                                <p className="text-xs text-gray-300">Position your eyes so you're looking at the middle part (comfortable reading position)</p>
-                                <button
-                                    onClick={() => addCalibrationSample('noScroll')}
-                                    className="w-full px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs font-semibold"
-                                >
-                                    Don't Scroll ({calibrationSamples.noScroll}/5 samples)
-                                </button>
-                            </div>
-                        )}
-                        {calibrationStep === 'complete' && (
-                            <div className="space-y-2">
-                                <p className="text-xs text-green-400 font-semibold">✅ Calibration Complete!</p>
-                                <p className="text-xs text-gray-300">The system has learned your eye positions. Auto-scroll should now work correctly.</p>
-                            </div>
-                        )}
-                        <button
-                            onClick={cancelCalibration}
-                            className="mt-2 w-full px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs"
-                        >
-                            Cancel Calibration
-                        </button>
-                    </div>
-                )}
-                
-                {/* Calibration Controls */}
-                {!isCalibrating && isActive && (
-                    <div className="mt-2 space-y-2">
-                        <button
-                            onClick={startCalibration}
-                            className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-semibold"
-                        >
-                            🎯 Start Calibration
-                        </button>
-                        {eyeTrackingEngineRef.current?.getCalibration()?.calibrated && (
-                            <div className="p-2 bg-green-900/30 rounded border border-green-700">
-                                <p className="text-xs text-green-400 mb-1">✓ Calibrated</p>
-                                <button
-                                    onClick={clearCalibration}
-                                    className="text-xs text-red-400 hover:text-red-300"
-                                >
-                                    Clear calibration
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
 
                 {/* Instructions when not active */}
                 {!isActive && eyeTrackingEnabled && (
@@ -963,8 +842,8 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                         <ol className="list-decimal list-inside space-y-0.5 text-xs">
                             <li>Click the eye icon above to start</li>
                             <li>Allow camera access when prompted</li>
-                            <li>Click "Start Calibration" to teach the system your eye positions</li>
-                            <li>Follow the 3-step calibration process</li>
+                            <li>Look down to scroll down, look up to scroll up</li>
+                            <li>The system uses pre-calibrated settings for optimal accuracy</li>
                         </ol>
                     </div>
                 )}
