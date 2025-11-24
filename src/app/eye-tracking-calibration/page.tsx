@@ -20,7 +20,11 @@ export default function EyeTrackingCalibrationPage() {
                     setCalibrationData(data);
                     setStatus('✅ Calibration data found!');
                     
-                    // Automatically save to server
+                    // Display the data in a copyable format
+                    setSaved(true);
+                    setStatus('✅ Calibration data found! Copy the data below and share it.');
+                    
+                    // Also try to save to server (works on local, may not work on Vercel)
                     fetch('/api/eye-tracking/save-master-calibration', {
                         method: 'POST',
                         headers: {
@@ -30,13 +34,14 @@ export default function EyeTrackingCalibrationPage() {
                     }).then(response => response.json())
                     .then(result => {
                         if (result.success) {
-                            setSaved(true);
                             setStatus('✅ Calibration data automatically saved to server!');
                         } else {
-                            setStatus(`❌ Error: ${result.error}`);
+                            // On Vercel, file saving might not work, so we'll use the displayed data
+                            setStatus('✅ Calibration data ready! The data is displayed below for you to share.');
                         }
                     }).catch(error => {
-                        setStatus(`❌ Error saving: ${error.message}`);
+                        // On Vercel, this is expected - we'll use the displayed data instead
+                        setStatus('✅ Calibration data ready! The data is displayed below for you to share.');
                     });
                 } else {
                     setStatus('⚠️ Calibration data found but incomplete. Please complete calibration first.');
@@ -91,12 +96,27 @@ export default function EyeTrackingCalibrationPage() {
                             </div>
                             
                             <div className="mt-4">
-                                <h3 className="font-semibold mb-2">Raw Data (for verification):</h3>
+                                <h3 className="font-semibold mb-2">📋 Copy This Data (I'll use it to hardcode the values):</h3>
+                                <div className="bg-yellow-900/30 border border-yellow-700 rounded p-3 mb-3">
+                                    <p className="text-sm text-yellow-300">
+                                        ⚠️ On Vercel, files can't be saved. Please copy the data below and paste it in your next message.
+                                    </p>
+                                </div>
                                 <textarea
                                     readOnly
                                     value={JSON.stringify(calibrationData, null, 2)}
                                     className="w-full h-64 bg-slate-900 text-xs font-mono p-4 rounded border border-slate-700"
+                                    onClick={(e) => (e.target as HTMLTextAreaElement).select()}
                                 />
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(JSON.stringify(calibrationData, null, 2));
+                                        alert('✅ Data copied to clipboard! Now paste it in your message.');
+                                    }}
+                                    className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold"
+                                >
+                                    📋 Copy Data to Clipboard
+                                </button>
                             </div>
                         </div>
                     )}
