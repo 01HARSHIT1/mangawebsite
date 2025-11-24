@@ -89,6 +89,41 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         }
     }, []);
 
+    // Automatically save existing calibration data to server file on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const existingCalibration = localStorage.getItem('eyeTrackingCalibration');
+            if (existingCalibration) {
+                try {
+                    const data = JSON.parse(existingCalibration);
+                    if (data.calibrated && 
+                        data.scrollUp?.samples?.length >= 5 &&
+                        data.scrollDown?.samples?.length >= 5 &&
+                        data.noScroll?.samples?.length >= 5) {
+                        // Automatically save to server file
+                        fetch('/api/eye-tracking/save-master-calibration', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(data)
+                        }).then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                console.log('👁️ Eye Tracking: ✅ Existing calibration data automatically saved to server file!');
+                                console.log('👁️ Eye Tracking: 📁 File: data/master-calibration.json');
+                            }
+                        }).catch(error => {
+                            console.warn('👁️ Eye Tracking: Could not auto-save calibration:', error);
+                        });
+                    }
+                } catch (error) {
+                    // Ignore errors
+                }
+            }
+        }
+    }, []); // Run once on mount
+
     useEffect(() => {
         console.log('👁️ Eye Tracking: useEffect triggered', {
             eyeTrackingEnabled,
