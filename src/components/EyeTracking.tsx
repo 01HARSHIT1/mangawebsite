@@ -218,12 +218,14 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     
                     // Continuous smooth scrolling based on intensity
                     // Scroll speed is proportional to how far from center they're looking
-                    const baseScrollSpeed = 0.5; // pixels per frame
-                    const maxScrollSpeed = 3.0; // maximum pixels per frame
+                    // Increased speeds for better responsiveness
+                    const baseScrollSpeed = 1.0; // pixels per frame (increased from 0.5)
+                    const maxScrollSpeed = 5.0; // maximum pixels per frame (increased from 3.0)
                     const scrollSpeed = baseScrollSpeed + (Math.abs(gaze.scrollIntensity) * (maxScrollSpeed - baseScrollSpeed));
                     
                     // Only scroll if we have significant intensity and not at boundaries
-                    if (Math.abs(gaze.scrollIntensity) > 0.1) {
+                    // Increased threshold to 0.2 to prevent constant scrolling and improve precision
+                    if (Math.abs(gaze.scrollIntensity) > 0.2) {
                         if (gaze.viewportZone === 'bottom' && currentScroll < maxScroll - 50) {
                             // Looking at bottom → scroll DOWN (positive scroll amount)
                             // scrollIntensity is already positive for bottom zone

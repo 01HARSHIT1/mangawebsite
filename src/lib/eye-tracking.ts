@@ -522,18 +522,19 @@ export class EyeTrackingEngine {
             const noScrollData = this.calibrationData.noScroll;
             
             // Calculate probability/confidence for each action using statistical ranges
-            // Use mean ± 2*stdDev as the confidence range (covers ~95% of samples)
+            // Use mean ± 1.5*stdDev for tighter ranges (reduces overlap, improves precision)
+            // This covers ~87% of samples, which is more precise than 2*stdDev
             const scrollUpRange = {
-                min: scrollUpData.mean - (2 * scrollUpData.stdDev),
-                max: scrollUpData.mean + (2 * scrollUpData.stdDev)
+                min: scrollUpData.mean - (1.5 * scrollUpData.stdDev),
+                max: scrollUpData.mean + (1.5 * scrollUpData.stdDev)
             };
             const scrollDownRange = {
-                min: scrollDownData.mean - (2 * scrollDownData.stdDev),
-                max: scrollDownData.mean + (2 * scrollDownData.stdDev)
+                min: scrollDownData.mean - (1.5 * scrollDownData.stdDev),
+                max: scrollDownData.mean + (1.5 * scrollDownData.stdDev)
             };
             const noScrollRange = {
-                min: noScrollData.mean - (2 * noScrollData.stdDev),
-                max: noScrollData.mean + (2 * noScrollData.stdDev)
+                min: noScrollData.mean - (1.5 * noScrollData.stdDev),
+                max: noScrollData.mean + (1.5 * noScrollData.stdDev)
             };
             
             // Check if current position is within each learned range
@@ -558,20 +559,30 @@ export class EyeTrackingEngine {
             } else if (inScrollUpRange && !inScrollDownRange) {
                 // In scroll-up zone (more negative = looking up = scroll page up)
                 viewportZone = 'top';
-                // Intensity based on how far from no-scroll mean (normalized)
+                // Intensity based on distance from scrollUp mean (more distance = more intensity)
+                // Normalize by the range between scrollUp and noScroll
                 const range = Math.abs(scrollUpData.mean - noScrollData.mean);
                 if (range > 0) {
-                    scrollIntensity = -Math.min(1, distToNoScroll / range); // Negative for scroll up
+                    // Calculate how far we are from scrollUp mean, normalized to 0-1
+                    const distFromUpMean = distToUp;
+                    const maxDist = range; // Maximum expected distance
+                    // Intensity increases as we move further from scrollUp mean toward noScroll
+                    scrollIntensity = -Math.min(1, Math.max(0.3, distFromUpMean / maxDist)); // Negative for scroll up, min 0.3 for responsiveness
                 } else {
                     scrollIntensity = -0.5;
                 }
             } else if (inScrollDownRange && !inScrollUpRange) {
                 // In scroll-down zone (less negative = looking down = scroll page down)
                 viewportZone = 'bottom';
-                // Intensity based on how far from no-scroll mean (normalized)
+                // Intensity based on distance from scrollDown mean (more distance = more intensity)
+                // Normalize by the range between scrollDown and noScroll
                 const range = Math.abs(scrollDownData.mean - noScrollData.mean);
                 if (range > 0) {
-                    scrollIntensity = Math.min(1, distToNoScroll / range); // Positive for scroll down
+                    // Calculate how far we are from scrollDown mean, normalized to 0-1
+                    const distFromDownMean = distToDown;
+                    const maxDist = range; // Maximum expected distance
+                    // Intensity increases as we move further from scrollDown mean toward noScroll
+                    scrollIntensity = Math.min(1, Math.max(0.3, distFromDownMean / maxDist)); // Positive for scroll down, min 0.3 for responsiveness
                 } else {
                     scrollIntensity = 0.5;
                 }
