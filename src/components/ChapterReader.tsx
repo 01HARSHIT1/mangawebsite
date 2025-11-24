@@ -182,18 +182,18 @@ export default function ChapterReader({
                 const currentBrightness = parseFloat(getComputedStyle(document.documentElement).filter.match(/brightness\(([^)]+)\)/)?.[1] || '1');
                 const newBrightness = Math.min(1.5, currentBrightness + 0.1);
                 document.documentElement.style.filter = `brightness(${newBrightness})`;
-                    break;
+                break;
             case 'decreaseBrightness':
                 // Decrease screen brightness
                 const currentBright = parseFloat(getComputedStyle(document.documentElement).filter.match(/brightness\(([^)]+)\)/)?.[1] || '1');
                 const newBright = Math.max(0.3, currentBright - 0.1);
                 document.documentElement.style.filter = `brightness(${newBright})`;
-                    break;
+                break;
             case 'toggleEyeTracking':
                 // Toggle eye tracking (would need to communicate with EyeTracking component)
                 // This could be handled via a custom event or context
                 window.dispatchEvent(new CustomEvent('toggleEyeTracking'));
-                    break;
+                break;
             default:
                 console.log('Unknown voice command:', command);
         }
@@ -246,8 +246,8 @@ export default function ChapterReader({
         try {
             const response = await fetch(`/api/comments/${chapterId}`, {
                 method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
+                headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({ content: newComment })
@@ -260,7 +260,7 @@ export default function ChapterReader({
             } else {
                 alert('Failed to post comment');
             }
-                } catch (error) {
+        } catch (error) {
             console.error('Error posting comment:', error);
             alert('Error posting comment');
         } finally {
@@ -282,7 +282,7 @@ export default function ChapterReader({
         }
     };
 
-        return (
+    return (
         <div className="min-h-screen bg-gray-950 text-white">
             {/* Top Navigation */}
             <div className="w-full bg-black border-b border-gray-800 py-6">
@@ -306,8 +306,8 @@ export default function ChapterReader({
                             <p className="text-gray-500 text-sm mt-2">
                                 {new Date(chapter.createdAt).toLocaleDateString()}
                             </p>
-                </div>
-            </div>
+                        </div>
+                    </div>
 
                     {/* Navigation Buttons */}
                     <div className="flex flex-col items-center gap-3">
@@ -342,7 +342,7 @@ export default function ChapterReader({
                                 >
                                     <span>Next</span>
                                     <FaChevronRight />
-                            </Link>
+                                </Link>
                             ) : (
                                 <div className="w-24"></div>
                             )}
@@ -363,7 +363,7 @@ export default function ChapterReader({
                                 <div className="absolute top-full mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden z-50 min-w-[200px]">
                                     <div className="max-h-[280px] overflow-y-auto chapter-dropdown-scroll">
                                         {allChapters.map((ch) => (
-                            <Link
+                                            <Link
                                                 key={ch._id}
                                                 href={`/manga/${mangaId}/chapter/${ch._id}`}
                                                 className={`block px-4 py-3 hover:bg-gray-800 transition-colors ${ch._id === chapterId
@@ -374,15 +374,15 @@ export default function ChapterReader({
                                             >
                                                 Chapter {ch.chapterNumber}
                                                 {ch.subtitle && <span className="text-sm opacity-75"> - {ch.subtitle}</span>}
-                            </Link>
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>
                             )}
                         </div>
-                        </div>
                     </div>
                 </div>
+            </div>
 
             {/* AI Features: Previously On Recap & Chapter Summary */}
             <div className="w-full max-w-4xl mx-auto px-4 pt-4">
@@ -406,25 +406,25 @@ export default function ChapterReader({
                             // Stop rendering after too many consecutive failures
                             if (index > loadedPageCount + maxConsecutiveFailures) {
                                 return null;
-                    }
+                            }
 
-                    return (
+                            return (
                                 <img
-                            key={index}
-                                src={imageSrc}
+                                    key={index}
+                                    src={imageSrc}
                                     alt={`Page ${index + 1}`}
                                     className="w-full h-auto"
                                     onLoad={() => handleImageLoad(index)}
-                                onError={(e) => {
+                                    onError={(e) => {
                                         handleImageError(index);
                                         // Hide broken images (pages beyond actual count)
                                         e.currentTarget.style.display = 'none';
                                     }}
                                     loading="lazy"
                                 />
-                    );
-                })}
-            </div>
+                            );
+                        })}
+                    </div>
                 ) : (
                     <div className="text-center py-20">
                         <p className="text-gray-400 text-lg">No pages available for this chapter</p>
@@ -532,7 +532,7 @@ export default function ChapterReader({
                                         <FaWhatsapp />
                                     </a>
                                 )}
-                    </div>
+                            </div>
                             {!socialMediaLinks.facebook && !socialMediaLinks.twitter && !socialMediaLinks.instagram && !socialMediaLinks.discord && !socialMediaLinks.whatsapp && (
                                 <p className="text-gray-500 text-sm">Social links coming soon!</p>
                             )}
@@ -576,8 +576,8 @@ export default function ChapterReader({
                         ) : (
                             <div className="text-center py-8 text-gray-500">
                                 No comments yet. Be the first to comment!
-                </div>
-            )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Comment Input - SHOW AFTER COMMENTS */}
@@ -605,7 +605,7 @@ export default function ChapterReader({
                             <p className="text-gray-400 mb-3">Please login to comment</p>
                             <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all">
                                 Login
-                                </Link>
+                            </Link>
                         </div>
                     )}
                 </div>
@@ -630,9 +630,9 @@ export default function ChapterReader({
                             </div>
                             <div className="text-gray-600 text-xs">Made by {websiteInfo.developer}</div>
                         </div>
-                        </div>
                     </div>
                 </div>
+            </div>
 
             {/* Voice Assistant */}
             {voiceAssistantEnabled && (

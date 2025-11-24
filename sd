@@ -1,0 +1,5 @@
+[33m02d13cb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Remove duplicate scroll handler in ChapterReader to prevent scroll conflicts
+[33mb326eeb[m Fix eye tracking scroll behavior and manifest.json 401 error - Fixed inverted scroll direction, added scroll conflict prevention, and reverted manifest to direct file access
+[33m8f9167d[m Fix manifest.json 401 error and enhance eye tracking with comprehensive logging and error handling
+[33m9e72992[m Add enhanced console logging to eye tracking toggle function
+[33m32f3646[m Fix manifest.json 401 error and add comprehensive eye tracking console logging
