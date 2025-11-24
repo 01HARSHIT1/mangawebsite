@@ -216,16 +216,26 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
                     const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
                     
-                    // Continuous smooth scrolling based on intensity
-                    // Scroll speed is proportional to how far from center they're looking
-                    // Increased speeds for better responsiveness
-                    const baseScrollSpeed = 1.0; // pixels per frame (increased from 0.5)
-                    const maxScrollSpeed = 5.0; // maximum pixels per frame (increased from 3.0)
-                    const scrollSpeed = baseScrollSpeed + (Math.abs(gaze.scrollIntensity) * (maxScrollSpeed - baseScrollSpeed));
+                    // MAXIMUM PRECISION: Optimized scroll speed calculation
+                    // Adaptive speed based on intensity and confidence
+                    const baseScrollSpeed = 0.8; // Base speed for smoothness
+                    const maxScrollSpeed = 4.5; // Maximum speed for responsiveness
+                    const intensityFactor = Math.abs(gaze.scrollIntensity);
+                    const confidenceFactor = Math.max(0.7, gaze.confidence); // Use confidence to adjust speed
                     
-                    // Only scroll if we have significant intensity and not at boundaries
-                    // Increased threshold to 0.2 to prevent constant scrolling and improve precision
-                    if (Math.abs(gaze.scrollIntensity) > 0.2) {
+                    // Smooth acceleration curve (ease-in-out)
+                    const easedIntensity = intensityFactor < 0.5 
+                        ? 2 * intensityFactor * intensityFactor 
+                        : 1 - Math.pow(-2 * intensityFactor + 2, 2) / 2;
+                    
+                    const scrollSpeed = baseScrollSpeed + (easedIntensity * (maxScrollSpeed - baseScrollSpeed) * confidenceFactor);
+                    
+                    // MAXIMUM PRECISION: Higher threshold with confidence requirement
+                    // Only scroll if intensity is significant AND confidence is high
+                    const minIntensity = 0.25; // Increased threshold for precision
+                    const minConfidence = 0.6; // Require minimum confidence
+                    
+                    if (Math.abs(gaze.scrollIntensity) > minIntensity && gaze.confidence >= minConfidence) {
                         if (gaze.viewportZone === 'bottom' && currentScroll < maxScroll - 50) {
                             // Looking at bottom → scroll DOWN (positive scroll amount)
                             // scrollIntensity is already positive for bottom zone
