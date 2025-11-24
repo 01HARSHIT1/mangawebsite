@@ -644,8 +644,28 @@ export class EyeTrackingEngine {
         }
         
         // Calculate confidence based on how far from center
-        const distanceFromCenter = Math.sqrt(normalizedX ** 2 + normalizedY ** 2);
-        const confidence = Math.min(distanceFromCenter * 10, 1.0);
+        // Higher confidence when using calibration and position matches learned patterns
+        let confidence = Math.min(Math.sqrt(normalizedX ** 2 + normalizedY ** 2) * 10, 1.0);
+        
+        // Boost confidence if using calibration and position is within learned ranges
+        if (this.calibrationData && this.calibrationData.calibrated) {
+            const scrollUpData = this.calibrationData.scrollUp;
+            const scrollDownData = this.calibrationData.scrollDown;
+            const noScrollData = this.calibrationData.noScroll;
+            
+            // Check if position matches any learned pattern
+            const distToUp = Math.abs(normalizedY - scrollUpData.mean);
+            const distToDown = Math.abs(normalizedY - scrollDownData.mean);
+            const distToNoScroll = Math.abs(normalizedY - noScrollData.mean);
+            const minDist = Math.min(distToUp, distToDown, distToNoScroll);
+            
+            // If within 2 standard deviations of any pattern, boost confidence
+            const maxStdDev = Math.max(scrollUpData.stdDev, scrollDownData.stdDev, noScrollData.stdDev);
+            const withinRange = minDist < (2 * maxStdDev);
+            if (withinRange) {
+                confidence = Math.max(confidence, 0.7); // Minimum 70% confidence when in learned range
+            }
+        }
         
         return {
             direction,
