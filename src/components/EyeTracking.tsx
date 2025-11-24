@@ -408,18 +408,84 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                             noScroll: calibration.noScroll.samples
                         });
                         
-                        // Export the calibration data for hardcoding
-                        const exportedData = EyeTrackingEngine.exportCalibrationForHardcoding();
-                        console.log('👁️ Eye Tracking: ✅ Master calibration set for ALL users!');
-                        console.log('👁️ Eye Tracking: 📋 Copy this data to hardcode into the code:');
-                        console.log('='.repeat(80));
-                        console.log(exportedData);
-                        console.log('='.repeat(80));
-                        console.log('👁️ Eye Tracking: Raw samples:', {
-                            scrollUp: calibration.scrollUp.samples,
-                            scrollDown: calibration.scrollDown.samples,
-                            noScroll: calibration.noScroll.samples
-                        });
+                        // Automatically generate hardcoded code
+                        const generateHardcodedCode = () => {
+                            const { scrollUp, scrollDown, noScroll } = calibration;
+                            
+                            const code = `// MASTER CALIBRATION - Hardcoded from final calibration samples
+// This is the permanent default for all users
+// Generated automatically: ${new Date().toISOString()}
+let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
+    scrollUp: {
+        normalizedY: ${scrollUp.mean},
+        samples: [${scrollUp.samples.join(', ')}],
+        mean: ${scrollUp.mean},
+        stdDev: ${scrollUp.stdDev},
+        min: ${scrollUp.min},
+        max: ${scrollUp.max}
+    },
+    scrollDown: {
+        normalizedY: ${scrollDown.mean},
+        samples: [${scrollDown.samples.join(', ')}],
+        mean: ${scrollDown.mean},
+        stdDev: ${scrollDown.stdDev},
+        min: ${scrollDown.min},
+        max: ${scrollDown.max}
+    },
+    noScroll: {
+        normalizedY: ${noScroll.mean},
+        samples: [${noScroll.samples.join(', ')}],
+        mean: ${noScroll.mean},
+        stdDev: ${noScroll.stdDev},
+        min: ${noScroll.min},
+        max: ${noScroll.max}
+    },
+    calibrated: true
+};`;
+                            
+                            console.log('👁️ Eye Tracking: ✅ Master calibration set for ALL users!');
+                            console.log('👁️ Eye Tracking: 📋 HARDCODED CODE (will be automatically applied):');
+                            console.log('='.repeat(100));
+                            console.log(code);
+                            console.log('='.repeat(100));
+                            
+                            // Store in a global variable for automatic extraction
+                            (window as any).__MASTER_CALIBRATION_CODE__ = code;
+                            (window as any).__MASTER_CALIBRATION_DATA__ = calibration;
+                            
+                            // Try to copy to clipboard
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(code).then(() => {
+                                    console.log('✅ Code copied to clipboard!');
+                                }).catch(() => {
+                                    console.log('⚠️ Could not copy to clipboard, but code is logged above');
+                                });
+                            }
+                            
+                            // Also log the data in a format ready for hardcoding
+                            console.log('👁️ Eye Tracking: Calibration data summary:', {
+                                scrollUp: {
+                                    samples: scrollUp.samples,
+                                    mean: scrollUp.mean,
+                                    stdDev: scrollUp.stdDev,
+                                    range: `${scrollUp.min.toFixed(4)} - ${scrollUp.max.toFixed(4)}`
+                                },
+                                scrollDown: {
+                                    samples: scrollDown.samples,
+                                    mean: scrollDown.mean,
+                                    stdDev: scrollDown.stdDev,
+                                    range: `${scrollDown.min.toFixed(4)} - ${scrollDown.max.toFixed(4)}`
+                                },
+                                noScroll: {
+                                    samples: noScroll.samples,
+                                    mean: noScroll.mean,
+                                    stdDev: noScroll.stdDev,
+                                    range: `${noScroll.min.toFixed(4)} - ${noScroll.max.toFixed(4)}`
+                                }
+                            });
+                        };
+                        
+                        generateHardcodedCode();
                     });
                 }
             }
