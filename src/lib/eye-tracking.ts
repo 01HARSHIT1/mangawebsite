@@ -14,6 +14,15 @@ export interface GazeDirection {
     viewportZone?: 'top' | 'middle' | 'bottom';
     // New: Scroll intensity (-1 to 1, negative = scroll up, positive = scroll down)
     scrollIntensity?: number;
+    // New: Raw normalized eye position (for calibration)
+    normalizedEyePosition?: { x: number; y: number };
+}
+
+export interface CalibrationData {
+    scrollUp: { normalizedY: number; samples: number[] }; // When user says "scroll up", what normalizedY value
+    scrollDown: { normalizedY: number; samples: number[] }; // When user says "scroll down", what normalizedY value
+    noScroll: { normalizedY: number; samples: number[] }; // When user says "don't scroll", what normalizedY value
+    calibrated: boolean;
 }
 
 export class EyeTrackingEngine {
@@ -22,11 +31,90 @@ export class EyeTrackingEngine {
     private isInitialized = false;
     private gazeHistory: GazeDirection[] = [];
     private readonly historySize = 5;
+    private calibrationData: CalibrationData | null = null;
+    
+    // Load calibration from localStorage
+    loadCalibration(): CalibrationData | null {
+        if (typeof window === 'undefined') return null;
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (stored) {
+                const data = JSON.parse(stored) as CalibrationData;
+                this.calibrationData = data;
+                console.log('👁️ Eye Tracking: Loaded calibration data', data);
+                return data;
+            }
+        } catch (error) {
+            console.error('👁️ Eye Tracking: Failed to load calibration', error);
+        }
+        return null;
+    }
+    
+    // Save calibration to localStorage
+    saveCalibration(data: CalibrationData): void {
+        if (typeof window === 'undefined') return;
+        try {
+            localStorage.setItem('eyeTrackingCalibration', JSON.stringify(data));
+            this.calibrationData = data;
+            console.log('👁️ Eye Tracking: Saved calibration data', data);
+        } catch (error) {
+            console.error('👁️ Eye Tracking: Failed to save calibration', error);
+        }
+    }
+    
+    // Add a calibration sample
+    addCalibrationSample(action: 'scrollUp' | 'scrollDown' | 'noScroll', normalizedY: number): void {
+        if (!this.calibrationData) {
+            this.calibrationData = {
+                scrollUp: { normalizedY: 0, samples: [] },
+                scrollDown: { normalizedY: 0, samples: [] },
+                noScroll: { normalizedY: 0, samples: [] },
+                calibrated: false
+            };
+        }
+        
+        this.calibrationData[action].samples.push(normalizedY);
+        // Keep only last 20 samples per action
+        if (this.calibrationData[action].samples.length > 20) {
+            this.calibrationData[action].samples.shift();
+        }
+        
+        // Calculate average
+        const samples = this.calibrationData[action].samples;
+        this.calibrationData[action].normalizedY = samples.reduce((a, b) => a + b, 0) / samples.length;
+        
+        // Mark as calibrated if we have at least 5 samples for each action
+        if (this.calibrationData.scrollUp.samples.length >= 5 &&
+            this.calibrationData.scrollDown.samples.length >= 5 &&
+            this.calibrationData.noScroll.samples.length >= 5) {
+            this.calibrationData.calibrated = true;
+        }
+        
+        this.saveCalibration(this.calibrationData);
+        console.log('👁️ Eye Tracking: Added calibration sample', { action, normalizedY, calibration: this.calibrationData });
+    }
+    
+    // Get calibration data
+    getCalibration(): CalibrationData | null {
+        return this.calibrationData;
+    }
+    
+    // Clear calibration
+    clearCalibration(): void {
+        this.calibrationData = null;
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('eyeTrackingCalibration');
+        }
+        console.log('👁️ Eye Tracking: Calibration cleared');
+    }
 
     async initialize(videoElement: HTMLVideoElement, onResults: (gaze: GazeDirection) => void): Promise<void> {
         if (this.isInitialized) {
             return;
         }
+
+        // Load calibration data
+        this.loadCalibration();
 
         try {
             console.log('👁️ Eye Tracking Engine: Initializing MediaPipe Face Mesh...');
@@ -152,46 +240,89 @@ export class EyeTrackingEngine {
         const normalizedX = (eyeX - faceCenterX) / faceWidth;
         const normalizedY = (eyeY - faceCenterY) / faceHeight;
         
-        // Map eye movement to screen position
-        // When eyes move down (normalizedY > 0), user is looking at lower part of screen
-        // When eyes move up (normalizedY < 0), user is looking at upper part of screen
-        // We'll map this to viewport zones
-        
-        // Calculate screen position (0-1, where 0.5 is center)
-        // Invert Y because MediaPipe Y increases downward, but screen Y increases downward too
-        // So we need to map: eye down (normalizedY > 0) → screen bottom (screenY > 0.5)
-        const screenX = 0.5 + (normalizedX * 2); // Scale and center
-        const screenY = 0.5 + (normalizedY * 2); // Scale and center
-        
-        // Clamp to 0-1
-        const clampedScreenX = Math.max(0, Math.min(1, screenX));
-        const clampedScreenY = Math.max(0, Math.min(1, screenY));
-        
-        // Determine viewport zone based on screen Y position
-        // Top 30% = scroll up zone
-        // Middle 40% = dead zone (no scroll)
-        // Bottom 30% = scroll down zone
-        const TOP_ZONE_THRESHOLD = 0.3;
-        const BOTTOM_ZONE_THRESHOLD = 0.7;
-        
+        // Use calibration data if available, otherwise use default thresholds
         let viewportZone: 'top' | 'middle' | 'bottom' = 'middle';
         let scrollIntensity = 0;
+        let clampedScreenY = 0.5; // Default center
         
-        if (clampedScreenY < TOP_ZONE_THRESHOLD) {
-            // Looking at top part of screen → scroll up
-            viewportZone = 'top';
-            // Calculate intensity: 0 at threshold, -1 at top (0)
-            scrollIntensity = -((TOP_ZONE_THRESHOLD - clampedScreenY) / TOP_ZONE_THRESHOLD);
-        } else if (clampedScreenY > BOTTOM_ZONE_THRESHOLD) {
-            // Looking at bottom part of screen → scroll down
-            viewportZone = 'bottom';
-            // Calculate intensity: 0 at threshold, 1 at bottom (1)
-            scrollIntensity = (clampedScreenY - BOTTOM_ZONE_THRESHOLD) / (1 - BOTTOM_ZONE_THRESHOLD);
+        if (this.calibrationData && this.calibrationData.calibrated) {
+            // Use calibrated thresholds
+            const scrollUpY = this.calibrationData.scrollUp.normalizedY;
+            const scrollDownY = this.calibrationData.scrollDown.normalizedY;
+            const noScrollY = this.calibrationData.noScroll.normalizedY;
+            
+            // Determine which action based on calibrated values
+            // Find which calibrated value is closest to current normalizedY
+            const distToUp = Math.abs(normalizedY - scrollUpY);
+            const distToDown = Math.abs(normalizedY - scrollDownY);
+            const distToNoScroll = Math.abs(normalizedY - noScrollY);
+            
+            const minDist = Math.min(distToUp, distToDown, distToNoScroll);
+            
+            if (minDist === distToUp) {
+                // Closest to scroll up position
+                viewportZone = 'top';
+                // Calculate intensity based on distance from no-scroll zone
+                const range = Math.abs(scrollUpY - noScrollY);
+                if (range > 0) {
+                    scrollIntensity = -Math.min(1, Math.abs(normalizedY - noScrollY) / range);
+                } else {
+                    scrollIntensity = -0.5;
+                }
+            } else if (minDist === distToDown) {
+                // Closest to scroll down position
+                viewportZone = 'bottom';
+                // Calculate intensity based on distance from no-scroll zone
+                const range = Math.abs(scrollDownY - noScrollY);
+                if (range > 0) {
+                    scrollIntensity = Math.min(1, Math.abs(normalizedY - noScrollY) / range);
+                } else {
+                    scrollIntensity = 0.5;
+                }
+            } else {
+                // Closest to no-scroll position
+                viewportZone = 'middle';
+                scrollIntensity = 0;
+            }
+            
+            // Map normalizedY to screen position for display
+            // Use calibrated values to map
+            const minY = Math.min(scrollUpY, scrollDownY, noScrollY);
+            const maxY = Math.max(scrollUpY, scrollDownY, noScrollY);
+            const rangeY = maxY - minY;
+            if (rangeY > 0) {
+                clampedScreenY = (normalizedY - minY) / rangeY;
+            } else {
+                clampedScreenY = 0.5;
+            }
+            clampedScreenY = Math.max(0, Math.min(1, clampedScreenY));
         } else {
-            // Middle zone → no scroll
-            viewportZone = 'middle';
-            scrollIntensity = 0;
+            // Default behavior (no calibration)
+            // Map eye movement to screen position
+            const screenX = 0.5 + (normalizedX * 2);
+            const screenY = 0.5 + (normalizedY * 2);
+            
+            clampedScreenX = Math.max(0, Math.min(1, screenX));
+            clampedScreenY = Math.max(0, Math.min(1, screenY));
+            
+            // Default thresholds
+            const TOP_ZONE_THRESHOLD = 0.3;
+            const BOTTOM_ZONE_THRESHOLD = 0.7;
+            
+            if (clampedScreenY < TOP_ZONE_THRESHOLD) {
+                viewportZone = 'top';
+                scrollIntensity = -((TOP_ZONE_THRESHOLD - clampedScreenY) / TOP_ZONE_THRESHOLD);
+            } else if (clampedScreenY > BOTTOM_ZONE_THRESHOLD) {
+                viewportZone = 'bottom';
+                scrollIntensity = (clampedScreenY - BOTTOM_ZONE_THRESHOLD) / (1 - BOTTOM_ZONE_THRESHOLD);
+            } else {
+                viewportZone = 'middle';
+                scrollIntensity = 0;
+            }
         }
+        
+        const clampedScreenX = 0.5 + (normalizedX * 2);
+        const finalScreenX = Math.max(0, Math.min(1, clampedScreenX));
         
         // Determine direction for backward compatibility
         let direction: 'up' | 'down' | 'left' | 'right' | 'center' = 'center';
@@ -212,9 +343,10 @@ export class EyeTrackingEngine {
             direction,
             confidence,
             eyePosition: { x: eyeX, y: eyeY },
-            screenPosition: { x: clampedScreenX, y: clampedScreenY },
+            screenPosition: { x: finalScreenX, y: clampedScreenY },
             viewportZone,
-            scrollIntensity
+            scrollIntensity,
+            normalizedEyePosition: { x: normalizedX, y: normalizedY }
         };
     }
 
@@ -240,7 +372,10 @@ export class EyeTrackingEngine {
             return { direction: 'center', confidence: 0 };
         }
         
-        // Count directions
+        // Get the most recent gaze (for calibration and real-time accuracy)
+        const latestGaze = this.gazeHistory[this.gazeHistory.length - 1];
+        
+        // Count directions for averaging
         const directionCounts: { [key: string]: number } = {};
         let totalConfidence = 0;
         
@@ -262,7 +397,9 @@ export class EyeTrackingEngine {
         
         const avgConfidence = totalConfidence / this.gazeHistory.length;
         
+        // Return latest gaze with averaged direction and confidence
         return {
+            ...latestGaze,
             direction: dominantDirection,
             confidence: avgConfidence
         };

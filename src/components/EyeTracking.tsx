@@ -35,6 +35,16 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const confidenceHistoryRef = useRef<number[]>([]);
     const lastUpdateTimeRef = useRef<number>(Date.now());
     
+    // Calibration state
+    const [isCalibrating, setIsCalibrating] = useState(false);
+    const [calibrationStep, setCalibrationStep] = useState<'scrollUp' | 'scrollDown' | 'noScroll' | 'complete' | null>(null);
+    const [calibrationSamples, setCalibrationSamples] = useState<{ scrollUp: number; scrollDown: number; noScroll: number }>({
+        scrollUp: 0,
+        scrollDown: 0,
+        noScroll: 0
+    });
+    const currentNormalizedYRef = useRef<number | null>(null);
+    
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
@@ -139,6 +149,11 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
             console.log('👁️ Eye Tracking: Initializing engine with video element...');
             await engine.initialize(videoRef.current, (gaze) => {
+                // Store current normalized Y for calibration
+                if (gaze.normalizedEyePosition) {
+                    currentNormalizedYRef.current = gaze.normalizedEyePosition.y;
+                }
+                
                 // Update accuracy metrics
                 totalFramesRef.current += 1;
                 if (gaze.confidence > 0.1) {
@@ -634,6 +649,84 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     </div>
                 )}
 
+                {/* Calibration UI */}
+                {isCalibrating && (
+                    <div className="mt-3 p-3 bg-purple-900/50 rounded border-2 border-purple-500">
+                        <div className="text-xs font-semibold text-purple-300 mb-2">🎯 Calibration Mode</div>
+                        {calibrationStep === 'scrollUp' && (
+                            <div className="space-y-2">
+                                <p className="text-xs text-yellow-300">Step 1/3: Look at the TOP of your screen</p>
+                                <p className="text-xs text-gray-300">Position your eyes so you're looking at the top part of the manga panel</p>
+                                <button
+                                    onClick={() => addCalibrationSample('scrollUp')}
+                                    className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold"
+                                >
+                                    Scroll Up ({calibrationSamples.scrollUp}/5 samples)
+                                </button>
+                            </div>
+                        )}
+                        {calibrationStep === 'scrollDown' && (
+                            <div className="space-y-2">
+                                <p className="text-xs text-yellow-300">Step 2/3: Look at the BOTTOM of your screen</p>
+                                <p className="text-xs text-gray-300">Position your eyes so you're looking at the bottom part of the manga panel</p>
+                                <button
+                                    onClick={() => addCalibrationSample('scrollDown')}
+                                    className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold"
+                                >
+                                    Scroll Down ({calibrationSamples.scrollDown}/5 samples)
+                                </button>
+                            </div>
+                        )}
+                        {calibrationStep === 'noScroll' && (
+                            <div className="space-y-2">
+                                <p className="text-xs text-yellow-300">Step 3/3: Look at the MIDDLE of your screen</p>
+                                <p className="text-xs text-gray-300">Position your eyes so you're looking at the middle part (comfortable reading position)</p>
+                                <button
+                                    onClick={() => addCalibrationSample('noScroll')}
+                                    className="w-full px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs font-semibold"
+                                >
+                                    Don't Scroll ({calibrationSamples.noScroll}/5 samples)
+                                </button>
+                            </div>
+                        )}
+                        {calibrationStep === 'complete' && (
+                            <div className="space-y-2">
+                                <p className="text-xs text-green-400 font-semibold">✅ Calibration Complete!</p>
+                                <p className="text-xs text-gray-300">The system has learned your eye positions. Auto-scroll should now work correctly.</p>
+                            </div>
+                        )}
+                        <button
+                            onClick={cancelCalibration}
+                            className="mt-2 w-full px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs"
+                        >
+                            Cancel Calibration
+                        </button>
+                    </div>
+                )}
+                
+                {/* Calibration Controls */}
+                {!isCalibrating && isActive && (
+                    <div className="mt-2 space-y-2">
+                        <button
+                            onClick={startCalibration}
+                            className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-semibold"
+                        >
+                            🎯 Start Calibration
+                        </button>
+                        {eyeTrackingEngineRef.current?.getCalibration()?.calibrated && (
+                            <div className="p-2 bg-green-900/30 rounded border border-green-700">
+                                <p className="text-xs text-green-400 mb-1">✓ Calibrated</p>
+                                <button
+                                    onClick={clearCalibration}
+                                    className="text-xs text-red-400 hover:text-red-300"
+                                >
+                                    Clear calibration
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Instructions when not active */}
                 {!isActive && eyeTrackingEnabled && (
                     <div className="mt-3 p-2 bg-slate-900/50 rounded text-xs text-gray-400 border border-slate-700">
@@ -641,8 +734,8 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                         <ol className="list-decimal list-inside space-y-0.5 text-xs">
                             <li>Click the eye icon above to start</li>
                             <li>Allow camera access when prompted</li>
-                            <li>Look down → page scrolls down</li>
-                            <li>Look up → page scrolls up</li>
+                            <li>Click "Start Calibration" to teach the system your eye positions</li>
+                            <li>Follow the 3-step calibration process</li>
                         </ol>
                     </div>
                 )}
