@@ -1,0 +1,28 @@
+{
+  "scrollUp": {
+    "normalizedY": 0,
+    "samples": [],
+    "mean": 0,
+    "stdDev": 0,
+    "min": 0,
+    "max": 0
+  },
+  "scrollDown": {
+    "normalizedY": 0,
+    "samples": [],
+    "mean": 0,
+    "stdDev": 0,
+    "min": 0,
+    "max": 0
+  },
+  "noScroll": {
+    "normalizedY": 0,
+    "samples": [],
+    "mean": 0,
+    "stdDev": 0,
+    "min": 0,
+    "max": 0
+  },
+  "calibrated": false
+}
+

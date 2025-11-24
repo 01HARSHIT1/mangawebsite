@@ -46,13 +46,12 @@ export interface CalibrationData {
     calibrated: boolean;
 }
 
-// DEFAULT/MASTER CALIBRATION - Used for all users who haven't calibrated
-// This is set once from your samples and used universally
-// This will be updated when you complete calibration
+// DEFAULT/MASTER CALIBRATION - Loaded from master-calibration-data.json
+// This file is updated once with your calibration samples and used for all users
 let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     scrollUp: {
-        normalizedY: 0, // Will be calculated from samples
-        samples: [], // Your 5 scroll up samples will go here
+        normalizedY: 0,
+        samples: [],
         mean: 0,
         stdDev: 0,
         min: 0,
@@ -60,7 +59,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     },
     scrollDown: {
         normalizedY: 0,
-        samples: [], // Your 5 scroll down samples will go here
+        samples: [],
         mean: 0,
         stdDev: 0,
         min: 0,
@@ -68,7 +67,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     },
     noScroll: {
         normalizedY: 0,
-        samples: [], // Your 5 no-scroll samples will go here
+        samples: [],
         mean: 0,
         stdDev: 0,
         min: 0,
@@ -76,6 +75,40 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     },
     calibrated: false
 };
+
+// Load master calibration from JSON file
+function loadMasterCalibrationFromFile(): CalibrationData | null {
+    try {
+        // Import the calibration data file (Next.js will bundle this at build time)
+        // Using dynamic import for client-side, static import for server-side
+        if (typeof window === 'undefined') {
+            // Server-side: use require
+            const calibrationData = require('./master-calibration-data.json') as CalibrationData;
+            if (calibrationData && calibrationData.calibrated) {
+                DEFAULT_MASTER_CALIBRATION = calibrationData;
+                console.log('👁️ Eye Tracking: ✅ Loaded master calibration from file (server-side)');
+                return calibrationData;
+            }
+        } else {
+            // Client-side: try to fetch or use cached
+            // For now, we'll load it synchronously if available
+            // The file will be imported at build time
+        }
+    } catch (error) {
+        // File doesn't exist or not calibrated yet
+        console.log('👁️ Eye Tracking: Master calibration file not found or not calibrated yet');
+    }
+    return null;
+}
+
+// Import calibration data (Next.js will bundle this)
+import masterCalibrationData from './master-calibration-data.json';
+
+// Initialize with imported data
+if (masterCalibrationData && masterCalibrationData.calibrated) {
+    DEFAULT_MASTER_CALIBRATION = masterCalibrationData as CalibrationData;
+    console.log('👁️ Eye Tracking: ✅ Loaded master calibration from JSON file');
+}
 
 export class EyeTrackingEngine {
     private faceMesh: FaceMesh | null = null;
@@ -180,6 +213,11 @@ export class EyeTrackingEngine {
     
     // Load calibration from localStorage, or use default master calibration
     loadCalibration(): CalibrationData | null {
+        // First, ensure master calibration is loaded from file
+        if (!DEFAULT_MASTER_CALIBRATION.calibrated) {
+            loadMasterCalibrationFromFile();
+        }
+        
         if (typeof window === 'undefined') {
             // Server-side: return master calibration
             return DEFAULT_MASTER_CALIBRATION.calibrated ? DEFAULT_MASTER_CALIBRATION : null;
