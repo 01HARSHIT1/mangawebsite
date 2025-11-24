@@ -225,42 +225,45 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     // Only scroll if we have significant intensity and not at boundaries
                     if (Math.abs(gaze.scrollIntensity) > 0.1) {
                         if (gaze.viewportZone === 'bottom' && currentScroll < maxScroll - 50) {
-                            // Looking at bottom → scroll down
-                            const scrollAmount = scrollSpeed * gaze.scrollIntensity; // positive
+                            // Looking at bottom → scroll DOWN (positive scroll amount)
+                            // scrollIntensity is already positive for bottom zone
+                            const scrollAmount = Math.abs(scrollSpeed * gaze.scrollIntensity); // Always positive for down
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
                                     top: scrollAmount, 
-                                    behavior: 'auto' // Use 'auto' for smooth continuous scrolling
+                                    behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
-                            if (Math.random() < 0.1) { // 10% of frames
+                            if (Math.random() < 0.05) { // 5% of frames
                                 console.log('👁️ Eye tracking: Scrolling DOWN', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
+                                    scrollAmount: scrollAmount.toFixed(2),
                                     screenY: gaze.screenPosition?.y.toFixed(2),
-                                    scrollSpeed: scrollSpeed.toFixed(2),
-                                    currentScroll: Math.round(currentScroll)
+                                    currentScroll: Math.round(currentScroll),
+                                    maxScroll: Math.round(maxScroll)
                                 });
                             }
                         } else if (gaze.viewportZone === 'top' && currentScroll > 50) {
-                            // Looking at top → scroll up
-                            const scrollAmount = scrollSpeed * gaze.scrollIntensity; // negative
+                            // Looking at top → scroll UP (negative scroll amount)
+                            // scrollIntensity is negative for top zone, so we need positive scrollAmount to go up
+                            const scrollAmount = Math.abs(scrollSpeed * gaze.scrollIntensity); // Make positive
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
-                                    top: scrollAmount, 
-                                    behavior: 'auto' // Use 'auto' for smooth continuous scrolling
+                                    top: -scrollAmount, // Negative to scroll up
+                                    behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
-                            if (Math.random() < 0.1) { // 10% of frames
+                            if (Math.random() < 0.05) { // 5% of frames
                                 console.log('👁️ Eye tracking: Scrolling UP', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
+                                    scrollAmount: scrollAmount.toFixed(2),
                                     screenY: gaze.screenPosition?.y.toFixed(2),
-                                    scrollSpeed: scrollSpeed.toFixed(2),
                                     currentScroll: Math.round(currentScroll)
                                 });
                             }
