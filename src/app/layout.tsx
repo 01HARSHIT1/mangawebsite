@@ -58,6 +58,7 @@ export const metadata: Metadata = {
     yandex: 'your-yandex-verification-code',
     yahoo: 'your-yahoo-verification-code',
   },
+  manifest: '/manifest.json',
 };
 
 // Structured Data for Organization
@@ -96,8 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
 
-        {/* PWA Manifest - Use direct public file to avoid 401 errors */}
-        <link rel="manifest" href="/manifest.json" />
+        {/* PWA Manifest - Handled by Next.js metadata API */}
 
         {/* Favicon and Icons */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
