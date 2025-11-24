@@ -49,12 +49,14 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         // Check if getUserMedia is supported
         if (typeof window !== 'undefined') {
             const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+            setIsSupported(hasGetUserMedia);
             console.log('👁️ Eye Tracking: Browser support check', {
                 hasGetUserMedia,
                 hasMediaDevices: !!navigator.mediaDevices,
-                userAgent: navigator.userAgent.substring(0, 50)
+                userAgent: navigator.userAgent.substring(0, 50),
+                isSupported: hasGetUserMedia,
+                status: hasGetUserMedia ? '✅ SUPPORTED' : '❌ NOT SUPPORTED'
             });
-            setIsSupported(hasGetUserMedia);
             
             // Detect manual scrolling to prevent interference
             const handleScroll = () => {
@@ -91,7 +93,16 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         
         // Only start tracking if all conditions are met
         if (!eyeTrackingEnabled || !isSupported || !isActive) {
-            console.log('👁️ Eye Tracking: Conditions not met, stopping tracking');
+            const missingConditions = [];
+            if (!eyeTrackingEnabled) missingConditions.push('eyeTrackingEnabled=false');
+            if (!isSupported) missingConditions.push('isSupported=false');
+            if (!isActive) missingConditions.push('isActive=false');
+            console.log('👁️ Eye Tracking: Conditions not met, stopping tracking', {
+                missing: missingConditions.join(', '),
+                eyeTrackingEnabled,
+                isSupported,
+                isActive
+            });
             stopTracking();
             return;
         }
