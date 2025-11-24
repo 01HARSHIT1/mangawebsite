@@ -176,12 +176,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   // Also suppress 400 errors for Cloudinary PDF transformations
                   if (msg && typeof msg === 'string' && (
                     msg.includes('400') ||
-                    msg.includes('Failed to load resource')
+                    msg.includes('Failed to load resource') ||
+                    msg.includes('Bad Request')
                   )) {
                     // Check if it's a PDF transformation error
-                    if (url && url.includes('cloudinary.com') && url.includes('.pdf')) {
+                    if (url && (url.includes('cloudinary.com') || url.includes('f_jpg,pg_'))) {
                       return true; // Suppress PDF page load errors
                     }
+                  }
+                  
+                  // Suppress 500 errors that are handled gracefully
+                  if (msg && typeof msg === 'string' && msg.includes('500')) {
+                    // These are handled by error boundaries
+                    return true;
                   }
                   
                   // Call original error handler for our own errors

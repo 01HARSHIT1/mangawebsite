@@ -75,15 +75,25 @@ export default async function ChapterPage({
 
         // Get all chapters for navigation
         // Handle both string and ObjectId formats for mangaId
-        const allChapters = await db.collection('chapters')
-            .find({ 
-                $or: [
-                    { mangaId: mangaId },
-                    { mangaId: new ObjectId(mangaId) }
-                ]
-            })
-            .sort({ chapterNumber: 1 })
-            .toArray();
+        let allChapters;
+        try {
+            allChapters = await db.collection('chapters')
+                .find({ 
+                    $or: [
+                        { mangaId: mangaId },
+                        { mangaId: new ObjectId(mangaId) }
+                    ]
+                })
+                .sort({ chapterNumber: 1 })
+                .toArray();
+        } catch (error) {
+            console.error('Error fetching chapters:', error);
+            // Fallback: try with just string
+            allChapters = await db.collection('chapters')
+                .find({ mangaId: mangaId })
+                .sort({ chapterNumber: 1 })
+                .toArray();
+        }
 
         // Find current chapter index
         const currentIndex = allChapters.findIndex(ch => ch._id.toString() === chapterId);

@@ -41,7 +41,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const streamRef = useRef<MediaStream | null>(null);
     const eyeTrackingEngineRef = useRef<EyeTrackingEngine | null>(null);
     const lastScrollTime = useRef<number>(0);
-    const scrollCooldown = 1000; // 1 second between scrolls
+    const scrollCooldown = 50; // 50ms between scrolls to prevent vibration (reduced from 1000ms)
     const isManualScrolling = useRef<boolean>(false);
     const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -217,86 +217,89 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
                     
                     // MAXIMUM PRECISION: Optimized scroll speed calculation
-                    // Adaptive speed based on intensity and confidence
-                    const baseScrollSpeed = 0.8; // Base speed for smoothness
-                    const maxScrollSpeed = 4.5; // Maximum speed for responsiveness
+                    // SIGNIFICANTLY INCREASED speeds to prevent tiny scrolls and vibration
+                    const baseScrollSpeed = 3.0; // Increased from 0.8 - much faster base speed
+                    const maxScrollSpeed = 12.0; // Increased from 4.5 - much faster max speed
                     const intensityFactor = Math.abs(gaze.scrollIntensity);
-                    const confidenceFactor = Math.max(0.7, gaze.confidence); // Use confidence to adjust speed
+                    const confidenceFactor = Math.max(0.6, gaze.confidence); // Lowered from 0.7 for more responsiveness
                     
-                    // Smooth acceleration curve (ease-in-out)
+                    // Smooth acceleration curve (ease-in-out) - but more aggressive
                     const easedIntensity = intensityFactor < 0.5 
                         ? 2 * intensityFactor * intensityFactor 
                         : 1 - Math.pow(-2 * intensityFactor + 2, 2) / 2;
                     
-                    const scrollSpeed = baseScrollSpeed + (easedIntensity * (maxScrollSpeed - baseScrollSpeed) * confidenceFactor);
+                    // Calculate scroll speed with minimum to prevent tiny scrolls
+                    const calculatedSpeed = baseScrollSpeed + (easedIntensity * (maxScrollSpeed - baseScrollSpeed) * confidenceFactor);
+                    const scrollSpeed = Math.max(2.0, calculatedSpeed); // Minimum 2.0 to prevent tiny scrolls
                     
-                    // MAXIMUM PRECISION: Higher threshold with confidence requirement
-                    // Only scroll if intensity is significant AND confidence is high
-                    const minIntensity = 0.20; // Lowered threshold for better responsiveness (was 0.25)
-                    const minConfidence = 0.55; // Lowered threshold for better responsiveness (was 0.6)
+                    // MAXIMUM PRECISION: Lower thresholds for better responsiveness
+                    const minIntensity = 0.15; // Lowered from 0.20 for more sensitivity
+                    const minConfidence = 0.50; // Lowered from 0.55 for more sensitivity
                     
-                    // INVERTED SCROLL LOGIC: User wants looking up to scroll down, looking down to scroll up
-                    // This matches natural reading behavior: look at top → want to see content below → scroll down
+                    // SCROLL LOGIC: Natural reading behavior
+                    // Looking at TOP of screen → scroll DOWN (to reveal content below)
+                    // Looking at BOTTOM of screen → scroll UP (to reveal content above)
+                    // Looking at MIDDLE → no scroll (comfortable reading zone)
+                    
                     if (Math.abs(gaze.scrollIntensity) > minIntensity && gaze.confidence >= minConfidence) {
+                        // Add scroll cooldown to prevent vibration (only scroll every 50ms)
+                        const now = Date.now();
+                        if (now - lastScrollTime.current < 50) {
+                            return; // Too soon, skip this frame
+                        }
+                        
                         if (gaze.viewportZone === 'top' && currentScroll < maxScroll - 50) {
-                            // Looking at TOP → scroll DOWN (to see content below)
-                            // scrollIntensity is negative for top zone, but we want to scroll DOWN (positive)
-                            const scrollAmount = Math.abs(scrollSpeed * gaze.scrollIntensity); // Make positive for down
+                            // Looking at TOP → scroll DOWN (positive scroll)
+                            // Use intensity to determine scroll amount, but ensure minimum
+                            const intensityMultiplier = Math.abs(gaze.scrollIntensity);
+                            const scrollAmount = Math.max(3.0, scrollSpeed * intensityMultiplier); // Minimum 3px
+                            
+                            lastScrollTime.current = now;
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
-                                    top: scrollAmount, // Positive to scroll DOWN
+                                    top: scrollAmount, // Positive = scroll DOWN
                                     behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
-                            if (Math.random() < 0.05) { // 5% of frames
-                                console.log('👁️ Eye tracking: Looking UP → Scrolling DOWN', {
+                            if (Math.random() < 0.03) { // 3% of frames
+                                console.log('👁️ Eye tracking: TOP zone → Scrolling DOWN', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
                                     scrollAmount: scrollAmount.toFixed(2),
                                     screenY: gaze.screenPosition?.y.toFixed(2),
+                                    confidence: gaze.confidence.toFixed(2),
                                     currentScroll: Math.round(currentScroll),
                                     maxScroll: Math.round(maxScroll)
                                 });
                             }
                         } else if (gaze.viewportZone === 'bottom' && currentScroll > 50) {
-                            // Looking at BOTTOM → scroll UP (to see content above)
-                            // scrollIntensity is positive for bottom zone, but we want to scroll UP (negative)
-                            const scrollAmount = Math.abs(scrollSpeed * gaze.scrollIntensity); // Make positive
+                            // Looking at BOTTOM → scroll UP (negative scroll)
+                            const intensityMultiplier = Math.abs(gaze.scrollIntensity);
+                            const scrollAmount = Math.max(3.0, scrollSpeed * intensityMultiplier); // Minimum 3px
+                            
+                            lastScrollTime.current = now;
                             requestAnimationFrame(() => {
                                 window.scrollBy({ 
-                                    top: -scrollAmount, // Negative to scroll UP
+                                    top: -scrollAmount, // Negative = scroll UP
                                     behavior: 'auto'
                                 });
                             });
                             
                             // Log occasionally to avoid spam
-                            if (Math.random() < 0.05) { // 5% of frames
-                                console.log('👁️ Eye tracking: Looking DOWN → Scrolling UP', {
+                            if (Math.random() < 0.03) { // 3% of frames
+                                console.log('👁️ Eye tracking: BOTTOM zone → Scrolling UP', {
                                     zone: gaze.viewportZone,
                                     intensity: gaze.scrollIntensity.toFixed(2),
                                     scrollAmount: scrollAmount.toFixed(2),
                                     screenY: gaze.screenPosition?.y.toFixed(2),
+                                    confidence: gaze.confidence.toFixed(2),
                                     currentScroll: Math.round(currentScroll)
                                 });
                             }
                         } else if (gaze.viewportZone === 'middle') {
-                            // Middle zone → no scrolling (dead zone)
-                            // This gives user a comfortable reading zone
-                        }
-                    } else {
-                        // Log why scrolling didn't happen (occasionally)
-                        if (Math.random() < 0.02) { // 2% of frames
-                            console.log('👁️ Eye tracking: Scroll conditions not met', {
-                                zone: gaze.viewportZone,
-                                intensity: Math.abs(gaze.scrollIntensity).toFixed(2),
-                                minIntensity,
-                                confidence: gaze.confidence.toFixed(2),
-                                minConfidence,
-                                meetsIntensity: Math.abs(gaze.scrollIntensity) > minIntensity,
-                                meetsConfidence: gaze.confidence >= minConfidence
-                            });
+                            // Middle zone → no scrolling (dead zone for comfortable reading)
                         }
                     }
                 }

@@ -618,29 +618,30 @@ export class EyeTrackingEngine {
             let baseIntensity = 0;
             
             // Use probability-based detection (most accurate)
-            // Lowered thresholds for better responsiveness (0.4 -> 0.25, 0.35 -> 0.25)
-            if (normalizedProbNoScroll > normalizedProbUp && normalizedProbNoScroll > normalizedProbDown && normalizedProbNoScroll > 0.25) {
+            // FURTHER LOWERED thresholds for maximum responsiveness (0.25 -> 0.20)
+            // This ensures zones change quickly and accurately
+            if (normalizedProbNoScroll > normalizedProbUp && normalizedProbNoScroll > normalizedProbDown && normalizedProbNoScroll > 0.20) {
                 // Highest probability is no-scroll
                 detectedZone = 'middle';
                 baseIntensity = 0;
-            } else if (normalizedProbUp > normalizedProbDown && normalizedProbUp > 0.25) {
-                // Highest probability is scroll-up
+            } else if (normalizedProbUp > normalizedProbDown && normalizedProbUp > 0.20) {
+                // Highest probability is scroll-up (looking at top)
                 detectedZone = 'top';
-                // Intensity based on probability and distance
+                // Intensity based on probability and distance - increased for more responsiveness
                 const range = Math.abs(scrollUpData.mean - noScrollData.mean);
                 const probBasedIntensity = normalizedProbUp;
                 const distBasedIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.5;
-                // Combine both for maximum accuracy
-                baseIntensity = -Math.min(1, (probBasedIntensity * 0.6 + distBasedIntensity * 0.4));
-            } else if (normalizedProbDown > normalizedProbUp && normalizedProbDown > 0.25) {
-                // Highest probability is scroll-down
+                // Combine both for maximum accuracy - increased multiplier for stronger intensity
+                baseIntensity = -Math.min(1, (probBasedIntensity * 0.7 + distBasedIntensity * 0.3));
+            } else if (normalizedProbDown > normalizedProbUp && normalizedProbDown > 0.20) {
+                // Highest probability is scroll-down (looking at bottom)
                 detectedZone = 'bottom';
-                // Intensity based on probability and distance
+                // Intensity based on probability and distance - increased for more responsiveness
                 const range = Math.abs(scrollDownData.mean - noScrollData.mean);
                 const probBasedIntensity = normalizedProbDown;
                 const distBasedIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.5;
-                // Combine both for maximum accuracy
-                baseIntensity = Math.min(1, (probBasedIntensity * 0.6 + distBasedIntensity * 0.4));
+                // Combine both for maximum accuracy - increased multiplier for stronger intensity
+                baseIntensity = Math.min(1, (probBasedIntensity * 0.7 + distBasedIntensity * 0.3));
             } else {
                 // Ambiguous - use tight range detection as fallback
                 if (inNoScrollRangeTight && !inScrollUpRangeTight && !inScrollDownRangeTight) {
@@ -672,29 +673,18 @@ export class EyeTrackingEngine {
                 }
             }
             
-            // Zone stability: Require consistent zone detection to prevent jitter
-            if (detectedZone === this.currentZone) {
-                this.zoneConfidence = Math.min(this.zoneStabilityThreshold, this.zoneConfidence + 1);
-            } else {
-                this.zoneConfidence = Math.max(0, this.zoneConfidence - 1);
-            }
+            // Zone stability: More responsive - immediately update zone but smooth intensity
+            // Changed: Always update zone immediately for responsiveness, but smooth intensity
+            viewportZone = detectedZone;
+            this.currentZone = detectedZone;
             
-            // Only change zone if confidence is high enough (hysteresis)
-            if (this.zoneConfidence >= this.zoneStabilityThreshold) {
-                viewportZone = detectedZone;
+            // Smooth intensity transitions to prevent vibration
+            if (detectedZone === this.currentZone) {
+                // Same zone - use full intensity
                 scrollIntensity = baseIntensity;
-                this.currentZone = detectedZone;
-            } else if (this.currentZone) {
-                // Keep previous zone until confidence builds up
-                viewportZone = this.currentZone;
-                // Reduce intensity during transition
-                scrollIntensity = baseIntensity * 0.5;
             } else {
-                // First detection
-                viewportZone = detectedZone;
-                scrollIntensity = baseIntensity;
-                this.currentZone = detectedZone;
-                this.zoneConfidence = 1;
+                // Zone changed - use smoothed intensity to prevent sudden jumps
+                scrollIntensity = baseIntensity * 0.8; // Slight reduction during transition
             }
             
             // Map normalizedY to screen position for display
