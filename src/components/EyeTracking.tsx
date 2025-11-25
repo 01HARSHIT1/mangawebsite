@@ -171,16 +171,28 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     currentNormalizedYRef.current = gaze.normalizedEyePosition.y;
                 }
                 
-                // Update calibration stats display
+                // Update calibration stats display (check on first load and periodically)
                 if (eyeTrackingEngineRef.current) {
                     const calibration = eyeTrackingEngineRef.current.getCalibration();
-                    if (calibration && calibration.calibrated) {
+                    if (calibration) {
+                        const totalSamples = (calibration.scrollUp?.samples?.length || 0) + 
+                                            (calibration.scrollDown?.samples?.length || 0) + 
+                                            (calibration.noScroll?.samples?.length || 0);
+                        
                         setCalibrationStats({
-                            scrollUp: calibration.scrollUp.samples.length,
-                            scrollDown: calibration.scrollDown.samples.length,
-                            noScroll: calibration.noScroll.samples.length,
-                            total: calibration.scrollUp.samples.length + calibration.scrollDown.samples.length + calibration.noScroll.samples.length
+                            scrollUp: calibration.scrollUp?.samples?.length || 0,
+                            scrollDown: calibration.scrollDown?.samples?.length || 0,
+                            noScroll: calibration.noScroll?.samples?.length || 0,
+                            total: totalSamples
                         });
+                        
+                        // Log calibration info on first load
+                        if (totalSamples > 15) {
+                            console.log('👁️ Eye Tracking: ✅ Using merged calibration with', totalSamples, 'total samples');
+                            console.log('  - Top:', calibration.scrollUp?.samples?.length || 0, 'samples');
+                            console.log('  - Middle:', calibration.noScroll?.samples?.length || 0, 'samples');
+                            console.log('  - Bottom:', calibration.scrollDown?.samples?.length || 0, 'samples');
+                        }
                     }
                 }
                 
@@ -710,6 +722,41 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             }, 1500); // Show success for 1.5 seconds
     };
     
+    // Check localStorage data to verify 30 samples
+    const checkLocalStorageData = () => {
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (stored) {
+                const data = JSON.parse(stored);
+                const topSamples = data.scrollUp?.samples?.length || 0;
+                const middleSamples = data.noScroll?.samples?.length || 0;
+                const bottomSamples = data.scrollDown?.samples?.length || 0;
+                const total = topSamples + middleSamples + bottomSamples;
+                
+                console.log('👁️ Eye Tracking: 📋 LOCALSTORAGE DATA CHECK');
+                console.log('='.repeat(80));
+                console.log('Your localStorage samples:');
+                console.log('  Top (scrollUp):', topSamples, 'samples');
+                console.log('  Middle (noScroll):', middleSamples, 'samples');
+                console.log('  Bottom (scrollDown):', bottomSamples, 'samples');
+                console.log('  TOTAL:', total, 'samples');
+                console.log('='.repeat(80));
+                console.log('Full data:', JSON.stringify(data, null, 2));
+                
+                if (total >= 30) {
+                    alert(`✅ Found your 30 samples in localStorage!\n\nTop: ${topSamples}\nMiddle: ${middleSamples}\nBottom: ${bottomSamples}\nTotal: ${total}\n\nCheck console (F12) for full data.`);
+                } else {
+                    alert(`⚠️ Found ${total} samples in localStorage (expected 30)\n\nTop: ${topSamples}\nMiddle: ${middleSamples}\nBottom: ${bottomSamples}\n\nCheck console (F12) for full data.`);
+                }
+            } else {
+                alert('❌ No calibration data found in localStorage.\n\nYour 30 samples may not have been saved.\nPlease use the step-by-step feedback system to provide samples.');
+            }
+        } catch (error) {
+            console.error('Error checking localStorage:', error);
+            alert('Error checking localStorage. Check console for details.');
+        }
+    };
+    
     // Export calibration data to share with system
     const exportCalibrationData = async () => {
         if (!eyeTrackingEngineRef.current) {
@@ -717,8 +764,21 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             return;
         }
         
+        // Get both merged calibration and raw localStorage data
         const calibration = eyeTrackingEngineRef.current.getCalibration();
-        if (!calibration || !calibration.calibrated) {
+        let localStorageData = null;
+        
+        // Also get raw localStorage data
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (stored) {
+                localStorageData = JSON.parse(stored);
+            }
+        } catch (error) {
+            console.warn('Could not read localStorage:', error);
+        }
+        
+        if (!calibration || (!calibration.calibrated && !localStorageData)) {
             setError('No calibration data available. Please provide feedback samples first.');
             return;
         }
@@ -726,7 +786,41 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         // Log to console for easy access
         console.log('👁️ Eye Tracking: 📤 EXPORTING CALIBRATION DATA');
         console.log('='.repeat(80));
+        console.log('MERGED CALIBRATION (Master + User Feedback):');
         console.log(JSON.stringify(calibration, null, 2));
+        console.log('='.repeat(80));
+        
+        if (localStorageData) {
+            console.log('RAW LOCALSTORAGE DATA (Your 30 samples):');
+            console.log(JSON.stringify(localStorageData, null, 2));
+            console.log('='.repeat(80));
+        }
+        
+        // Calculate stats
+        const stats = {
+            merged: {
+                scrollUp: calibration.scrollUp?.samples?.length || 0,
+                scrollDown: calibration.scrollDown?.samples?.length || 0,
+                noScroll: calibration.noScroll?.samples?.length || 0,
+                total: (calibration.scrollUp?.samples?.length || 0) + 
+                       (calibration.scrollDown?.samples?.length || 0) + 
+                       (calibration.noScroll?.samples?.length || 0)
+            },
+            localStorage: localStorageData ? {
+                scrollUp: localStorageData.scrollUp?.samples?.length || 0,
+                scrollDown: localStorageData.scrollDown?.samples?.length || 0,
+                noScroll: localStorageData.noScroll?.samples?.length || 0,
+                total: (localStorageData.scrollUp?.samples?.length || 0) + 
+                       (localStorageData.scrollDown?.samples?.length || 0) + 
+                       (localStorageData.noScroll?.samples?.length || 0)
+            } : null
+        };
+        
+        console.log('📊 STATISTICS:');
+        console.log('Merged (Master + User):', stats.merged);
+        if (stats.localStorage) {
+            console.log('Your localStorage samples:', stats.localStorage);
+        }
         console.log('='.repeat(80));
         console.log('👁️ Eye Tracking: Copy the JSON above and share it');
         
@@ -735,18 +829,22 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             const response = await fetch('/api/eye-tracking/export-calibration', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ calibrationData: calibration })
+                body: JSON.stringify({ 
+                    calibrationData: calibration,
+                    localStorageData: localStorageData,
+                    stats: stats
+                })
             });
             
             const result = await response.json();
             if (result.success) {
                 console.log('👁️ Eye Tracking: ✅ Calibration data sent to server');
                 console.log('Analysis:', result.analysis);
-                alert(`✅ Calibration data exported!\n\nTotal samples: ${result.analysis.totalSamples}\nTop: ${result.analysis.scrollUp.samples}\nMiddle: ${result.analysis.noScroll.samples}\nBottom: ${result.analysis.scrollDown.samples}\n\nCheck console for full data.`);
+                alert(`✅ Calibration data exported!\n\nMerged Total: ${stats.merged.total} samples\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}\n\n${stats.localStorage ? `Your localStorage: ${stats.localStorage.total} samples` : 'No localStorage data'}\n\nCheck console (F12) for full data.`);
             }
         } catch (error) {
             console.warn('Could not send to server, but data is in console:', error);
-            alert('✅ Calibration data logged to console! Check browser console (F12) for the data.');
+            alert(`✅ Calibration data logged to console!\n\nTotal samples: ${stats.merged.total}\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}\n\nCheck browser console (F12) for full data.`);
         }
     };
 
@@ -1052,8 +1150,17 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                         {/* Calibration Stats Display */}
                         {calibrationStats && (
                             <div className="mt-3 p-2 bg-blue-900/30 rounded border border-blue-700/50">
-                                <div className="text-xs font-semibold text-blue-400 mb-2">
-                                    📊 Calibration Data
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs font-semibold text-blue-400">
+                                        📊 Calibration Data
+                                    </div>
+                                    <button
+                                        onClick={checkLocalStorageData}
+                                        className="text-xs text-blue-300 hover:text-blue-200"
+                                        title="Check localStorage for your 30 samples"
+                                    >
+                                        🔍 Verify
+                                    </button>
                                 </div>
                                 <div className="grid grid-cols-4 gap-2 text-xs">
                                     <div className="text-center">
@@ -1075,7 +1182,12 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                 </div>
                                 {calibrationStats.total >= 30 && (
                                     <div className="text-xs text-green-400 mt-2 text-center">
-                                        ✅ Excellent! {calibrationStats.total} samples loaded
+                                        ✅ Excellent! {calibrationStats.total} samples loaded (Master + Your 30 samples)
+                                    </div>
+                                )}
+                                {calibrationStats.total < 30 && calibrationStats.total > 15 && (
+                                    <div className="text-xs text-yellow-400 mt-2 text-center">
+                                        ⚠️ {calibrationStats.total} samples - Your 30 samples may not be in localStorage
                                     </div>
                                 )}
                             </div>
