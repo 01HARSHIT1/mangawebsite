@@ -645,55 +645,90 @@ export class EyeTrackingEngine {
             const inScrollDownRange = detectionY >= scrollDownRange.min && detectionY <= scrollDownRange.max;
             const inNoScrollRange = detectionY >= noScrollRange.min && detectionY <= noScrollRange.max;
             
-            // IMPROVED ZONE DETECTION: Use distance-based detection for more accurate results
-            // Calculate which zone the current position is closest to
-            const distToUp = Math.abs(detectionY - scrollUpData.mean);
-            const distToDown = Math.abs(detectionY - scrollDownData.mean);
-            const distToNoScroll = Math.abs(detectionY - noScrollData.mean);
+            // ADVANCED ZONE DETECTION: Use Gaussian probability distributions for better accuracy
+            // This method is more robust when zones overlap significantly
             
-            // REAL-TIME ZONE DETECTION: Use range-based detection first for immediate response
-            // Check tight ranges first for accurate, real-time zone detection
+            // Calculate Gaussian probability for each zone
+            const calculateGaussianProbability = (value: number, mean: number, stdDev: number): number => {
+                if (stdDev === 0) return value === mean ? 1 : 0;
+                const variance = stdDev * stdDev;
+                const diff = value - mean;
+                return Math.exp(-0.5 * (diff * diff) / variance) / (stdDev * Math.sqrt(2 * Math.PI));
+            };
+            
+            // Calculate probabilities for each zone
+            const probUp = calculateGaussianProbability(detectionY, scrollUpData.mean, scrollUpData.stdDev);
+            const probDown = calculateGaussianProbability(detectionY, scrollDownData.mean, scrollDownData.stdDev);
+            const probNoScroll = calculateGaussianProbability(detectionY, noScrollData.mean, noScrollData.stdDev);
+            
+            // Normalize probabilities (make them sum to 1)
+            const totalProb = probUp + probDown + probNoScroll;
+            const normalizedProbUp = totalProb > 0 ? probUp / totalProb : 0.33;
+            const normalizedProbDown = totalProb > 0 ? probDown / totalProb : 0.33;
+            const normalizedProbNoScroll = totalProb > 0 ? probNoScroll / totalProb : 0.34;
+            
+            // Also calculate Mahalanobis distance (normalized distance accounting for variance)
+            const mahalanobisDistance = (value: number, mean: number, stdDev: number): number => {
+                if (stdDev === 0) return Math.abs(value - mean);
+                return Math.abs(value - mean) / stdDev;
+            };
+            
+            const mahalDistUp = mahalanobisDistance(detectionY, scrollUpData.mean, scrollUpData.stdDev);
+            const mahalDistDown = mahalanobisDistance(detectionY, scrollDownData.mean, scrollDownData.stdDev);
+            const mahalDistNoScroll = mahalanobisDistance(detectionY, noScrollData.mean, noScrollData.stdDev);
+            
+            // HYBRID DETECTION: Combine probability and distance for best accuracy
+            // Weight: 60% probability, 40% Mahalanobis distance (inverse)
+            const scoreUp = (normalizedProbUp * 0.6) + ((1 / (1 + mahalDistUp)) * 0.4);
+            const scoreDown = (normalizedProbDown * 0.6) + ((1 / (1 + mahalDistDown)) * 0.4);
+            const scoreNoScroll = (normalizedProbNoScroll * 0.6) + ((1 / (1 + mahalDistNoScroll)) * 0.4);
+            
+            // Determine zone based on highest score
             let detectedZone: 'top' | 'middle' | 'bottom';
             let baseIntensity = 0;
+            let detectionConfidence = 0;
             
-            // Use wider ranges (1.5*stdDev) for initial detection to catch more cases
-            // Priority 1: Check if clearly in one range
-            if (inScrollUpRange && !inScrollDownRange && distToUp < distToNoScroll && distToUp < distToDown) {
-                // Clearly in scroll-up range (looking UP)
+            if (scoreUp > scoreDown && scoreUp > scoreNoScroll) {
                 detectedZone = 'top';
-                const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                baseIntensity = range > 0 ? -Math.min(1, Math.max(0.5, distToNoScroll / range)) : -0.6;
-            } else if (inScrollDownRange && !inScrollUpRange && distToDown < distToNoScroll && distToDown < distToUp) {
-                // Clearly in scroll-down range (looking DOWN)
+                detectionConfidence = scoreUp;
+                // Calculate intensity based on distance from middle zone
+                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
+                const maxDist = Math.abs(scrollUpData.mean - noScrollData.mean);
+                baseIntensity = maxDist > 0 ? -Math.min(1, Math.max(0.3, distFromMiddle / maxDist)) : -0.5;
+            } else if (scoreDown > scoreUp && scoreDown > scoreNoScroll) {
                 detectedZone = 'bottom';
-                const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                baseIntensity = range > 0 ? Math.min(1, Math.max(0.5, distToNoScroll / range)) : 0.6;
-            } else if (inNoScrollRange && distToNoScroll < distToUp && distToNoScroll < distToDown) {
-                // Clearly in no-scroll range (looking MIDDLE)
-                detectedZone = 'middle';
-                baseIntensity = 0;
+                detectionConfidence = scoreDown;
+                // Calculate intensity based on distance from middle zone
+                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
+                const maxDist = Math.abs(scrollDownData.mean - noScrollData.mean);
+                baseIntensity = maxDist > 0 ? Math.min(1, Math.max(0.3, distFromMiddle / maxDist)) : 0.5;
             } else {
-                // Priority 2: Use closest distance as fallback (most reliable)
-                const minDist = Math.min(distToUp, distToDown, distToNoScroll);
-                if (minDist === distToUp) {
-                    detectedZone = 'top';
-                    const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                    baseIntensity = range > 0 ? -Math.min(1, Math.max(0.4, distToNoScroll / range)) : -0.5;
-                } else if (minDist === distToDown) {
-                    detectedZone = 'bottom';
-                    const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                    baseIntensity = range > 0 ? Math.min(1, Math.max(0.4, distToNoScroll / range)) : 0.5;
-                } else {
-                    detectedZone = 'middle';
-                    baseIntensity = 0;
-                }
+                detectedZone = 'middle';
+                detectionConfidence = scoreNoScroll;
+                baseIntensity = 0;
+            }
+            
+            // Boost confidence if detection is very clear (high probability difference)
+            const maxScore = Math.max(scoreUp, scoreDown, scoreNoScroll);
+            const secondMaxScore = [scoreUp, scoreDown, scoreNoScroll].sort((a, b) => b - a)[1];
+            const scoreDifference = maxScore - secondMaxScore;
+            
+            // If there's a clear winner (score difference > 0.2), boost confidence
+            if (scoreDifference > 0.2) {
+                detectionConfidence = Math.min(1, detectionConfidence * 1.3);
             }
             
             // REAL-TIME ZONE UPDATE: Immediately update zone with no delay
             // No smoothing or stability checks - instant zone changes for real-time response
             viewportZone = detectedZone;
             this.currentZone = detectedZone;
-            scrollIntensity = baseIntensity; // Use full intensity immediately for responsive scrolling
+            
+            // Apply confidence-based intensity scaling
+            // Higher confidence = stronger scroll intensity
+            scrollIntensity = baseIntensity * Math.max(0.5, detectionConfidence);
+            
+            // Store detection confidence for use in final confidence calculation
+            this.zoneConfidence = detectionConfidence;
             
             // Map normalizedY to screen position for display
             // Use calibrated values to map - FIXED: Use detectionY (smoothed) instead of raw normalizedY
@@ -752,39 +787,20 @@ export class EyeTrackingEngine {
             direction = normalizedX > 0 ? 'right' : 'left';
         }
         
-        // MAXIMUM PRECISION: Calculate confidence based on calibration match quality
+        // MAXIMUM PRECISION: Use detection confidence from advanced algorithm
         let confidence = 0.5; // Base confidence
         
         if (this.calibrationData && this.calibrationData.calibrated) {
-            const scrollUpData = this.calibrationData.scrollUp;
-            const scrollDownData = this.calibrationData.scrollDown;
-            const noScrollData = this.calibrationData.noScroll;
+            // Use the zone confidence calculated by the advanced detection algorithm
+            // This already incorporates Gaussian probability and Mahalanobis distance
+            confidence = Math.min(1.0, Math.max(0.5, this.zoneConfidence));
             
-            // Use smoothed Y for confidence calculation
-            const detectionY = this.normalizedYHistory.length > 0 ? 
-                this.normalizedYHistory[this.normalizedYHistory.length - 1] : normalizedY;
-            
-            // Calculate Gaussian probabilities for confidence
-            const probUp = Math.exp(-Math.pow(detectionY - scrollUpData.mean, 2) / (2 * Math.pow(scrollUpData.stdDev, 2)));
-            const probDown = Math.exp(-Math.pow(detectionY - scrollDownData.mean, 2) / (2 * Math.pow(scrollDownData.stdDev, 2)));
-            const probNoScroll = Math.exp(-Math.pow(detectionY - noScrollData.mean, 2) / (2 * Math.pow(noScrollData.stdDev, 2)));
-            
-            // Maximum probability indicates how well we match calibration
-            const maxProb = Math.max(probUp, probDown, probNoScroll);
-            
-            // Confidence is based on how well position matches calibration
-            // Higher probability = higher confidence
-            confidence = Math.min(1.0, Math.max(0.6, maxProb * 1.2)); // Scale and clamp
-            
-            // Boost confidence if in tight range
-            const inTightRange = (
-                (detectionY >= scrollUpData.mean - scrollUpData.stdDev && detectionY <= scrollUpData.mean + scrollUpData.stdDev) ||
-                (detectionY >= scrollDownData.mean - scrollDownData.stdDev && detectionY <= scrollDownData.mean + scrollDownData.stdDev) ||
-                (detectionY >= noScrollData.mean - noScrollData.stdDev && detectionY <= noScrollData.mean + noScrollData.stdDev)
-            );
-            
-            if (inTightRange) {
-                confidence = Math.min(1.0, confidence + 0.15); // Boost for tight match
+            // Additional boost for having 59 samples (more data = more reliable)
+            const sampleCount = this.calibrationData.scrollUp.samples.length + 
+                              this.calibrationData.scrollDown.samples.length + 
+                              this.calibrationData.noScroll.samples.length;
+            if (sampleCount >= 50) {
+                confidence = Math.min(1.0, confidence * 1.1); // 10% boost for large dataset
             }
         } else {
             // Fallback confidence calculation
