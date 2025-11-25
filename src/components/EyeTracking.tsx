@@ -722,6 +722,42 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             }, 1500); // Show success for 1.5 seconds
     };
     
+    // Copy localStorage data to clipboard for easy sharing
+    const copyLocalStorageToClipboard = async () => {
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (!stored) {
+                alert('❌ No calibration data found in localStorage.\n\nPlease use the step-by-step feedback system to provide samples first.');
+                return;
+            }
+            
+            const data = JSON.parse(stored);
+            const jsonString = JSON.stringify(data, null, 2);
+            
+            // Copy to clipboard
+            await navigator.clipboard.writeText(jsonString);
+            
+            const topSamples = data.scrollUp?.samples?.length || 0;
+            const middleSamples = data.noScroll?.samples?.length || 0;
+            const bottomSamples = data.scrollDown?.samples?.length || 0;
+            const total = topSamples + middleSamples + bottomSamples;
+            
+            console.log('👁️ Eye Tracking: ✅ Copied to clipboard!');
+            console.log('📊 Your localStorage data:');
+            console.log('  Top:', topSamples, '| Middle:', middleSamples, '| Bottom:', bottomSamples, '| Total:', total);
+            console.log('='.repeat(80));
+            console.log('📋 Next steps:');
+            console.log('  1. Save this JSON to a file: user-calibration.json');
+            console.log('  2. Run: node scripts/merge-calibration-data.js user-calibration.json');
+            console.log('  3. This will merge your', total, 'samples with master calibration (15) =', total + 15, 'total');
+            
+            alert(`✅ Copied to clipboard!\n\nYour data: ${total} samples\n- Top: ${topSamples}\n- Middle: ${middleSamples}\n- Bottom: ${bottomSamples}\n\nNext: Save to user-calibration.json and run the merge script.\n\nCheck console (F12) for instructions.`);
+        } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            alert('❌ Could not copy to clipboard. Check console for the data.');
+        }
+    };
+    
     // Check localStorage data to verify 30 samples
     const checkLocalStorageData = () => {
         try {
@@ -1296,13 +1332,22 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                     <div className="text-xs text-green-400 mt-3 pt-3 border-t border-purple-700/50 text-center">
                                         ✓ {feedbackCount} feedback sample{feedbackCount !== 1 ? 's' : ''} collected - System is learning!
                                     </div>
-                                    <button
-                                        onClick={exportCalibrationData}
-                                        className="w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold transition-all"
-                                        title="Export your calibration data to update the master calibration"
-                                    >
-                                        📤 Export Calibration Data
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={exportCalibrationData}
+                                            className="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold transition-all"
+                                            title="Export your calibration data to console"
+                                        >
+                                            📤 Export
+                                        </button>
+                                        <button
+                                            onClick={copyLocalStorageToClipboard}
+                                            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-all"
+                                            title="Copy localStorage data to clipboard for merging with master calibration"
+                                        >
+                                            📋 Copy
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
