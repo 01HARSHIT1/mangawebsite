@@ -615,64 +615,42 @@ export class EyeTrackingEngine {
             let detectedZone: 'top' | 'middle' | 'bottom';
             let baseIntensity = 0;
             
-            // Priority 1: Check tight ranges for immediate, accurate detection
-            if (inScrollUpRangeTight && !inScrollDownRangeTight && !inNoScrollRangeTight) {
+            // IMPROVED ZONE DETECTION: Use distance-based detection for more accurate results
+            // Calculate which zone the current position is closest to
+            const distToUp = Math.abs(detectionY - scrollUpData.mean);
+            const distToDown = Math.abs(detectionY - scrollDownData.mean);
+            const distToNoScroll = Math.abs(detectionY - noScrollData.mean);
+            
+            // Use wider ranges (1.5*stdDev) for initial detection to catch more cases
+            // Priority 1: Check if clearly in one range
+            if (inScrollUpRange && !inScrollDownRange && distToUp < distToNoScroll && distToUp < distToDown) {
                 // Clearly in scroll-up range (looking UP)
                 detectedZone = 'top';
                 const range = Math.abs(scrollUpData.mean - noScrollData.mean);
                 baseIntensity = range > 0 ? -Math.min(1, Math.max(0.5, distToNoScroll / range)) : -0.6;
-            } else if (inScrollDownRangeTight && !inScrollUpRangeTight && !inNoScrollRangeTight) {
+            } else if (inScrollDownRange && !inScrollUpRange && distToDown < distToNoScroll && distToDown < distToUp) {
                 // Clearly in scroll-down range (looking DOWN)
                 detectedZone = 'bottom';
                 const range = Math.abs(scrollDownData.mean - noScrollData.mean);
                 baseIntensity = range > 0 ? Math.min(1, Math.max(0.5, distToNoScroll / range)) : 0.6;
-            } else if (inNoScrollRangeTight && !inScrollUpRangeTight && !inScrollDownRangeTight) {
+            } else if (inNoScrollRange && distToNoScroll < distToUp && distToNoScroll < distToDown) {
                 // Clearly in no-scroll range (looking MIDDLE)
                 detectedZone = 'middle';
                 baseIntensity = 0;
             } else {
-                // Priority 2: Use probability-based detection for ambiguous cases
-                // Lowered threshold to 0.15 for faster zone changes
-                if (normalizedProbNoScroll > normalizedProbUp && normalizedProbNoScroll > normalizedProbDown && normalizedProbNoScroll > 0.15) {
-                    detectedZone = 'middle';
-                    baseIntensity = 0;
-                } else if (normalizedProbUp > normalizedProbDown && normalizedProbUp > 0.15) {
+                // Priority 2: Use closest distance as fallback (most reliable)
+                const minDist = Math.min(distToUp, distToDown, distToNoScroll);
+                if (minDist === distToUp) {
                     detectedZone = 'top';
                     const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                    baseIntensity = range > 0 ? -Math.min(1, Math.max(0.5, distToNoScroll / range)) : -0.6;
-                } else if (normalizedProbDown > normalizedProbUp && normalizedProbDown > 0.15) {
+                    baseIntensity = range > 0 ? -Math.min(1, Math.max(0.4, distToNoScroll / range)) : -0.5;
+                } else if (minDist === distToDown) {
                     detectedZone = 'bottom';
                     const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                    baseIntensity = range > 0 ? Math.min(1, Math.max(0.5, distToNoScroll / range)) : 0.6;
+                    baseIntensity = range > 0 ? Math.min(1, Math.max(0.4, distToNoScroll / range)) : 0.5;
                 } else {
-                    // Ambiguous - use tight range detection as fallback
-                    if (inNoScrollRangeTight && !inScrollUpRangeTight && !inScrollDownRangeTight) {
-                        detectedZone = 'middle';
-                        baseIntensity = 0;
-                    } else if (inScrollUpRangeTight && !inScrollDownRangeTight) {
-                        detectedZone = 'top';
-                        const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                        baseIntensity = range > 0 ? -Math.min(1, Math.max(0.4, distToNoScroll / range)) : -0.5;
-                    } else if (inScrollDownRangeTight && !inScrollUpRangeTight) {
-                        detectedZone = 'bottom';
-                        const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                        baseIntensity = range > 0 ? Math.min(1, Math.max(0.4, distToNoScroll / range)) : 0.5;
-                    } else {
-                        // Use closest mean as final fallback
-                        const minDist = Math.min(distToUp, distToDown, distToNoScroll);
-                        if (minDist === distToUp) {
-                            detectedZone = 'top';
-                            const range = Math.abs(scrollUpData.mean - noScrollData.mean);
-                            baseIntensity = range > 0 ? -Math.min(1, distToNoScroll / range) : -0.4;
-                        } else if (minDist === distToDown) {
-                            detectedZone = 'bottom';
-                            const range = Math.abs(scrollDownData.mean - noScrollData.mean);
-                            baseIntensity = range > 0 ? Math.min(1, distToNoScroll / range) : 0.4;
-                        } else {
-                            detectedZone = 'middle';
-                            baseIntensity = 0;
-                        }
-                    }
+                    detectedZone = 'middle';
+                    baseIntensity = 0;
                 }
             }
             

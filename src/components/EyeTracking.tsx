@@ -29,6 +29,11 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const [viewportZone, setViewportZone] = useState<string | null>(null);
     const [scrollIntensity, setScrollIntensity] = useState<number>(0);
     
+    // Manual feedback system for active learning
+    const [showFeedbackButtons, setShowFeedbackButtons] = useState(false);
+    const [feedbackCount, setFeedbackCount] = useState(0);
+    const currentNormalizedYRef = useRef<number | null>(null);
+    
     // Statistics tracking
     const detectionCountRef = useRef<number>(0);
     const totalFramesRef = useRef<number>(0);
@@ -152,8 +157,9 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
             console.log('👁️ Eye Tracking: Initializing engine with video element...');
             await engine.initialize(videoRef.current, (gaze) => {
-                // Store current normalized Y for calibration
+                // Store current normalized Y for manual feedback
                 if (gaze.normalizedEyePosition) {
+                    currentNormalizedYRef.current = gaze.normalizedEyePosition.y;
                 }
                 
                 // Update accuracy metrics
@@ -579,7 +585,55 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         if (eyeTrackingEngineRef.current) {
             eyeTrackingEngineRef.current.clearCalibration();
             setError(null);
+            setFeedbackCount(0);
             console.log('👁️ Eye Tracking: Calibration cleared');
+        }
+    };
+    
+    // Handle manual zone feedback for active learning
+    const handleZoneFeedback = (correctZone: 'top' | 'middle' | 'bottom') => {
+        if (!eyeTrackingEngineRef.current || !isActive || currentNormalizedYRef.current === null) {
+            setError('Eye tracking not ready. Please wait a moment.');
+            return;
+        }
+        
+        const normalizedY = currentNormalizedYRef.current;
+        const detectedZone = viewportZone;
+        
+        // Only save feedback if it's different from detected zone
+        if (detectedZone !== correctZone) {
+            // Map zone to calibration action
+            let action: 'scrollUp' | 'scrollDown' | 'noScroll';
+            if (correctZone === 'top') {
+                action = 'scrollUp';
+            } else if (correctZone === 'bottom') {
+                action = 'scrollDown';
+            } else {
+                action = 'noScroll';
+            }
+            
+            // Add this as a calibration sample
+            eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
+            
+            // Update feedback count
+            setFeedbackCount(prev => prev + 1);
+            
+            console.log('👁️ Eye Tracking: Manual feedback saved', {
+                detected: detectedZone,
+                correct: correctZone,
+                normalizedY: normalizedY.toFixed(6),
+                action,
+                totalFeedback: feedbackCount + 1
+            });
+            
+            // Show success message
+            setError(null);
+        } else {
+            // Zone is already correct - just confirm
+            console.log('👁️ Eye Tracking: Zone detection is correct!', {
+                zone: correctZone,
+                normalizedY: normalizedY.toFixed(6)
+            });
         }
     };
 
@@ -880,6 +934,76 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                         
                         <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
                             💡 Look down to scroll, look up to scroll back
+                        </div>
+                        
+                        {/* Manual Feedback System for Active Learning */}
+                        <div className="mt-3 p-2 bg-purple-900/30 rounded border border-purple-700/50">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="text-xs font-semibold text-purple-400">
+                                    🎯 Zone Correction
+                                </div>
+                                <button
+                                    onClick={() => setShowFeedbackButtons(!showFeedbackButtons)}
+                                    className="text-xs text-purple-300 hover:text-purple-200"
+                                >
+                                    {showFeedbackButtons ? 'Hide' : 'Show'}
+                                </button>
+                            </div>
+                            
+                            {showFeedbackButtons && (
+                                <div className="space-y-2">
+                                    <div className="text-xs text-gray-400 mb-2">
+                                        Detected: <span className={`font-bold ${
+                                            viewportZone === 'top' ? 'text-blue-400' :
+                                            viewportZone === 'bottom' ? 'text-green-400' :
+                                            'text-yellow-400'
+                                        }`}>{viewportZone?.toUpperCase() || 'NONE'}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mb-2">
+                                        If wrong, click the correct zone to help the system learn:
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            onClick={() => handleZoneFeedback('top')}
+                                            className={`px-3 py-2 rounded text-xs font-semibold transition-all ${
+                                                viewportZone === 'top'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/70'
+                                            }`}
+                                            title="Click if you're looking at the TOP of the screen"
+                                        >
+                                            ↑ TOP
+                                        </button>
+                                        <button
+                                            onClick={() => handleZoneFeedback('middle')}
+                                            className={`px-3 py-2 rounded text-xs font-semibold transition-all ${
+                                                viewportZone === 'middle'
+                                                    ? 'bg-yellow-600 text-white'
+                                                    : 'bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800/70'
+                                            }`}
+                                            title="Click if you're looking at the MIDDLE of the screen"
+                                        >
+                                            • MIDDLE
+                                        </button>
+                                        <button
+                                            onClick={() => handleZoneFeedback('bottom')}
+                                            className={`px-3 py-2 rounded text-xs font-semibold transition-all ${
+                                                viewportZone === 'bottom'
+                                                    ? 'bg-green-600 text-white'
+                                                    : 'bg-green-900/50 text-green-300 hover:bg-green-800/70'
+                                            }`}
+                                            title="Click if you're looking at the BOTTOM of the screen"
+                                        >
+                                            ↓ BOTTOM
+                                        </button>
+                                    </div>
+                                    {feedbackCount > 0 && (
+                                        <div className="text-xs text-green-400 mt-2">
+                                            ✓ {feedbackCount} correction{feedbackCount !== 1 ? 's' : ''} saved - System is learning!
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
