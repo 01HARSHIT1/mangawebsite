@@ -583,43 +583,16 @@ export class EyeTrackingEngine {
             const inScrollDownRange = detectionY >= scrollDownRange.min && detectionY <= scrollDownRange.max;
             const inNoScrollRange = detectionY >= noScrollRange.min && detectionY <= noScrollRange.max;
             
-            // Calculate distance from each mean using smoothed Y (for intensity calculation)
-            const distToUp = Math.abs(detectionY - scrollUpData.mean);
-            const distToDown = Math.abs(detectionY - scrollDownData.mean);
-            const distToNoScroll = Math.abs(detectionY - noScrollData.mean);
-            
-            // Calculate Gaussian probability for each zone (more accurate than simple distance)
-            const gaussianProb = (value: number, mean: number, stdDev: number): number => {
-                const variance = stdDev * stdDev;
-                const diff = value - mean;
-                return Math.exp(-(diff * diff) / (2 * variance));
-            };
-            
-            const probUp = gaussianProb(detectionY, scrollUpData.mean, scrollUpData.stdDev);
-            const probDown = gaussianProb(detectionY, scrollDownData.mean, scrollDownData.stdDev);
-            const probNoScroll = gaussianProb(detectionY, noScrollData.mean, noScrollData.stdDev);
-            
-            // Normalize probabilities
-            const totalProb = probUp + probDown + probNoScroll;
-            const normalizedProbUp = totalProb > 0 ? probUp / totalProb : 0;
-            const normalizedProbDown = totalProb > 0 ? probDown / totalProb : 0;
-            const normalizedProbNoScroll = totalProb > 0 ? probNoScroll / totalProb : 0;
-            
-            // MAXIMUM PRECISION: Determine action using Gaussian probability (most accurate)
-            // Note: scrollUp mean (-0.1678) is MORE NEGATIVE than scrollDown mean (-0.1539)
-            // This means: looking UP (eyes move up) = more negative = scrollUp
-            //             looking DOWN (eyes move down) = less negative = scrollDown
-            
-            // REAL-TIME ZONE DETECTION: Use range-based detection first for immediate response
-            // Check tight ranges first for accurate, real-time zone detection
-            let detectedZone: 'top' | 'middle' | 'bottom';
-            let baseIntensity = 0;
-            
             // IMPROVED ZONE DETECTION: Use distance-based detection for more accurate results
             // Calculate which zone the current position is closest to
             const distToUp = Math.abs(detectionY - scrollUpData.mean);
             const distToDown = Math.abs(detectionY - scrollDownData.mean);
             const distToNoScroll = Math.abs(detectionY - noScrollData.mean);
+            
+            // REAL-TIME ZONE DETECTION: Use range-based detection first for immediate response
+            // Check tight ranges first for accurate, real-time zone detection
+            let detectedZone: 'top' | 'middle' | 'bottom';
+            let baseIntensity = 0;
             
             // Use wider ranges (1.5*stdDev) for initial detection to catch more cases
             // Priority 1: Check if clearly in one range
