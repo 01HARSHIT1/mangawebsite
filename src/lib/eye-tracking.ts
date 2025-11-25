@@ -224,45 +224,107 @@ export class EyeTrackingEngine {
             // First, try to load user's personal calibration
             const stored = localStorage.getItem('eyeTrackingCalibration');
             if (stored) {
-                const data = JSON.parse(stored) as CalibrationData;
+                const userData = JSON.parse(stored) as CalibrationData;
                 
-                // Recalculate statistics if they're missing (for backward compatibility)
-                if (data.scrollUp && data.scrollUp.samples && data.scrollUp.samples.length > 0) {
-                    if (!data.scrollUp.mean || !data.scrollUp.stdDev) {
-                        const stats = this.calculateStatistics(data.scrollUp.samples);
-                        data.scrollUp.mean = stats.mean;
-                        data.scrollUp.stdDev = stats.stdDev;
-                        data.scrollUp.min = stats.min;
-                        data.scrollUp.max = stats.max;
-                    }
-                }
-                if (data.scrollDown && data.scrollDown.samples && data.scrollDown.samples.length > 0) {
-                    if (!data.scrollDown.mean || !data.scrollDown.stdDev) {
-                        const stats = this.calculateStatistics(data.scrollDown.samples);
-                        data.scrollDown.mean = stats.mean;
-                        data.scrollDown.stdDev = stats.stdDev;
-                        data.scrollDown.min = stats.min;
-                        data.scrollDown.max = stats.max;
-                    }
-                }
-                if (data.noScroll && data.noScroll.samples && data.noScroll.samples.length > 0) {
-                    if (!data.noScroll.mean || !data.noScroll.stdDev) {
-                        const stats = this.calculateStatistics(data.noScroll.samples);
-                        data.noScroll.mean = stats.mean;
-                        data.noScroll.stdDev = stats.stdDev;
-                        data.noScroll.min = stats.min;
-                        data.noScroll.max = stats.max;
-                    }
-                }
+                // IMPROVED: Merge user feedback with master calibration for better accuracy
+                // Combine samples from master calibration and user feedback
+                let mergedData: CalibrationData = {
+                    scrollUp: {
+                        normalizedY: 0,
+                        samples: [],
+                        mean: 0,
+                        stdDev: 0,
+                        min: 0,
+                        max: 0
+                    },
+                    scrollDown: {
+                        normalizedY: 0,
+                        samples: [],
+                        mean: 0,
+                        stdDev: 0,
+                        min: 0,
+                        max: 0
+                    },
+                    noScroll: {
+                        normalizedY: 0,
+                        samples: [],
+                        mean: 0,
+                        stdDev: 0,
+                        min: 0,
+                        max: 0
+                    },
+                    calibrated: false
+                };
                 
-                this.calibrationData = data;
-                console.log('👁️ Eye Tracking: Loaded user personal calibration', {
-                    scrollUp: { mean: data.scrollUp?.mean?.toFixed(4), stdDev: data.scrollUp?.stdDev?.toFixed(4), samples: data.scrollUp?.samples?.length },
-                    scrollDown: { mean: data.scrollDown?.mean?.toFixed(4), stdDev: data.scrollDown?.stdDev?.toFixed(4), samples: data.scrollDown?.samples?.length },
-                    noScroll: { mean: data.noScroll?.mean?.toFixed(4), stdDev: data.noScroll?.stdDev?.toFixed(4), samples: data.noScroll?.samples?.length },
-                    calibrated: data.calibrated
+                // Merge samples: master calibration + user feedback
+                ['scrollUp', 'scrollDown', 'noScroll'].forEach((action) => {
+                    const masterSamples = DEFAULT_MASTER_CALIBRATION.calibrated 
+                        ? DEFAULT_MASTER_CALIBRATION[action as keyof CalibrationData]?.samples || []
+                        : [];
+                    const userSamples = userData[action as keyof CalibrationData]?.samples || [];
+                    
+                    // Combine all samples (master + user feedback)
+                    const allSamples = [...masterSamples, ...userSamples];
+                    
+                    if (allSamples.length > 0) {
+                        const stats = this.calculateStatistics(allSamples);
+                        mergedData[action as keyof CalibrationData] = {
+                            normalizedY: stats.mean,
+                            samples: allSamples,
+                            mean: stats.mean,
+                            stdDev: stats.stdDev,
+                            min: stats.min,
+                            max: stats.max
+                        };
+                    } else if (userData[action as keyof CalibrationData]?.samples?.length > 0) {
+                        // Fallback to user data if no master samples
+                        const userAction = userData[action as keyof CalibrationData];
+                        const stats = this.calculateStatistics(userAction.samples);
+                        mergedData[action as keyof CalibrationData] = {
+                            normalizedY: stats.mean,
+                            samples: userAction.samples,
+                            mean: stats.mean,
+                            stdDev: stats.stdDev,
+                            min: stats.min,
+                            max: stats.max
+                        };
+                    }
                 });
-                return data;
+                
+                // Mark as calibrated if we have samples
+                mergedData.calibrated = (
+                    mergedData.scrollUp.samples.length >= 5 &&
+                    mergedData.scrollDown.samples.length >= 5 &&
+                    mergedData.noScroll.samples.length >= 5
+                );
+                
+                this.calibrationData = mergedData;
+                console.log('👁️ Eye Tracking: ✅ Loaded MERGED calibration (Master + User Feedback)', {
+                    scrollUp: { 
+                        mean: mergedData.scrollUp.mean.toFixed(4), 
+                        stdDev: mergedData.scrollUp.stdDev.toFixed(4), 
+                        samples: mergedData.scrollUp.samples.length,
+                        masterSamples: DEFAULT_MASTER_CALIBRATION.calibrated ? DEFAULT_MASTER_CALIBRATION.scrollUp.samples.length : 0,
+                        userSamples: userData.scrollUp?.samples?.length || 0
+                    },
+                    scrollDown: { 
+                        mean: mergedData.scrollDown.mean.toFixed(4), 
+                        stdDev: mergedData.scrollDown.stdDev.toFixed(4), 
+                        samples: mergedData.scrollDown.samples.length,
+                        masterSamples: DEFAULT_MASTER_CALIBRATION.calibrated ? DEFAULT_MASTER_CALIBRATION.scrollDown.samples.length : 0,
+                        userSamples: userData.scrollDown?.samples?.length || 0
+                    },
+                    noScroll: { 
+                        mean: mergedData.noScroll.mean.toFixed(4), 
+                        stdDev: mergedData.noScroll.stdDev.toFixed(4), 
+                        samples: mergedData.noScroll.samples.length,
+                        masterSamples: DEFAULT_MASTER_CALIBRATION.calibrated ? DEFAULT_MASTER_CALIBRATION.noScroll.samples.length : 0,
+                        userSamples: userData.noScroll?.samples?.length || 0
+                    },
+                    totalSamples: mergedData.scrollUp.samples.length + mergedData.scrollDown.samples.length + mergedData.noScroll.samples.length,
+                    calibrated: mergedData.calibrated
+                });
+                return mergedData;
             }
             
             // No user calibration found - use master/default calibration

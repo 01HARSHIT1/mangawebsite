@@ -34,6 +34,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const [testResult, setTestResult] = useState<{zone: string | null, normalizedY: number | null}>({zone: null, normalizedY: null});
     const [feedbackCount, setFeedbackCount] = useState(0);
     const [testCount, setTestCount] = useState(0);
+    const [calibrationStats, setCalibrationStats] = useState<{scrollUp: number, scrollDown: number, noScroll: number, total: number} | null>(null);
     const currentNormalizedYRef = useRef<number | null>(null);
     const testTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
@@ -168,6 +169,19 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 // Store current normalized Y for manual feedback
                 if (gaze.normalizedEyePosition) {
                     currentNormalizedYRef.current = gaze.normalizedEyePosition.y;
+                }
+                
+                // Update calibration stats display
+                if (eyeTrackingEngineRef.current) {
+                    const calibration = eyeTrackingEngineRef.current.getCalibration();
+                    if (calibration && calibration.calibrated) {
+                        setCalibrationStats({
+                            scrollUp: calibration.scrollUp.samples.length,
+                            scrollDown: calibration.scrollDown.samples.length,
+                            noScroll: calibration.noScroll.samples.length,
+                            total: calibration.scrollUp.samples.length + calibration.scrollDown.samples.length + calibration.noScroll.samples.length
+                        });
+                    }
                 }
                 
                 // Update accuracy metrics
@@ -663,24 +677,77 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         // Always save feedback (even if correct) to strengthen the calibration
         eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
         
-        // Update feedback count
-        setFeedbackCount(prev => prev + 1);
+            // Update feedback count
+            setFeedbackCount(prev => prev + 1);
+            
+            // Update calibration stats
+            const updatedCalibration = eyeTrackingEngineRef.current.getCalibration();
+            if (updatedCalibration && updatedCalibration.calibrated) {
+                setCalibrationStats({
+                    scrollUp: updatedCalibration.scrollUp.samples.length,
+                    scrollDown: updatedCalibration.scrollDown.samples.length,
+                    noScroll: updatedCalibration.noScroll.samples.length,
+                    total: updatedCalibration.scrollUp.samples.length + updatedCalibration.scrollDown.samples.length + updatedCalibration.noScroll.samples.length
+                });
+            }
+            
+            console.log('👁️ Eye Tracking: Feedback saved', {
+                detected: detectedZone,
+                correct: correctZone,
+                normalizedY: normalizedY.toFixed(6),
+                action,
+                totalFeedback: feedbackCount + 1,
+                wasCorrect: detectedZone === correctZone,
+                totalSamples: updatedCalibration ? 
+                    (updatedCalibration.scrollUp.samples.length + updatedCalibration.scrollDown.samples.length + updatedCalibration.noScroll.samples.length) : 0
+            });
+            
+            // Show success and reset for next test
+            setError(null);
+            setTimeout(() => {
+                setFeedbackMode('idle');
+                setTestResult({zone: null, normalizedY: null});
+            }, 1500); // Show success for 1.5 seconds
+    };
+    
+    // Export calibration data to share with system
+    const exportCalibrationData = async () => {
+        if (!eyeTrackingEngineRef.current) {
+            setError('Eye tracking not initialized');
+            return;
+        }
         
-        console.log('👁️ Eye Tracking: Feedback saved', {
-            detected: detectedZone,
-            correct: correctZone,
-            normalizedY: normalizedY.toFixed(6),
-            action,
-            totalFeedback: feedbackCount + 1,
-            wasCorrect: detectedZone === correctZone
-        });
+        const calibration = eyeTrackingEngineRef.current.getCalibration();
+        if (!calibration || !calibration.calibrated) {
+            setError('No calibration data available. Please provide feedback samples first.');
+            return;
+        }
         
-        // Show success and reset for next test
-        setError(null);
-        setTimeout(() => {
-            setFeedbackMode('idle');
-            setTestResult({zone: null, normalizedY: null});
-        }, 1500); // Show success for 1.5 seconds
+        // Log to console for easy access
+        console.log('👁️ Eye Tracking: 📤 EXPORTING CALIBRATION DATA');
+        console.log('='.repeat(80));
+        console.log(JSON.stringify(calibration, null, 2));
+        console.log('='.repeat(80));
+        console.log('👁️ Eye Tracking: Copy the JSON above and share it');
+        
+        // Also try to send to API for analysis
+        try {
+            const response = await fetch('/api/eye-tracking/export-calibration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ calibrationData: calibration })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('👁️ Eye Tracking: ✅ Calibration data sent to server');
+                console.log('Analysis:', result.analysis);
+                alert(`✅ Calibration data exported!\n\nTotal samples: ${result.analysis.totalSamples}\nTop: ${result.analysis.scrollUp.samples}\nMiddle: ${result.analysis.noScroll.samples}\nBottom: ${result.analysis.scrollDown.samples}\n\nCheck console for full data.`);
+            }
+        } catch (error) {
+            console.warn('Could not send to server, but data is in console:', error);
+            alert('✅ Calibration data logged to console! Check browser console (F12) for the data.');
+        }
     };
 
     // Only show UI and work on chapter reading pages
@@ -982,6 +1049,38 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             💡 Look down to scroll, look up to scroll back
                         </div>
                         
+                        {/* Calibration Stats Display */}
+                        {calibrationStats && (
+                            <div className="mt-3 p-2 bg-blue-900/30 rounded border border-blue-700/50">
+                                <div className="text-xs font-semibold text-blue-400 mb-2">
+                                    📊 Calibration Data
+                                </div>
+                                <div className="grid grid-cols-4 gap-2 text-xs">
+                                    <div className="text-center">
+                                        <div className="text-blue-300 font-bold">{calibrationStats.scrollUp}</div>
+                                        <div className="text-gray-400">Top</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-yellow-300 font-bold">{calibrationStats.noScroll}</div>
+                                        <div className="text-gray-400">Middle</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-green-300 font-bold">{calibrationStats.scrollDown}</div>
+                                        <div className="text-gray-400">Bottom</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-purple-300 font-bold">{calibrationStats.total}</div>
+                                        <div className="text-gray-400">Total</div>
+                                    </div>
+                                </div>
+                                {calibrationStats.total >= 30 && (
+                                    <div className="text-xs text-green-400 mt-2 text-center">
+                                        ✅ Excellent! {calibrationStats.total} samples loaded
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
                         {/* Step-by-Step Feedback System for Active Learning */}
                         <div className="mt-3 p-3 bg-purple-900/30 rounded border border-purple-700/50">
                             <div className="text-xs font-semibold text-purple-400 mb-3">
@@ -1081,8 +1180,17 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             )}
                             
                             {feedbackCount > 0 && (
-                                <div className="text-xs text-green-400 mt-3 pt-3 border-t border-purple-700/50 text-center">
-                                    ✓ {feedbackCount} feedback sample{feedbackCount !== 1 ? 's' : ''} collected - System is learning!
+                                <div className="space-y-2">
+                                    <div className="text-xs text-green-400 mt-3 pt-3 border-t border-purple-700/50 text-center">
+                                        ✓ {feedbackCount} feedback sample{feedbackCount !== 1 ? 's' : ''} collected - System is learning!
+                                    </div>
+                                    <button
+                                        onClick={exportCalibrationData}
+                                        className="w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold transition-all"
+                                        title="Export your calibration data to update the master calibration"
+                                    >
+                                        📤 Export Calibration Data
+                                    </button>
                                 </div>
                             )}
                         </div>
