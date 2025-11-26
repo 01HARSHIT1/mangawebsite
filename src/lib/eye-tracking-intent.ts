@@ -23,9 +23,9 @@ export class EyeTrackingIntentDetector {
     private readonly BOTTOM_SCROLL_ZONE = 0.93; // Bottom 7% - scroll zone
     
     // Fixation & Intent Detection
-    private readonly FIXATION_TIME_THRESHOLD = 700; // 700ms fixation required (600-900ms range)
-    private readonly SCROLL_COOLDOWN = 1000; // 1000ms cooldown after scroll (800-1200ms range)
-    private readonly VELOCITY_THRESHOLD = 0.5; // Fast movement threshold
+    private readonly FIXATION_TIME_THRESHOLD = 400; // Reduced to 400ms for better responsiveness (was 700ms)
+    private readonly SCROLL_COOLDOWN = 800; // Reduced to 800ms for better responsiveness (was 1000ms)
+    private readonly VELOCITY_THRESHOLD = 0.3; // Lowered velocity threshold for easier detection (was 0.5)
     
     // State Tracking
     private currentZone: ScrollZone | null = null;
@@ -132,13 +132,17 @@ export class EyeTrackingIntentDetector {
         let scrollDirection: 'up' | 'down' | null = null;
         
         // Only scroll zones can trigger scrolling
+        // Made more lenient for better responsiveness
         if (zone === 'top-scroll' && !inCooldown) {
             // Top scroll zone: Check fixation time and velocity
             const hasFixation = fixationTime >= this.FIXATION_TIME_THRESHOLD;
             const hasFastMovement = velocity > this.VELOCITY_THRESHOLD; // Fast upward movement = intent
             
-            // Scroll if: (fixation time met) OR (fast intentional movement)
-            if (hasFixation || hasFastMovement) {
+            // Also allow if confidence is high (>= 70%) even with shorter fixation
+            const hasHighConfidence = confidence >= 0.70 && fixationTime >= 200; // 200ms minimum
+            
+            // Scroll if: (fixation time met) OR (fast intentional movement) OR (high confidence)
+            if (hasFixation || hasFastMovement || hasHighConfidence) {
                 shouldScroll = true;
                 scrollDirection = 'up';
             }
@@ -147,8 +151,11 @@ export class EyeTrackingIntentDetector {
             const hasFixation = fixationTime >= this.FIXATION_TIME_THRESHOLD;
             const hasFastMovement = velocity > this.VELOCITY_THRESHOLD; // Fast downward movement = intent
             
-            // Scroll if: (fixation time met) OR (fast intentional movement)
-            if (hasFixation || hasFastMovement) {
+            // Also allow if confidence is high (>= 70%) even with shorter fixation
+            const hasHighConfidence = confidence >= 0.70 && fixationTime >= 200; // 200ms minimum
+            
+            // Scroll if: (fixation time met) OR (fast intentional movement) OR (high confidence)
+            if (hasFixation || hasFastMovement || hasHighConfidence) {
                 shouldScroll = true;
                 scrollDirection = 'down';
             }

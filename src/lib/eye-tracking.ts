@@ -820,8 +820,8 @@ export class EyeTrackingEngine {
                 finalScoreNoScroll = statScoreNoScroll;
             }
             
-            // IMPROVED ZONE DETECTION: Use tighter thresholds based on 59 calibration samples
-            // Prioritize middle zone (reading) to prevent accidental scrolling
+            // SIMPLIFIED ZONE DETECTION: Use closest mean for accurate detection
+            // Since calibration values are very close, use simple distance-based detection
             let detectedZone: 'top' | 'middle' | 'bottom';
             let baseIntensity = 0;
             let detectionConfidence = 0;
@@ -831,40 +831,49 @@ export class EyeTrackingEngine {
             const distToDown = Math.abs(detectionY - scrollDownData.mean);
             const distToMiddle = Math.abs(detectionY - noScrollData.mean);
             
-            // Use tighter thresholds (1.0 * stdDev) for more precise detection
-            const upThreshold = scrollUpData.stdDev * 1.0;
-            const downThreshold = scrollDownData.stdDev * 1.0;
-            const middleThreshold = noScrollData.stdDev * 1.0;
+            // Find which zone is closest (simple and accurate)
+            const minDist = Math.min(distToUp, distToDown, distToMiddle);
             
-            // PRIORITIZE MIDDLE ZONE: If close to middle, prefer middle (prevents accidental scrolling)
-            if (distToMiddle <= middleThreshold && finalScoreNoScroll > 0.3) {
+            // Determine zone based on closest distance
+            if (minDist === distToUp) {
+                // Closest to scrollUp mean
+                detectedZone = 'top';
+                detectionConfidence = finalScoreUp;
+                // Calculate intensity based on how far from middle
+                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
+                const maxDist = Math.abs(scrollUpData.mean - noScrollData.mean);
+                baseIntensity = maxDist > 0 ? -Math.min(1, Math.max(0.5, distFromMiddle / maxDist)) : -0.7;
+            } else if (minDist === distToDown) {
+                // Closest to scrollDown mean
+                detectedZone = 'bottom';
+                detectionConfidence = finalScoreDown;
+                // Calculate intensity based on how far from middle
+                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
+                const maxDist = Math.abs(scrollDownData.mean - noScrollData.mean);
+                baseIntensity = maxDist > 0 ? Math.min(1, Math.max(0.5, distFromMiddle / maxDist)) : 0.7;
+            } else {
+                // Closest to noScroll mean (middle)
                 detectedZone = 'middle';
                 detectionConfidence = finalScoreNoScroll;
                 baseIntensity = 0; // NO SCROLLING in middle
             }
-            // TOP ZONE: Only if clearly in top zone and far from middle
-            else if (distToUp <= upThreshold && finalScoreUp > finalScoreDown && finalScoreUp > finalScoreNoScroll) {
-                detectedZone = 'top';
-                detectionConfidence = finalScoreUp;
-                // Calculate intensity: stronger when further from middle
-                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
-                const maxDist = Math.abs(scrollUpData.mean - noScrollData.mean);
-                baseIntensity = maxDist > 0 ? -Math.min(1, Math.max(0.4, distFromMiddle / maxDist)) : -0.6;
-            }
-            // BOTTOM ZONE: Only if clearly in bottom zone and far from middle
-            else if (distToDown <= downThreshold && finalScoreDown > finalScoreUp && finalScoreDown > finalScoreNoScroll) {
-                detectedZone = 'bottom';
-                detectionConfidence = finalScoreDown;
-                // Calculate intensity: stronger when further from middle
-                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
-                const maxDist = Math.abs(scrollDownData.mean - noScrollData.mean);
-                baseIntensity = maxDist > 0 ? Math.min(1, Math.max(0.4, distFromMiddle / maxDist)) : 0.6;
-            }
-            // DEFAULT: Middle zone (safest - no scrolling)
-            else {
-                detectedZone = 'middle';
-                detectionConfidence = finalScoreNoScroll;
-                baseIntensity = 0; // NO SCROLLING
+            
+            // Add debugging to help identify issues
+            if (Math.random() < 0.02) { // 2% of frames
+                console.log('👁️ Zone Detection:', {
+                    normalizedY: detectionY.toFixed(6),
+                    distToUp: distToUp.toFixed(6),
+                    distToDown: distToDown.toFixed(6),
+                    distToMiddle: distToMiddle.toFixed(6),
+                    detectedZone,
+                    confidence: (detectionConfidence * 100).toFixed(1) + '%',
+                    intensity: baseIntensity.toFixed(2),
+                    means: {
+                        up: scrollUpData.mean.toFixed(6),
+                        down: scrollDownData.mean.toFixed(6),
+                        middle: noScrollData.mean.toFixed(6)
+                    }
+                });
             }
             
             // Boost confidence if detection is very clear (high probability difference)
@@ -899,6 +908,25 @@ export class EyeTrackingEngine {
             // Store detection confidence for use in final confidence calculation
             this.zoneConfidence = detectionConfidence;
             
+            // Map normalizedY to screen position for display (MUST be calculated BEFORE intent detector)
+            // Use calibrated values to map - FIXED: Use detectionY (smoothed) instead of raw normalizedY
+            // IMPORTANT: More negative normalizedY = looking up = screenY closer to 0 (top)
+            // More positive normalizedY = looking down = screenY closer to 1 (bottom)
+            const scrollUpY = scrollUpData.mean;
+            const scrollDownY = scrollDownData.mean;
+            const noScrollY = noScrollData.mean;
+            const minY = Math.min(scrollUpY, scrollDownY, noScrollY);
+            const maxY = Math.max(scrollUpY, scrollDownY, noScrollY);
+            const rangeY = maxY - minY;
+            if (rangeY > 0) {
+                // Use smoothed detectionY for more accurate screen position
+                // Invert: more negative = top (0), more positive = bottom (1)
+                clampedScreenY = (detectionY - minY) / rangeY;
+            } else {
+                clampedScreenY = 0.5;
+            }
+            clampedScreenY = Math.max(0, Math.min(1, clampedScreenY));
+            
             // PROFESSIONAL INTENT DETECTION: Use 5-zone system with fixation time
             // This prevents accidental scrolling while reading
             try {
@@ -912,33 +940,45 @@ export class EyeTrackingEngine {
                 
                 // Override scroll intensity based on intent detection
                 // Only allow scrolling if intent detector confirms it
-                if (!intent.shouldScroll) {
-                    scrollIntensity = 0; // No scroll if intent not confirmed
-                } else if (intent.scrollDirection === 'up') {
-                    scrollIntensity = -Math.abs(scrollIntensity); // Negative for up
-                } else if (intent.scrollDirection === 'down') {
-                    scrollIntensity = Math.abs(scrollIntensity); // Positive for down
+                // TEMPORARY: For testing, allow scrolling if zone is detected (bypass intent detector if too strict)
+                const USE_INTENT_DETECTOR = true; // Set to false to bypass intent detector for testing
+                
+                if (USE_INTENT_DETECTOR) {
+                    if (!intent.shouldScroll) {
+                        scrollIntensity = 0; // No scroll if intent not confirmed
+                    } else if (intent.scrollDirection === 'up') {
+                        scrollIntensity = -Math.abs(scrollIntensity); // Negative for up
+                    } else if (intent.scrollDirection === 'down') {
+                        scrollIntensity = Math.abs(scrollIntensity); // Positive for down
+                    }
+                } else {
+                    // Bypass mode: Use zone detection directly (for testing)
+                    if (detectedZone === 'top') {
+                        scrollIntensity = -Math.abs(scrollIntensity);
+                    } else if (detectedZone === 'bottom') {
+                        scrollIntensity = Math.abs(scrollIntensity);
+                    } else {
+                        scrollIntensity = 0;
+                    }
+                }
+                
+                // Add debugging for intent detection
+                if (Math.random() < 0.02) { // 2% of frames
+                    console.log('👁️ Intent Detection:', {
+                        zone: intent.zone,
+                        screenY: clampedScreenY.toFixed(3),
+                        detectedZone,
+                        shouldScroll: intent.shouldScroll,
+                        scrollDirection: intent.scrollDirection,
+                        fixationTime: intent.fixationTime + 'ms',
+                        confidence: (intent.confidence * 100).toFixed(1) + '%',
+                        finalScrollIntensity: scrollIntensity.toFixed(2)
+                    });
                 }
             } catch (error) {
                 // If intent detector fails, continue without it (fallback to basic detection)
                 console.warn('👁️ Eye Tracking: Intent detector error, using basic detection:', error);
             }
-            
-            // Map normalizedY to screen position for display
-            // Use calibrated values to map - FIXED: Use detectionY (smoothed) instead of raw normalizedY
-            const scrollUpY = scrollUpData.mean;
-            const scrollDownY = scrollDownData.mean;
-            const noScrollY = noScrollData.mean;
-            const minY = Math.min(scrollUpY, scrollDownY, noScrollY);
-            const maxY = Math.max(scrollUpY, scrollDownY, noScrollY);
-            const rangeY = maxY - minY;
-            if (rangeY > 0) {
-                // Use smoothed detectionY for more accurate screen position
-                clampedScreenY = (detectionY - minY) / rangeY;
-            } else {
-                clampedScreenY = 0.5;
-            }
-            clampedScreenY = Math.max(0, Math.min(1, clampedScreenY));
             
             // Calculate screen X position
             clampedScreenX = 0.5 + (normalizedX * 2);
