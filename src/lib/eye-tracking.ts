@@ -114,10 +114,12 @@ export class EyeTrackingEngine {
     // Smoothing for normalizedY to reduce jitter (reduced for real-time response)
     private normalizedYHistory: number[] = [];
     private readonly smoothingHistorySize = 3; // Reduced from 5 to 3 for faster, real-time response
-    // Zone stability - require multiple frames in same zone before changing
+    // Zone stability - require multiple frames in same zone before changing (prevents jitter)
     private currentZone: 'top' | 'middle' | 'bottom' | null = null;
     private zoneConfidence: number = 0;
-    private readonly zoneStabilityThreshold = 1; // Require 1 frame for faster response (reduced from 3)
+    private lastDetectedZone: 'top' | 'middle' | 'bottom' | null = null;
+    private stableFrames: number = 0;
+    private readonly requiredStableFrames = 5; // Require 5 consecutive frames in same zone (prevents jitter)
     // Deep Learning Model (TensorFlow.js)
     private mlModel: EyeTrackingMLModel | null = null;
     private mlModelReady = false;
@@ -519,9 +521,9 @@ export class EyeTrackingEngine {
             console.log('👁️ Eye Tracking Engine: Setting Face Mesh options...');
             this.faceMesh.setOptions({
                 maxNumFaces: 1,
-                refineLandmarks: true,
-                minDetectionConfidence: 0.3, // Lowered from 0.5 for better detection
-                minTrackingConfidence: 0.3   // Lowered from 0.5 for better detection
+                refineLandmarks: true,        // Enable iris landmarks for better accuracy (as per provided code)
+                minDetectionConfidence: 0.3, // Lowered from 0.5 for better detection (can increase to 0.7 for stricter detection)
+                minTrackingConfidence: 0.3    // Lowered from 0.5 for better detection (can increase to 0.7 for stricter detection)
             });
             
             console.log('👁️ Eye Tracking Engine: Face Mesh options set successfully');
@@ -891,18 +893,35 @@ export class EyeTrackingEngine {
                 detectionConfidence = Math.min(1, detectionConfidence * 1.1); // 10% boost for ML
             }
             
-            // REAL-TIME ZONE UPDATE: Immediately update zone with no delay
-            // No smoothing or stability checks - instant zone changes for real-time response
-            viewportZone = detectedZone;
-            this.currentZone = detectedZone;
-            
-            // Apply confidence-based intensity scaling
-            // Higher confidence = stronger scroll intensity
-            // For middle zone, ensure intensity is always 0 (no scrolling)
-            if (detectedZone === 'middle') {
-                scrollIntensity = 0; // CRITICAL: Middle zone NEVER scrolls
+            // STABILITY FILTER: Require 5 consecutive frames in same zone before changing (prevents jitter)
+            // This is the key improvement from the provided code - prevents rapid zone switching
+            if (detectedZone === this.lastDetectedZone) {
+                // Same zone detected - increment stable frame counter
+                this.stableFrames++;
             } else {
-                scrollIntensity = baseIntensity * Math.max(0.6, detectionConfidence);
+                // Zone changed - reset counter and update last detected zone
+                this.lastDetectedZone = detectedZone;
+                this.stableFrames = 1;
+            }
+            
+            // Only update current zone if we have enough stable frames (prevents jitter)
+            if (this.stableFrames >= this.requiredStableFrames) {
+                viewportZone = detectedZone;
+                this.currentZone = detectedZone;
+                
+                // Apply confidence-based intensity scaling only when zone is stable
+                // Higher confidence = stronger scroll intensity
+                // For middle zone, ensure intensity is always 0 (no scrolling)
+                if (detectedZone === 'middle') {
+                    scrollIntensity = 0; // CRITICAL: Middle zone NEVER scrolls
+                } else {
+                    scrollIntensity = baseIntensity * Math.max(0.6, detectionConfidence);
+                }
+            } else {
+                // Keep previous zone until stability is confirmed
+                viewportZone = this.currentZone || 'middle';
+                // Don't apply scroll intensity until zone is stable (prevents jitter)
+                scrollIntensity = 0;
             }
             
             // Store detection confidence for use in final confidence calculation
@@ -934,7 +953,7 @@ export class EyeTrackingEngine {
                 const intent = intentDetector.detectIntent(
                     clampedScreenY, // Screen position (0.0 = top, 1.0 = bottom)
                     detectionConfidence,
-                    detectedZone,
+                    viewportZone, // Use stable zone (not detectedZone) for intent detection
                     Date.now()
                 );
                 
@@ -962,12 +981,14 @@ export class EyeTrackingEngine {
                     }
                 }
                 
-                // Add debugging for intent detection
+                // Add debugging for stability filter and intent detection
                 if (Math.random() < 0.02) { // 2% of frames
-                    console.log('👁️ Intent Detection:', {
+                    console.log('👁️ Stability Filter & Intent:', {
+                        detectedZone,
+                        stableZone: viewportZone,
+                        stableFrames: this.stableFrames + '/' + this.requiredStableFrames,
                         zone: intent.zone,
                         screenY: clampedScreenY.toFixed(3),
-                        detectedZone,
                         shouldScroll: intent.shouldScroll,
                         scrollDirection: intent.scrollDirection,
                         fixationTime: intent.fixationTime + 'ms',
