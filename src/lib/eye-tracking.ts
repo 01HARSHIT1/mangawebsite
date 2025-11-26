@@ -1,8 +1,11 @@
 // Real Eye Tracking using MediaPipe Face Mesh
 // Detects gaze direction for auto-scrolling
+// Enhanced with Deep Learning (TensorFlow.js) + Statistical Pattern Matching
 
 import { FaceMesh } from '@mediapipe/face_mesh';
 import { Camera } from '@mediapipe/camera_utils';
+import { EyeTrackingMLModel } from './eye-tracking-ml';
+import { EyeTrackingIntentDetector } from './eye-tracking-intent';
 
 export interface GazeDirection {
     direction: 'up' | 'down' | 'left' | 'right' | 'center';
@@ -114,6 +117,12 @@ export class EyeTrackingEngine {
     private currentZone: 'top' | 'middle' | 'bottom' | null = null;
     private zoneConfidence: number = 0;
     private readonly zoneStabilityThreshold = 1; // Require 1 frame for faster response (reduced from 3)
+    // Deep Learning Model (TensorFlow.js)
+    private mlModel: EyeTrackingMLModel | null = null;
+    private mlModelReady = false;
+    
+    // Professional Eye Tracking: Intent Detection System
+    private intentDetector: EyeTrackingIntentDetector;
     
     // Calculate statistics helper (static for use in default calibration)
     private static calculateStatistics(samples: number[]): { mean: number; stdDev: number; min: number; max: number } {
@@ -208,6 +217,43 @@ export class EyeTrackingEngine {
         return JSON.stringify(DEFAULT_MASTER_CALIBRATION, null, 2);
     }
     
+    // Initialize ML Model
+    async initializeMLModel(): Promise<void> {
+        if (typeof window === 'undefined') {
+            return; // Server-side: skip ML model
+        }
+        
+        try {
+            this.mlModel = new EyeTrackingMLModel();
+            
+            // Try to load existing model
+            const loaded = await this.mlModel.loadModel();
+            
+            if (!loaded && this.calibrationData && this.calibrationData.calibrated) {
+                // Train new model if calibration data is available
+                console.log('👁️ ML: Training new model from calibration data...');
+                await this.mlModel.trainModel({
+                    scrollUp: this.calibrationData.scrollUp.samples,
+                    scrollDown: this.calibrationData.scrollDown.samples,
+                    noScroll: this.calibrationData.noScroll.samples
+                }, (epoch, logs) => {
+                    if (epoch % 20 === 0) {
+                        console.log(`👁️ ML: Training progress - Epoch ${epoch + 1}, Loss: ${logs?.loss?.toFixed(4)}`);
+                    }
+                });
+                
+                // Save trained model
+                await this.mlModel.saveModel();
+            }
+            
+            this.mlModelReady = this.mlModel.isReady();
+            console.log('👁️ ML: Model ready:', this.mlModelReady);
+        } catch (error) {
+            console.warn('👁️ ML: Failed to initialize ML model, using statistical approach only:', error);
+            this.mlModelReady = false;
+        }
+    }
+    
     // Load calibration from localStorage, or use default master calibration
     loadCalibration(): CalibrationData | null {
         // First, ensure master calibration is loaded from file
@@ -299,6 +345,12 @@ export class EyeTrackingEngine {
                 );
                 
                 this.calibrationData = mergedData;
+                
+                // Initialize ML model after calibration is loaded
+                this.initializeMLModel().catch(err => {
+                    console.warn('👁️ ML: Failed to initialize after calibration load:', err);
+                });
+                
                 console.log('👁️ Eye Tracking: ✅ Loaded MERGED calibration (Master + User Feedback)', {
                     scrollUp: { 
                         mean: mergedData.scrollUp.mean.toFixed(4), 
@@ -330,6 +382,12 @@ export class EyeTrackingEngine {
             // No user calibration found - use master/default calibration
             if (DEFAULT_MASTER_CALIBRATION.calibrated) {
                 this.calibrationData = DEFAULT_MASTER_CALIBRATION;
+                
+                // Initialize ML model with master calibration
+                this.initializeMLModel().catch(err => {
+                    console.warn('👁️ ML: Failed to initialize with master calibration:', err);
+                });
+                
                 console.log('👁️ Eye Tracking: Using master/default calibration for all users', {
                     scrollUp: { mean: DEFAULT_MASTER_CALIBRATION.scrollUp.mean.toFixed(4), stdDev: DEFAULT_MASTER_CALIBRATION.scrollUp.stdDev.toFixed(4) },
                     scrollDown: { mean: DEFAULT_MASTER_CALIBRATION.scrollDown.mean.toFixed(4), stdDev: DEFAULT_MASTER_CALIBRATION.scrollDown.stdDev.toFixed(4) },
@@ -430,6 +488,11 @@ export class EyeTrackingEngine {
 
         // Load calibration data
         this.loadCalibration();
+        
+        // Initialize ML model (async, won't block)
+        this.initializeMLModel().catch(err => {
+            console.warn('👁️ ML: Failed to initialize ML model:', err);
+        });
 
         try {
             console.log('👁️ Eye Tracking Engine: Initializing MediaPipe Face Mesh...');
@@ -677,45 +740,110 @@ export class EyeTrackingEngine {
             const mahalDistDown = mahalanobisDistance(detectionY, scrollDownData.mean, scrollDownData.stdDev);
             const mahalDistNoScroll = mahalanobisDistance(detectionY, noScrollData.mean, noScrollData.stdDev);
             
-            // HYBRID DETECTION: Combine probability and distance for best accuracy
+            // STATISTICAL APPROACH: Combine probability and distance for best accuracy
             // Weight: 60% probability, 40% Mahalanobis distance (inverse)
-            const scoreUp = (normalizedProbUp * 0.6) + ((1 / (1 + mahalDistUp)) * 0.4);
-            const scoreDown = (normalizedProbDown * 0.6) + ((1 / (1 + mahalDistDown)) * 0.4);
-            const scoreNoScroll = (normalizedProbNoScroll * 0.6) + ((1 / (1 + mahalDistNoScroll)) * 0.4);
+            const statScoreUp = (normalizedProbUp * 0.6) + ((1 / (1 + mahalDistUp)) * 0.4);
+            const statScoreDown = (normalizedProbDown * 0.6) + ((1 / (1 + mahalDistDown)) * 0.4);
+            const statScoreNoScroll = (normalizedProbNoScroll * 0.6) + ((1 / (1 + mahalDistNoScroll)) * 0.4);
             
-            // Determine zone based on highest score
+            // DEEP LEARNING APPROACH: Get ML model prediction if available
+            // Use synchronous prediction for real-time performance
+            let mlPrediction = null;
+            if (this.mlModel && this.mlModelReady) {
+                try {
+                    const features = this.mlModel.extractFeatures(landmarks);
+                    if (features) {
+                        // Use synchronous prediction (fast for small models)
+                        mlPrediction = this.mlModel.predictSync(features);
+                    }
+                } catch (error) {
+                    // Ignore errors, use statistical approach only
+                    console.warn('👁️ ML: Prediction error, using statistical approach:', error);
+                }
+            }
+            
+            // HYBRID ENSEMBLE: Combine ML (60%) + Statistical (40%) for maximum accuracy
+            let finalScoreUp: number;
+            let finalScoreDown: number;
+            let finalScoreNoScroll: number;
+            
+            if (mlPrediction) {
+                // ML model provides probabilities
+                const mlProbUp = mlPrediction.probabilities.top;
+                const mlProbDown = mlPrediction.probabilities.bottom;
+                const mlProbNoScroll = mlPrediction.probabilities.middle;
+                
+                // Combine: 60% ML + 40% Statistical
+                finalScoreUp = (mlProbUp * 0.6) + (statScoreUp * 0.4);
+                finalScoreDown = (mlProbDown * 0.6) + (statScoreDown * 0.4);
+                finalScoreNoScroll = (mlProbNoScroll * 0.6) + (statScoreNoScroll * 0.4);
+            } else {
+                // Fallback to statistical only
+                finalScoreUp = statScoreUp;
+                finalScoreDown = statScoreDown;
+                finalScoreNoScroll = statScoreNoScroll;
+            }
+            
+            // IMPROVED ZONE DETECTION: Use tighter thresholds based on 59 calibration samples
+            // Prioritize middle zone (reading) to prevent accidental scrolling
             let detectedZone: 'top' | 'middle' | 'bottom';
             let baseIntensity = 0;
             let detectionConfidence = 0;
             
-            if (scoreUp > scoreDown && scoreUp > scoreNoScroll) {
+            // Calculate distances to each zone center (using calibration means)
+            const distToUp = Math.abs(detectionY - scrollUpData.mean);
+            const distToDown = Math.abs(detectionY - scrollDownData.mean);
+            const distToMiddle = Math.abs(detectionY - noScrollData.mean);
+            
+            // Use tighter thresholds (1.0 * stdDev) for more precise detection
+            const upThreshold = scrollUpData.stdDev * 1.0;
+            const downThreshold = scrollDownData.stdDev * 1.0;
+            const middleThreshold = noScrollData.stdDev * 1.0;
+            
+            // PRIORITIZE MIDDLE ZONE: If close to middle, prefer middle (prevents accidental scrolling)
+            if (distToMiddle <= middleThreshold && finalScoreNoScroll > 0.3) {
+                detectedZone = 'middle';
+                detectionConfidence = finalScoreNoScroll;
+                baseIntensity = 0; // NO SCROLLING in middle
+            }
+            // TOP ZONE: Only if clearly in top zone and far from middle
+            else if (distToUp <= upThreshold && finalScoreUp > finalScoreDown && finalScoreUp > finalScoreNoScroll) {
                 detectedZone = 'top';
-                detectionConfidence = scoreUp;
-                // Calculate intensity based on distance from middle zone
+                detectionConfidence = finalScoreUp;
+                // Calculate intensity: stronger when further from middle
                 const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
                 const maxDist = Math.abs(scrollUpData.mean - noScrollData.mean);
-                baseIntensity = maxDist > 0 ? -Math.min(1, Math.max(0.3, distFromMiddle / maxDist)) : -0.5;
-            } else if (scoreDown > scoreUp && scoreDown > scoreNoScroll) {
+                baseIntensity = maxDist > 0 ? -Math.min(1, Math.max(0.4, distFromMiddle / maxDist)) : -0.6;
+            }
+            // BOTTOM ZONE: Only if clearly in bottom zone and far from middle
+            else if (distToDown <= downThreshold && finalScoreDown > finalScoreUp && finalScoreDown > finalScoreNoScroll) {
                 detectedZone = 'bottom';
-                detectionConfidence = scoreDown;
-                // Calculate intensity based on distance from middle zone
+                detectionConfidence = finalScoreDown;
+                // Calculate intensity: stronger when further from middle
                 const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
                 const maxDist = Math.abs(scrollDownData.mean - noScrollData.mean);
-                baseIntensity = maxDist > 0 ? Math.min(1, Math.max(0.3, distFromMiddle / maxDist)) : 0.5;
-            } else {
+                baseIntensity = maxDist > 0 ? Math.min(1, Math.max(0.4, distFromMiddle / maxDist)) : 0.6;
+            }
+            // DEFAULT: Middle zone (safest - no scrolling)
+            else {
                 detectedZone = 'middle';
-                detectionConfidence = scoreNoScroll;
-                baseIntensity = 0;
+                detectionConfidence = finalScoreNoScroll;
+                baseIntensity = 0; // NO SCROLLING
             }
             
             // Boost confidence if detection is very clear (high probability difference)
-            const maxScore = Math.max(scoreUp, scoreDown, scoreNoScroll);
-            const secondMaxScore = [scoreUp, scoreDown, scoreNoScroll].sort((a, b) => b - a)[1];
+            const maxScore = Math.max(finalScoreUp, finalScoreDown, finalScoreNoScroll);
+            const secondMaxScore = [finalScoreUp, finalScoreDown, finalScoreNoScroll].sort((a, b) => b - a)[1];
             const scoreDifference = maxScore - secondMaxScore;
             
             // If there's a clear winner (score difference > 0.2), boost confidence
             if (scoreDifference > 0.2) {
                 detectionConfidence = Math.min(1, detectionConfidence * 1.3);
+            }
+            
+            // Additional boost if ML model is being used
+            if (mlPrediction) {
+                detectionConfidence = Math.min(1, detectionConfidence * 1.1); // 10% boost for ML
             }
             
             // REAL-TIME ZONE UPDATE: Immediately update zone with no delay
@@ -725,10 +853,34 @@ export class EyeTrackingEngine {
             
             // Apply confidence-based intensity scaling
             // Higher confidence = stronger scroll intensity
-            scrollIntensity = baseIntensity * Math.max(0.5, detectionConfidence);
+            // For middle zone, ensure intensity is always 0 (no scrolling)
+            if (detectedZone === 'middle') {
+                scrollIntensity = 0; // CRITICAL: Middle zone NEVER scrolls
+            } else {
+                scrollIntensity = baseIntensity * Math.max(0.6, detectionConfidence);
+            }
             
             // Store detection confidence for use in final confidence calculation
             this.zoneConfidence = detectionConfidence;
+            
+            // PROFESSIONAL INTENT DETECTION: Use 5-zone system with fixation time
+            // This prevents accidental scrolling while reading
+            const intent = this.intentDetector.detectIntent(
+                clampedScreenY, // Screen position (0.0 = top, 1.0 = bottom)
+                detectionConfidence,
+                detectedZone,
+                Date.now()
+            );
+            
+            // Override scroll intensity based on intent detection
+            // Only allow scrolling if intent detector confirms it
+            if (!intent.shouldScroll) {
+                scrollIntensity = 0; // No scroll if intent not confirmed
+            } else if (intent.scrollDirection === 'up') {
+                scrollIntensity = -Math.abs(scrollIntensity); // Negative for up
+            } else if (intent.scrollDirection === 'down') {
+                scrollIntensity = Math.abs(scrollIntensity); // Positive for down
+            }
             
             // Map normalizedY to screen position for display
             // Use calibrated values to map - FIXED: Use detectionY (smoothed) instead of raw normalizedY
@@ -793,14 +945,19 @@ export class EyeTrackingEngine {
         if (this.calibrationData && this.calibrationData.calibrated) {
             // Use the zone confidence calculated by the advanced detection algorithm
             // This already incorporates Gaussian probability and Mahalanobis distance
-            confidence = Math.min(1.0, Math.max(0.5, this.zoneConfidence));
+            confidence = Math.min(1.0, Math.max(0.6, this.zoneConfidence)); // Higher minimum (0.6) for accuracy
             
             // Additional boost for having 59 samples (more data = more reliable)
             const sampleCount = this.calibrationData.scrollUp.samples.length + 
                               this.calibrationData.scrollDown.samples.length + 
                               this.calibrationData.noScroll.samples.length;
             if (sampleCount >= 50) {
-                confidence = Math.min(1.0, confidence * 1.1); // 10% boost for large dataset
+                confidence = Math.min(1.0, confidence * 1.15); // 15% boost for large dataset (59 samples)
+            }
+            
+            // Extra boost for middle zone (prioritize reading stability)
+            if (viewportZone === 'middle') {
+                confidence = Math.min(1.0, confidence * 1.1); // 10% boost for middle zone
             }
         } else {
             // Fallback confidence calculation
@@ -886,6 +1043,20 @@ export class EyeTrackingEngine {
         
         this.isInitialized = false;
         this.gazeHistory = [];
+        
+        // Reset intent detector
+        if (this.intentDetector) {
+            this.intentDetector.reset();
+        }
+    }
+    
+    /**
+     * Record that a scroll event occurred (for cooldown tracking)
+     */
+    recordScroll(): void {
+        if (this.intentDetector) {
+            this.intentDetector.recordScroll();
+        }
     }
 
     isReady(): boolean {
