@@ -580,8 +580,14 @@ export class EyeTrackingEngine {
                     if (this.faceMesh) {
                         try {
                             await this.faceMesh.send({ image: videoElement });
-                        } catch (error) {
-                            console.error('👁️ Eye Tracking Engine: Error processing frame:', error);
+                        } catch (error: any) {
+                            // Only log errors that aren't related to intent detector (those are handled)
+                            if (!error?.message?.includes('detectIntent')) {
+                                // Log occasionally to avoid spam
+                                if (Math.random() < 0.01) {
+                                    console.warn('👁️ Eye Tracking Engine: Error processing frame:', error?.message || error);
+                                }
+                            }
                         }
                     }
                 },
