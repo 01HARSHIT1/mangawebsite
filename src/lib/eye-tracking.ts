@@ -512,8 +512,8 @@ export class EyeTrackingEngine {
             this.faceMesh.setOptions({
                 maxNumFaces: 1,
                 refineLandmarks: true,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
+                minDetectionConfidence: 0.3, // Lowered from 0.5 for better detection
+                minTrackingConfidence: 0.3   // Lowered from 0.5 for better detection
             });
             
             console.log('👁️ Eye Tracking Engine: Face Mesh options set successfully');
@@ -543,16 +543,23 @@ export class EyeTrackingEngine {
                     
                     onResults(avgGaze);
                 } else {
-                    // No face detected - log occasionally for debugging
-                    if (Math.random() < 0.01) { // 1% of frames
+                    // No face detected - log more frequently for debugging
+                    if (Math.random() < 0.1) { // 10% of frames for better debugging
                         console.warn('👁️ Eye Tracking Engine: ⚠️ No face detected in frame', {
                             hasImage: !!results.image,
                             imageWidth: results.image?.width,
-                            imageHeight: results.image?.height
+                            imageHeight: results.image?.height,
+                            multiFaceLandmarks: results.multiFaceLandmarks?.length || 0,
+                            timestamp: new Date().toISOString()
                         });
                     }
-                    // Return center with low confidence
-                    onResults({ direction: 'center', confidence: 0 });
+                    // Return center with low confidence (but not 0 to show system is working)
+                    onResults({ 
+                        direction: 'center', 
+                        confidence: 0.1, // Small confidence to indicate system is active but no face
+                        viewportZone: 'middle',
+                        scrollIntensity: 0
+                    });
                 }
             });
             
@@ -595,8 +602,14 @@ export class EyeTrackingEngine {
         
         // Validate landmarks
         if (!landmarks || landmarks.length < 468) {
-            console.warn('👁️ Eye Tracking: Invalid landmarks array', { length: landmarks?.length });
-            return { direction: 'center', confidence: 0 };
+            // Don't log every frame - only occasionally
+            if (Math.random() < 0.05) {
+                console.warn('👁️ Eye Tracking: Invalid landmarks array', { 
+                    length: landmarks?.length,
+                    hasLandmarks: !!landmarks 
+                });
+            }
+            return { direction: 'center', confidence: 0.1, viewportZone: 'middle', scrollIntensity: 0 };
         }
         
         // Key eye landmarks
@@ -607,8 +620,16 @@ export class EyeTrackingEngine {
         
         // Validate eye landmarks exist
         if (!leftEyeLeft || !leftEyeRight || !rightEyeLeft || !rightEyeRight) {
-            console.warn('👁️ Eye Tracking: Missing eye landmarks');
-            return { direction: 'center', confidence: 0 };
+            // Don't log every frame - only occasionally
+            if (Math.random() < 0.05) {
+                console.warn('👁️ Eye Tracking: Missing eye landmarks', {
+                    leftEyeLeft: !!leftEyeLeft,
+                    leftEyeRight: !!leftEyeRight,
+                    rightEyeLeft: !!rightEyeLeft,
+                    rightEyeRight: !!rightEyeRight
+                });
+            }
+            return { direction: 'center', confidence: 0.1, viewportZone: 'middle', scrollIntensity: 0 };
         }
         
         // Calculate eye centers
@@ -946,7 +967,18 @@ export class EyeTrackingEngine {
         if (this.calibrationData && this.calibrationData.calibrated) {
             // Use the zone confidence calculated by the advanced detection algorithm
             // This already incorporates Gaussian probability and Mahalanobis distance
-            confidence = Math.min(1.0, Math.max(0.6, this.zoneConfidence)); // Higher minimum (0.6) for accuracy
+            // Ensure minimum confidence even if zoneConfidence is 0 (shouldn't happen, but safety check)
+            if (this.zoneConfidence > 0) {
+                confidence = Math.min(1.0, Math.max(0.6, this.zoneConfidence)); // Higher minimum (0.6) for accuracy
+            } else {
+                // Fallback: use base confidence if zoneConfidence is 0 (shouldn't happen in normal operation)
+                confidence = 0.65; // Minimum working confidence
+                console.warn('👁️ Eye Tracking: zoneConfidence is 0, using fallback confidence', {
+                    hasCalibration: !!this.calibrationData,
+                    calibrated: this.calibrationData?.calibrated,
+                    viewportZone
+                });
+            }
             
             // Additional boost for having 59 samples (more data = more reliable)
             const sampleCount = this.calibrationData.scrollUp.samples.length + 

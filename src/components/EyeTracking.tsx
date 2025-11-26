@@ -231,14 +231,18 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 setViewportZone(gaze.viewportZone || null);
                 setScrollIntensity(gaze.scrollIntensity || 0);
                 
-                console.log('👁️ Eye Tracking: Gaze callback triggered', {
-                    direction: gaze.direction,
-                    confidence: gaze.confidence.toFixed(2),
-                    hasEyePosition: !!gaze.eyePosition,
-                    screenPosition: gaze.screenPosition,
-                    viewportZone: gaze.viewportZone,
-                    scrollIntensity: gaze.scrollIntensity?.toFixed(2)
-                });
+                // Log more frequently when confidence is low to help debug
+                if (gaze.confidence < 0.2 || Math.random() < 0.05) {
+                    console.log('👁️ Eye Tracking: Gaze callback', {
+                        direction: gaze.direction,
+                        confidence: (gaze.confidence * 100).toFixed(1) + '%',
+                        hasEyePosition: !!gaze.eyePosition,
+                        screenPosition: gaze.screenPosition,
+                        viewportZone: gaze.viewportZone,
+                        scrollIntensity: gaze.scrollIntensity?.toFixed(2),
+                        hasCalibration: !!eyeTrackingEngineRef.current?.getCalibration()?.calibrated
+                    });
+                }
                 
                 // Handle gaze detection
                 setGazeDirection(gaze.direction);
@@ -1181,8 +1185,19 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             }`}>
                                 {averageConfidence > 0.7 && detectionRate > 80 ? '🟢 Excellent' :
                                  averageConfidence > 0.4 && detectionRate > 50 ? '🟡 Good' :
+                                 currentConfidence === 0 ? '🔴 No Face Detected - Check camera & lighting' :
                                  '🔴 Poor - Check lighting & camera position'}
                             </div>
+                            {currentConfidence === 0 && (
+                                <div className="text-xs text-red-300 mt-2 space-y-1">
+                                    <div>⚠️ Troubleshooting:</div>
+                                    <div>• Ensure camera is on and working</div>
+                                    <div>• Check browser permissions</div>
+                                    <div>• Improve lighting (face should be visible)</div>
+                                    <div>• Look directly at camera</div>
+                                    <div>• Check browser console (F12) for errors</div>
+                                </div>
+                            )}
                         </div>
                         
                         <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
