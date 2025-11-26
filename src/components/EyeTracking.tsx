@@ -1250,6 +1250,30 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             </div>
                         )}
                         
+                        {/* Zone System Explanation */}
+                        <div className="mt-3 p-3 bg-cyan-900/30 rounded border border-cyan-700/50">
+                            <div className="text-xs font-semibold text-cyan-400 mb-2">
+                                📐 How Zones Work
+                            </div>
+                            <div className="text-xs text-gray-400 space-y-1">
+                                <div><strong className="text-cyan-300">You calibrate with 3 zones:</strong></div>
+                                <div className="ml-2">• <span className="text-blue-400">TOP</span> - Look at top of screen</div>
+                                <div className="ml-2">• <span className="text-yellow-400">MIDDLE</span> - Look at center</div>
+                                <div className="ml-2">• <span className="text-green-400">BOTTOM</span> - Look at bottom</div>
+                                <div className="mt-2"><strong className="text-cyan-300">System automatically uses 5 zones:</strong></div>
+                                <div className="ml-2 text-xs">
+                                    <div>• <span className="text-blue-400">0-5%</span> Top Scroll (scrolls UP)</div>
+                                    <div>• <span className="text-gray-400">5-15%</span> Top Reading (no scroll)</div>
+                                    <div>• <span className="text-yellow-400">15-75%</span> Middle (no scroll)</div>
+                                    <div>• <span className="text-gray-400">75-95%</span> Bottom Reading (no scroll)</div>
+                                    <div>• <span className="text-green-400">95-100%</span> Bottom Scroll (scrolls DOWN)</div>
+                                </div>
+                                <div className="mt-2 text-cyan-300">
+                                    ✅ Only top 5% and bottom 5% trigger scrolling
+                                </div>
+                            </div>
+                        </div>
+                        
                         {/* Step-by-Step Feedback System for Active Learning */}
                         <div className="mt-3 p-3 bg-purple-900/30 rounded border border-purple-700/50">
                             <div className="text-xs font-semibold text-purple-400 mb-3">

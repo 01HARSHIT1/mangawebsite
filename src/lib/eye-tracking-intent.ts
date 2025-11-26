@@ -15,12 +15,22 @@ export interface GazeIntent {
 }
 
 export class EyeTrackingIntentDetector {
-    // 5-Zone System (Professional Standard)
-    private readonly TOP_SCROLL_ZONE = 0.07; // Top 7% - scroll zone
-    private readonly TOP_READING_ZONE = 0.30; // 7-30% - safe reading zone
-    private readonly MIDDLE_ZONE = 0.70; // 30-70% - middle reading zone
-    private readonly BOTTOM_READING_ZONE = 0.93; // 70-93% - safe reading zone
-    private readonly BOTTOM_SCROLL_ZONE = 0.93; // Bottom 7% - scroll zone
+    // ⭐ 5-Zone System (Professional Standard) - Automatically mapped from 3 calibration zones
+    // You calibrate with 3 zones (TOP, MIDDLE, BOTTOM), system automatically uses 5 zones for scrolling
+    // 
+    // Screen Zones (0.0 = top of screen, 1.0 = bottom of screen):
+    // - Top Scroll:    0% - 5%   (scrolls UP to previous content)
+    // - Top Reading:   5% - 15%  (safe reading zone, no scroll)
+    // - Middle:       15% - 75%  (main reading zone, no scroll)
+    // - Bottom Reading: 75% - 95% (safe reading zone, no scroll)
+    // - Bottom Scroll:  95% - 100% (scrolls DOWN to new content)
+    //
+    // Only scroll zones (top 5% and bottom 5%) trigger scrolling
+    private readonly TOP_SCROLL_ZONE = 0.05; // Top 5% - scroll zone (was 7%, now 3-5% as per recommendation)
+    private readonly TOP_READING_ZONE = 0.15; // 5-15% - safe reading zone (was 30%)
+    private readonly MIDDLE_ZONE = 0.75; // 15-75% - middle reading zone (was 70%)
+    private readonly BOTTOM_READING_ZONE = 0.95; // 75-95% - safe reading zone (was 93%)
+    private readonly BOTTOM_SCROLL_ZONE = 0.95; // Bottom 5% - scroll zone (95-100%)
     
     // Fixation & Intent Detection
     private readonly FIXATION_TIME_THRESHOLD = 400; // Reduced to 400ms for better responsiveness (was 700ms)
