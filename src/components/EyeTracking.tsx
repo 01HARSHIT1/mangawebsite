@@ -279,7 +279,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                     
                     // Get screen position (0.0 = top, 1.0 = bottom)
                     const screenY = gaze.screenPosition?.y ?? 0.5;
-                    const now = Date.now();
+                    // Note: 'now' is already defined above (line 255)
                     
                     // CRITICAL: Middle zone NEVER scrolls (user is reading)
                     if (gaze.viewportZone === 'middle') {
