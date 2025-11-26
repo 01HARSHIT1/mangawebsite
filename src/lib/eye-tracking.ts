@@ -119,7 +119,10 @@ export class EyeTrackingEngine {
     private zoneConfidence: number = 0;
     private lastDetectedZone: 'top' | 'middle' | 'bottom' | null = null;
     private stableFrames: number = 0;
-    private readonly requiredStableFrames = 5; // Require 5 consecutive frames in same zone (prevents jitter)
+    private readonly requiredStableFrames = 12; // Require 12 consecutive frames (increased from 5 to 12-15 for better stability)
+    // ⭐ MODE FILTER: Store last 10 predictions for mode calculation
+    private zoneHistory: ('top' | 'middle' | 'bottom')[] = [];
+    private readonly zoneHistorySize = 10; // Use last 10 predictions for mode filter
     // Deep Learning Model (TensorFlow.js)
     private mlModel: EyeTrackingMLModel | null = null;
     private mlModelReady = false;
@@ -631,21 +634,45 @@ export class EyeTrackingEngine {
         // Key eye landmarks
         const leftEyeLeft = landmarks[33];
         const leftEyeRight = landmarks[133];
+        const leftEyeTop = landmarks[159];
+        const leftEyeBottom = landmarks[145];
         const rightEyeLeft = landmarks[362];
         const rightEyeRight = landmarks[263];
+        const rightEyeTop = landmarks[386];
+        const rightEyeBottom = landmarks[374];
         
         // Validate eye landmarks exist
-        if (!leftEyeLeft || !leftEyeRight || !rightEyeLeft || !rightEyeRight) {
+        if (!leftEyeLeft || !leftEyeRight || !rightEyeLeft || !rightEyeRight || 
+            !leftEyeTop || !leftEyeBottom || !rightEyeTop || !rightEyeBottom) {
             // Don't log every frame - only occasionally
             if (Math.random() < 0.05) {
-                console.warn('👁️ Eye Tracking: Missing eye landmarks', {
-                    leftEyeLeft: !!leftEyeLeft,
-                    leftEyeRight: !!leftEyeRight,
-                    rightEyeLeft: !!rightEyeLeft,
-                    rightEyeRight: !!rightEyeRight
-                });
+                console.warn('👁️ Eye Tracking: Missing eye landmarks');
             }
             return { direction: 'center', confidence: 0.1, viewportZone: 'middle', scrollIntensity: 0 };
+        }
+        
+        // ⭐ BLINK DETECTION: Filter noisy samples (eye closed = ignore)
+        const calculateEAR = (top: any, bottom: any, left: any, right: any): number => {
+            const vertical1 = Math.sqrt(Math.pow(top.x - bottom.x, 2) + Math.pow(top.y - bottom.y, 2));
+            const vertical2 = Math.sqrt(Math.pow(top.x - bottom.x, 2) + Math.pow(top.y - bottom.y, 2));
+            const horizontal = Math.sqrt(Math.pow(left.x - right.x, 2) + Math.pow(left.y - right.y, 2));
+            return horizontal === 0 ? 0 : (vertical1 + vertical2) / (2 * horizontal);
+        };
+        
+        const leftEAR = calculateEAR(leftEyeTop, leftEyeBottom, leftEyeLeft, leftEyeRight);
+        const rightEAR = calculateEAR(rightEyeTop, rightEyeBottom, rightEyeLeft, rightEyeRight);
+        const eyeAspectRatio = (leftEAR + rightEAR) / 2;
+        const BLINK_THRESHOLD = 0.25; // Below this = eye closed/blinking
+        
+        // Filter out blinks and closed eyes (noisy samples)
+        if (eyeAspectRatio < BLINK_THRESHOLD) {
+            // Return previous zone during blink to maintain stability
+            return { 
+                direction: 'center', 
+                confidence: 0.3, 
+                viewportZone: this.currentZone || 'middle', 
+                scrollIntensity: 0 
+            };
         }
         
         // Calculate eye centers
@@ -800,23 +827,30 @@ export class EyeTrackingEngine {
                 }
             }
             
-            // HYBRID ENSEMBLE: Combine ML (60%) + Statistical (40%) for maximum accuracy
+            // ⭐ DYNAMIC HYBRID ENSEMBLE: Adjust weights based on sample count
+            // <300 samples: 35% ML + 65% Statistical (statistical more stable with small datasets)
+            // >=300 samples: 80% ML + 20% Statistical (ML learns better with more data)
+            const totalSamples = scrollUpData.samples.length + scrollDownData.samples.length + noScrollData.samples.length;
+            const useML = totalSamples >= 300 && mlPrediction; // Only use ML if >=300 samples
+            const mlWeight = totalSamples >= 300 ? 0.8 : 0.35; // 80% for >=300, 35% for <300
+            const statWeight = totalSamples >= 300 ? 0.2 : 0.65; // 20% for >=300, 65% for <300
+            
             let finalScoreUp: number;
             let finalScoreDown: number;
             let finalScoreNoScroll: number;
             
-            if (mlPrediction) {
+            if (useML && mlPrediction) {
                 // ML model provides probabilities
                 const mlProbUp = mlPrediction.probabilities.top;
                 const mlProbDown = mlPrediction.probabilities.bottom;
                 const mlProbNoScroll = mlPrediction.probabilities.middle;
                 
-                // Combine: 60% ML + 40% Statistical
-                finalScoreUp = (mlProbUp * 0.6) + (statScoreUp * 0.4);
-                finalScoreDown = (mlProbDown * 0.6) + (statScoreDown * 0.4);
-                finalScoreNoScroll = (mlProbNoScroll * 0.6) + (statScoreNoScroll * 0.4);
+                // Combine with dynamic weights
+                finalScoreUp = (mlProbUp * mlWeight) + (statScoreUp * statWeight);
+                finalScoreDown = (mlProbDown * mlWeight) + (statScoreDown * statWeight);
+                finalScoreNoScroll = (mlProbNoScroll * mlWeight) + (statScoreNoScroll * statWeight);
             } else {
-                // Fallback to statistical only
+                // Use pure statistical (more stable for small datasets or when ML not ready)
                 finalScoreUp = statScoreUp;
                 finalScoreDown = statScoreDown;
                 finalScoreNoScroll = statScoreNoScroll;
@@ -905,26 +939,40 @@ export class EyeTrackingEngine {
                 detectionConfidence = Math.min(1, detectionConfidence * 1.1); // 10% boost for ML
             }
             
-            // STABILITY FILTER: Require 5 consecutive frames in same zone before changing (prevents jitter)
-            // This is the key improvement from the provided code - prevents rapid zone switching
-            if (detectedZone === this.lastDetectedZone) {
+            // ⭐ MODE FILTER: Use last 10 predictions instead of latest (prevents random jitter)
+            // Add current detected zone to history
+            this.zoneHistory.push(detectedZone);
+            if (this.zoneHistory.length > this.zoneHistorySize) {
+                this.zoneHistory.shift(); // Keep only last 10
+            }
+            
+            // Calculate MODE (most frequent zone in last 10 predictions)
+            const zoneCounts: { [key: string]: number } = { top: 0, middle: 0, bottom: 0 };
+            this.zoneHistory.forEach(zone => zoneCounts[zone]++);
+            const modeZone = Object.keys(zoneCounts).reduce((a, b) => 
+                zoneCounts[a] > zoneCounts[b] ? a : b
+            ) as 'top' | 'middle' | 'bottom';
+            
+            // STABILITY FILTER: Require 12 consecutive frames in same zone before changing
+            // Use MODE zone instead of latest detected zone for better stability
+            if (modeZone === this.lastDetectedZone) {
                 // Same zone detected - increment stable frame counter
                 this.stableFrames++;
             } else {
                 // Zone changed - reset counter and update last detected zone
-                this.lastDetectedZone = detectedZone;
+                this.lastDetectedZone = modeZone;
                 this.stableFrames = 1;
             }
             
             // Only update current zone if we have enough stable frames (prevents jitter)
             if (this.stableFrames >= this.requiredStableFrames) {
-                viewportZone = detectedZone;
-                this.currentZone = detectedZone;
+                viewportZone = modeZone; // Use MODE zone, not latest detected
+                this.currentZone = modeZone;
                 
                 // Apply confidence-based intensity scaling only when zone is stable
                 // Higher confidence = stronger scroll intensity
                 // For middle zone, ensure intensity is always 0 (no scrolling)
-                if (detectedZone === 'middle') {
+                if (modeZone === 'middle') {
                     scrollIntensity = 0; // CRITICAL: Middle zone NEVER scrolls
                 } else {
                     scrollIntensity = baseIntensity * Math.max(0.6, detectionConfidence);
