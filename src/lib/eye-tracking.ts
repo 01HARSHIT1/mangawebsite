@@ -1,6 +1,7 @@
 // Real Eye Tracking using MediaPipe Face Mesh
 // Detects gaze direction for auto-scrolling
 // Enhanced with Deep Learning (TensorFlow.js) + Statistical Pattern Matching
+// Professional-grade intent detection with 5-zone system and fixation time
 
 import { FaceMesh } from '@mediapipe/face_mesh';
 import { Camera } from '@mediapipe/camera_utils';
