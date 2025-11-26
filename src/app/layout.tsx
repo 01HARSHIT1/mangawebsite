@@ -191,6 +191,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     return true;
                   }
                   
+                  // Suppress eye tracking frame processing errors (they're caught and handled)
+                  if (msg && typeof msg === 'string' && (
+                    msg.includes('Error processing frame') ||
+                    msg.includes('detectIntent') ||
+                    msg.includes('Eye Tracking Engine')
+                  )) {
+                    // Eye tracking errors are logged but don't need to break the app
+                    return true;
+                  }
+                  
                   // Call original error handler for our own errors
                   if (originalError) {
                     return originalError.call(this, msg, url, line, col, error);

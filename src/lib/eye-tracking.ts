@@ -123,7 +123,15 @@ export class EyeTrackingEngine {
     private mlModelReady = false;
     
     // Professional Eye Tracking: Intent Detection System
-    private intentDetector: EyeTrackingIntentDetector;
+    private intentDetector: EyeTrackingIntentDetector | null = null;
+    
+    // Initialize intent detector (lazy initialization)
+    private getIntentDetector(): EyeTrackingIntentDetector {
+        if (!this.intentDetector) {
+            this.intentDetector = new EyeTrackingIntentDetector();
+        }
+        return this.intentDetector;
+    }
     
     // Calculate statistics helper (static for use in default calibration)
     private static calculateStatistics(samples: number[]): { mean: number; stdDev: number; min: number; max: number } {
@@ -887,21 +895,27 @@ export class EyeTrackingEngine {
             
             // PROFESSIONAL INTENT DETECTION: Use 5-zone system with fixation time
             // This prevents accidental scrolling while reading
-            const intent = this.intentDetector.detectIntent(
-                clampedScreenY, // Screen position (0.0 = top, 1.0 = bottom)
-                detectionConfidence,
-                detectedZone,
-                Date.now()
-            );
-            
-            // Override scroll intensity based on intent detection
-            // Only allow scrolling if intent detector confirms it
-            if (!intent.shouldScroll) {
-                scrollIntensity = 0; // No scroll if intent not confirmed
-            } else if (intent.scrollDirection === 'up') {
-                scrollIntensity = -Math.abs(scrollIntensity); // Negative for up
-            } else if (intent.scrollDirection === 'down') {
-                scrollIntensity = Math.abs(scrollIntensity); // Positive for down
+            try {
+                const intentDetector = this.getIntentDetector();
+                const intent = intentDetector.detectIntent(
+                    clampedScreenY, // Screen position (0.0 = top, 1.0 = bottom)
+                    detectionConfidence,
+                    detectedZone,
+                    Date.now()
+                );
+                
+                // Override scroll intensity based on intent detection
+                // Only allow scrolling if intent detector confirms it
+                if (!intent.shouldScroll) {
+                    scrollIntensity = 0; // No scroll if intent not confirmed
+                } else if (intent.scrollDirection === 'up') {
+                    scrollIntensity = -Math.abs(scrollIntensity); // Negative for up
+                } else if (intent.scrollDirection === 'down') {
+                    scrollIntensity = Math.abs(scrollIntensity); // Positive for down
+                }
+            } catch (error) {
+                // If intent detector fails, continue without it (fallback to basic detection)
+                console.warn('👁️ Eye Tracking: Intent detector error, using basic detection:', error);
             }
             
             // Map normalizedY to screen position for display
@@ -1078,8 +1092,12 @@ export class EyeTrackingEngine {
         this.gazeHistory = [];
         
         // Reset intent detector
-        if (this.intentDetector) {
-            this.intentDetector.reset();
+        try {
+            if (this.intentDetector) {
+                this.intentDetector.reset();
+            }
+        } catch (error) {
+            console.warn('👁️ Eye Tracking: Failed to reset intent detector:', error);
         }
     }
     
@@ -1087,8 +1105,11 @@ export class EyeTrackingEngine {
      * Record that a scroll event occurred (for cooldown tracking)
      */
     recordScroll(): void {
-        if (this.intentDetector) {
-            this.intentDetector.recordScroll();
+        try {
+            const intentDetector = this.getIntentDetector();
+            intentDetector.recordScroll();
+        } catch (error) {
+            console.warn('👁️ Eye Tracking: Failed to record scroll in intent detector:', error);
         }
     }
 
