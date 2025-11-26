@@ -828,36 +828,48 @@ export class EyeTrackingEngine {
             let baseIntensity = 0;
             let detectionConfidence = 0;
             
+            // CRITICAL FIX: Use actual normalizedY value to determine direction (not just closest mean)
+            // In MediaPipe coordinates: more negative Y = looking UP, less negative Y = looking DOWN
+            // scrollUp (scroll to previous content) = more negative normalizedY = top zone
+            // scrollDown (scroll to new content) = less negative normalizedY = bottom zone
+            
             // Calculate distances to each zone center (using calibration means)
             const distToUp = Math.abs(detectionY - scrollUpData.mean);
             const distToDown = Math.abs(detectionY - scrollDownData.mean);
             const distToMiddle = Math.abs(detectionY - noScrollData.mean);
             
-            // Find which zone is closest (simple and accurate)
+            // Find which zone is closest (for confidence calculation)
             const minDist = Math.min(distToUp, distToDown, distToMiddle);
             
-            // Determine zone based on closest distance
-            if (minDist === distToUp) {
-                // Closest to scrollUp mean
-                detectedZone = 'top';
-                detectionConfidence = finalScoreUp;
-                // Calculate intensity based on how far from middle
-                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
-                const maxDist = Math.abs(scrollUpData.mean - noScrollData.mean);
-                baseIntensity = maxDist > 0 ? -Math.min(1, Math.max(0.5, distFromMiddle / maxDist)) : -0.7;
-            } else if (minDist === distToDown) {
-                // Closest to scrollDown mean
-                detectedZone = 'bottom';
-                detectionConfidence = finalScoreDown;
-                // Calculate intensity based on how far from middle
-                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
-                const maxDist = Math.abs(scrollDownData.mean - noScrollData.mean);
-                baseIntensity = maxDist > 0 ? Math.min(1, Math.max(0.5, distFromMiddle / maxDist)) : 0.7;
-            } else {
-                // Closest to noScroll mean (middle)
+            // Determine zone based on ACTUAL normalizedY value relative to middle
+            // This fixes the inverted calibration data issue
+            const threshold = 0.001; // Small threshold to account for noise
+            
+            if (Math.abs(detectionY - noScrollData.mean) < threshold || distToMiddle < Math.min(distToUp, distToDown) * 0.8) {
+                // Close to middle = no scroll zone
                 detectedZone = 'middle';
                 detectionConfidence = finalScoreNoScroll;
                 baseIntensity = 0; // NO SCROLLING in middle
+            } else if (detectionY < noScrollData.mean - threshold) {
+                // More negative than middle = looking UP = top zone (scroll to previous content)
+                detectedZone = 'top';
+                // Use the score from whichever calibration mean is closer (handles inverted labels)
+                detectionConfidence = distToUp < distToDown ? finalScoreUp : finalScoreDown;
+                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
+                // Use the more negative mean for max distance calculation
+                const scrollUpMean = scrollUpData.mean < scrollDownData.mean ? scrollUpData.mean : scrollDownData.mean;
+                const maxDist = Math.abs(scrollUpMean - noScrollData.mean);
+                baseIntensity = maxDist > 0 ? -Math.min(1, Math.max(0.5, distFromMiddle / maxDist)) : -0.7;
+            } else {
+                // Less negative than middle = looking DOWN = bottom zone (scroll to new content)
+                detectedZone = 'bottom';
+                // Use the score from whichever calibration mean is closer (handles inverted labels)
+                detectionConfidence = distToDown < distToUp ? finalScoreDown : finalScoreUp;
+                const distFromMiddle = Math.abs(detectionY - noScrollData.mean);
+                // Use the less negative mean for max distance calculation
+                const scrollDownMean = scrollUpData.mean > scrollDownData.mean ? scrollUpData.mean : scrollDownData.mean;
+                const maxDist = Math.abs(scrollDownMean - noScrollData.mean);
+                baseIntensity = maxDist > 0 ? Math.min(1, Math.max(0.5, distFromMiddle / maxDist)) : 0.7;
             }
             
             // Add debugging to help identify issues
