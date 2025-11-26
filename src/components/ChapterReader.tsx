@@ -6,6 +6,7 @@ import { FaChevronLeft, FaChevronRight, FaHome, FaChevronDown, FaFacebook, FaTwi
 import { socialMediaLinks, websiteInfo } from '@/config/socialMedia';
 import VoiceAssistant from './VoiceAssistant';
 import EyeTracking from './EyeTracking';
+import AutoBrightness from './AutoBrightness';
 import LightDetection from './LightDetection';
 import ChapterSummary from './ChapterSummary';
 import PreviouslyOnRecap from './PreviouslyOnRecap';

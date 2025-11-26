@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAIFeatures } from '@/hooks/useAIFeatures';
 import { EyeTrackingEngine } from '@/lib/eye-tracking';
-import { AutoBrightnessController } from '@/lib/auto-brightness';
 
 interface EyeTrackingProps {
     onGazeDetected?: (direction: 'up' | 'down' | 'left' | 'right' | 'center') => void;
@@ -51,11 +50,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const eyeTrackingEngineRef = useRef<EyeTrackingEngine | null>(null);
-    const autoBrightnessRef = useRef<AutoBrightnessController | null>(null);
-    
-    // Auto-brightness state
-    const [autoBrightnessEnabled, setAutoBrightnessEnabled] = useState(true);
-    const [currentBrightness, setCurrentBrightness] = useState(1.0);
     const lastScrollTime = useRef<number>(0);
     const scrollCooldown = 200; // 200ms between scrolls to prevent vibration (increased from 30ms)
     const isManualScrolling = useRef<boolean>(false);
@@ -164,24 +158,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 videoRef.current.srcObject = stream;
                 await videoRef.current.play();
                 console.log('✅ Video stream started');
-                
-                // Initialize Auto-Brightness Controller
-                if (autoBrightnessEnabled && videoRef.current) {
-                    try {
-                        const brightnessController = new AutoBrightnessController(videoRef.current, {
-                            enabled: true,
-                            minBrightness: 0.3,
-                            maxBrightness: 1.0,
-                            sensitivity: 0.7,
-                            smoothing: 0.8
-                        });
-                        autoBrightnessRef.current = brightnessController;
-                        brightnessController.start();
-                        console.log('💡 Auto-Brightness: Initialized and started');
-                    } catch (error) {
-                        console.warn('💡 Auto-Brightness: Failed to initialize', error);
-                    }
-                }
             }
 
             // Initialize MediaPipe Eye Tracking Engine
@@ -194,12 +170,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 // Store current normalized Y for manual feedback
                 if (gaze.normalizedEyePosition) {
                     currentNormalizedYRef.current = gaze.normalizedEyePosition.y;
-                }
-                
-                // Update brightness display if auto-brightness is active
-                if (autoBrightnessRef.current && autoBrightnessEnabled) {
-                    const brightness = autoBrightnessRef.current.getCurrentBrightness();
-                    setCurrentBrightness(brightness);
                 }
                 
                 // Update calibration stats display (check on first load and periodically)
@@ -407,12 +377,6 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     };
 
     const stopTracking = () => {
-        // Stop auto-brightness
-        if (autoBrightnessRef.current) {
-            autoBrightnessRef.current.stop();
-            autoBrightnessRef.current = null;
-        }
-        
         // Stop eye tracking engine
         if (eyeTrackingEngineRef.current) {
             eyeTrackingEngineRef.current.stop();
@@ -1253,41 +1217,6 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             </div>
                         )}
                         
-                        {/* Auto-Brightness Toggle */}
-                        {isActive && (
-                            <div className="mt-2 pt-2 border-t border-slate-700">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-xs text-gray-400">
-                                        💡 Auto-Brightness:
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const newEnabled = !autoBrightnessEnabled;
-                                            setAutoBrightnessEnabled(newEnabled);
-                                            if (autoBrightnessRef.current) {
-                                                if (newEnabled) {
-                                                    autoBrightnessRef.current.start();
-                                                } else {
-                                                    autoBrightnessRef.current.stop();
-                                                }
-                                            }
-                                        }}
-                                        className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
-                                            autoBrightnessEnabled
-                                                ? 'bg-green-600 hover:bg-green-700 text-white'
-                                                : 'bg-slate-700 hover:bg-slate-600 text-gray-300'
-                                        }`}
-                                    >
-                                        {autoBrightnessEnabled ? 'ON' : 'OFF'}
-                                    </button>
-                                </div>
-                                {autoBrightnessEnabled && autoBrightnessRef.current && (
-                                    <div className="text-xs text-cyan-400 mt-1">
-                                        Brightness: {(currentBrightness * 100).toFixed(0)}%
-                                    </div>
-                                )}
-                            </div>
-                        )}
                         
                         {/* Accuracy Rating */}
                         <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
