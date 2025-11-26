@@ -673,9 +673,9 @@ export default function ChapterReader({
                 showUI={true}
             />
 
-            {/* Light Detection */}
+            {/* Auto-Brightness - Separate feature with its own button */}
             {autoBrightnessEnabled && (
-                <LightDetection
+                <AutoBrightness
                     enabled={autoBrightnessEnabled}
                     showUI={true}
                 />
