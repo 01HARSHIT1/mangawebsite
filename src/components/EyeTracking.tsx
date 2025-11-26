@@ -37,6 +37,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const [calibrationStats, setCalibrationStats] = useState<{scrollUp: number, scrollDown: number, noScroll: number, total: number} | null>(null);
     const currentNormalizedYRef = useRef<number | null>(null);
     const testTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const testSamplesRef = useRef<{normalizedY: number, zone: string | null}[]>([]);
     
     // Statistics tracking
     const detectionCountRef = useRef<number>(0);
@@ -643,21 +644,50 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         
         setFeedbackMode('testing');
         setTestResult({zone: null, normalizedY: null});
+        testSamplesRef.current = []; // Clear previous samples
         
-        // Wait 2 seconds to capture stable gaze, then show result
-        testTimeoutRef.current = setTimeout(() => {
+        // Collect samples for 1.5 seconds (captures ~20-50 frames at 30fps)
+        const startTime = Date.now();
+        const TEST_DURATION = 1500; // 1.5 seconds (as per recommendation)
+        const SAMPLE_INTERVAL = 30; // Sample every 30ms (~33 samples/second)
+        
+        const sampleInterval = setInterval(() => {
             if (currentNormalizedYRef.current !== null && viewportZone) {
+                testSamplesRef.current.push({
+                    normalizedY: currentNormalizedYRef.current,
+                    zone: viewportZone
+                });
+            }
+        }, SAMPLE_INTERVAL);
+        
+        // Stop collecting after TEST_DURATION
+        testTimeoutRef.current = setTimeout(() => {
+            clearInterval(sampleInterval);
+            
+            if (testSamplesRef.current.length > 0) {
+                // Calculate average normalizedY and most common zone from collected samples
+                const avgNormalizedY = testSamplesRef.current.reduce((sum, s) => sum + s.normalizedY, 0) / testSamplesRef.current.length;
+                const zoneCounts: {[key: string]: number} = {};
+                testSamplesRef.current.forEach(s => {
+                    if (s.zone) zoneCounts[s.zone] = (zoneCounts[s.zone] || 0) + 1;
+                });
+                const mostCommonZone = Object.keys(zoneCounts).reduce((a, b) => 
+                    zoneCounts[a] > zoneCounts[b] ? a : b
+                ) as 'top' | 'middle' | 'bottom' | null;
+                
                 setTestResult({
-                    zone: viewportZone,
-                    normalizedY: currentNormalizedYRef.current
+                    zone: mostCommonZone,
+                    normalizedY: avgNormalizedY
                 });
                 setFeedbackMode('feedback');
                 setTestCount(prev => prev + 1);
+                
+                console.log(`👁️ Eye Tracking: Collected ${testSamplesRef.current.length} frames during test`);
             } else {
                 setError('Could not detect gaze. Please try again.');
                 setFeedbackMode('idle');
             }
-        }, 2000); // 2 second test duration
+        }, TEST_DURATION);
     };
     
     // Stop zone test
@@ -668,23 +698,16 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         }
         setFeedbackMode('idle');
         setTestResult({zone: null, normalizedY: null});
+        testSamplesRef.current = []; // Clear collected samples
     };
     
     // Handle zone feedback for active learning
+    // ⭐ Now saves ALL collected frames (20-50 samples per test) instead of just 1
     const handleZoneFeedback = (correctZone: 'top' | 'middle' | 'bottom') => {
         if (!eyeTrackingEngineRef.current || !isActive) {
             setError('Eye tracking not ready. Please wait a moment.');
             return;
         }
-        
-        // Use the normalizedY from the test result
-        const normalizedY = testResult.normalizedY || currentNormalizedYRef.current;
-        if (normalizedY === null) {
-            setError('No gaze data available. Please try the test again.');
-            return;
-        }
-        
-        const detectedZone = testResult.zone;
         
         // Map zone to calibration action
         let action: 'scrollUp' | 'scrollDown' | 'noScroll';
@@ -696,8 +719,27 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             action = 'noScroll';
         }
         
-        // Always save feedback (even if correct) to strengthen the calibration
-        eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
+        // ⭐ Save ALL collected frames (20-50 samples) instead of just 1
+        // This gives the system much better data distribution
+        if (testSamplesRef.current.length > 0) {
+            let savedCount = 0;
+            testSamplesRef.current.forEach(sample => {
+                eyeTrackingEngineRef.current?.addCalibrationSample(action, sample.normalizedY);
+                savedCount++;
+            });
+            
+            console.log(`👁️ Eye Tracking: Saved ${savedCount} samples for ${correctZone} zone`);
+        } else {
+            // Fallback: use single sample if collection failed
+            const normalizedY = testResult.normalizedY || currentNormalizedYRef.current;
+            if (normalizedY !== null) {
+                eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
+                console.log(`👁️ Eye Tracking: Saved 1 fallback sample for ${correctZone} zone`);
+            } else {
+                setError('No gaze data available. Please try the test again.');
+                return;
+            }
+        }
         
             // Update feedback count
             setFeedbackCount(prev => prev + 1);
@@ -1282,8 +1324,15 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             
                             {feedbackMode === 'idle' && (
                                 <div className="space-y-2">
-                                    <div className="text-xs text-gray-400 mb-3">
-                                        Train the system: Look at a zone, click "Start Test", then provide feedback
+                                    <div className="text-xs text-gray-400 mb-3 space-y-1">
+                                        <div><strong>How to calibrate:</strong></div>
+                                        <div>1. Look at TOP/MIDDLE/BOTTOM of screen</div>
+                                        <div>2. Click "Start Test" and hold your gaze for 1.5 seconds</div>
+                                        <div>3. System collects 20-50 frames automatically</div>
+                                        <div>4. Confirm the detected zone (or correct it)</div>
+                                        <div className="mt-2 text-cyan-400">
+                                            <strong>Target: 30-50 samples per zone</strong> (repeat 2-3 times per zone)
+                                        </div>
                                     </div>
                                     <button
                                         onClick={startZoneTest}
@@ -1305,7 +1354,10 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                         ⏳ Testing... Look at TOP, MIDDLE, or BOTTOM of screen
                                     </div>
                                     <div className="text-xs text-gray-400">
-                                        Detecting your gaze position...
+                                        Collecting 20-50 frames (1.5 seconds)... Keep looking at the zone!
+                                    </div>
+                                    <div className="text-xs text-cyan-400">
+                                        Frames collected: {testSamplesRef.current.length}
                                     </div>
                                     <button
                                         onClick={stopZoneTest}
