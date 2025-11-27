@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { FaSun, FaSunSlash } from 'react-icons/fa';
+import { FaSun, FaMoon } from 'react-icons/fa';
 import { useAIFeatures } from '@/hooks/useAIFeatures';
 import { AutoBrightnessController } from '@/lib/auto-brightness';
 
@@ -201,7 +201,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                                     : 'Start auto-brightness (will request camera permission)'
                             }
                         >
-                            {isActive ? <FaSun /> : <FaSunSlash />}
+                            {isActive ? <FaSun /> : <FaMoon />}
                         </button>
                     </div>
 
