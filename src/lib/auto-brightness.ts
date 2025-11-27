@@ -241,9 +241,25 @@ export class AutoBrightnessController {
         
         this.currentBrightness = this.slowSmoothedBrightness;
         
-        // Apply CSS filter to body (affects entire page)
-        document.body.style.filter = `brightness(${this.currentBrightness})`;
-        document.body.style.transition = 'filter 0.2s ease-out'; // Smooth transition
+        // Apply CSS filter to documentElement (html) for full-page coverage
+        // This ensures the brightness filter affects the entire viewport, including fixed elements
+        // Using !important to ensure it overrides any other filter styles
+        const htmlElement = document.documentElement;
+        htmlElement.style.setProperty('filter', `brightness(${this.currentBrightness})`, 'important');
+        htmlElement.style.setProperty('transition', 'filter 0.3s ease-out', 'important');
+        
+        // Also apply to body as fallback for better browser compatibility
+        document.body.style.setProperty('filter', `brightness(${this.currentBrightness})`, 'important');
+        document.body.style.setProperty('transition', 'filter 0.3s ease-out', 'important');
+        
+        // Debug log to verify filter is being applied
+        if (Math.random() < 0.05) { // 5% of frames
+            console.log('💡 Auto-Brightness: Applied filter', {
+                brightness: this.currentBrightness,
+                htmlFilter: htmlElement.style.filter,
+                bodyFilter: document.body.style.filter
+            });
+        }
     }
     
     /**
@@ -355,8 +371,10 @@ export class AutoBrightnessController {
         }
         
         // Reset brightness to normal
-        document.body.style.filter = '';
-        document.body.style.transition = '';
+        document.documentElement.style.removeProperty('filter');
+        document.documentElement.style.removeProperty('transition');
+        document.body.style.removeProperty('filter');
+        document.body.style.removeProperty('transition');
         this.currentBrightness = 1.0;
         this.fastSmoothedBrightness = 1.0;
         this.slowSmoothedBrightness = 1.0;
@@ -389,6 +407,7 @@ export class AutoBrightnessController {
         this.currentBrightness = clamped;
         this.fastSmoothedBrightness = clamped;
         this.slowSmoothedBrightness = clamped;
-        document.body.style.filter = `brightness(${clamped})`;
+        document.documentElement.style.setProperty('filter', `brightness(${clamped})`, 'important');
+        document.body.style.setProperty('filter', `brightness(${clamped})`, 'important');
     }
 }
