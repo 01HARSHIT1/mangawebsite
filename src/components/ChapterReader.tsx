@@ -673,13 +673,11 @@ export default function ChapterReader({
                 showUI={true}
             />
 
-            {/* Auto-Brightness - Separate feature with its own button */}
-            {autoBrightnessEnabled && (
-                <AutoBrightness
-                    enabled={autoBrightnessEnabled}
-                    showUI={true}
-                />
-            )}
+            {/* Auto-Brightness - Always show on chapter pages for visibility (separate feature with its own button) */}
+            <AutoBrightness
+                enabled={autoBrightnessEnabled}
+                showUI={true}
+            />
 
             {/* Light Detection */}
             {autoBrightnessEnabled && (

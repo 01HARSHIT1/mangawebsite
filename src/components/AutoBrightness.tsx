@@ -139,21 +139,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
         }
     };
     
-    if (!showUI || !autoBrightnessEnabled) {
-        // Still render hidden video element if feature is enabled but UI is hidden
-        return (
-            <>
-                <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="hidden"
-                />
-            </>
-        );
-    }
-    
+    // Always render UI (like EyeTracking), but show message if feature not enabled in settings
     return (
         <>
             <video
@@ -164,15 +150,16 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                 className="hidden"
             />
             
-            <div 
-                className="fixed bottom-4 right-4 z-50"
-                style={{ 
-                    zIndex: 9998, // Below eye tracking panel
-                    position: 'fixed',
-                    bottom: '1rem',
-                    right: '1rem'
-                }}
-            >
+            {showUI && (
+                <div 
+                    className="fixed bottom-4 right-4 z-50"
+                    style={{ 
+                        zIndex: 9998, // Below eye tracking panel (which is at 9999)
+                        position: 'fixed',
+                        bottom: '1rem', // 4rem from bottom (EyeTracking is at 8rem = 32)
+                        right: '1rem' // Same right position
+                    }}
+                >
                 <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-3 max-w-xs">
                     <div className="flex items-center justify-between mb-2">
                         <div>
@@ -232,7 +219,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         </div>
                     )}
                 </div>
-            </div>
+            )}
         </>
     );
 }
