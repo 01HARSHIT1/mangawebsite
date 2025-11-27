@@ -3,7 +3,7 @@
 // Uses CSS filter to simulate screen brightness adjustment
 // Performance Score: 8.5 → 9.5+ (Professional-grade)
 
-import { FaceMesh } from '@mediapipe/face_mesh';
+import { sharedFaceMesh } from './shared-face-mesh';
 
 export interface BrightnessSettings {
     enabled: boolean;
@@ -27,8 +27,8 @@ export class AutoBrightnessController {
     private animationFrameId: number | null = null;
     private isRunning = false;
     
-    // ⭐ Face detection for face-region-only luminance
-    private faceMesh: FaceMesh | null = null;
+    // ⭐ Face detection for face-region-only luminance (using shared instance)
+    private unsubscribeFaceMesh: (() => void) | null = null;
     private faceBoundingBox: FaceBoundingBox | null = null;
     private faceDetected = false;
     private lastGoodBrightness = 1.0;
@@ -70,34 +70,27 @@ export class AutoBrightnessController {
         this.canvas.height = 24; // Reduced from 48 for better precision
         this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         
-        // Initialize lightweight FaceMesh for face detection only
-        this.initializeFaceDetection();
+        // Initialize shared FaceMesh for face detection (async, won't block)
+        this.initializeFaceDetection().catch(() => {
+            // Silently fail - will use full frame luminance instead
+        });
     }
     
     /**
-     * ⭐ Initialize lightweight FaceMesh for face region detection
+     * ⭐ Initialize shared FaceMesh for face region detection
      */
-    private initializeFaceDetection(): void {
+    private async initializeFaceDetection(): Promise<void> {
         try {
-            // Check if FaceMesh is already initialized (prevent multiple instances)
-            if (this.faceMesh) {
-                return;
-            }
-            
-            // Wrap in try-catch to handle MediaPipe initialization errors gracefully
-            this.faceMesh = new FaceMesh({
-                locateFile: (file) => 
-                    `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
-            });
-            
-            this.faceMesh.setOptions({
+            // Initialize shared FaceMesh instance (with retry logic)
+            await sharedFaceMesh.initialize({
                 maxNumFaces: 1,
                 refineLandmarks: false, // Don't need iris landmarks for brightness
                 minDetectionConfidence: 0.5,
                 minTrackingConfidence: 0.5,
             });
             
-            this.faceMesh.onResults((results) => {
+            // Subscribe to FaceMesh results
+            this.unsubscribeFaceMesh = sharedFaceMesh.subscribe((results) => {
                 try {
                     if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                         // Calculate face bounding box from landmarks
@@ -133,7 +126,6 @@ export class AutoBrightnessController {
             });
         } catch (error) {
             // Silently fail - will use full frame luminance instead
-            this.faceMesh = null;
             this.faceDetected = false;
         }
     }
@@ -320,20 +312,12 @@ export class AutoBrightnessController {
                 this.canvas.height
             );
             
-            // Update face detection if FaceMesh is available
-            if (this.faceMesh && this.videoElement) {
-                try {
-                    // Check if video is ready before sending
-                    if (this.videoElement.readyState >= 2) { // HAVE_CURRENT_DATA or higher
-                        this.faceMesh.send({ image: this.videoElement }).catch((error) => {
-                            // Silently handle MediaPipe send promise rejections
-                            // Will fall back to full-frame luminance
-                        });
-                    }
-                } catch (error) {
-                    // Silently handle MediaPipe send errors (multiple instances can cause conflicts)
-                    // Will fall back to full-frame luminance
-                }
+            // Update face detection using shared FaceMesh (with error handling)
+            if (sharedFaceMesh.isReady() && this.videoElement) {
+                // Send frame using shared instance (handles errors internally)
+                sharedFaceMesh.sendFrame(this.videoElement).catch(() => {
+                    // Silently handle promise rejections
+                });
             }
             
             // Get image data
@@ -425,10 +409,10 @@ export class AutoBrightnessController {
             this.animationFrameId = null;
         }
         
-        // Cleanup FaceMesh
-        if (this.faceMesh) {
-            this.faceMesh.close();
-            this.faceMesh = null;
+        // Unsubscribe from shared FaceMesh
+        if (this.unsubscribeFaceMesh) {
+            this.unsubscribeFaceMesh();
+            this.unsubscribeFaceMesh = null;
         }
         
         // Reset brightness to normal

@@ -89,6 +89,10 @@ export default function ChapterReader({
             // Silently hide it - don't log to console to avoid spam
             img.style.display = 'none';
             img.style.visibility = 'hidden';
+            // Prevent error from bubbling to console
+            event.preventDefault();
+            event.stopPropagation();
+            return;
         }
         
         setFailedPages(prev => {

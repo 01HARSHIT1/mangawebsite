@@ -3,10 +3,10 @@
 // Enhanced with Deep Learning (TensorFlow.js) + Statistical Pattern Matching
 // Professional-grade intent detection with 5-zone system and fixation time
 
-import { FaceMesh } from '@mediapipe/face_mesh';
 import { Camera } from '@mediapipe/camera_utils';
 import { EyeTrackingMLModel } from './eye-tracking-ml';
 import { EyeTrackingIntentDetector } from './eye-tracking-intent';
+import { sharedFaceMesh } from './shared-face-mesh';
 
 export interface GazeDirection {
     direction: 'up' | 'down' | 'left' | 'right' | 'center';
@@ -105,7 +105,7 @@ if (masterCalibrationData && (masterCalibrationData as CalibrationData).calibrat
 }
 
 export class EyeTrackingEngine {
-    private faceMesh: FaceMesh | null = null;
+    private unsubscribeFaceMesh: (() => void) | null = null;
     private camera: Camera | null = null;
     private isInitialized = false;
     private gazeHistory: GazeDirection[] = [];
@@ -509,31 +509,25 @@ export class EyeTrackingEngine {
         });
 
         try {
-            console.log('👁️ Eye Tracking Engine: Initializing MediaPipe Face Mesh...');
+            console.log('👁️ Eye Tracking Engine: Initializing shared MediaPipe Face Mesh...');
             
-            // Initialize MediaPipe Face Mesh with better error handling
-            this.faceMesh = new FaceMesh({
-                locateFile: (file) => {
-                    // Use CDN for MediaPipe files
-                    const cdnUrl = `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-                    console.log('👁️ Eye Tracking Engine: Loading MediaPipe file:', file, 'from', cdnUrl);
-                    return cdnUrl;
-                }
-            });
-
-            console.log('👁️ Eye Tracking Engine: Setting Face Mesh options...');
-            this.faceMesh.setOptions({
+            // Initialize shared FaceMesh instance (with retry logic)
+            const faceMeshInstance = await sharedFaceMesh.initialize({
                 maxNumFaces: 1,
-                refineLandmarks: true,        // Enable iris landmarks for better accuracy (as per provided code)
-                minDetectionConfidence: 0.3, // Lowered from 0.5 for better detection (can increase to 0.7 for stricter detection)
-                minTrackingConfidence: 0.3    // Lowered from 0.5 for better detection (can increase to 0.7 for stricter detection)
+                refineLandmarks: true,        // Enable iris landmarks for better accuracy
+                minDetectionConfidence: 0.3, // Lowered from 0.5 for better detection
+                minTrackingConfidence: 0.3    // Lowered from 0.5 for better detection
             });
-            
-            console.log('👁️ Eye Tracking Engine: Face Mesh options set successfully');
 
-            // Process results
+            if (!faceMeshInstance) {
+                throw new Error('Failed to initialize FaceMesh after retries');
+            }
+
+            console.log('👁️ Eye Tracking Engine: Shared Face Mesh initialized successfully');
+
+            // Subscribe to FaceMesh results
             console.log('👁️ Eye Tracking Engine: Setting up results handler...');
-            this.faceMesh.onResults((results) => {
+            this.unsubscribeFaceMesh = sharedFaceMesh.subscribe((results) => {
                 if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                     const gaze = this.detectGaze(results.multiFaceLandmarks[0]);
                     this.gazeHistory.push(gaze);
@@ -582,18 +576,9 @@ export class EyeTrackingEngine {
             console.log('👁️ Eye Tracking Engine: Initializing camera...');
             this.camera = new Camera(videoElement, {
                 onFrame: async () => {
-                    if (this.faceMesh) {
-                        try {
-                            await this.faceMesh.send({ image: videoElement });
-                        } catch (error: any) {
-                            // Only log errors that aren't related to intent detector (those are handled)
-                            if (!error?.message?.includes('detectIntent')) {
-                                // Log occasionally to avoid spam
-                                if (Math.random() < 0.01) {
-                                    console.warn('👁️ Eye Tracking Engine: Error processing frame:', error?.message || error);
-                                }
-                            }
-                        }
+                    if (sharedFaceMesh.isReady()) {
+                        // Send frame using shared instance (handles errors internally)
+                        await sharedFaceMesh.sendFrame(videoElement);
                     }
                 },
                 width: 640,
@@ -1210,9 +1195,10 @@ export class EyeTrackingEngine {
             this.camera = null;
         }
         
-        if (this.faceMesh) {
-            this.faceMesh.close();
-            this.faceMesh = null;
+        // Unsubscribe from shared FaceMesh
+        if (this.unsubscribeFaceMesh) {
+            this.unsubscribeFaceMesh();
+            this.unsubscribeFaceMesh = null;
         }
         
         this.isInitialized = false;

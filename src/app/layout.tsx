@@ -351,18 +351,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     message.includes('assets_loader') ||
                     message.includes('wasm_bin') ||
                     message.includes('simd_wasm') ||
+                    message.includes('mediapipe') ||
                     (message.includes('Cannot read properties of undefined') && (
                       message.includes('buffer') ||
                       message.includes('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh') ||
-                      message.includes('face_mesh_solution_packed_assets')
+                      message.includes('face_mesh_solution_packed_assets') ||
+                      message.includes('reading \'https://cdn.jsdelivr.net')
                     )) ||
                     message.includes('RuntimeError: abort') ||
                     message.includes('Assertion failed') ||
                     message.includes('Module.arguments has been replaced') ||
-                    message.includes('VM') && (message.includes('face_mesh') || message.includes('wasm'))
+                    (message.includes('VM') && (message.includes('face_mesh') || message.includes('wasm'))) ||
+                    message.includes('jsStackTrace') ||
+                    message.includes('stackTrace') ||
+                    message.includes('abort(') ||
+                    (message.includes('TypeError') && message.includes('undefined'))
                   );
                   if (isMediaPipeConsoleError) {
                     return; // Don't log MediaPipe initialization errors
+                  }
+                  
+                  // Suppress errors from stack traces that include MediaPipe
+                  if (args.some(arg => {
+                    const argStr = String(arg);
+                    return (argStr.includes('face_mesh') || argStr.includes('wasm') || argStr.includes('mediapipe')) &&
+                           (argStr.includes('VM') || argStr.includes('at ') || argStr.includes('Error'));
+                  })) {
+                    return; // Don't log MediaPipe stack traces
                   }
                   // Call original console.error for other errors
                   originalConsoleError.apply(console, args);
