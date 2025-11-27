@@ -102,13 +102,13 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     brightnessController.start();
                     console.log('💡 Auto-Brightness: Started');
                     
-                    // Update brightness display periodically
+                    // Update brightness display frequently for real-time feedback
                     const updateInterval = setInterval(() => {
                         if (autoBrightnessRef.current) {
                             const brightness = autoBrightnessRef.current.getCurrentBrightness();
                             setCurrentBrightness(brightness);
                         }
-                    }, 500); // Update every 500ms
+                    }, 100); // Update every 100ms for real-time feedback (was 500ms)
                     
                     // Store interval for cleanup
                     (autoBrightnessRef.current as any).updateInterval = updateInterval;

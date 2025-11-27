@@ -41,21 +41,21 @@ export class AutoBrightnessController {
         smoothing: 0.8 // 80% smoothing (prevents rapid changes)
     };
     
-    // ⭐ Performance Upgrade: Dual Stage Smoothing
+    // ⭐ Performance Upgrade: Dual Stage Smoothing (More Responsive)
     private fastSmoothedBrightness = 1.0; // Stage A: Fast smoothing (responsive)
     private slowSmoothedBrightness = 1.0; // Stage B: Slow smoothing (stable)
-    private readonly ALPHA_FAST = 0.45; // Fast smoothing factor (responsive)
-    private readonly ALPHA_SLOW = 0.15; // Slow smoothing factor (stable)
+    private readonly ALPHA_FAST = 0.7; // Fast smoothing factor (more responsive - was 0.45)
+    private readonly ALPHA_SLOW = 0.4; // Slow smoothing factor (more responsive - was 0.15)
     
     // ⭐ Performance Upgrade: Temporal Median Filtering
     private luminanceHistory: number[] = [];
-    private readonly medianFilterSize = 5; // Last 5 samples for median
+    private readonly medianFilterSize = 3; // Last 3 samples for median (reduced from 5 for faster response)
     
-    // ⭐ Performance Upgrade: Rate Limiting
-    private readonly MAX_DELTA_PER_FRAME = 0.08; // 8% max change per frame
+    // ⭐ Performance Upgrade: Rate Limiting (More Responsive)
+    private readonly MAX_DELTA_PER_FRAME = 0.15; // 15% max change per frame (increased from 8% for faster response)
     
-    // ⭐ Performance Upgrade: Dead Zone
-    private readonly DEAD_ZONE_THRESHOLD = 0.03; // 3% minimum change to update
+    // ⭐ Performance Upgrade: Dead Zone (More Sensitive)
+    private readonly DEAD_ZONE_THRESHOLD = 0.01; // 1% minimum change to update (reduced from 3% for more sensitivity)
     
     // Current brightness
     private currentBrightness = 1.0;
