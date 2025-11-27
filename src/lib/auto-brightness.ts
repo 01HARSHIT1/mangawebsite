@@ -243,29 +243,31 @@ export class AutoBrightnessController {
         }
         // If no face ever detected, use full-frame luminance directly
         
-        // ⭐ Performance Upgrade 3: Dual Stage Smoothing
+        // ⭐ Performance Upgrade 3: Dual Stage Smoothing (More Responsive)
         // Stage A: Fast smoothing (responsive to quick lighting changes)
         this.fastSmoothedBrightness = this.ALPHA_FAST * targetBrightness + 
                                      (1 - this.ALPHA_FAST) * this.fastSmoothedBrightness;
         
-        // Stage B: Slow smoothing (stable final output)
+        // Stage B: Slow smoothing (stable final output, but more responsive)
         this.slowSmoothedBrightness = this.ALPHA_SLOW * this.fastSmoothedBrightness + 
                                      (1 - this.ALPHA_SLOW) * this.slowSmoothedBrightness;
         
-        // ⭐ Performance Upgrade 6: Rate Limiting (max change per frame)
+        // ⭐ Performance Upgrade 6: Rate Limiting (max change per frame - more permissive)
         const delta = this.slowSmoothedBrightness - this.currentBrightness;
         if (Math.abs(delta) > this.MAX_DELTA_PER_FRAME) {
             this.slowSmoothedBrightness = this.currentBrightness + 
                 Math.sign(delta) * this.MAX_DELTA_PER_FRAME;
         }
         
-        // ⭐ Performance Upgrade 4: Dead Zone (prevent micro flicker)
+        // ⭐ Performance Upgrade 4: Dead Zone (prevent micro flicker, but more sensitive)
         const change = Math.abs(this.slowSmoothedBrightness - this.currentBrightness);
         if (change < this.DEAD_ZONE_THRESHOLD) {
-            // Change too small, don't update (prevents 49% → 50% → 49% oscillation)
+            // Change too small, don't update (prevents micro-oscillations)
+            // But we still update if the change is significant enough
             return;
         }
         
+        // Update current brightness immediately for real-time response
         this.currentBrightness = this.slowSmoothedBrightness;
         
         // Apply CSS filter to documentElement (html) for full-page coverage
