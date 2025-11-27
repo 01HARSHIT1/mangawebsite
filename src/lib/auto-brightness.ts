@@ -79,6 +79,11 @@ export class AutoBrightnessController {
      */
     private initializeFaceDetection(): void {
         try {
+            // Check if FaceMesh is already initialized (prevent multiple instances)
+            if (this.faceMesh) {
+                return;
+            }
+            
             // Wrap in try-catch to handle MediaPipe initialization errors gracefully
             this.faceMesh = new FaceMesh({
                 locateFile: (file) => 
@@ -129,6 +134,7 @@ export class AutoBrightnessController {
         } catch (error) {
             // Silently fail - will use full frame luminance instead
             this.faceMesh = null;
+            this.faceDetected = false;
         }
     }
     
