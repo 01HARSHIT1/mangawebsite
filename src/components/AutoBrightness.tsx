@@ -156,8 +156,8 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     style={{ 
                         zIndex: 9998, // Below eye tracking panel (which is at 9999)
                         position: 'fixed',
-                        bottom: '1rem', // 4rem from bottom (EyeTracking is at 8rem = 32)
-                        right: '1rem' // Same right position
+                        bottom: '1rem', // 1rem from bottom (EyeTracking is at 8rem = 32, so this is below it)
+                        right: '1rem' // Same right position, will stack vertically
                     }}
                 >
                 <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-3 max-w-xs">
