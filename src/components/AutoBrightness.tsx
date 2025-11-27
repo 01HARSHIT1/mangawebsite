@@ -219,6 +219,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         </div>
                     )}
                 </div>
+                </div>
             )}
         </>
     );
