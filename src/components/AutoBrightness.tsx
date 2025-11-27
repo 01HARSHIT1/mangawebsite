@@ -757,7 +757,17 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
             {showUI && (
                 <div 
                     ref={widgetRef}
-                    // NO inline style prop - all styling done via cssText in useEffect to prevent conflicts
+                    // Initial positioning styles - will be reinforced by useEffect position locking
+                    style={{
+                        position: 'fixed',
+                        top: '50%',
+                        right: '1rem',
+                        transform: 'translateY(-50%)',
+                        bottom: 'auto',
+                        left: 'auto',
+                        zIndex: 9998,
+                        maxHeight: 'calc(100vh - 2rem)',
+                    }}
                     onMouseEnter={() => {
                         // Lock position on hover to prevent any shifts
                         if (widgetRef.current) {
