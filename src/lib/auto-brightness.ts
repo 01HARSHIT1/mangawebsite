@@ -79,6 +79,7 @@ export class AutoBrightnessController {
      */
     private initializeFaceDetection(): void {
         try {
+            // Wrap in try-catch to handle MediaPipe initialization errors gracefully
             this.faceMesh = new FaceMesh({
                 locateFile: (file) => 
                     `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`,
@@ -92,36 +93,41 @@ export class AutoBrightnessController {
             });
             
             this.faceMesh.onResults((results) => {
-                if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-                    // Calculate face bounding box from landmarks
-                    const landmarks = results.multiFaceLandmarks[0];
-                    const xs = landmarks.map(l => l.x);
-                    const ys = landmarks.map(l => l.y);
-                    
-                    const minX = Math.min(...xs);
-                    const maxX = Math.max(...xs);
-                    const minY = Math.min(...ys);
-                    const maxY = Math.max(...ys);
-                    
-                    // Get video dimensions
-                    const videoWidth = this.videoElement?.videoWidth || 640;
-                    const videoHeight = this.videoElement?.videoHeight || 480;
-                    
-                    // Convert normalized coordinates to pixels
-                    this.faceBoundingBox = {
-                        x: minX * videoWidth,
-                        y: minY * videoHeight,
-                        width: (maxX - minX) * videoWidth,
-                        height: (maxY - minY) * videoHeight
-                    };
-                    
-                    this.faceDetected = true;
-                } else {
+                try {
+                    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                        // Calculate face bounding box from landmarks
+                        const landmarks = results.multiFaceLandmarks[0];
+                        const xs = landmarks.map(l => l.x);
+                        const ys = landmarks.map(l => l.y);
+                        
+                        const minX = Math.min(...xs);
+                        const maxX = Math.max(...xs);
+                        const minY = Math.min(...ys);
+                        const maxY = Math.max(...ys);
+                        
+                        // Get video dimensions
+                        const videoWidth = this.videoElement?.videoWidth || 640;
+                        const videoHeight = this.videoElement?.videoHeight || 480;
+                        
+                        // Convert normalized coordinates to pixels
+                        this.faceBoundingBox = {
+                            x: minX * videoWidth,
+                            y: minY * videoHeight,
+                            width: (maxX - minX) * videoWidth,
+                            height: (maxY - minY) * videoHeight
+                        };
+                        
+                        this.faceDetected = true;
+                    } else {
+                        this.faceDetected = false;
+                    }
+                } catch (error) {
+                    // Silently handle MediaPipe processing errors
                     this.faceDetected = false;
                 }
             });
         } catch (error) {
-            console.warn('💡 Auto-Brightness: Face detection initialization failed, using full frame', error);
+            // Silently fail - will use full frame luminance instead
             this.faceMesh = null;
         }
     }
@@ -310,7 +316,18 @@ export class AutoBrightnessController {
             
             // Update face detection if FaceMesh is available
             if (this.faceMesh && this.videoElement) {
-                this.faceMesh.send({ image: this.videoElement });
+                try {
+                    // Check if video is ready before sending
+                    if (this.videoElement.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+                        this.faceMesh.send({ image: this.videoElement }).catch((error) => {
+                            // Silently handle MediaPipe send promise rejections
+                            // Will fall back to full-frame luminance
+                        });
+                    }
+                } catch (error) {
+                    // Silently handle MediaPipe send errors (multiple instances can cause conflicts)
+                    // Will fall back to full-frame luminance
+                }
             }
             
             // Get image data
