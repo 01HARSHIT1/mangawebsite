@@ -319,15 +319,23 @@ export class AutoBrightnessController {
             // ⭐ Performance Upgrade 1: Calculate luminance from face region only
             const rawLuminance = this.calculateLuminance(imageData, this.faceBoundingBox);
             
-            // ⭐ Performance Upgrade 7: Temporal Median Filtering (remove outliers)
+            // ⭐ Performance Upgrade 7: Temporal Median Filtering (remove outliers, but faster)
             this.luminanceHistory.push(rawLuminance);
             if (this.luminanceHistory.length > this.medianFilterSize) {
                 this.luminanceHistory.shift();
             }
             
             // Calculate median (removes spikes and outliers)
-            const sorted = [...this.luminanceHistory].sort((a, b) => a - b);
-            const medianLuminance = sorted[Math.floor(sorted.length / 2)];
+            // Use weighted average for faster response when history is small
+            let medianLuminance: number;
+            if (this.luminanceHistory.length < this.medianFilterSize) {
+                // Use average for faster initial response
+                medianLuminance = this.luminanceHistory.reduce((a, b) => a + b, 0) / this.luminanceHistory.length;
+            } else {
+                // Use median for stability once we have enough samples
+                const sorted = [...this.luminanceHistory].sort((a, b) => a - b);
+                medianLuminance = sorted[Math.floor(sorted.length / 2)];
+            }
             
             // Map to brightness
             const targetBrightness = this.mapLightToBrightness(medianLuminance);
