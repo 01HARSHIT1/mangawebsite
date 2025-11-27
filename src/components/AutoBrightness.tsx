@@ -32,6 +32,30 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
         );
     }, []);
     
+    const stopBrightness = () => {
+        // Stop auto-brightness controller
+        if (autoBrightnessRef.current) {
+            // Clear update interval
+            if ((autoBrightnessRef.current as any).updateInterval) {
+                clearInterval((autoBrightnessRef.current as any).updateInterval);
+            }
+            autoBrightnessRef.current.stop();
+            autoBrightnessRef.current = null;
+        }
+
+        // Stop camera stream
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+
+        setIsActive(false);
+    };
+    
     // Cleanup on unmount
     useEffect(() => {
         return () => {
@@ -105,30 +129,6 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
             }
             setIsActive(false);
         }
-    };
-    
-    const stopBrightness = () => {
-        // Stop auto-brightness controller
-        if (autoBrightnessRef.current) {
-            // Clear update interval
-            if ((autoBrightnessRef.current as any).updateInterval) {
-                clearInterval((autoBrightnessRef.current as any).updateInterval);
-            }
-            autoBrightnessRef.current.stop();
-            autoBrightnessRef.current = null;
-        }
-
-        // Stop camera stream
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
-
-        setIsActive(false);
     };
     
     const toggleBrightness = async () => {
