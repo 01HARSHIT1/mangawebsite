@@ -185,22 +185,44 @@ export class AutoBrightnessController {
     }
     
     /**
-     * ⭐ Map ambient light to screen brightness with gamma correction
-     * Performance Upgrade 5: Gamma correction for human-perception mapping
+     * ⭐ Map ambient light to screen brightness with improved mapping
+     * Performance Upgrade 5: Better distribution across light levels
      */
     private mapLightToBrightness(ambientLight: number): number {
-        // ⭐ Performance Upgrade 5: Gamma correction (human eyes are not linear)
-        // Dark places → more sensitive, Bright places → less sensitive
-        const gammaCorrected = Math.pow(ambientLight, 0.65);
+        // Clamp ambient light to valid range [0, 1]
+        const clampedLight = Math.max(0, Math.min(1, ambientLight));
         
-        // Apply sensitivity
-        const adjustedLight = Math.pow(gammaCorrected, 1 / this.settings.sensitivity);
+        // ⭐ Improved mapping: Use a more balanced curve
+        // Dark environments (0.0-0.3) → Low brightness (0.3-0.5)
+        // Medium environments (0.3-0.7) → Medium brightness (0.5-0.8)
+        // Bright environments (0.7-1.0) → High brightness (0.8-1.0)
         
-        // Map to brightness range
-        const brightness = this.settings.minBrightness + 
-            (adjustedLight * (this.settings.maxBrightness - this.settings.minBrightness));
+        // Use a piecewise linear mapping for better distribution
+        let mappedValue: number;
         
-        return Math.max(this.settings.minBrightness, Math.min(this.settings.maxBrightness, brightness));
+        if (clampedLight < 0.2) {
+            // Very dark: map to 0.3-0.5 range
+            mappedValue = 0.3 + (clampedLight / 0.2) * 0.2; // 0.3 to 0.5
+        } else if (clampedLight < 0.5) {
+            // Dark to medium: map to 0.5-0.7 range
+            mappedValue = 0.5 + ((clampedLight - 0.2) / 0.3) * 0.2; // 0.5 to 0.7
+        } else if (clampedLight < 0.8) {
+            // Medium to bright: map to 0.7-0.9 range
+            mappedValue = 0.7 + ((clampedLight - 0.5) / 0.3) * 0.2; // 0.7 to 0.9
+        } else {
+            // Very bright: map to 0.9-1.0 range
+            mappedValue = 0.9 + ((clampedLight - 0.8) / 0.2) * 0.1; // 0.9 to 1.0
+        }
+        
+        // Apply sensitivity adjustment (user preference)
+        // Higher sensitivity = more responsive to light changes
+        const sensitivityFactor = this.settings.sensitivity;
+        const adjustedValue = this.settings.minBrightness + 
+            (mappedValue - this.settings.minBrightness) * sensitivityFactor +
+            (1.0 - this.settings.minBrightness) * (1 - sensitivityFactor) * clampedLight;
+        
+        // Clamp to valid range
+        return Math.max(this.settings.minBrightness, Math.min(this.settings.maxBrightness, adjustedValue));
     }
     
     /**
@@ -208,13 +230,18 @@ export class AutoBrightnessController {
      * Performance Upgrades: 3, 4, 6
      */
     private applyBrightness(targetBrightness: number): void {
-        // ⭐ Performance Upgrade 8: Freeze brightness if face disappears
-        if (!this.faceDetected) {
-            // Use last good brightness, don't update
-            targetBrightness = this.lastGoodBrightness;
-        } else {
+        // ⭐ Performance Upgrade 8: Handle face detection gracefully
+        // If face not detected, use full-frame luminance (fallback mode)
+        // Only freeze brightness if we've had a face before and it disappeared
+        if (!this.faceDetected && this.lastGoodBrightness < 1.0) {
+            // Face was detected before but disappeared - use last good value temporarily
+            // But allow gradual adjustment based on full-frame if face stays gone
+            targetBrightness = this.lastGoodBrightness * 0.95 + targetBrightness * 0.05; // Slow decay
+        } else if (this.faceDetected) {
+            // Face detected - use face-region luminance
             this.lastGoodBrightness = targetBrightness;
         }
+        // If no face ever detected, use full-frame luminance directly
         
         // ⭐ Performance Upgrade 3: Dual Stage Smoothing
         // Stage A: Fast smoothing (responsive to quick lighting changes)
@@ -306,15 +333,16 @@ export class AutoBrightnessController {
             // Apply brightness with all smoothing and limiting
             this.applyBrightness(targetBrightness);
             
-            // Log occasionally for debugging
-            if (Math.random() < 0.01) { // 1% of frames
+            // Log frequently for debugging (every 30 frames = ~1 second at 30fps)
+            if (this.luminanceHistory.length % 30 === 0) {
                 console.log('💡 Auto-Brightness (Professional):', {
                     rawLuminance: (rawLuminance * 100).toFixed(1) + '%',
                     medianLuminance: (medianLuminance * 100).toFixed(1) + '%',
-                    brightness: (this.currentBrightness * 100).toFixed(1) + '%',
-                    target: (targetBrightness * 100).toFixed(1) + '%',
+                    targetBrightness: (targetBrightness * 100).toFixed(1) + '%',
+                    currentBrightness: (this.currentBrightness * 100).toFixed(1) + '%',
                     faceDetected: this.faceDetected,
-                    usingFaceRegion: !!this.faceBoundingBox
+                    usingFaceRegion: !!this.faceBoundingBox,
+                    pixelCount: this.faceDetected ? 'face-region' : 'full-frame'
                 });
             }
         } catch (error) {
