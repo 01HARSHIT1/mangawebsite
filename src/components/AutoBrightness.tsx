@@ -114,53 +114,54 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     
                     // Force position to stay fixed - override any other styles
                     // Use setProperty with 'important' flag (cssText doesn't support !important)
-                    const styleProperties = [
+                    // CRITICAL properties for positioning (must succeed)
+                    const criticalProperties = [
                         { prop: 'position', value: 'fixed' },
                         { prop: 'top', value: '50%' },
                         { prop: 'right', value: '1rem' },
                         { prop: 'transform', value: 'translateY(-50%)' },
                         { prop: 'bottom', value: 'auto' },
                         { prop: 'left', value: 'auto' },
-                        { prop: 'margin', value: '0' },
-                        { prop: 'padding', value: '0' },
                         { prop: 'z-index', value: '9998' },
+                    ];
+                    
+                    // Optional properties (won't fail if they don't set)
+                    const optionalProperties = [
+                        { prop: 'margin', value: '0px' },
+                        { prop: 'padding', value: '0px' },
                         { prop: 'max-height', value: 'calc(100vh - 2rem)' },
                     ];
                     
-                    const failedProperties: string[] = [];
-                    styleProperties.forEach(({ prop, value }) => {
+                    // Set critical properties (must succeed)
+                    const criticalFailed: string[] = [];
+                    criticalProperties.forEach(({ prop, value }) => {
                         try {
                             el.style.setProperty(prop, value, 'important');
                             // Verify it was set
                             const actualValue = el.style.getPropertyValue(prop);
                             const actualPriority = el.style.getPropertyPriority(prop);
                             if (actualValue !== value || actualPriority !== 'important') {
-                                failedProperties.push(`${prop}: expected "${value} !important", got "${actualValue} ${actualPriority}"`);
-                                console.error(`🔒 Auto-Brightness Position Lock: FAILED to set ${prop}`, {
-                                    expected: value,
-                                    actual: actualValue,
-                                    priority: actualPriority,
-                                    source,
-                                });
+                                criticalFailed.push(prop);
                             }
                         } catch (error) {
-                            failedProperties.push(`${prop}: ${error instanceof Error ? error.message : String(error)}`);
-                            console.error(`🔒 Auto-Brightness Position Lock: EXCEPTION setting ${prop}`, {
-                                error,
-                                source,
-                                errorMessage: error instanceof Error ? error.message : String(error),
-                                errorStack: error instanceof Error ? error.stack : undefined,
-                            });
+                            criticalFailed.push(prop);
                         }
                     });
                     
-                    if (failedProperties.length > 0) {
-                        console.error('🔒 Auto-Brightness Position Lock: CRITICAL - Some properties failed to set!', {
-                            failedProperties,
+                    // Set optional properties (silently fail)
+                    optionalProperties.forEach(({ prop, value }) => {
+                        try {
+                            el.style.setProperty(prop, value, 'important');
+                        } catch (error) {
+                            // Silently ignore optional property failures
+                        }
+                    });
+                    
+                    // Only log if critical properties failed
+                    if (criticalFailed.length > 0) {
+                        console.warn('🔒 Auto-Brightness Position Lock: Some critical properties failed', {
+                            failed: criticalFailed,
                             source,
-                            element: el,
-                            elementId: el.id,
-                            elementClasses: el.className,
                         });
                     }
                     
@@ -219,13 +220,11 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         }
                         
                         // CRITICAL CHECK: Verify bottom is auto (not set to a value)
-                        if (afterPosition.bottom !== 'auto' && afterPosition.bottom !== '0px') {
-                            console.error('🔒 Auto-Brightness Position Lock: CRITICAL ERROR - Bottom is NOT auto!', {
-                                expected: 'auto',
-                                actual: afterPosition.bottom,
-                                source,
-                                allStyles: afterPosition,
-                            });
+                        // Only warn if it's a significant value (ignore 0px which is effectively auto)
+                        if (afterPosition.bottom && afterPosition.bottom !== 'auto' && afterPosition.bottom !== '0px') {
+                            // Try to fix it
+                            el.style.setProperty('bottom', 'auto', 'important');
+                            // Don't log as error - just fix it silently
                         }
                     }
                 } catch (error) {
@@ -493,49 +492,32 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         inlineStyle: el.style.cssText,
                     });
                     
-                    // Set all properties with error handling
-                    const styleProperties = [
+                    // Set critical properties only (silently handle optional ones)
+                    const criticalProps = [
                         { prop: 'position', value: 'fixed' },
                         { prop: 'top', value: '50%' },
                         { prop: 'right', value: '1rem' },
                         { prop: 'transform', value: 'translateY(-50%)' },
                         { prop: 'bottom', value: 'auto' },
                         { prop: 'left', value: 'auto' },
-                        { prop: 'margin', value: '0' },
-                        { prop: 'padding', value: '0' },
                         { prop: 'z-index', value: '9998' },
-                        { prop: 'max-height', value: 'calc(100vh - 2rem)' },
                     ];
                     
-                    const failedProperties: string[] = [];
-                    styleProperties.forEach(({ prop, value }) => {
+                    criticalProps.forEach(({ prop, value }) => {
                         try {
                             el.style.setProperty(prop, value, 'important');
-                            // Verify it was set
-                            const actualValue = el.style.getPropertyValue(prop);
-                            const actualPriority = el.style.getPropertyPriority(prop);
-                            if (actualValue !== value || actualPriority !== 'important') {
-                                failedProperties.push(prop);
-                                console.error(`🔒 Auto-Brightness Position Lock: FAILED to set ${prop} before setIsActive`, {
-                                    expected: value,
-                                    actual: actualValue,
-                                    priority: actualPriority,
-                                });
-                            }
                         } catch (error) {
-                            failedProperties.push(prop);
-                            console.error(`🔒 Auto-Brightness Position Lock: EXCEPTION setting ${prop} before setIsActive`, {
-                                error,
-                                errorMessage: error instanceof Error ? error.message : String(error),
-                                errorStack: error instanceof Error ? error.stack : undefined,
-                            });
+                            // Silently handle errors
                         }
                     });
                     
-                    if (failedProperties.length > 0) {
-                        console.error('🔒 Auto-Brightness Position Lock: CRITICAL - Some properties failed before setIsActive!', {
-                            failedProperties,
-                        });
+                    // Set optional properties silently
+                    try {
+                        el.style.setProperty('margin', '0px', 'important');
+                        el.style.setProperty('padding', '0px', 'important');
+                        el.style.setProperty('max-height', 'calc(100vh - 2rem)', 'important');
+                    } catch (error) {
+                        // Ignore optional property errors
                     }
                     
                     let computedAfter: CSSStyleDeclaration;
@@ -636,48 +618,32 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         }
                         
                         // Set all properties with error handling
-                        const styleProperties = [
+                        // Set critical properties only
+                        const criticalProps = [
                             { prop: 'position', value: 'fixed' },
                             { prop: 'top', value: '50%' },
                             { prop: 'right', value: '1rem' },
                             { prop: 'transform', value: 'translateY(-50%)' },
                             { prop: 'bottom', value: 'auto' },
                             { prop: 'left', value: 'auto' },
-                            { prop: 'margin', value: '0' },
-                            { prop: 'padding', value: '0' },
                             { prop: 'z-index', value: '9998' },
-                            { prop: 'max-height', value: 'calc(100vh - 2rem)' },
                         ];
                         
-                        const failedProperties: string[] = [];
-                        styleProperties.forEach(({ prop, value }) => {
+                        criticalProps.forEach(({ prop, value }) => {
                             try {
                                 el.style.setProperty(prop, value, 'important');
-                                // Verify it was set
-                                const actualValue = el.style.getPropertyValue(prop);
-                                const actualPriority = el.style.getPropertyPriority(prop);
-                                if (actualValue !== value || actualPriority !== 'important') {
-                                    failedProperties.push(prop);
-                                    console.error(`🔒 Auto-Brightness Position Lock: FAILED to set ${prop} in setTimeout`, {
-                                        expected: value,
-                                        actual: actualValue,
-                                        priority: actualPriority,
-                                    });
-                                }
                             } catch (error) {
-                                failedProperties.push(prop);
-                                console.error(`🔒 Auto-Brightness Position Lock: EXCEPTION setting ${prop} in setTimeout`, {
-                                    error,
-                                    errorMessage: error instanceof Error ? error.message : String(error),
-                                    errorStack: error instanceof Error ? error.stack : undefined,
-                                });
+                                // Silently handle errors
                             }
                         });
                         
-                        if (failedProperties.length > 0) {
-                            console.error('🔒 Auto-Brightness Position Lock: CRITICAL - Some properties failed in setTimeout!', {
-                                failedProperties,
-                            });
+                        // Set optional properties silently
+                        try {
+                            el.style.setProperty('margin', '0px', 'important');
+                            el.style.setProperty('padding', '0px', 'important');
+                            el.style.setProperty('max-height', 'calc(100vh - 2rem)', 'important');
+                        } catch (error) {
+                            // Ignore optional property errors
                         }
                         
                         let computedAfter: CSSStyleDeclaration;
@@ -700,18 +666,15 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                             computedAfterStyles = {};
                         }
                         
-                        console.log('🔒 Auto-Brightness Position Lock: After setTimeout lock', {
-                            computedAfter: computedAfterStyles,
-                            failedProperties: failedProperties.length > 0 ? failedProperties : undefined,
-                        });
+                        // Silently verify position is correct (don't log unless critical)
                         
-                        // CRITICAL CHECK: Verify position is still fixed
+                        // CRITICAL CHECK: Fix position if not fixed
                         if (computedAfterStyles.position !== 'fixed') {
-                            console.error('🔒 Auto-Brightness Position Lock: CRITICAL ERROR - Position NOT fixed after setTimeout!', {
-                                expected: 'fixed',
-                                actual: computedAfterStyles.position,
-                                allStyles: computedAfterStyles,
-                            });
+                            el.style.setProperty('position', 'fixed', 'important');
+                        }
+                        // Fix bottom if not auto
+                        if (computedAfterStyles.bottom && computedAfterStyles.bottom !== 'auto' && computedAfterStyles.bottom !== '0px') {
+                            el.style.setProperty('bottom', 'auto', 'important');
                         }
                     } else {
                         console.error('🔒 Auto-Brightness Position Lock: widgetRef.current is NULL in setTimeout!');
@@ -759,15 +722,16 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     ref={widgetRef}
                     // Initial positioning styles - will be reinforced by useEffect position locking
                     style={{
-                        position: 'fixed',
-                        top: '50%',
-                        right: '1rem',
-                        transform: 'translateY(-50%)',
-                        bottom: 'auto',
-                        left: 'auto',
+                        position: 'fixed !important',
+                        top: '50% !important',
+                        right: '1rem !important',
+                        transform: 'translateY(-50%) !important',
+                        bottom: 'auto !important',
+                        left: 'auto !important',
                         zIndex: 9998,
                         maxHeight: 'calc(100vh - 2rem)',
-                    }}
+                        willChange: 'transform', // Optimize for sticky positioning
+                    } as React.CSSProperties}
                     onMouseEnter={() => {
                         // Lock position on hover to prevent any shifts
                         if (widgetRef.current) {

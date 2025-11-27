@@ -179,9 +179,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     msg.includes('Failed to load resource') ||
                     msg.includes('Bad Request')
                   )) {
-                    // Check if it's a PDF transformation error
-                    if (url && (url.includes('cloudinary.com') || url.includes('f_jpg,pg_'))) {
+                    // Check if it's a PDF transformation error or any PDF-related error
+                    if (url && (url.includes('cloudinary.com') || url.includes('f_jpg,pg_') || url.includes('.pdf'))) {
                       return true; // Suppress PDF page load errors
+                    }
+                    // Also suppress if message mentions PDF
+                    if (msg.includes('.pdf') || msg.includes('pdf')) {
+                      return true;
                     }
                   }
                   
