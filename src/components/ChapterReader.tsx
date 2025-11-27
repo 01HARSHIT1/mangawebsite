@@ -7,7 +7,6 @@ import { socialMediaLinks, websiteInfo } from '@/config/socialMedia';
 import VoiceAssistant from './VoiceAssistant';
 import EyeTracking from './EyeTracking';
 import AutoBrightness from './AutoBrightness';
-import LightDetection from './LightDetection';
 import ChapterSummary from './ChapterSummary';
 import PreviouslyOnRecap from './PreviouslyOnRecap';
 import { useAIFeatures } from '@/hooks/useAIFeatures';
@@ -679,13 +678,7 @@ export default function ChapterReader({
                 showUI={true}
             />
 
-            {/* Light Detection */}
-            {autoBrightnessEnabled && (
-                <LightDetection
-                    enabled={autoBrightnessEnabled}
-                    showUI={true}
-                />
-            )}
+            {/* Note: LightDetection removed - AutoBrightness handles all brightness adjustments */}
         </div>
     );
 }
