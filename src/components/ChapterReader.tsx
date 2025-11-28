@@ -243,18 +243,35 @@ export default function ChapterReader({
         }
     }, []);
 
-    // Load comments
+    // Load comments (with timeout to prevent hanging)
     useEffect(() => {
-        if (chapterId) {
-            fetch(`/api/comments/${chapterId}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.comments) {
-                        setComments(data.comments);
-                    }
-                })
-                .catch(err => console.error('Failed to load comments:', err));
-        }
+        if (!chapterId) return;
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        fetch(`/api/comments/${chapterId}`, {
+            signal: controller.signal
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.comments) {
+                    setComments(data.comments);
+                }
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    console.error('Failed to load comments:', err);
+                }
+            })
+            .finally(() => {
+                clearTimeout(timeoutId);
+            });
+        
+        return () => {
+            controller.abort();
+            clearTimeout(timeoutId);
+        };
     }, [chapterId]);
 
     // Handle comment submission
@@ -427,7 +444,8 @@ export default function ChapterReader({
             <div className="w-full max-w-4xl mx-auto py-8 px-4">
                 {chapterImages.length > 0 ? (
                     <div className="space-y-2">
-                        {chapterImages.map((imageSrc, index) => {
+                        {chapterImages.slice(0, Math.min(loadedPageCount + 5, chapterImages.length)).map((imageSrc, index) => {
+                            // Only render images that are loaded or about to be loaded (lazy loading)
                             // Stop rendering after too many consecutive failures or if max page reached
                             if (maxPageReached && index > loadedPageCount) {
                                 return null;
@@ -438,7 +456,7 @@ export default function ChapterReader({
 
                             return (
                                 <img
-                                    key={index}
+                                    key={`page-${index}`}
                                     src={imageSrc}
                                     alt={`Page ${index + 1}`}
                                     className="w-full h-auto"
@@ -450,6 +468,7 @@ export default function ChapterReader({
                                         e.currentTarget.style.visibility = 'hidden';
                                     }}
                                     loading="lazy"
+                                    decoding="async"
                                 />
                             );
                         })}
