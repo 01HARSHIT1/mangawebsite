@@ -57,8 +57,9 @@ export default function ChapterReader({
     const maxConsecutiveFailures = 3; // Stop after 3 consecutive failures
 
     // Use useMemo to prevent recreating array on every render (prevents infinite loops)
-    // Use stable dependencies to prevent re-renders
-    const pagesString = useMemo(() => JSON.stringify(pages), [pages]);
+    // Create stable reference for pages array length and first page to detect changes
+    const pagesLength = pages.length;
+    const firstPageRef = pages[0];
     const chapterImages: string[] = useMemo(() => {
         const images: string[] = [];
         
@@ -85,7 +86,7 @@ export default function ChapterReader({
         }
         
         return images;
-    }, [pdfUrl, pagesString, maxPages]); // Use pagesString instead of pages array
+    }, [pdfUrl, pagesLength, firstPageRef, maxPages]); // Use stable references instead of array
 
     // Track image load errors
     const handleImageError = (pageIndex: number, event: React.SyntheticEvent<HTMLImageElement, Event>) => {
