@@ -646,9 +646,17 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         if (computedAfterStyles.position !== 'fixed') {
                             el.style.setProperty('position', 'fixed', 'important');
                         }
-                        // Fix bottom if not auto
-                        if (computedAfterStyles.bottom && computedAfterStyles.bottom !== 'auto' && computedAfterStyles.bottom !== '0px') {
-                            el.style.setProperty('bottom', 'auto', 'important');
+                        // Fix bottom if not 1rem
+                        if (computedAfterStyles.bottom && computedAfterStyles.bottom !== '1rem' && computedAfterStyles.bottom !== 'auto') {
+                            el.style.setProperty('bottom', '1rem', 'important');
+                        }
+                        // Fix top if not auto
+                        if (computedAfterStyles.top && computedAfterStyles.top !== 'auto') {
+                            el.style.setProperty('top', 'auto', 'important');
+                        }
+                        // Fix transform if not none
+                        if (computedAfterStyles.transform && computedAfterStyles.transform !== 'none') {
+                            el.style.setProperty('transform', 'none', 'important');
                         }
                     } else {
                         console.error('🔒 Auto-Brightness Position Lock: widgetRef.current is NULL in setTimeout!');
