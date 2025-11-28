@@ -60,13 +60,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         if (typeof window !== 'undefined') {
             const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
             setIsSupported(hasGetUserMedia);
-            console.log('👁️ Eye Tracking: Browser support check', {
-                hasGetUserMedia,
-                hasMediaDevices: !!navigator.mediaDevices,
-                userAgent: navigator.userAgent.substring(0, 50),
-                isSupported: hasGetUserMedia,
-                status: hasGetUserMedia ? '✅ SUPPORTED' : '❌ NOT SUPPORTED'
-            });
+            // Removed console.log to prevent performance issues
             
             // Detect manual scrolling to prevent interference
             const handleScroll = () => {
@@ -141,15 +135,15 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 await videoRef.current.play();
-                console.log('✅ Video stream started');
+                // Removed console.log to prevent performance issues
             }
 
             // Initialize MediaPipe Eye Tracking Engine
-            console.log('👁️ Eye Tracking: Creating EyeTrackingEngine instance...');
+            // Removed console.log to prevent performance issues
             const engine = new EyeTrackingEngine();
             eyeTrackingEngineRef.current = engine;
 
-            console.log('👁️ Eye Tracking: Initializing engine with video element...');
+            // Removed console.log to prevent performance issues
             await engine.initialize(videoRef.current, (gaze) => {
                 // Store current normalized Y for manual feedback
                 if (gaze.normalizedEyePosition) {
@@ -173,7 +167,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                         
                         // Log calibration info on first load
                         if (totalSamples > 15) {
-                            console.log('👁️ Eye Tracking: ✅ Using merged calibration with', totalSamples, 'total samples');
+                            // Removed console.log to prevent performance issues
                             console.log('  - Top:', calibration.scrollUp?.samples?.length || 0, 'samples');
                             console.log('  - Middle:', calibration.noScroll?.samples?.length || 0, 'samples');
                             console.log('  - Bottom:', calibration.scrollDown?.samples?.length || 0, 'samples');
