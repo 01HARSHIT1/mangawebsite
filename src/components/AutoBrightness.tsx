@@ -66,12 +66,9 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
     
     // CRITICAL: Lock position - use MutationObserver to prevent ANY style changes
     useEffect(() => {
-        console.log('🔒 Auto-Brightness Position Lock: useEffect triggered', { isActive, showUI });
-        
         // Wait for ref to be set
         const setupPositionLock = () => {
             if (!widgetRef.current) {
-                console.log('🔒 Auto-Brightness Position Lock: Ref not ready, retrying...');
                 // Retry if ref not ready
                 setTimeout(setupPositionLock, 10);
                 return;
@@ -107,10 +104,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         beforePosition = {};
                     }
                     
-                    console.log(`🔒 Auto-Brightness Position Lock: Locking position (source: ${source})`, {
-                        before: beforePosition,
-                        isActive,
-                    });
+                    // Lock position silently (only log errors)
                     
                     // Force position to stay fixed - override any other styles
                     // Use setProperty with 'important' flag (cssText doesn't support !important)
@@ -196,11 +190,8 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                                 source,
                                 failedProperties: failedProperties.length > 0 ? failedProperties : undefined,
                             });
-                        } else {
-                            console.log(`🔒 Auto-Brightness Position Lock: Position locked successfully (source: ${source})`, {
-                                after: afterPosition,
-                            });
                         }
+                        // Position locked - no need to log success
                         
                         // CRITICAL CHECK: Verify the position is actually fixed
                         if (afterPosition.position !== 'fixed') {
@@ -271,20 +262,12 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                                         currentPosition = {};
                                     }
                                     
-                                    console.warn('🔒 Auto-Brightness Position Lock: MutationObserver detected change!', {
-                                        attribute: mutation.attributeName,
-                                        oldValue: mutation.oldValue,
-                                        currentPosition,
-                                        isActive,
-                                    });
-                                    
-                                    // CRITICAL: Check if position was changed to something we don't want
+                                    // Silently fix position if changed
                                     if (currentPosition.bottom && currentPosition.bottom !== 'auto' && currentPosition.bottom !== '0px') {
-                                        console.error('🔒 Auto-Brightness Position Lock: CRITICAL - MutationObserver detected bottom change!', {
-                                            oldValue: mutation.oldValue,
-                                            newBottom: currentPosition.bottom,
-                                            allStyles: currentPosition,
-                                        });
+                                        el.style.setProperty('bottom', 'auto', 'important');
+                                    }
+                                    if (currentPosition.position && currentPosition.position !== 'fixed') {
+                                        el.style.setProperty('position', 'fixed', 'important');
                                     }
                                     
                                     // Style or class was changed - immediately lock it back
@@ -317,7 +300,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         subtree: false,
                         attributeOldValue: true, // Track old values for debugging
                     });
-                    console.log('🔒 Auto-Brightness Position Lock: MutationObserver set up', { isActive });
+                    // MutationObserver set up silently
                 } catch (error) {
                     console.error('🔒 Auto-Brightness Position Lock: EXCEPTION observing element', {
                         error,
@@ -327,38 +310,25 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                 }
             }
             
-            // Also lock periodically as backup (every 5ms for maximum protection)
+            // Also lock periodically as backup (every 100ms - less aggressive)
             let intervalId: NodeJS.Timeout | null = null;
             try {
                 intervalId = setInterval(() => {
                     try {
                         const computed = window.getComputedStyle(el);
-                        if (computed.bottom !== 'auto' && computed.bottom !== '0px') {
-                            console.warn('🔒 Auto-Brightness Position Lock: Interval check detected position drift!', {
-                                position: computed.position,
-                                top: computed.top,
-                                bottom: computed.bottom,
-                                right: computed.right,
-                                isActive,
-                            });
-                        }
+                        // Silently fix position if needed (don't log unless critical)
                         if (computed.position !== 'fixed') {
-                            console.error('🔒 Auto-Brightness Position Lock: CRITICAL - Interval check detected position is NOT fixed!', {
-                                position: computed.position,
-                                top: computed.top,
-                                bottom: computed.bottom,
-                                right: computed.right,
-                                isActive,
-                            });
+                            el.style.setProperty('position', 'fixed', 'important');
                         }
+                        if (computed.bottom && computed.bottom !== 'auto' && computed.bottom !== '0px') {
+                            el.style.setProperty('bottom', 'auto', 'important');
+                        }
+                        // Lock position silently
                         lockPosition('interval-check');
                     } catch (error) {
-                        console.error('🔒 Auto-Brightness Position Lock: EXCEPTION in interval check', {
-                            error,
-                            errorMessage: error instanceof Error ? error.message : String(error),
-                        });
+                        // Silently handle interval errors
                     }
-                }, 5);
+                }, 100); // Reduced frequency from 5ms to 100ms
             } catch (error) {
                 console.error('🔒 Auto-Brightness Position Lock: EXCEPTION creating interval', {
                     error,
@@ -722,15 +692,17 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     ref={widgetRef}
                     // Initial positioning styles - will be reinforced by useEffect position locking
                     style={{
-                        position: 'fixed !important',
-                        top: '50% !important',
-                        right: '1rem !important',
-                        transform: 'translateY(-50%) !important',
-                        bottom: 'auto !important',
-                        left: 'auto !important',
+                        position: 'fixed',
+                        top: '50%',
+                        right: '1rem',
+                        transform: 'translateY(-50%)',
+                        bottom: 'auto',
+                        left: 'auto',
                         zIndex: 9998,
                         maxHeight: 'calc(100vh - 2rem)',
                         willChange: 'transform', // Optimize for sticky positioning
+                        margin: 0,
+                        padding: 0,
                     } as React.CSSProperties}
                     onMouseEnter={() => {
                         // Lock position on hover to prevent any shifts
