@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaHistory, FaSpinner, FaChevronDown, FaChevronUp, FaBookOpen } from 'react-icons/fa';
 import Link from 'next/link';
 
