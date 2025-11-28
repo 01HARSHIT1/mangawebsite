@@ -294,15 +294,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                             });
                         });
                         
-                        if (false && Math.random() < 0.01) { // Disabled logging - was 1% of frames
-                            // Removed console.log to prevent performance issues
-                            if (false) { // Disabled
-                                screenY: (screenY * 100).toFixed(1) + '%',
-                                confidence: (gaze.confidence * 100).toFixed(1) + '%',
-                                intensity: gaze.scrollIntensity.toFixed(2),
-                                scrollAmount: Math.round(scrollAmount) + 'px'
-                            });
-                        }
+                        // Removed console.log to prevent performance issues
                     } else if (gaze.scrollIntensity > 0 && currentScroll < maxScroll - 50) {
                         // Scroll DOWN (positive intensity)
                         lastScrollTime.current = now;
@@ -319,15 +311,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                             });
                         });
                         
-                        if (Math.random() < 0.01) { // 1% of frames
-                            // Removed console.log to prevent performance issues
-                            if (false) { // Disabled logging
-                                screenY: (screenY * 100).toFixed(1) + '%',
-                                confidence: (gaze.confidence * 100).toFixed(1) + '%',
-                                intensity: gaze.scrollIntensity.toFixed(2),
-                                scrollAmount: Math.round(scrollAmount) + 'px'
-                            });
-                        }
+                        // Removed console.log to prevent performance issues
                     }
                 }
             });
