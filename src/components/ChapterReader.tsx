@@ -329,34 +329,36 @@ export default function ChapterReader({
         };
     }, []);
 
-    // Load comments (with timeout to prevent hanging)
+    // Load comments (with timeout and deferred loading to prevent blocking)
     useEffect(() => {
         if (!chapterId) return;
         
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
-        fetch(`/api/comments/${chapterId}`, {
-            signal: controller.signal
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.comments) {
-                    setComments(data.comments);
-                }
+        // Defer comments loading to prevent blocking initial page render
+        const delayTimer = setTimeout(() => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            fetch(`/api/comments/${chapterId}`, {
+                signal: controller.signal
             })
-            .catch(err => {
-                if (err.name !== 'AbortError') {
-                    console.error('Failed to load comments:', err);
-                }
-            })
-            .finally(() => {
-                clearTimeout(timeoutId);
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.comments) {
+                        setComments(data.comments);
+                    }
+                })
+                .catch(err => {
+                    if (err.name !== 'AbortError') {
+                        // Silently handle errors
+                    }
+                })
+                .finally(() => {
+                    clearTimeout(timeoutId);
+                });
+        }, 1500); // Wait 1.5 seconds before loading comments
         
         return () => {
-            controller.abort();
-            clearTimeout(timeoutId);
+            clearTimeout(delayTimer);
         };
     }, [chapterId]);
 
