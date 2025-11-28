@@ -678,50 +678,44 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
     };
     
     // Always render UI (like EyeTracking), but show message if feature not enabled in settings
-    return (
-        <>
-            <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="hidden"
-            />
-            
-            {showUI && (
-                <div 
-                    ref={widgetRef}
-                    // Initial positioning styles - will be reinforced by useEffect position locking
-                    style={{
-                        position: 'fixed',
-                        top: '50%',
-                        right: '1rem',
-                        transform: 'translateY(-50%)',
-                        bottom: 'auto',
-                        left: 'auto',
-                        zIndex: 9998,
-                        maxHeight: 'calc(100vh - 2rem)',
-                        willChange: 'transform', // Optimize for sticky positioning
-                        margin: 0,
-                        padding: 0,
-                    } as React.CSSProperties}
-                    onMouseEnter={() => {
-                        // Lock position on hover to prevent any shifts
-                        if (widgetRef.current) {
-                            const el = widgetRef.current;
-                            el.style.setProperty('position', 'fixed', 'important');
-                            el.style.setProperty('top', '50%', 'important');
-                            el.style.setProperty('right', '1rem', 'important');
-                            el.style.setProperty('transform', 'translateY(-50%)', 'important');
-                            el.style.setProperty('bottom', 'auto', 'important');
-                            el.style.setProperty('left', 'auto', 'important');
-                            el.style.setProperty('margin', '0', 'important');
-                            el.style.setProperty('padding', '0', 'important');
-                            el.style.setProperty('z-index', '9998', 'important');
-                            el.style.setProperty('max-height', 'calc(100vh - 2rem)', 'important');
-                        }
-                    }}
-                >
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+    
+    const widgetContent = showUI ? (
+        <div 
+            ref={widgetRef}
+            // CRITICAL: Use fixed positioning - render via Portal to ensure it's outside scrolling containers
+            style={{
+                position: 'fixed',
+                top: '50%',
+                right: '1rem',
+                transform: 'translateY(-50%)',
+                bottom: 'auto',
+                left: 'auto',
+                zIndex: 99999, // Very high z-index to ensure it's always on top
+                maxHeight: 'calc(100vh - 2rem)',
+                willChange: 'transform',
+                margin: 0,
+                padding: 0,
+                pointerEvents: 'auto',
+            } as React.CSSProperties}
+            onMouseEnter={() => {
+                // Lock position on hover to prevent any shifts
+                if (widgetRef.current) {
+                    const el = widgetRef.current;
+                    el.style.setProperty('position', 'fixed', 'important');
+                    el.style.setProperty('top', '50%', 'important');
+                    el.style.setProperty('right', '1rem', 'important');
+                    el.style.setProperty('transform', 'translateY(-50%)', 'important');
+                    el.style.setProperty('bottom', 'auto', 'important');
+                    el.style.setProperty('left', 'auto', 'important');
+                    el.style.setProperty('z-index', '99999', 'important');
+                }
+            }}
+        >
                 <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-3 max-w-xs">
                     <div className="flex items-center justify-between mb-2">
                         <div>
@@ -782,6 +776,22 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     )}
                 </div>
                 </div>
+    ) : null;
+    
+    return (
+        <>
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="hidden"
+            />
+            
+            {/* Render widget via Portal to document.body to ensure it's outside any scrolling containers */}
+            {mounted && typeof window !== 'undefined' && widgetContent && createPortal(
+                widgetContent,
+                document.body
             )}
         </>
     );
