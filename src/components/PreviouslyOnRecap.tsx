@@ -26,6 +26,10 @@ export default function PreviouslyOnRecap({ mangaId, enabled = true }: Previousl
     useEffect(() => {
         if (!enabled || !mangaId) return;
         
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         const fetchRecap = async () => {
             setLoading(true);
             setError(null);
@@ -33,16 +37,17 @@ export default function PreviouslyOnRecap({ mangaId, enabled = true }: Previousl
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    setError('Please log in to see recap');
+                    setError(null); // Don't show error if not logged in
                     return;
                 }
                 
                 const response = await fetch(`/api/manga/${mangaId}/previously-on`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    signal: controller.signal
                 });
                 
                 if (!response.ok) {
-                    const data = await response.json();
+                    const data = await response.json().catch(() => ({}));
                     if (data.message && data.message.includes('No reading history')) {
                         setError(null); // Don't show error if no history
                         return;
@@ -54,15 +59,25 @@ export default function PreviouslyOnRecap({ mangaId, enabled = true }: Previousl
                 if (data.recap) {
                     setRecap(data.recap);
                 }
-            } catch (err) {
-                console.error('Error fetching Previously On recap:', err);
+            } catch (err: any) {
+                if (err.name === 'AbortError') {
+                    console.warn('Previously On recap fetch timeout');
+                } else {
+                    console.error('Error fetching Previously On recap:', err);
+                }
                 setError(null); // Don't show error, just hide
             } finally {
+                clearTimeout(timeoutId);
                 setLoading(false);
             }
         };
         
         fetchRecap();
+        
+        return () => {
+            controller.abort();
+            clearTimeout(timeoutId);
+        };
     }, [mangaId, enabled]);
 
     if (!enabled) return null;

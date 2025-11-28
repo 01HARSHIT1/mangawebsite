@@ -57,14 +57,15 @@ export default function ChapterReader({
     const maxConsecutiveFailures = 3; // Stop after 3 consecutive failures
 
     // Use useMemo to prevent recreating array on every render (prevents infinite loops)
+    // Use stable dependencies to prevent re-renders
+    const pagesString = useMemo(() => JSON.stringify(pages), [pages]);
     const chapterImages: string[] = useMemo(() => {
         const images: string[] = [];
         
         if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
             // Cloudinary PDF to image transformation
-            // We'll try loading pages until we hit consecutive failures
-            // Start with a reasonable number of pages, expand if needed
-            const initialPages = Math.min(maxPages, 50); // Start with 50 pages
+            // Start with fewer pages to prevent blocking (lazy load more as needed)
+            const initialPages = Math.min(maxPages, 10); // Reduced from 50 to 10 to prevent blocking
             for (let i = 1; i <= initialPages; i++) {
                 // Transform: /upload/ -> /upload/f_jpg,pg_{pageNumber},q_auto/
                 // Use proper Cloudinary transformation format
@@ -72,8 +73,9 @@ export default function ChapterReader({
                 images.push(imageUrl);
             }
         } else if (pages.length > 0) {
-            // Use existing pages
-            pages.forEach((page: any) => {
+            // Use existing pages (limit to prevent blocking)
+            const limitedPages = pages.slice(0, 50); // Limit to 50 pages initially
+            limitedPages.forEach((page: any) => {
                 if (typeof page === 'string') {
                     images.push(page);
                 } else if (page?.imagePath) {
@@ -83,7 +85,7 @@ export default function ChapterReader({
         }
         
         return images;
-    }, [pdfUrl, pages, maxPages]);
+    }, [pdfUrl, pagesString, maxPages]); // Use pagesString instead of pages array
 
     // Track image load errors
     const handleImageError = (pageIndex: number, event: React.SyntheticEvent<HTMLImageElement, Event>) => {

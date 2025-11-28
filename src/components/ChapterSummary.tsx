@@ -25,6 +25,10 @@ export default function ChapterSummary({ chapterId, chapterNumber, enabled = tru
     useEffect(() => {
         if (!enabled || !chapterId) return;
         
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         const fetchSummary = async () => {
             setLoading(true);
             setError(null);
@@ -32,7 +36,8 @@ export default function ChapterSummary({ chapterId, chapterNumber, enabled = tru
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`/api/chapters/${chapterId}/summary`, {
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                    signal: controller.signal
                 });
                 
                 if (!response.ok) {
@@ -41,15 +46,25 @@ export default function ChapterSummary({ chapterId, chapterNumber, enabled = tru
                 
                 const data = await response.json();
                 setSummary(data.summary);
-            } catch (err) {
-                console.error('Error fetching chapter summary:', err);
-                setError('Failed to load summary');
+            } catch (err: any) {
+                if (err.name === 'AbortError') {
+                    console.warn('Chapter summary fetch timeout');
+                } else {
+                    console.error('Error fetching chapter summary:', err);
+                }
+                setError(null); // Don't show error, just hide
             } finally {
+                clearTimeout(timeoutId);
                 setLoading(false);
             }
         };
         
         fetchSummary();
+        
+        return () => {
+            controller.abort();
+            clearTimeout(timeoutId);
+        };
     }, [chapterId, enabled]);
 
     if (!enabled) return null;
