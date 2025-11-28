@@ -77,7 +77,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 // Disable eye tracking scrolling for 3 seconds after manual scroll
                 manualScrollTimeout.current = setTimeout(() => {
                     isManualScrolling.current = false;
-                    console.log('👁️ Eye Tracking: Manual scroll ended, re-enabling auto-scroll');
+                    // Removed console.log to prevent performance issues
                 }, 3000);
             };
             
@@ -959,19 +959,10 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     const shouldShow = isChapterPage || eyeTrackingEnabled;
     
     if (!shouldShow) {
-        return null;('👁️ Eye Tracking: Not showing - not on chapter page and not enabled', {
-            isChapterPage,
-            eyeTrackingEnabled,
-            pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A'
-        });
         return null;
     }
     
-    console.log('👁️ Eye Tracking: ✅✅✅ PANEL SHOULD BE VISIBLE NOW! ✅✅✅', {
-        isChapterPage,
-        eyeTrackingEnabled,
-        isSupported,
-        showUI,
+    // Removed console.log to prevent performance issues
         pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A',
         timestamp: new Date().toISOString()
     });

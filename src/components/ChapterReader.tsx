@@ -139,7 +139,8 @@ export default function ChapterReader({
         
         if (!loadedPagesRef.current.has(pageIndex)) {
             loadedPagesRef.current.add(pageIndex);
-            const maxLoaded = Math.max(...Array.from(loadedPagesRef.current));
+            // Use reduce instead of Math.max with spread to prevent blocking on large sets
+            const maxLoaded = Array.from(loadedPagesRef.current).reduce((max, idx) => Math.max(max, idx), 0);
             setLoadedPageCount(maxLoaded + 1);
             setFailedPages(0); // Reset consecutive failures
             lastUpdateRef.current = now;
@@ -248,7 +249,8 @@ export default function ChapterReader({
                 window.dispatchEvent(new CustomEvent('toggleEyeTracking'));
                 break;
             default:
-                console.log('Unknown voice command:', command);
+                // Silently ignore unknown commands
+                break;
         }
     };
 
