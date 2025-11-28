@@ -41,10 +41,11 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
     const userMenuRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
 
-    // Hide main navigation on creator/admin dashboard pages
+    // Hide main navigation on creator/admin dashboard pages and chapter reading pages
     const hideMainNav = pathname?.startsWith('/creator/dashboard') || 
                        pathname?.startsWith('/admin') ||
-                       pathname?.startsWith('/admin-dashboard');
+                       pathname?.startsWith('/admin-dashboard') ||
+                       pathname?.includes('/chapter/');
 
     useEffect(() => {
         if (dark) {

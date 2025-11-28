@@ -955,15 +955,12 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 });
             };
             checkChapterPage();
-            // Check periodically in case of client-side navigation
-            const interval = setInterval(checkChapterPage, 1000);
-            // Also check on route changes
+            // Check on route changes only (removed interval to prevent performance issues)
             const handleRouteChange = () => checkChapterPage();
             window.addEventListener('popstate', handleRouteChange);
             // Listen for Next.js route changes
             window.addEventListener('pushstate', handleRouteChange);
             return () => {
-                clearInterval(interval);
                 window.removeEventListener('popstate', handleRouteChange);
                 window.removeEventListener('pushstate', handleRouteChange);
             };

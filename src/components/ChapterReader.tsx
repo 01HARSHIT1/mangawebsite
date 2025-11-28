@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaChevronLeft, FaChevronRight, FaHome, FaChevronDown, FaFacebook, FaTwitter, FaInstagram, FaDiscord, FaWhatsapp, FaShareAlt } from 'react-icons/fa';
@@ -56,29 +56,34 @@ export default function ChapterReader({
     const maxPages = 100; // Maximum pages to try loading
     const maxConsecutiveFailures = 3; // Stop after 3 consecutive failures
 
-    const chapterImages: string[] = [];
-
-    if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
-        // Cloudinary PDF to image transformation
-        // We'll try loading pages until we hit consecutive failures
-        // Start with a reasonable number of pages, expand if needed
-        const initialPages = Math.min(maxPages, 50); // Start with 50 pages
-        for (let i = 1; i <= initialPages; i++) {
-            // Transform: /upload/ -> /upload/f_jpg,pg_{pageNumber},q_auto/
-            // Use proper Cloudinary transformation format
-            const imageUrl = pdfUrl.replace('/upload/', `/upload/f_jpg,pg_${i},q_auto/`);
-            chapterImages.push(imageUrl);
-        }
-    } else if (pages.length > 0) {
-        // Use existing pages
-        pages.forEach((page: any) => {
-            if (typeof page === 'string') {
-                chapterImages.push(page);
-            } else if (page?.imagePath) {
-                chapterImages.push(page.imagePath);
+    // Use useMemo to prevent recreating array on every render (prevents infinite loops)
+    const chapterImages: string[] = useMemo(() => {
+        const images: string[] = [];
+        
+        if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
+            // Cloudinary PDF to image transformation
+            // We'll try loading pages until we hit consecutive failures
+            // Start with a reasonable number of pages, expand if needed
+            const initialPages = Math.min(maxPages, 50); // Start with 50 pages
+            for (let i = 1; i <= initialPages; i++) {
+                // Transform: /upload/ -> /upload/f_jpg,pg_{pageNumber},q_auto/
+                // Use proper Cloudinary transformation format
+                const imageUrl = pdfUrl.replace('/upload/', `/upload/f_jpg,pg_${i},q_auto/`);
+                images.push(imageUrl);
             }
-        });
-    }
+        } else if (pages.length > 0) {
+            // Use existing pages
+            pages.forEach((page: any) => {
+                if (typeof page === 'string') {
+                    images.push(page);
+                } else if (page?.imagePath) {
+                    images.push(page.imagePath);
+                }
+            });
+        }
+        
+        return images;
+    }, [pdfUrl, pages, maxPages]);
 
     // Track image load errors
     const handleImageError = (pageIndex: number, event: React.SyntheticEvent<HTMLImageElement, Event>) => {
