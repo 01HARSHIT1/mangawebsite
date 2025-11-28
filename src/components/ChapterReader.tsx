@@ -474,8 +474,8 @@ export default function ChapterReader({
                 </div>
             </div>
 
-            {/* AI Features: Previously On Recap & Chapter Summary - Only render after preferences load */}
-            {!aiFeaturesLoading && (
+            {/* AI Features: Previously On Recap & Chapter Summary - TEMPORARILY DISABLED to fix unresponsiveness */}
+            {/* {!aiFeaturesLoading && (
                 <div className="w-full max-w-4xl mx-auto px-4 pt-4">
                     {previouslyOnEnabled && (
                         <PreviouslyOnRecap mangaId={mangaId} enabled={previouslyOnEnabled} />
@@ -488,7 +488,7 @@ export default function ChapterReader({
                         />
                     )}
                 </div>
-            )}
+            )} */}
 
             {/* Manga Content */}
             <div className="w-full max-w-4xl mx-auto py-8 px-4">
