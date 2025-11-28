@@ -946,13 +946,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 const path = window.location.pathname;
                 const isChapter = path.includes('/chapter/');
                 setIsChapterPage(isChapter);
-                console.log('👁️ Eye Tracking - Chapter page check:', { 
-                    path, 
-                    isChapter, 
-                    eyeTrackingEnabled,
-                    showUI,
-                    isSupported 
-                });
+                // Removed console.log to prevent performance issues
             };
             checkChapterPage();
             // Check on route changes only (removed interval to prevent performance issues)
@@ -973,7 +967,6 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     // Always show UI on chapter pages, even if not enabled
     // This allows users to enable it from the chapter page itself
     if (!showUI) {
-        console.log('👁️ Eye Tracking: Not showing - showUI is false');
         return null;
     }
     
@@ -982,7 +975,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     const shouldShow = isChapterPage || eyeTrackingEnabled;
     
     if (!shouldShow) {
-        console.log('👁️ Eye Tracking: Not showing - not on chapter page and not enabled', {
+        return null;('👁️ Eye Tracking: Not showing - not on chapter page and not enabled', {
             isChapterPage,
             eyeTrackingEnabled,
             pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A'
