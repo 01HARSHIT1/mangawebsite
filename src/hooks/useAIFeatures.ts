@@ -100,14 +100,20 @@ export function useAIFeatures() {
         }
     };
 
+    // Memoize isFeatureEnabled to prevent unnecessary recalculations
+    const isFeatureEnabled = useCallback((feature: keyof UserAIPreferences) => {
+        return preferences[feature] ?? DEFAULT_AI_PREFERENCES[feature] ?? false;
+    }, [preferences]);
+
     return {
         aiPreferences: preferences,
         preferences,
         loading,
         updatePreference,
-        isFeatureEnabled: (feature: keyof UserAIPreferences) => {
-            return preferences[feature] ?? DEFAULT_AI_PREFERENCES[feature] ?? false;
-        }
+        isFeatureEnabled,
+        voiceAssistantEnabled: isFeatureEnabled('voiceAssistant'),
+        eyeTrackingEnabled: isFeatureEnabled('eyeTracking'),
+        autoBrightnessEnabled: isFeatureEnabled('autoBrightness'),
     };
 }
 
