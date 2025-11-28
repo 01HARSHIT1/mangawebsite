@@ -252,23 +252,41 @@ export default function ChapterReader({
         }
     };
 
-    // Check if user is logged in
+    // Check if user is logged in (with timeout to prevent hanging)
     useEffect(() => {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        if (token) {
-            setIsLoggedIn(true);
-            // Fetch user info
-            fetch('/api/profile', {
-                headers: { Authorization: `Bearer ${token}` }
+        if (!token) return;
+        
+        setIsLoggedIn(true);
+        
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        // Fetch user info
+        fetch('/api/profile', {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.user) {
+                    setUsername(data.user.username || 'Anonymous');
+                }
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.user) {
-                        setUsername(data.user.username || 'Anonymous');
-                    }
-                })
-                .catch(err => console.error('Failed to fetch user info:', err));
-        }
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    // Silently handle errors
+                }
+            })
+            .finally(() => {
+                clearTimeout(timeoutId);
+            });
+        
+        return () => {
+            controller.abort();
+            clearTimeout(timeoutId);
+        };
     }, []);
 
     // Load comments (with timeout to prevent hanging)
@@ -713,8 +731,8 @@ export default function ChapterReader({
                 </div>
             </div>
 
-            {/* Voice Assistant */}
-            {voiceAssistantEnabled && (
+            {/* Voice Assistant - Only render when enabled to prevent initialization overhead */}
+            {voiceAssistantEnabled && !aiFeaturesLoading && (
                 <VoiceAssistant
                     onCommand={handleVoiceCommand}
                     enabled={voiceAssistantEnabled}
@@ -722,22 +740,25 @@ export default function ChapterReader({
                 />
             )}
 
-            {/* Eye Tracking - Always show on chapter pages for visibility */}
-            {/* Note: Auto-scroll is handled inside EyeTracking component, no need for duplicate handler */}
-            <EyeTracking
-                onGazeDetected={(direction) => {
-                    // Actual scrolling is handled in EyeTracking component
-                    // Removed console.log to prevent performance issues
-                }}
-                enabled={eyeTrackingEnabled}
-                showUI={true}
-            />
+            {/* Eye Tracking - Only render when enabled or loading complete to prevent blocking */}
+            {(!aiFeaturesLoading) && (
+                <EyeTracking
+                    onGazeDetected={(direction) => {
+                        // Actual scrolling is handled in EyeTracking component
+                        // Removed console.log to prevent performance issues
+                    }}
+                    enabled={eyeTrackingEnabled}
+                    showUI={true}
+                />
+            )}
 
-            {/* Auto-Brightness - Always show on chapter pages for visibility (separate feature with its own button) */}
-            <AutoBrightness
-                enabled={autoBrightnessEnabled}
-                showUI={true}
-            />
+            {/* Auto-Brightness - Only render when loading complete to prevent blocking */}
+            {(!aiFeaturesLoading) && (
+                <AutoBrightness
+                    enabled={autoBrightnessEnabled}
+                    showUI={true}
+                />
+            )}
 
             {/* Note: LightDetection removed - AutoBrightness handles all brightness adjustments */}
         </div>
