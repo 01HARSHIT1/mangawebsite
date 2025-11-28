@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { useAIFeatures } from '@/hooks/useAIFeatures';
 import { AutoBrightnessController } from '@/lib/auto-brightness';

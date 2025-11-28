@@ -55,7 +55,7 @@ class SharedFaceMeshManager {
         this.isInitializing = true;
         this.options = { ...this.options, ...options };
 
-        this.initializationPromise = this._initializeWithRetry(3);
+        this.initializationPromise = this._initializeWithRetry(1); // Reduced to 1 retry to prevent resource exhaustion
         const result = await this.initializationPromise;
         this.isInitializing = false;
 
@@ -63,17 +63,27 @@ class SharedFaceMeshManager {
     }
 
     /**
-     * Initialize with retry logic (up to 3 attempts)
+     * Initialize with retry logic (up to maxRetries attempts)
      */
     private async _initializeWithRetry(maxRetries: number): Promise<FaceMesh | null> {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                console.log(`🎯 Shared FaceMesh: Initialization attempt ${attempt}/${maxRetries}`);
+                // Clean up any existing instance first
+                if (this.faceMesh) {
+                    try {
+                        this.faceMesh.close?.();
+                    } catch (e) {
+                        // Ignore cleanup errors
+                    }
+                    this.faceMesh = null;
+                }
 
-                // Create new FaceMesh instance
+                // Create new FaceMesh instance with error handling
                 this.faceMesh = new FaceMesh({
                     locateFile: (file) => {
-                        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                        // Use CDN with cache busting prevention
+                        const baseUrl = `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+                        return baseUrl;
                     },
                 });
 

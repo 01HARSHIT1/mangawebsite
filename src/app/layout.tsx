@@ -216,9 +216,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     url.includes('assets_loader') ||
                     url.includes('wasm_bin') ||
                     url.includes('simd_wasm') ||
-                    url.includes('mediapipe')
+                    url.includes('mediapipe') ||
+                    url.includes('packed_assets')
                   )) {
                     return true; // Suppress MediaPipe initialization errors
+                  }
+                  
+                  // Suppress ERR_INSUFFICIENT_RESOURCES errors (MediaPipe resource loading)
+                  if (msg && typeof msg === 'string' && (
+                    msg.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                    msg.includes('Failed to load resource') && (
+                      msg.includes('face_mesh') ||
+                      msg.includes('wasm') ||
+                      msg.includes('packed_assets')
+                    )
+                  )) {
+                    return true; // Suppress resource loading errors
                   }
                   
                   // Suppress MediaPipe errors in error messages (comprehensive check)
@@ -286,7 +299,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       msg.includes('face_mesh_solution_packed_assets') ||
                       msg.includes('simd_wasm_bin') ||
                       msg.includes('reading \'buffer\'') ||
-                      msg.includes('assets_loader.js')
+                      msg.includes('assets_loader.js') ||
+                      msg.includes('ERR_INSUFFICIENT_RESOURCES') ||
+                      msg.includes('NetworkError') && msg.includes('face_mesh')
                     );
                     if (isMediaPipeError) {
                       event.preventDefault();
