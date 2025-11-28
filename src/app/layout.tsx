@@ -364,7 +364,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     return; // Don't log PDF page errors
                   }
                   // Suppress liner-core errors (browser extension)
-                  if (message.includes('liner-core') || message.includes('git.io/JUIaE')) {
+                  if (message.includes('liner-core') || 
+                      message.includes('git.io/JUIaE') ||
+                      (message.includes('Cannot read properties of null') && message.includes('classList'))) {
                     return; // Don't log extension errors
                   }
                   // Suppress 500 errors that are handled
