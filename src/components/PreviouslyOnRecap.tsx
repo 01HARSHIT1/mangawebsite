@@ -23,12 +23,17 @@ export default function PreviouslyOnRecap({ mangaId, enabled = true }: Previousl
     const [expanded, setExpanded] = useState(true); // Expanded by default
     const [error, setError] = useState<string | null>(null);
 
+    // Use ref to prevent multiple simultaneous fetches
+    const fetchingRef = useRef(false);
+    
     useEffect(() => {
-        if (!enabled || !mangaId) return;
+        if (!enabled || !mangaId || fetchingRef.current) return;
         
         // Add timeout to prevent hanging
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        fetchingRef.current = true;
         
         const fetchRecap = async () => {
             setLoading(true);
@@ -61,14 +66,15 @@ export default function PreviouslyOnRecap({ mangaId, enabled = true }: Previousl
                 }
             } catch (err: any) {
                 if (err.name === 'AbortError') {
-                    console.warn('Previously On recap fetch timeout');
+                    // Silently handle timeout
                 } else {
-                    console.error('Error fetching Previously On recap:', err);
+                    // Silently handle errors
                 }
                 setError(null); // Don't show error, just hide
             } finally {
                 clearTimeout(timeoutId);
                 setLoading(false);
+                fetchingRef.current = false;
             }
         };
         
@@ -77,6 +83,7 @@ export default function PreviouslyOnRecap({ mangaId, enabled = true }: Previousl
         return () => {
             controller.abort();
             clearTimeout(timeoutId);
+            fetchingRef.current = false;
         };
     }, [mangaId, enabled]);
 

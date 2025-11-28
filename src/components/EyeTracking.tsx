@@ -967,17 +967,8 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         }
     }, [eyeTrackingEnabled, showUI, isSupported]);
 
-    // Debug logging
-    useEffect(() => {
-        console.log('👁️ Eye Tracking Component State:', {
-            isChapterPage,
-            eyeTrackingEnabled,
-            showUI,
-            isSupported,
-            isActive,
-            shouldShow: (showUI && (eyeTrackingEnabled || isChapterPage))
-        });
-    }, [isChapterPage, eyeTrackingEnabled, showUI, isSupported, isActive]);
+    // Debug logging - REMOVED to prevent performance issues
+    // Excessive logging on every state change can cause page freezing
 
     // Always show UI on chapter pages, even if not enabled
     // This allows users to enable it from the chapter page itself

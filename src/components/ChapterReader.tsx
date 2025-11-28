@@ -57,9 +57,15 @@ export default function ChapterReader({
     const maxConsecutiveFailures = 3; // Stop after 3 consecutive failures
 
     // Use useMemo to prevent recreating array on every render (prevents infinite loops)
-    // Create stable reference for pages array length and first page to detect changes
-    const pagesLength = pages.length;
-    const firstPageRef = pages[0];
+    // Create stable string reference for pages to detect actual changes
+    const pagesKey = useMemo(() => {
+        if (pages.length === 0) return '';
+        // Create stable key from first and last page URLs
+        const first = typeof pages[0] === 'string' ? pages[0] : pages[0]?.imagePath || '';
+        const last = pages.length > 1 ? (typeof pages[pages.length - 1] === 'string' ? pages[pages.length - 1] : pages[pages.length - 1]?.imagePath || '') : '';
+        return `${pages.length}-${first}-${last}`;
+    }, [pages]);
+    
     const chapterImages: string[] = useMemo(() => {
         const images: string[] = [];
         
@@ -86,9 +92,10 @@ export default function ChapterReader({
         }
         
         return images;
-    }, [pdfUrl, pagesLength, firstPageRef, maxPages]); // Use stable references instead of array
+    }, [pdfUrl, pagesKey, maxPages]); // Use stable pagesKey instead of array
 
-    // Track image load errors
+    // Track image load errors - throttled to prevent infinite loops
+    const failedPagesRef = useRef<number>(0);
     const handleImageError = (pageIndex: number, event: React.SyntheticEvent<HTMLImageElement, Event>) => {
         const img = event.currentTarget;
         // Silently handle 400/404 errors for non-existent PDF pages
@@ -103,20 +110,38 @@ export default function ChapterReader({
             return;
         }
         
-        setFailedPages(prev => {
-            const newFailedCount = prev + 1;
+        // Throttle state updates to prevent infinite loops
+        failedPagesRef.current += 1;
+        const newFailedCount = failedPagesRef.current;
+        
+        // Batch state updates (only update if significant change)
+        if (newFailedCount % maxConsecutiveFailures === 0 || (pageIndex > 5 && newFailedCount >= maxConsecutiveFailures)) {
+            setFailedPages(newFailedCount);
             // If we have too many consecutive failures near the end, we've reached the last page
             if (pageIndex > 5 && newFailedCount >= maxConsecutiveFailures) {
-                console.log(`📄 Detected end of chapter at page ${pageIndex}`);
                 setMaxPageReached(true);
             }
-            return newFailedCount;
-        });
+        }
     };
 
+    // Use refs to prevent infinite re-renders from image load handlers
+    const loadedPagesRef = useRef<Set<number>>(new Set());
+    const lastUpdateRef = useRef<number>(0);
+    
     const handleImageLoad = (pageIndex: number) => {
-        setLoadedPageCount(pageIndex + 1);
-        setFailedPages(0); // Reset consecutive failures
+        // Prevent rapid state updates (throttle to max once per 100ms)
+        const now = Date.now();
+        if (now - lastUpdateRef.current < 100) {
+            return; // Skip if updated recently
+        }
+        
+        if (!loadedPagesRef.current.has(pageIndex)) {
+            loadedPagesRef.current.add(pageIndex);
+            const maxLoaded = Math.max(...Array.from(loadedPagesRef.current));
+            setLoadedPageCount(maxLoaded + 1);
+            setFailedPages(0); // Reset consecutive failures
+            lastUpdateRef.current = now;
+        }
     };
 
     // Initialize speech synthesis and close dropdown when clicking outside
@@ -445,8 +470,8 @@ export default function ChapterReader({
             <div className="w-full max-w-4xl mx-auto py-8 px-4">
                 {chapterImages.length > 0 ? (
                     <div className="space-y-2">
-                        {chapterImages.slice(0, Math.min(loadedPageCount + 5, chapterImages.length)).map((imageSrc, index) => {
-                            // Only render images that are loaded or about to be loaded (lazy loading)
+                        {chapterImages.slice(0, Math.min(Math.max(loadedPageCount, 3), chapterImages.length)).map((imageSrc, index) => {
+                            // Only render first 3 images initially, then progressively load more
                             // Stop rendering after too many consecutive failures or if max page reached
                             if (maxPageReached && index > loadedPageCount) {
                                 return null;
@@ -457,11 +482,14 @@ export default function ChapterReader({
 
                             return (
                                 <img
-                                    key={`page-${index}`}
+                                    key={`page-${index}-${imageSrc.slice(-20)}`} // More stable key
                                     src={imageSrc}
                                     alt={`Page ${index + 1}`}
                                     className="w-full h-auto"
-                                    onLoad={() => handleImageLoad(index)}
+                                    onLoad={() => {
+                                        // Use requestAnimationFrame to batch updates
+                                        requestAnimationFrame(() => handleImageLoad(index));
+                                    }}
                                     onError={(e) => {
                                         handleImageError(index, e);
                                         // Hide broken images (pages beyond actual count)

@@ -22,12 +22,17 @@ export default function ChapterSummary({ chapterId, chapterNumber, enabled = tru
     const [expanded, setExpanded] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Use ref to prevent multiple simultaneous fetches
+    const fetchingRef = useRef(false);
+    
     useEffect(() => {
-        if (!enabled || !chapterId) return;
+        if (!enabled || !chapterId || fetchingRef.current) return;
         
         // Add timeout to prevent hanging
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        fetchingRef.current = true;
         
         const fetchSummary = async () => {
             setLoading(true);
@@ -48,14 +53,15 @@ export default function ChapterSummary({ chapterId, chapterNumber, enabled = tru
                 setSummary(data.summary);
             } catch (err: any) {
                 if (err.name === 'AbortError') {
-                    console.warn('Chapter summary fetch timeout');
+                    // Silently handle timeout
                 } else {
-                    console.error('Error fetching chapter summary:', err);
+                    // Silently handle errors
                 }
                 setError(null); // Don't show error, just hide
             } finally {
                 clearTimeout(timeoutId);
                 setLoading(false);
+                fetchingRef.current = false;
             }
         };
         
@@ -64,6 +70,7 @@ export default function ChapterSummary({ chapterId, chapterNumber, enabled = tru
         return () => {
             controller.abort();
             clearTimeout(timeoutId);
+            fetchingRef.current = false;
         };
     }, [chapterId, enabled]);
 
