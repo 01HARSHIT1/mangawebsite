@@ -724,8 +724,8 @@ export default function ChapterReader({
             {/* Note: Auto-scroll is handled inside EyeTracking component, no need for duplicate handler */}
             <EyeTracking
                 onGazeDetected={(direction) => {
-                    // Just log for debugging - actual scrolling is handled in EyeTracking component
-                    console.log('👁️ Eye Tracking: Gaze detected in ChapterReader', direction);
+                    // Actual scrolling is handled in EyeTracking component
+                    // Removed console.log to prevent performance issues
                 }}
                 enabled={eyeTrackingEnabled}
                 showUI={true}

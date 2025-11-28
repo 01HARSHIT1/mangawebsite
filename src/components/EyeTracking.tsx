@@ -94,32 +94,16 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
 
     useEffect(() => {
-        console.log('👁️ Eye Tracking: useEffect triggered', {
-            eyeTrackingEnabled,
-            isSupported,
-            isActive,
-            shouldStart: eyeTrackingEnabled && isSupported && isActive
-        });
+        // Removed all console.log to prevent performance issues and infinite loops
         
         // Only start tracking if all conditions are met
         if (!eyeTrackingEnabled || !isSupported || !isActive) {
-            const missingConditions = [];
-            if (!eyeTrackingEnabled) missingConditions.push('eyeTrackingEnabled=false');
-            if (!isSupported) missingConditions.push('isSupported=false');
-            if (!isActive) missingConditions.push('isActive=false');
-            console.log('👁️ Eye Tracking: Conditions not met, stopping tracking', {
-                missing: missingConditions.join(', '),
-                eyeTrackingEnabled,
-                isSupported,
-                isActive
-            });
             stopTracking();
             return;
         }
 
         // Start tracking when active
         if (isActive && eyeTrackingEnabled && isSupported) {
-            console.log('👁️ Eye Tracking: ✅ All conditions met, starting tracking!');
             startTracking();
         }
 
