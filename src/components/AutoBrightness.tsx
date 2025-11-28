@@ -112,12 +112,12 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     // CRITICAL properties for positioning (must succeed)
                     const criticalProperties = [
                         { prop: 'position', value: 'fixed' },
-                        { prop: 'top', value: '50%' },
+                        { prop: 'bottom', value: '1rem' },
                         { prop: 'right', value: '1rem' },
-                        { prop: 'transform', value: 'translateY(-50%)' },
-                        { prop: 'bottom', value: 'auto' },
+                        { prop: 'top', value: 'auto' },
+                        { prop: 'transform', value: 'none' },
                         { prop: 'left', value: 'auto' },
-                        { prop: 'z-index', value: '9998' },
+                        { prop: 'z-index', value: '99999' },
                     ];
                     
                     // Optional properties (won't fail if they don't set)
