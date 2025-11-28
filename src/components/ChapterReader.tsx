@@ -37,10 +37,12 @@ export default function ChapterReader({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
 
-    // AI Features
-    const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled } = useAIFeatures();
-    const chapterSummariesEnabled = isFeatureEnabled('chapterSummaries');
-    const previouslyOnEnabled = isFeatureEnabled('previouslyOnRecap');
+    // AI Features - Use loading state to prevent blocking initial render
+    const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = useAIFeatures();
+    // Only enable features after preferences are loaded to prevent blocking
+    // Use useMemo to prevent recalculation on every render
+    const chapterSummariesEnabled = useMemo(() => !aiFeaturesLoading && isFeatureEnabled('chapterSummaries'), [aiFeaturesLoading, isFeatureEnabled]);
+    const previouslyOnEnabled = useMemo(() => !aiFeaturesLoading && isFeatureEnabled('previouslyOnRecap'), [aiFeaturesLoading, isFeatureEnabled]);
 
     const mangaId = typeof manga._id === 'string' ? manga._id : manga._id?.toString() || '';
     const chapterId = typeof chapter._id === 'string' ? chapter._id : chapter._id?.toString() || '';
