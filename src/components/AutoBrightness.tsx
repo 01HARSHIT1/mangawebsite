@@ -185,12 +185,13 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     // Check if position actually changed
                     if (beforePosition && afterPosition) {
                         if (beforePosition.bottom !== afterPosition.bottom || beforePosition.top !== afterPosition.top) {
-                            console.warn('🔒 Auto-Brightness Position Lock: Position changed during lock!', {
-                                before: beforePosition,
-                                after: afterPosition,
-                                source,
-                                failedProperties: failedProperties.length > 0 ? failedProperties : undefined,
-                            });
+                            // Silently fix position if changed
+                            if (afterPosition.bottom && afterPosition.bottom !== '1rem' && afterPosition.bottom !== 'auto') {
+                                el.style.setProperty('bottom', '1rem', 'important');
+                            }
+                            if (afterPosition.top && afterPosition.top !== 'auto') {
+                                el.style.setProperty('top', 'auto', 'important');
+                            }
                         }
                         // Position locked - no need to log success
                         
@@ -466,12 +467,12 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     // Set critical properties only (silently handle optional ones)
                     const criticalProps = [
                         { prop: 'position', value: 'fixed' },
-                        { prop: 'top', value: '50%' },
+                        { prop: 'bottom', value: '1rem' },
                         { prop: 'right', value: '1rem' },
-                        { prop: 'transform', value: 'translateY(-50%)' },
-                        { prop: 'bottom', value: 'auto' },
+                        { prop: 'top', value: 'auto' },
+                        { prop: 'transform', value: 'none' },
                         { prop: 'left', value: 'auto' },
-                        { prop: 'z-index', value: '9998' },
+                        { prop: 'z-index', value: '99999' },
                     ];
                     
                     criticalProps.forEach(({ prop, value }) => {
@@ -511,11 +512,13 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         computedAfterStyles = {};
                     }
                     
-                    console.log('🔒 Auto-Brightness Position Lock: AFTER setting styles, BEFORE setIsActive(true)', {
-                        computedAfter: computedAfterStyles,
-                        inlineStyle: el.style.cssText,
-                        failedProperties: failedProperties.length > 0 ? failedProperties : undefined,
-                    });
+                    // Silently verify and fix position if needed
+                    if (computedAfterStyles.bottom && computedAfterStyles.bottom !== '1rem' && computedAfterStyles.bottom !== 'auto') {
+                        el.style.setProperty('bottom', '1rem', 'important');
+                    }
+                    if (computedAfterStyles.top && computedAfterStyles.top !== 'auto') {
+                        el.style.setProperty('top', 'auto', 'important');
+                    }
                     
                     // CRITICAL CHECK: Verify position is fixed
                     if (computedAfterStyles.position !== 'fixed') {
@@ -592,12 +595,12 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         // Set critical properties only
                         const criticalProps = [
                             { prop: 'position', value: 'fixed' },
-                            { prop: 'top', value: '50%' },
+                            { prop: 'bottom', value: '1rem' },
                             { prop: 'right', value: '1rem' },
-                            { prop: 'transform', value: 'translateY(-50%)' },
-                            { prop: 'bottom', value: 'auto' },
+                            { prop: 'top', value: 'auto' },
+                            { prop: 'transform', value: 'none' },
                             { prop: 'left', value: 'auto' },
-                            { prop: 'z-index', value: '9998' },
+                            { prop: 'z-index', value: '99999' },
                         ];
                         
                         criticalProps.forEach(({ prop, value }) => {
@@ -687,13 +690,13 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
     const widgetContent = showUI ? (
         <div 
             ref={widgetRef}
-            // CRITICAL: Use fixed positioning - render via Portal to ensure it's outside scrolling containers
+            // CRITICAL: Use fixed positioning at bottom-right - render via Portal to ensure it's outside scrolling containers
             style={{
                 position: 'fixed',
-                top: '50%',
-                right: '1rem',
-                transform: 'translateY(-50%)',
-                bottom: 'auto',
+                bottom: '1rem', // Stick to bottom
+                right: '1rem', // Stick to right
+                top: 'auto', // Remove top to use bottom
+                transform: 'none', // No transform needed for bottom positioning
                 left: 'auto',
                 zIndex: 99999, // Very high z-index to ensure it's always on top
                 maxHeight: 'calc(100vh - 2rem)',
@@ -707,10 +710,10 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                 if (widgetRef.current) {
                     const el = widgetRef.current;
                     el.style.setProperty('position', 'fixed', 'important');
-                    el.style.setProperty('top', '50%', 'important');
+                    el.style.setProperty('bottom', '1rem', 'important');
                     el.style.setProperty('right', '1rem', 'important');
-                    el.style.setProperty('transform', 'translateY(-50%)', 'important');
-                    el.style.setProperty('bottom', 'auto', 'important');
+                    el.style.setProperty('top', 'auto', 'important');
+                    el.style.setProperty('transform', 'none', 'important');
                     el.style.setProperty('left', 'auto', 'important');
                     el.style.setProperty('z-index', '99999', 'important');
                 }

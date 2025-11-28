@@ -173,6 +173,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     return true; // Prevent default error handling
                   }
                   
+                  // Suppress liner-core errors in messages
+                  if (msg && typeof msg === 'string' && (
+                    msg.includes('liner-core') ||
+                    msg.includes('Cannot read properties of null') && msg.includes('classList')
+                  )) {
+                    return true; // Suppress liner-core errors
+                  }
+                  
                   // Also suppress 400 errors for Cloudinary PDF transformations
                   if (msg && typeof msg === 'string' && (
                     msg.includes('400') ||
