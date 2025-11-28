@@ -526,25 +526,6 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             
                             // Removed console.log to prevent performance issues
                             // Calibration data summary removed to prevent performance issues
-                                scrollUp: {
-                                    samples: scrollUp.samples,
-                                    mean: scrollUp.mean,
-                                    stdDev: scrollUp.stdDev,
-                                    range: `${scrollUp.min.toFixed(4)} - ${scrollUp.max.toFixed(4)}`
-                                },
-                                scrollDown: {
-                                    samples: scrollDown.samples,
-                                    mean: scrollDown.mean,
-                                    stdDev: scrollDown.stdDev,
-                                    range: `${scrollDown.min.toFixed(4)} - ${scrollDown.max.toFixed(4)}`
-                                },
-                                noScroll: {
-                                    samples: noScroll.samples,
-                                    mean: noScroll.mean,
-                                    stdDev: noScroll.stdDev,
-                                    range: `${noScroll.min.toFixed(4)} - ${noScroll.max.toFixed(4)}`
-                                }
-                            });
                         };
                         
                         generateHardcodedCode();
