@@ -79,7 +79,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
             const lockPosition = (source: string) => {
                 try {
                     if (!el) {
-                        console.warn('🔒 Auto-Brightness Position Lock: Element not found', { source });
+                        // Silently handle - element not ready yet
                         return;
                     }
                     
@@ -97,11 +97,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                             transform: computedBefore.transform,
                         };
                     } catch (error) {
-                        console.error('🔒 Auto-Brightness Position Lock: ERROR getting computed styles before lock', {
-                            error,
-                            source,
-                            errorMessage: error instanceof Error ? error.message : String(error),
-                        });
+                        // Silently handle errors to prevent console spam
                         beforePosition = {};
                     }
                     
@@ -152,11 +148,17 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         }
                     });
                     
-                    // Only log if critical properties failed
+                    // Silently retry failed properties
                     if (criticalFailed.length > 0) {
-                        console.warn('🔒 Auto-Brightness Position Lock: Some critical properties failed', {
-                            failed: criticalFailed,
-                            source,
+                        criticalFailed.forEach(prop => {
+                            const propObj = criticalProperties.find(p => p.prop === prop);
+                            if (propObj) {
+                                try {
+                                    el.style.setProperty(propObj.prop, propObj.value, 'important');
+                                } catch (e) {
+                                    // Silently handle retry failures
+                                }
+                            }
                         });
                     }
                     
@@ -174,11 +176,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                             transform: computedAfter.transform,
                         };
                     } catch (error) {
-                        console.error('🔒 Auto-Brightness Position Lock: ERROR getting computed styles after lock', {
-                            error,
-                            source,
-                            errorMessage: error instanceof Error ? error.message : String(error),
-                        });
+                        // Silently handle errors to prevent console spam
                         afterPosition = {};
                     }
                     
@@ -197,19 +195,8 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         
                         // CRITICAL CHECK: Verify the position is actually fixed
                         if (afterPosition.position !== 'fixed') {
-                            console.error('🔒 Auto-Brightness Position Lock: CRITICAL ERROR - Position is NOT fixed!', {
-                                expected: 'fixed',
-                                actual: afterPosition.position,
-                                source,
-                                allStyles: {
-                                    position: afterPosition.position,
-                                    top: afterPosition.top,
-                                    bottom: afterPosition.bottom,
-                                    right: afterPosition.right,
-                                    left: afterPosition.left,
-                                },
-                                inlineStyle: el.style.cssText,
-                            });
+                            // Silently fix position - don't log to prevent console spam
+                            el.style.setProperty('position', 'fixed', 'important');
                         }
                         
                         // CRITICAL CHECK: Verify bottom is auto (not set to a value)
@@ -221,14 +208,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         }
                     }
                 } catch (error) {
-                    console.error('🔒 Auto-Brightness Position Lock: EXCEPTION in lockPosition function', {
-                        error,
-                        source,
-                        errorMessage: error instanceof Error ? error.message : String(error),
-                        errorStack: error instanceof Error ? error.stack : undefined,
-                        element: el,
-                        elementExists: !!el,
-                    });
+                    // Silently handle errors to prevent console spam
                 }
             };
             
@@ -257,10 +237,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                                             transform: computed.transform,
                                         };
                                     } catch (error) {
-                                        console.error('🔒 Auto-Brightness Position Lock: ERROR getting computed styles in MutationObserver', {
-                                            error,
-                                            errorMessage: error instanceof Error ? error.message : String(error),
-                                        });
+                                        // Silently handle errors to prevent console spam
                                         currentPosition = {};
                                     }
                                     
@@ -278,19 +255,11 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                             }
                         });
                     } catch (error) {
-                        console.error('🔒 Auto-Brightness Position Lock: EXCEPTION in MutationObserver callback', {
-                            error,
-                            errorMessage: error instanceof Error ? error.message : String(error),
-                            errorStack: error instanceof Error ? error.stack : undefined,
-                        });
+                        // Silently handle errors to prevent console spam
                     }
                 });
             } catch (error) {
-                console.error('🔒 Auto-Brightness Position Lock: EXCEPTION creating MutationObserver', {
-                    error,
-                    errorMessage: error instanceof Error ? error.message : String(error),
-                    errorStack: error instanceof Error ? error.stack : undefined,
-                });
+                // Silently handle errors to prevent console spam
             }
             
             if (observer) {
@@ -304,11 +273,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     });
                     // MutationObserver set up silently
                 } catch (error) {
-                    console.error('🔒 Auto-Brightness Position Lock: EXCEPTION observing element', {
-                        error,
-                        errorMessage: error instanceof Error ? error.message : String(error),
-                        errorStack: error instanceof Error ? error.stack : undefined,
-                    });
+                    // Silently handle errors to prevent console spam
                 }
             }
             
@@ -332,10 +297,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     }
                 }, 100); // Reduced frequency from 5ms to 100ms
             } catch (error) {
-                console.error('🔒 Auto-Brightness Position Lock: EXCEPTION creating interval', {
-                    error,
-                    errorMessage: error instanceof Error ? error.message : String(error),
-                });
+                // Silently handle errors to prevent console spam
             }
             
             // Lock after any potential re-render
@@ -348,7 +310,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
             // Store cleanup function
             (el as any)._positionLockCleanup = () => {
                 try {
-                    console.log('🔒 Auto-Brightness Position Lock: Cleaning up', { isActive });
+                    // Removed console.log to prevent performance issues
                     if (observer) {
                         observer.disconnect();
                     }
@@ -362,10 +324,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                         cancelAnimationFrame(rafId);
                     }
                 } catch (error) {
-                    console.error('🔒 Auto-Brightness Position Lock: EXCEPTION during cleanup', {
-                        error,
-                        errorMessage: error instanceof Error ? error.message : String(error),
-                    });
+                    // Silently handle errors to prevent console spam
                 }
             };
         };
@@ -387,7 +346,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                 return;
             }
 
-            console.log('💡 Auto-Brightness: Requesting camera access...');
+            // Removed console.log to prevent performance issues
             
             // Request camera access
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -399,12 +358,12 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
             });
 
             streamRef.current = stream;
-            console.log('✅ Auto-Brightness: Camera access granted');
+            // Removed console.log to prevent performance issues
 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 await videoRef.current.play();
-                console.log('✅ Auto-Brightness: Video stream started');
+                // Removed console.log to prevent performance issues
                 
                 // Initialize Auto-Brightness Controller
                 try {
@@ -417,7 +376,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     });
                     autoBrightnessRef.current = brightnessController;
                     brightnessController.start();
-                    console.log('💡 Auto-Brightness: Started');
+                    // Removed console.log to prevent performance issues
                     
                     // Update brightness display frequently for real-time feedback
                     const updateInterval = setInterval(() => {
@@ -430,7 +389,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     // Store interval for cleanup
                     (autoBrightnessRef.current as any).updateInterval = updateInterval;
                 } catch (error) {
-                    console.warn('💡 Auto-Brightness: Failed to initialize', error);
+                    // Silently handle errors
                     setError('Failed to initialize brightness controller');
                 }
             }
@@ -452,17 +411,11 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                             transform: computedBefore.transform,
                         };
                     } catch (error) {
-                        console.error('🔒 Auto-Brightness Position Lock: ERROR getting computed styles before setIsActive', {
-                            error,
-                            errorMessage: error instanceof Error ? error.message : String(error),
-                        });
+                        // Silently handle errors to prevent console spam
                         computedBeforeStyles = {};
                     }
                     
-                    console.log('🔒 Auto-Brightness Position Lock: BEFORE setIsActive(true)', {
-                        computedBefore: computedBeforeStyles,
-                        inlineStyle: el.style.cssText,
-                    });
+                    // Removed console.log to prevent performance issues
                     
                     // Set critical properties only (silently handle optional ones)
                     const criticalProps = [
@@ -505,10 +458,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                             transform: computedAfter.transform,
                         };
                     } catch (error) {
-                        console.error('🔒 Auto-Brightness Position Lock: ERROR getting computed styles after setting', {
-                            error,
-                            errorMessage: error instanceof Error ? error.message : String(error),
-                        });
+                        // Silently handle errors to prevent console spam
                         computedAfterStyles = {};
                     }
                     
@@ -522,27 +472,20 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                     
                     // CRITICAL CHECK: Verify position is fixed
                     if (computedAfterStyles.position !== 'fixed') {
-                        console.error('🔒 Auto-Brightness Position Lock: CRITICAL ERROR - Position NOT fixed before setIsActive!', {
-                            expected: 'fixed',
-                            actual: computedAfterStyles.position,
-                            allStyles: computedAfterStyles,
-                        });
+                        // Silently fix position
+                        el.style.setProperty('position', 'fixed', 'important');
                     }
                 } catch (error) {
-                    console.error('🔒 Auto-Brightness Position Lock: EXCEPTION in position lock before setIsActive', {
-                        error,
-                        errorMessage: error instanceof Error ? error.message : String(error),
-                        errorStack: error instanceof Error ? error.stack : undefined,
-                    });
+                    // Silently handle errors to prevent console spam
                 }
             } else {
-                console.error('🔒 Auto-Brightness Position Lock: widgetRef.current is NULL before setIsActive!');
+                // Silently handle - ref not ready yet
             }
             
-            console.log('🔒 Auto-Brightness Position Lock: About to call setIsActive(true)');
+            // Removed console.log to prevent performance issues
             setIsActive(true);
             setError(null);
-            console.log('🔒 Auto-Brightness Position Lock: setIsActive(true) called');
+            // Removed console.log to prevent performance issues
             
             // Lock again after state change
             setTimeout(() => {
@@ -562,33 +505,18 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                                 transform: computed.transform,
                             };
                         } catch (error) {
-                            console.error('🔒 Auto-Brightness Position Lock: ERROR getting computed styles in setTimeout', {
-                                error,
-                                errorMessage: error instanceof Error ? error.message : String(error),
-                            });
+                            // Silently handle errors to prevent console spam
                             computedStyles = {};
                         }
                         
-                        console.log('🔒 Auto-Brightness Position Lock: After setIsActive, in setTimeout', {
-                            computed: computedStyles,
-                            inlineStyle: el.style.cssText,
-                            isActive,
-                        });
+                        // Removed console.log to prevent performance issues
                         
-                        // CRITICAL CHECK: If position changed, log it
+                        // CRITICAL CHECK: If position changed, fix it silently
                         if (computedStyles.position !== 'fixed') {
-                            console.error('🔒 Auto-Brightness Position Lock: CRITICAL - Position changed after setIsActive!', {
-                                expected: 'fixed',
-                                actual: computedStyles.position,
-                                allStyles: computedStyles,
-                            });
+                            el.style.setProperty('position', 'fixed', 'important');
                         }
                         if (computedStyles.bottom !== 'auto' && computedStyles.bottom !== '0px') {
-                            console.error('🔒 Auto-Brightness Position Lock: CRITICAL - Bottom changed after setIsActive!', {
-                                expected: 'auto',
-                                actual: computedStyles.bottom,
-                                allStyles: computedStyles,
-                            });
+                            el.style.setProperty('bottom', '1rem', 'important');
                         }
                         
                         // Set all properties with error handling
@@ -633,10 +561,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                                 transform: computedAfter.transform,
                             };
                         } catch (error) {
-                            console.error('🔒 Auto-Brightness Position Lock: ERROR getting computed styles after setTimeout lock', {
-                                error,
-                                errorMessage: error instanceof Error ? error.message : String(error),
-                            });
+                            // Silently handle errors to prevent console spam
                             computedAfterStyles = {};
                         }
                         
@@ -659,18 +584,14 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                             el.style.setProperty('transform', 'none', 'important');
                         }
                     } else {
-                        console.error('🔒 Auto-Brightness Position Lock: widgetRef.current is NULL in setTimeout!');
+                        // Silently handle - ref not ready yet
                     }
                 } catch (error) {
-                    console.error('🔒 Auto-Brightness Position Lock: EXCEPTION in setTimeout', {
-                        error,
-                        errorMessage: error instanceof Error ? error.message : String(error),
-                        errorStack: error instanceof Error ? error.stack : undefined,
-                    });
+                    // Silently handle errors to prevent console spam
                 }
             }, 0);
         } catch (err: any) {
-            console.error('Failed to start auto-brightness:', err);
+            // Silently handle errors to prevent console spam
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 setError('Camera permission denied. Please enable camera access.');
             } else {

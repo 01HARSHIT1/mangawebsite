@@ -320,7 +320,8 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                         });
                         
                         if (Math.random() < 0.01) { // 1% of frames
-                            console.log('👁️ Eye tracking: Intent confirmed → Scrolling DOWN', {
+                            // Removed console.log to prevent performance issues
+                            if (false) { // Disabled logging
                                 screenY: (screenY * 100).toFixed(1) + '%',
                                 confidence: (gaze.confidence * 100).toFixed(1) + '%',
                                 intensity: gaze.scrollIntensity.toFixed(2),
@@ -335,7 +336,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
             setError(null);
         } catch (err: any) {
-            console.error('Failed to start eye tracking:', err);
+            // Silently handle errors to prevent console spam
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 setError('Camera permission denied. Please enable camera access.');
             } else {
@@ -371,7 +372,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         // Removed console.log to prevent performance issues
         
         if (!isSupported) {
-            console.error('👁️ Eye Tracking: Not supported in this browser');
+            // Silently handle - error already set
             setError('Eye tracking not supported in this browser');
             return;
         }
@@ -386,7 +387,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 stream.getTracks().forEach(track => track.stop());
                 // Removed console.log to prevent performance issues
             } catch (err: any) {
-                console.error('👁️ Eye Tracking: Camera permission error', err);
+                // Silently handle errors to prevent console spam
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                     setError('Camera permission denied. Please allow camera access in your browser settings.');
                     return;
@@ -499,11 +500,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     calibrated: true
 };`;
                             
-                            console.log('👁️ Eye Tracking: ✅ Master calibration set for ALL users!');
-                            console.log('👁️ Eye Tracking: 📋 HARDCODED CODE (will be automatically applied):');
-                            console.log('='.repeat(100));
-                            console.log(code);
-                            console.log('='.repeat(100));
+                            // Removed console.log to prevent performance issues
                             
                             // Store in a global variable for automatic extraction
                             (window as any).__MASTER_CALIBRATION_CODE__ = code;
@@ -526,30 +523,25 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             }).then(response => response.json())
                             .then(result => {
                                 if (result.success) {
-                                    console.log('👁️ Eye Tracking: ✅ Calibration data automatically saved to server file!');
-                                    console.log('👁️ Eye Tracking: 📁 File location: data/master-calibration.json');
-                                    console.log('👁️ Eye Tracking: The system now has direct access to your calibration data');
+                                    // Removed console.log to prevent performance issues
                                 } else {
-                                    console.warn('👁️ Eye Tracking: ⚠️ Could not save to server file:', result.error);
+                                    // Silently handle errors
                                 }
                             }).catch(error => {
-                                console.warn('👁️ Eye Tracking: ⚠️ Could not save to server file:', error);
+                                // Silently handle errors
                             });
                             
-                            console.log('👁️ Eye Tracking: 💾 Calibration data stored for automatic hardcoding');
-                            console.log('👁️ Eye Tracking: The code above will be automatically applied to the source code');
+                            // Removed console.log to prevent performance issues
                             
                             // Try to copy to clipboard
                             if (navigator.clipboard && navigator.clipboard.writeText) {
-                                navigator.clipboard.writeText(code).then(() => {
-                                    console.log('✅ Code copied to clipboard!');
-                                }).catch(() => {
-                                    console.log('⚠️ Could not copy to clipboard, but code is logged above');
+                                navigator.clipboard.writeText(code).catch(() => {
+                                    // Silently handle clipboard errors
                                 });
                             }
                             
-                            // Also log the data in a format ready for hardcoding
-                            console.log('👁️ Eye Tracking: Calibration data summary:', {
+                            // Removed console.log to prevent performance issues
+                            // Calibration data summary removed to prevent performance issues
                                 scrollUp: {
                                     samples: scrollUp.samples,
                                     mean: scrollUp.mean,
@@ -576,7 +568,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 }
             }
             
-            console.log('👁️ Eye Tracking: ✅ Calibration complete!');
+            // Removed console.log to prevent performance issues
         }
     };
     
@@ -587,7 +579,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         if (eyeTrackingEngineRef.current) {
             eyeTrackingEngineRef.current.clearCalibration();
         }
-        console.log('👁️ Eye Tracking: Calibration cancelled');
+        // Removed console.log to prevent performance issues
     };
     
     const clearCalibration = () => {
@@ -595,7 +587,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             eyeTrackingEngineRef.current.clearCalibration();
             setError(null);
             setFeedbackCount(0);
-            console.log('👁️ Eye Tracking: Calibration cleared');
+            // Removed console.log to prevent performance issues
         }
     };
     
@@ -646,7 +638,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 setFeedbackMode('feedback');
                 setTestCount(prev => prev + 1);
                 
-                console.log(`👁️ Eye Tracking: Collected ${testSamplesRef.current.length} frames during test`);
+                // Removed console.log to prevent performance issues
             } else {
                 setError('Could not detect gaze. Please try again.');
                 setFeedbackMode('idle');
@@ -692,13 +684,13 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 savedCount++;
             });
             
-            console.log(`👁️ Eye Tracking: Saved ${savedCount} samples for ${correctZone} zone`);
+            // Removed console.log to prevent performance issues
         } else {
             // Fallback: use single sample if collection failed
             const normalizedY = testResult.normalizedY || currentNormalizedYRef.current;
             if (normalizedY !== null) {
                 eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
-                console.log(`👁️ Eye Tracking: Saved 1 fallback sample for ${correctZone} zone`);
+                // Removed console.log to prevent performance issues
             } else {
                 setError('No gaze data available. Please try the test again.');
                 return;
@@ -719,16 +711,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 });
             }
             
-            console.log('👁️ Eye Tracking: Feedback saved', {
-                detected: detectedZone,
-                correct: correctZone,
-                normalizedY: normalizedY.toFixed(6),
-                action,
-                totalFeedback: feedbackCount + 1,
-                wasCorrect: detectedZone === correctZone,
-                totalSamples: updatedCalibration ? 
-                    (updatedCalibration.scrollUp.samples.length + updatedCalibration.scrollDown.samples.length + updatedCalibration.noScroll.samples.length) : 0
-            });
+            // Removed console.log to prevent performance issues
             
             // Show success and reset for next test
             setError(null);
@@ -758,19 +741,12 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             const bottomSamples = data.scrollDown?.samples?.length || 0;
             const total = topSamples + middleSamples + bottomSamples;
             
-            console.log('👁️ Eye Tracking: ✅ Copied to clipboard!');
-            console.log('📊 Your localStorage data:');
-            console.log('  Top:', topSamples, '| Middle:', middleSamples, '| Bottom:', bottomSamples, '| Total:', total);
-            console.log('='.repeat(80));
-            console.log('📋 Next steps:');
-            console.log('  1. Save this JSON to a file: user-calibration.json');
-            console.log('  2. Run: node scripts/merge-calibration-data.js user-calibration.json');
-            console.log('  3. This will merge your', total, 'samples with master calibration (15) =', total + 15, 'total');
+            // Removed console.log to prevent performance issues
             
             alert(`✅ Copied to clipboard!\n\nYour data: ${total} samples\n- Top: ${topSamples}\n- Middle: ${middleSamples}\n- Bottom: ${bottomSamples}\n\nNext: Save to user-calibration.json and run the merge script.\n\nCheck console (F12) for instructions.`);
         } catch (error) {
-            console.error('Error copying to clipboard:', error);
-            alert('❌ Could not copy to clipboard. Check console for the data.');
+            // Silently handle errors
+            alert('❌ Could not copy to clipboard.');
         }
     };
     
@@ -785,15 +761,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 const bottomSamples = data.scrollDown?.samples?.length || 0;
                 const total = topSamples + middleSamples + bottomSamples;
                 
-                console.log('👁️ Eye Tracking: 📋 LOCALSTORAGE DATA CHECK');
-                console.log('='.repeat(80));
-                console.log('Your localStorage samples:');
-                console.log('  Top (scrollUp):', topSamples, 'samples');
-                console.log('  Middle (noScroll):', middleSamples, 'samples');
-                console.log('  Bottom (scrollDown):', bottomSamples, 'samples');
-                console.log('  TOTAL:', total, 'samples');
-                console.log('='.repeat(80));
-                console.log('Full data:', JSON.stringify(data, null, 2));
+                // Removed console.log to prevent performance issues
                 
                 if (total >= 30) {
                     alert(`✅ Found your 30 samples in localStorage!\n\nTop: ${topSamples}\nMiddle: ${middleSamples}\nBottom: ${bottomSamples}\nTotal: ${total}\n\nCheck console (F12) for full data.`);
@@ -804,8 +772,8 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 alert('❌ No calibration data found in localStorage.\n\nYour 30 samples may not have been saved.\nPlease use the step-by-step feedback system to provide samples.');
             }
         } catch (error) {
-            console.error('Error checking localStorage:', error);
-            alert('Error checking localStorage. Check console for details.');
+            // Silently handle errors
+            alert('Error checking localStorage.');
         }
     };
     
@@ -827,7 +795,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 localStorageData = JSON.parse(stored);
             }
         } catch (error) {
-            console.warn('Could not read localStorage:', error);
+            // Silently handle errors
         }
         
         if (!calibration || (!calibration.calibrated && !localStorageData)) {
@@ -835,18 +803,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             return;
         }
         
-        // Log to console for easy access
-        console.log('👁️ Eye Tracking: 📤 EXPORTING CALIBRATION DATA');
-        console.log('='.repeat(80));
-        console.log('MERGED CALIBRATION (Master + User Feedback):');
-        console.log(JSON.stringify(calibration, null, 2));
-        console.log('='.repeat(80));
-        
-        if (localStorageData) {
-            console.log('RAW LOCALSTORAGE DATA (Your 30 samples):');
-            console.log(JSON.stringify(localStorageData, null, 2));
-            console.log('='.repeat(80));
-        }
+        // Removed console.log to prevent performance issues
         
         // Calculate stats
         const stats = {
@@ -868,13 +825,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             } : null
         };
         
-        console.log('📊 STATISTICS:');
-        console.log('Merged (Master + User):', stats.merged);
-        if (stats.localStorage) {
-            console.log('Your localStorage samples:', stats.localStorage);
-        }
-        console.log('='.repeat(80));
-        console.log('👁️ Eye Tracking: Copy the JSON above and share it');
+        // Removed console.log to prevent performance issues
         
         // Also try to send to API for analysis
         try {
@@ -890,13 +841,12 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             
             const result = await response.json();
             if (result.success) {
-                console.log('👁️ Eye Tracking: ✅ Calibration data sent to server');
-                console.log('Analysis:', result.analysis);
-                alert(`✅ Calibration data exported!\n\nMerged Total: ${stats.merged.total} samples\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}\n\n${stats.localStorage ? `Your localStorage: ${stats.localStorage.total} samples` : 'No localStorage data'}\n\nCheck console (F12) for full data.`);
+                // Removed console.log to prevent performance issues
+                alert(`✅ Calibration data exported!\n\nMerged Total: ${stats.merged.total} samples\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}\n\n${stats.localStorage ? `Your localStorage: ${stats.localStorage.total} samples` : 'No localStorage data'}`);
             }
         } catch (error) {
-            console.warn('Could not send to server, but data is in console:', error);
-            alert(`✅ Calibration data logged to console!\n\nTotal samples: ${stats.merged.total}\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}\n\nCheck browser console (F12) for full data.`);
+            // Silently handle errors
+            alert(`✅ Calibration data exported!\n\nTotal samples: ${stats.merged.total}\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}`);
         }
     };
 
@@ -943,12 +893,8 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     }
     
     // Removed console.log to prevent performance issues
-        pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A',
-        timestamp: new Date().toISOString()
-    });
 
     if (!isSupported) {
-        console.log('👁️ Eye Tracking: Browser not supported, but showing panel anyway');
         return (
             <div 
                 className="fixed bottom-32 right-4 z-50" 
@@ -967,15 +913,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         );
     }
 
-    console.log('👁️ Eye Tracking: ✅ RENDERING UI PANEL NOW!', {
-        isChapterPage,
-        eyeTrackingEnabled,
-        isSupported,
-        isActive,
-        position: 'bottom-32 right-4',
-        zIndex: 9999,
-        elementId: 'eye-tracking-panel'
-    });
+    // Removed console.log to prevent performance issues
     
     return (
         <div 

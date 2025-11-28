@@ -223,7 +223,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             };
 
             recognition.onerror = (event: any) => {
-                console.error('Speech recognition error:', event.error);
+                // Silently handle errors to prevent console spam
                 if (event.error === 'no-speech') {
                     // Restart listening if no speech detected
                     setTimeout(() => {
@@ -246,7 +246,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                         try {
                             recognition.start();
                         } catch (e) {
-                            console.error('Failed to restart recognition:', e);
+                            // Silently handle errors
                         }
                     }, 100);
                 }
@@ -255,7 +255,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             recognition.start();
             recognitionRef.current = recognition;
         } catch (error) {
-            console.error('Failed to start voice recognition:', error);
+            // Silently handle errors
             setError('Failed to start voice recognition');
             setIsListening(false);
         }
