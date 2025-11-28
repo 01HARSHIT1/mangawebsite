@@ -4,13 +4,35 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaChevronLeft, FaChevronRight, FaHome, FaChevronDown, FaFacebook, FaTwitter, FaInstagram, FaDiscord, FaWhatsapp, FaShareAlt } from 'react-icons/fa';
 import { socialMediaLinks, websiteInfo } from '@/config/socialMedia';
-// TEMPORARILY DISABLED to restore page responsiveness
-// import VoiceAssistant from './VoiceAssistant';
-// import EyeTracking from './EyeTracking';
-// import AutoBrightness from './AutoBrightness';
-// import ChapterSummary from './ChapterSummary';
-// import PreviouslyOnRecap from './PreviouslyOnRecap';
-// import { useAIFeatures } from '@/hooks/useAIFeatures';
+// Re-enabling with optimizations
+import { useAIFeatures } from '@/hooks/useAIFeatures';
+// Lazy load heavy components to prevent blocking
+import dynamic from 'next/dynamic';
+
+const ChapterSummary = dynamic(() => import('./ChapterSummary'), { 
+    ssr: false,
+    loading: () => null // Don't show loading state to prevent blocking
+});
+
+const PreviouslyOnRecap = dynamic(() => import('./PreviouslyOnRecap'), { 
+    ssr: false,
+    loading: () => null // Don't show loading state to prevent blocking
+});
+
+const AutoBrightness = dynamic(() => import('./AutoBrightness'), { 
+    ssr: false,
+    loading: () => null
+});
+
+const EyeTracking = dynamic(() => import('./EyeTracking'), { 
+    ssr: false,
+    loading: () => null
+});
+
+const VoiceAssistant = dynamic(() => import('./VoiceAssistant'), { 
+    ssr: false,
+    loading: () => null
+});
 
 interface ChapterReaderProps {
     manga: any;
@@ -38,13 +60,27 @@ export default function ChapterReader({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
 
-    // AI Features - TEMPORARILY DISABLED to restore page responsiveness
-    // const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = useAIFeatures();
-    // const chapterSummariesEnabled = useMemo(() => !aiFeaturesLoading && isFeatureEnabled('chapterSummaries'), [aiFeaturesLoading, isFeatureEnabled]);
-    // const previouslyOnEnabled = useMemo(() => !aiFeaturesLoading && isFeatureEnabled('previouslyOnRecap'), [aiFeaturesLoading, isFeatureEnabled]);
+    // AI Features - Re-enabled with non-blocking initialization
+    // Don't wait for preferences to load - render page immediately, load preferences in background
+    const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = useAIFeatures();
     
-    // Disable AI features loading to prevent any blocking
-    const aiFeaturesLoading = false;
+    // Use deferred loading - only enable after page is interactive (after initial render)
+    const [pageInteractive, setPageInteractive] = useState(false);
+    useEffect(() => {
+        // Mark page as interactive after initial render completes
+        const timer = setTimeout(() => setPageInteractive(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
+    
+    // Only enable features after page is interactive AND preferences are loaded
+    const chapterSummariesEnabled = useMemo(() => 
+        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('chapterSummaries'), 
+        [pageInteractive, aiFeaturesLoading, isFeatureEnabled]
+    );
+    const previouslyOnEnabled = useMemo(() => 
+        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('previouslyOnRecap'), 
+        [pageInteractive, aiFeaturesLoading, isFeatureEnabled]
+    );
 
     const mangaId = typeof manga._id === 'string' ? manga._id : manga._id?.toString() || '';
     const chapterId = typeof chapter._id === 'string' ? chapter._id : chapter._id?.toString() || '';
@@ -476,8 +512,8 @@ export default function ChapterReader({
                 </div>
             </div>
 
-            {/* AI Features: Previously On Recap & Chapter Summary - TEMPORARILY DISABLED to fix unresponsiveness */}
-            {/* {!aiFeaturesLoading && (
+            {/* AI Features: Previously On Recap & Chapter Summary - Re-enabled with lazy loading */}
+            {pageInteractive && !aiFeaturesLoading && (
                 <div className="w-full max-w-4xl mx-auto px-4 pt-4">
                     {previouslyOnEnabled && (
                         <PreviouslyOnRecap mangaId={mangaId} enabled={previouslyOnEnabled} />
@@ -490,7 +526,7 @@ export default function ChapterReader({
                         />
                     )}
                 </div>
-            )} */}
+            )}
 
             {/* Manga Content */}
             <div className="w-full max-w-4xl mx-auto py-8 px-4">
@@ -737,35 +773,34 @@ export default function ChapterReader({
                 </div>
             </div>
 
-            {/* AI Features TEMPORARILY DISABLED to restore page responsiveness */}
-            {/* Voice Assistant - DISABLED */}
-            {/* {voiceAssistantEnabled && !aiFeaturesLoading && (
+            {/* AI Features - Re-enabled with deferred initialization */}
+            {/* Voice Assistant - Only load after page is interactive */}
+            {pageInteractive && voiceAssistantEnabled && !aiFeaturesLoading && (
                 <VoiceAssistant
                     onCommand={handleVoiceCommand}
                     enabled={voiceAssistantEnabled}
                     showUI={true}
                 />
-            )} */}
+            )}
 
-            {/* Eye Tracking - DISABLED */}
-            {/* {(!aiFeaturesLoading) && (
+            {/* Eye Tracking - Only load after page is interactive */}
+            {pageInteractive && !aiFeaturesLoading && (
                 <EyeTracking
                     onGazeDetected={(direction) => {
                         // Actual scrolling is handled in EyeTracking component
-                        // Removed console.log to prevent performance issues
                     }}
                     enabled={eyeTrackingEnabled}
                     showUI={true}
                 />
-            )} */}
+            )}
 
-            {/* Auto-Brightness - DISABLED */}
-            {/* {(!aiFeaturesLoading) && (
+            {/* Auto-Brightness - Only load after page is interactive */}
+            {pageInteractive && !aiFeaturesLoading && (
                 <AutoBrightness
                     enabled={autoBrightnessEnabled}
                     showUI={true}
                 />
-            )} */}
+            )}
 
             {/* Note: LightDetection removed - AutoBrightness handles all brightness adjustments */}
         </div>

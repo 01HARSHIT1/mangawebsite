@@ -29,60 +29,63 @@ export default function PreviouslyOnRecap({ mangaId, enabled = true }: Previousl
     useEffect(() => {
         if (!enabled || !mangaId || fetchingRef.current) return;
         
-        // Add timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
-        fetchingRef.current = true;
-        
-        const fetchRecap = async () => {
-            setLoading(true);
-            setError(null);
+        // Defer API call to prevent blocking initial page load
+        // Wait 2.5 seconds after component mounts to ensure page is fully interactive
+        const delayTimer = setTimeout(() => {
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
             
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setError(null); // Don't show error if not logged in
-                    return;
-                }
+            fetchingRef.current = true;
+            
+            const fetchRecap = async () => {
+                setLoading(true);
+                setError(null);
                 
-                const response = await fetch(`/api/manga/${mangaId}/previously-on`, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                    signal: controller.signal
-                });
-                
-                if (!response.ok) {
-                    const data = await response.json().catch(() => ({}));
-                    if (data.message && data.message.includes('No reading history')) {
-                        setError(null); // Don't show error if no history
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        setError(null); // Don't show error if not logged in
                         return;
                     }
-                    throw new Error('Failed to fetch recap');
+                    
+                    const response = await fetch(`/api/manga/${mangaId}/previously-on`, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        signal: controller.signal
+                    });
+                    
+                    if (!response.ok) {
+                        const data = await response.json().catch(() => ({}));
+                        if (data.message && data.message.includes('No reading history')) {
+                            setError(null); // Don't show error if no history
+                            return;
+                        }
+                        throw new Error('Failed to fetch recap');
+                    }
+                    
+                    const data = await response.json();
+                    if (data.recap) {
+                        setRecap(data.recap);
+                    }
+                } catch (err: any) {
+                    if (err.name === 'AbortError') {
+                        // Silently handle timeout
+                    } else {
+                        // Silently handle errors
+                    }
+                    setError(null); // Don't show error, just hide
+                } finally {
+                    clearTimeout(timeoutId);
+                    setLoading(false);
+                    fetchingRef.current = false;
                 }
-                
-                const data = await response.json();
-                if (data.recap) {
-                    setRecap(data.recap);
-                }
-            } catch (err: any) {
-                if (err.name === 'AbortError') {
-                    // Silently handle timeout
-                } else {
-                    // Silently handle errors
-                }
-                setError(null); // Don't show error, just hide
-            } finally {
-                clearTimeout(timeoutId);
-                setLoading(false);
-                fetchingRef.current = false;
-            }
-        };
-        
-        fetchRecap();
+            };
+            
+            fetchRecap();
+        }, 2500); // Wait 2.5 seconds before fetching
         
         return () => {
-            controller.abort();
-            clearTimeout(timeoutId);
+            clearTimeout(delayTimer);
             fetchingRef.current = false;
         };
     }, [mangaId, enabled]);

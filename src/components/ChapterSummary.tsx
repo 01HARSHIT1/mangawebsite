@@ -28,48 +28,51 @@ export default function ChapterSummary({ chapterId, chapterNumber, enabled = tru
     useEffect(() => {
         if (!enabled || !chapterId || fetchingRef.current) return;
         
-        // Add timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
-        fetchingRef.current = true;
-        
-        const fetchSummary = async () => {
-            setLoading(true);
-            setError(null);
+        // Defer API call to prevent blocking initial page load
+        // Wait 2 seconds after component mounts to ensure page is fully interactive
+        const delayTimer = setTimeout(() => {
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
             
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/chapters/${chapterId}/summary`, {
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-                    signal: controller.signal
-                });
+            fetchingRef.current = true;
+            
+            const fetchSummary = async () => {
+                setLoading(true);
+                setError(null);
                 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch summary');
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/chapters/${chapterId}/summary`, {
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                        signal: controller.signal
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch summary');
+                    }
+                    
+                    const data = await response.json();
+                    setSummary(data.summary);
+                } catch (err: any) {
+                    if (err.name === 'AbortError') {
+                        // Silently handle timeout
+                    } else {
+                        // Silently handle errors
+                    }
+                    setError(null); // Don't show error, just hide
+                } finally {
+                    clearTimeout(timeoutId);
+                    setLoading(false);
+                    fetchingRef.current = false;
                 }
-                
-                const data = await response.json();
-                setSummary(data.summary);
-            } catch (err: any) {
-                if (err.name === 'AbortError') {
-                    // Silently handle timeout
-                } else {
-                    // Silently handle errors
-                }
-                setError(null); // Don't show error, just hide
-            } finally {
-                clearTimeout(timeoutId);
-                setLoading(false);
-                fetchingRef.current = false;
-            }
-        };
-        
-        fetchSummary();
+            };
+            
+            fetchSummary();
+        }, 2000); // Wait 2 seconds before fetching
         
         return () => {
-            controller.abort();
-            clearTimeout(timeoutId);
+            clearTimeout(delayTimer);
             fetchingRef.current = false;
         };
     }, [chapterId, enabled]);
