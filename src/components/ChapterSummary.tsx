@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaFileAlt, FaSpinner, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 interface ChapterSummaryProps {
