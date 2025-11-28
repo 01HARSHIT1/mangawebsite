@@ -118,7 +118,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 return;
             }
 
-            console.log('🎥 Requesting camera access...');
+            // Removed console.log to prevent performance issues
             
             // Request camera access
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -130,7 +130,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
             });
 
             streamRef.current = stream;
-            console.log('✅ Camera access granted');
+            // Removed console.log to prevent performance issues
 
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
@@ -168,9 +168,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                         // Log calibration info on first load
                         if (totalSamples > 15) {
                             // Removed console.log to prevent performance issues
-                            console.log('  - Top:', calibration.scrollUp?.samples?.length || 0, 'samples');
-                            console.log('  - Middle:', calibration.noScroll?.samples?.length || 0, 'samples');
-                            console.log('  - Bottom:', calibration.scrollDown?.samples?.length || 0, 'samples');
+                            // Removed console.log to prevent performance issues
                         }
                     }
                 }
@@ -212,15 +210,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 
                 // Log more frequently when confidence is low to help debug
                 if (gaze.confidence < 0.2 || Math.random() < 0.05) {
-                    console.log('👁️ Eye Tracking: Gaze callback', {
-                        direction: gaze.direction,
-                        confidence: (gaze.confidence * 100).toFixed(1) + '%',
-                        hasEyePosition: !!gaze.eyePosition,
-                        screenPosition: gaze.screenPosition,
-                        viewportZone: gaze.viewportZone,
-                        scrollIntensity: gaze.scrollIntensity?.toFixed(2),
-                        hasCalibration: !!eyeTrackingEngineRef.current?.getCalibration()?.calibrated
-                    });
+                    // Removed console.log to prevent performance issues
                 }
                 
                 // Handle gaze detection
@@ -304,8 +294,9 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                             });
                         });
                         
-                        if (Math.random() < 0.01) { // 1% of frames
-                            console.log('👁️ Eye tracking: Intent confirmed → Scrolling UP', {
+                        if (false && Math.random() < 0.01) { // Disabled logging - was 1% of frames
+                            // Removed console.log to prevent performance issues
+                            if (false) { // Disabled
                                 screenY: (screenY * 100).toFixed(1) + '%',
                                 confidence: (gaze.confidence * 100).toFixed(1) + '%',
                                 intensity: gaze.scrollIntensity.toFixed(2),
@@ -340,7 +331,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 }
             });
             
-            console.log('✅ Eye tracking engine initialized successfully');
+            // Removed console.log to prevent performance issues
 
             setError(null);
         } catch (err: any) {
@@ -377,12 +368,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     // Gaze detection is now handled by EyeTrackingEngine
 
     const toggleTracking = async () => {
-        console.log('👁️ Eye Tracking: Toggle button clicked', {
-            isSupported,
-            isActive,
-            eyeTrackingEnabled,
-            willBecomeActive: !isActive
-        });
+        // Removed console.log to prevent performance issues
         
         if (!isSupported) {
             console.error('👁️ Eye Tracking: Not supported in this browser');
@@ -392,13 +378,13 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
 
         if (!isActive) {
             // Starting tracking - request camera permission
-            console.log('👁️ Eye Tracking: Requesting camera permission...');
+            // Removed console.log to prevent performance issues
             try {
                 // Request permission first
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 // Immediately stop it - we just wanted permission
                 stream.getTracks().forEach(track => track.stop());
-                console.log('✅ Camera permission granted - ready to start tracking');
+                // Removed console.log to prevent performance issues
             } catch (err: any) {
                 console.error('👁️ Eye Tracking: Camera permission error', err);
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -410,12 +396,12 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
                 }
             }
         } else {
-            console.log('👁️ Eye Tracking: Stopping tracking...');
+            // Removed console.log to prevent performance issues
         }
 
         setIsActive(!isActive);
         setError(null);
-        console.log('👁️ Eye Tracking: State updated', { isActive: !isActive });
+        // Removed console.log to prevent performance issues
     };
     
     const startCalibration = () => {
@@ -426,7 +412,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
         setIsCalibrating(true);
         setCalibrationStep('scrollUp');
         setCalibrationSamples({ scrollUp: 0, scrollDown: 0, noScroll: 0 });
-        console.log('👁️ Eye Tracking: Starting calibration - Step 1: Look at TOP of screen and click "Scroll Up"');
+        // Removed console.log to prevent performance issues
     };
     
     const addCalibrationSample = (action: 'scrollUp' | 'scrollDown' | 'noScroll') => {
@@ -444,19 +430,19 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
             [action]: prev[action] + 1
         }));
         
-        console.log(`👁️ Eye Tracking: Added ${action} sample`, { normalizedY, samples: calibrationSamples[action] + 1 });
+        // Removed console.log to prevent performance issues
         
         // Move to next step
         if (action === 'scrollUp' && calibrationSamples.scrollUp < 4) {
             // Continue collecting scrollUp samples
         } else if (action === 'scrollUp' && calibrationSamples.scrollUp >= 4) {
             setCalibrationStep('scrollDown');
-            console.log('👁️ Eye Tracking: Step 2: Look at BOTTOM of screen and click "Scroll Down"');
+            // Removed console.log to prevent performance issues
         } else if (action === 'scrollDown' && calibrationSamples.scrollDown < 4) {
             // Continue collecting scrollDown samples
         } else if (action === 'scrollDown' && calibrationSamples.scrollDown >= 4) {
             setCalibrationStep('noScroll');
-            console.log('👁️ Eye Tracking: Step 3: Look at MIDDLE of screen and click "Don\'t Scroll"');
+            // Removed console.log to prevent performance issues
         } else if (action === 'noScroll' && calibrationSamples.noScroll < 4) {
             // Continue collecting noScroll samples
         } else if (action === 'noScroll' && calibrationSamples.noScroll >= 4) {
