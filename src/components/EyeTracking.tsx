@@ -895,7 +895,10 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 position: 'fixed',
                 bottom: '18rem', // Top position - above VoiceAssistant (5rem) and AutoBrightness (1rem)
                 right: '1rem',
-                maxHeight: 'calc(100vh - 20rem)' // Prevent overflow
+                maxHeight: 'calc(100vh - 20rem)', // Prevent overflow
+                top: 'auto',
+                left: 'auto',
+                transform: 'none'
             }}
             id="eye-tracking-panel"
         >

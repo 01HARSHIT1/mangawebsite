@@ -347,6 +347,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 position: 'fixed',
                 bottom: '5rem', // Above AutoBrightness (1rem), below EyeTracking (18rem)
                 right: '1rem',
+                top: 'auto',
+                left: 'auto',
+                transform: 'none',
                 zIndex: 9999
             }}
         >
