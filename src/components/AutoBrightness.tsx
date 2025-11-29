@@ -70,13 +70,26 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
         };
     }, []);
     
-    // CRITICAL FIX: Only run position locking when component is actually visible and active
+    // CRITICAL FIX: Only run position locking when component is actually visible
     // This prevents the heavy MutationObserver and setInterval from blocking the page
+    // Position stays locked even when isActive changes (when user clicks to start)
     useEffect(() => {
         // ONLY set up position locking if component is actually being shown
         // This prevents blocking when component is disabled
         if (!showUI || !widgetRef.current) {
             return;
+        }
+        
+        // Lock position immediately when isActive changes to prevent movement
+        if (widgetRef.current) {
+            const el = widgetRef.current;
+            el.style.setProperty('position', 'fixed', 'important');
+            el.style.setProperty('bottom', '1rem', 'important');
+            el.style.setProperty('right', '1rem', 'important');
+            el.style.setProperty('top', 'auto', 'important');
+            el.style.setProperty('transform', 'none', 'important');
+            el.style.setProperty('left', 'auto', 'important');
+            el.style.setProperty('z-index', '99999', 'important');
         }
         
         // Wait for ref to be set
@@ -162,7 +175,7 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
                 (widgetRef.current as any)._positionLockCleanup();
             }
         };
-    }, [showUI]); // Only run when showUI changes - removed isActive dependency
+    }, [showUI, isActive]); // Run when showUI OR isActive changes to lock position when activated
     
     const startBrightness = async () => {
         try {
