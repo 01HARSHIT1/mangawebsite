@@ -19,11 +19,11 @@ const PreviouslyOnRecap = dynamic(() => import('./PreviouslyOnRecap'), {
     loading: () => null // Don't show loading state to prevent blocking
 });
 
-// AutoBrightness TEMPORARILY DISABLED for testing
-// const AutoBrightness = dynamic(() => import('./AutoBrightness'), { 
-//     ssr: false,
-//     loading: () => null
-// });
+// AutoBrightness - Re-enabled with optimized position locking (no longer blocks)
+const AutoBrightness = dynamic(() => import('./AutoBrightness'), { 
+    ssr: false,
+    loading: () => null
+});
 
 const EyeTracking = dynamic(() => import('./EyeTracking'), { 
     ssr: false,
@@ -822,13 +822,13 @@ export default function ChapterReader({
                 />
             )}
 
-            {/* Auto-Brightness - TEMPORARILY DISABLED for testing to identify if it's causing unresponsiveness */}
-            {/* {pageInteractive && userInteracted && !aiFeaturesLoading && (
+            {/* Auto-Brightness - Re-enabled with optimized position locking (no longer blocks) */}
+            {pageInteractive && userInteracted && !aiFeaturesLoading && (
                 <AutoBrightness
                     enabled={autoBrightnessEnabled}
                     showUI={true}
                 />
-            )} */}
+            )}
 
             {/* Note: LightDetection removed - AutoBrightness handles all brightness adjustments */}
         </div>
