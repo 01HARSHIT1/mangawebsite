@@ -70,279 +70,99 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
         };
     }, []);
     
-    // CRITICAL: Lock position - use MutationObserver to prevent ANY style changes
+    // CRITICAL FIX: Only run position locking when component is actually visible and active
+    // This prevents the heavy MutationObserver and setInterval from blocking the page
     useEffect(() => {
+        // ONLY set up position locking if component is actually being shown
+        // This prevents blocking when component is disabled
+        if (!showUI || !widgetRef.current) {
+            return;
+        }
+        
         // Wait for ref to be set
         const setupPositionLock = () => {
             if (!widgetRef.current) {
-                // Retry if ref not ready
-                setTimeout(setupPositionLock, 10);
+                // Retry if ref not ready (but limit retries to prevent infinite loop)
+                const retryCount = (setupPositionLock as any).retryCount || 0;
+                if (retryCount < 5) {
+                    (setupPositionLock as any).retryCount = retryCount + 1;
+                    setTimeout(setupPositionLock, 50); // Increased delay
+                }
                 return;
             }
             
             const el = widgetRef.current;
-            const lockPosition = (source: string) => {
-                try {
-                    if (!el) {
-                        // Silently handle - element not ready yet
-                        return;
-                    }
-                    
-                    // Get current computed styles BEFORE locking
-                    let computedBefore: CSSStyleDeclaration;
-                    let beforePosition: any;
-                    try {
-                        computedBefore = window.getComputedStyle(el);
-                        beforePosition = {
-                            position: computedBefore.position,
-                            top: computedBefore.top,
-                            right: computedBefore.right,
-                            bottom: computedBefore.bottom,
-                            left: computedBefore.left,
-                            transform: computedBefore.transform,
-                        };
-                    } catch (error) {
-                        // Silently handle errors to prevent console spam
-                        beforePosition = {};
-                    }
-                    
-                    // Lock position silently (only log errors)
-                    
-                    // Force position to stay fixed - override any other styles
-                    // Use setProperty with 'important' flag (cssText doesn't support !important)
-                    // CRITICAL properties for positioning (must succeed)
-                    const criticalProperties = [
-                        { prop: 'position', value: 'fixed' },
-                        { prop: 'bottom', value: '1rem' },
-                        { prop: 'right', value: '1rem' },
-                        { prop: 'top', value: 'auto' },
-                        { prop: 'transform', value: 'none' },
-                        { prop: 'left', value: 'auto' },
-                        { prop: 'z-index', value: '99999' },
-                    ];
-                    
-                    // Optional properties (won't fail if they don't set)
-                    const optionalProperties = [
-                        { prop: 'margin', value: '0px' },
-                        { prop: 'padding', value: '0px' },
-                        { prop: 'max-height', value: 'calc(100vh - 2rem)' },
-                    ];
-                    
-                    // Set critical properties (must succeed)
-                    const criticalFailed: string[] = [];
-                    criticalProperties.forEach(({ prop, value }) => {
-                        try {
-                            el.style.setProperty(prop, value, 'important');
-                            // Verify it was set
-                            const actualValue = el.style.getPropertyValue(prop);
-                            const actualPriority = el.style.getPropertyPriority(prop);
-                            if (actualValue !== value || actualPriority !== 'important') {
-                                criticalFailed.push(prop);
-                            }
-                        } catch (error) {
-                            criticalFailed.push(prop);
-                        }
-                    });
-                    
-                    // Set optional properties (silently fail)
-                    optionalProperties.forEach(({ prop, value }) => {
-                        try {
-                            el.style.setProperty(prop, value, 'important');
-                        } catch (error) {
-                            // Silently ignore optional property failures
-                        }
-                    });
-                    
-                    // Silently retry failed properties
-                    if (criticalFailed.length > 0) {
-                        criticalFailed.forEach(prop => {
-                            const propObj = criticalProperties.find(p => p.prop === prop);
-                            if (propObj) {
-                                try {
-                                    el.style.setProperty(propObj.prop, propObj.value, 'important');
-                                } catch (e) {
-                                    // Silently handle retry failures
-                                }
-                            }
-                        });
-                    }
-                    
-                    // Get computed styles AFTER locking
-                    let computedAfter: CSSStyleDeclaration;
-                    let afterPosition: any;
-                    try {
-                        computedAfter = window.getComputedStyle(el);
-                        afterPosition = {
-                            position: computedAfter.position,
-                            top: computedAfter.top,
-                            right: computedAfter.right,
-                            bottom: computedAfter.bottom,
-                            left: computedAfter.left,
-                            transform: computedAfter.transform,
-                        };
-                    } catch (error) {
-                        // Silently handle errors to prevent console spam
-                        afterPosition = {};
-                    }
-                    
-                    // Check if position actually changed
-                    if (beforePosition && afterPosition) {
-                        if (beforePosition.bottom !== afterPosition.bottom || beforePosition.top !== afterPosition.top) {
-                            // Silently fix position if changed
-                            if (afterPosition.bottom && afterPosition.bottom !== '1rem' && afterPosition.bottom !== 'auto') {
-                                el.style.setProperty('bottom', '1rem', 'important');
-                            }
-                            if (afterPosition.top && afterPosition.top !== 'auto') {
-                                el.style.setProperty('top', 'auto', 'important');
-                            }
-                        }
-                        // Position locked - no need to log success
-                        
-                        // CRITICAL CHECK: Verify the position is actually fixed
-                        if (afterPosition.position !== 'fixed') {
-                            // Silently fix position - don't log to prevent console spam
-                            el.style.setProperty('position', 'fixed', 'important');
-                        }
-                        
-                        // CRITICAL CHECK: Verify bottom is auto (not set to a value)
-                        // Only warn if it's a significant value (ignore 0px which is effectively auto)
-                        if (afterPosition.bottom && afterPosition.bottom !== 'auto' && afterPosition.bottom !== '0px') {
-                            // Try to fix it
-                            el.style.setProperty('bottom', 'auto', 'important');
-                            // Don't log as error - just fix it silently
-                        }
-                    }
-                } catch (error) {
-                    // Silently handle errors to prevent console spam
-                }
+            
+            // LIGHTWEIGHT position lock - only set styles, no expensive getComputedStyle calls
+            const lockPosition = () => {
+                if (!el) return;
+                
+                // Simply set the critical properties - no verification needed
+                el.style.setProperty('position', 'fixed', 'important');
+                el.style.setProperty('bottom', '1rem', 'important');
+                el.style.setProperty('right', '1rem', 'important');
+                el.style.setProperty('top', 'auto', 'important');
+                el.style.setProperty('transform', 'none', 'important');
+                el.style.setProperty('left', 'auto', 'important');
+                el.style.setProperty('z-index', '99999', 'important');
             };
             
             // Lock immediately
-            lockPosition('initial-setup');
+            lockPosition();
             
-            // Use MutationObserver to watch for ANY style/class changes and revert them
+            // Use a MUCH lighter MutationObserver - only watch for style changes, don't call getComputedStyle
             let observer: MutationObserver | null = null;
             try {
-                observer = new MutationObserver((mutations) => {
-                    try {
-                        mutations.forEach((mutation) => {
-                            if (mutation.type === 'attributes') {
-                                if (mutation.attributeName === 'style' || mutation.attributeName === 'class') {
-                                    const el = mutation.target as HTMLElement;
-                                    let computed: CSSStyleDeclaration;
-                                    let currentPosition: any;
-                                    try {
-                                        computed = window.getComputedStyle(el);
-                                        currentPosition = {
-                                            position: computed.position,
-                                            top: computed.top,
-                                            right: computed.right,
-                                            bottom: computed.bottom,
-                                            left: computed.left,
-                                            transform: computed.transform,
-                                        };
-                                    } catch (error) {
-                                        // Silently handle errors to prevent console spam
-                                        currentPosition = {};
-                                    }
-                                    
-                                    // Silently fix position if changed
-                                    if (currentPosition.bottom && currentPosition.bottom !== 'auto' && currentPosition.bottom !== '0px') {
-                                        el.style.setProperty('bottom', 'auto', 'important');
-                                    }
-                                    if (currentPosition.position && currentPosition.position !== 'fixed') {
-                                        el.style.setProperty('position', 'fixed', 'important');
-                                    }
-                                    
-                                    // Style or class was changed - immediately lock it back
-                                    lockPosition('mutation-observer');
-                                }
-                            }
-                        });
-                    } catch (error) {
-                        // Silently handle errors to prevent console spam
-                    }
+                observer = new MutationObserver(() => {
+                    // Just re-apply styles without expensive getComputedStyle calls
+                    lockPosition();
+                });
+                
+                observer.observe(el, {
+                    attributes: true,
+                    attributeFilter: ['style', 'class'],
+                    childList: false,
+                    subtree: false,
                 });
             } catch (error) {
-                // Silently handle errors to prevent console spam
+                // Silently handle errors
             }
             
-            if (observer) {
-                try {
-                    observer.observe(el, {
-                        attributes: true,
-                        attributeFilter: ['style', 'class'],
-                        childList: false,
-                        subtree: false,
-                        attributeOldValue: true, // Track old values for debugging
-                    });
-                    // MutationObserver set up silently
-                } catch (error) {
-                    // Silently handle errors to prevent console spam
-                }
-            }
-            
-            // Also lock periodically as backup (every 100ms - less aggressive)
+            // MUCH less frequent interval - only every 1 second instead of 100ms
             let intervalId: NodeJS.Timeout | null = null;
             try {
                 intervalId = setInterval(() => {
-                    try {
-                        const computed = window.getComputedStyle(el);
-                        // Silently fix position if needed (don't log unless critical)
-                        if (computed.position !== 'fixed') {
-                            el.style.setProperty('position', 'fixed', 'important');
-                        }
-                        if (computed.bottom && computed.bottom !== 'auto' && computed.bottom !== '0px') {
-                            el.style.setProperty('bottom', 'auto', 'important');
-                        }
-                        // Lock position silently
-                        lockPosition('interval-check');
-                    } catch (error) {
-                        // Silently handle interval errors
-                    }
-                }, 100); // Reduced frequency from 5ms to 100ms
+                    lockPosition();
+                }, 1000); // Changed from 100ms to 1000ms (10x less frequent)
             } catch (error) {
-                // Silently handle errors to prevent console spam
+                // Silently handle errors
             }
-            
-            // Lock after any potential re-render
-            const timeoutId = setTimeout(() => lockPosition('timeout'), 0);
-            const rafId = requestAnimationFrame(() => {
-                lockPosition('raf-1');
-                requestAnimationFrame(() => lockPosition('raf-2'));
-            });
             
             // Store cleanup function
             (el as any)._positionLockCleanup = () => {
                 try {
-                    // Removed console.log to prevent performance issues
                     if (observer) {
                         observer.disconnect();
                     }
                     if (intervalId) {
                         clearInterval(intervalId);
                     }
-                    if (timeoutId) {
-                        clearTimeout(timeoutId);
-                    }
-                    if (rafId) {
-                        cancelAnimationFrame(rafId);
-                    }
                 } catch (error) {
-                    // Silently handle errors to prevent console spam
+                    // Silently handle errors
                 }
             };
         };
         
-        setupPositionLock();
+        // Delay setup to prevent blocking initial render
+        const setupTimer = setTimeout(setupPositionLock, 500);
         
         return () => {
-            // Cleanup
+            clearTimeout(setupTimer);
             if (widgetRef.current && (widgetRef.current as any)._positionLockCleanup) {
                 (widgetRef.current as any)._positionLockCleanup();
             }
         };
-    }, [isActive, showUI]); // Run whenever isActive or showUI changes
+    }, [showUI]); // Only run when showUI changes - removed isActive dependency
     
     const startBrightness = async () => {
         try {

@@ -865,7 +865,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         return (
             <div 
                 className="fixed bottom-32 right-4 z-50" 
-                style={{ zIndex: 9999 }}
+                style={{ zIndex: 9998, position: 'fixed', bottom: '9rem', right: '1rem' }}
                 id="eye-tracking-panel-unsupported"
             >
                 <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-4 max-w-sm">
@@ -886,9 +886,9 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         <div 
             className="fixed bottom-32 right-4 z-50" 
             style={{ 
-                zIndex: 9999,
+                zIndex: 9998, // Lower than AutoBrightness (99999)
                 position: 'fixed',
-                bottom: '8rem',
+                bottom: '9rem', // Moved up to make room for AutoBrightness at bottom
                 right: '1rem'
             }}
             id="eye-tracking-panel"
