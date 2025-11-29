@@ -460,13 +460,14 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
             // CRITICAL: Use fixed positioning at bottom-right - render via Portal to ensure it's outside scrolling containers
             style={{
                 position: 'fixed',
-                bottom: '1rem', // Bottom position - lowest widget (AutoBrightness)
+                bottom: '1rem', // Bottom position - lowest widget (AutoBrightness, ~120px height when active)
                 right: '1rem', // Stick to right
                 top: 'auto', // Remove top to use bottom
                 transform: 'none', // No transform needed for bottom positioning
                 left: 'auto',
                 zIndex: 99999, // Highest z-index to ensure it's always on top
                 maxHeight: 'calc(100vh - 2rem)', // Prevent overflow
+                width: 'auto', // Prevent width changes from affecting position
                 willChange: 'transform',
                 margin: 0,
                 padding: 0,

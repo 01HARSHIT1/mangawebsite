@@ -887,18 +887,35 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
 
     // Removed console.log to prevent performance issues
     
+    // CRITICAL: Lock position when isActive changes to prevent movement when activated
+    const panelRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!panelRef.current) return;
+        
+        const el = panelRef.current;
+        // Lock position immediately when isActive changes
+        el.style.setProperty('position', 'fixed', 'important');
+        el.style.setProperty('bottom', '26rem', 'important');
+        el.style.setProperty('right', '1rem', 'important');
+        el.style.setProperty('top', 'auto', 'important');
+        el.style.setProperty('left', 'auto', 'important');
+        el.style.setProperty('transform', 'none', 'important');
+    }, [isActive]); // Run when isActive changes
+    
     return (
         <div 
+            ref={panelRef}
             className="fixed right-4 z-50" 
             style={{ 
                 zIndex: 9998, // Lower than VoiceAssistant and AutoBrightness
                 position: 'fixed',
-                bottom: '18rem', // Top position - above VoiceAssistant (5rem) and AutoBrightness (1rem)
+                bottom: '26rem', // Top position - above VoiceAssistant (7rem + ~200px height + 1rem gap = ~26rem)
                 right: '1rem',
-                maxHeight: 'calc(100vh - 20rem)', // Prevent overflow
+                maxHeight: 'calc(100vh - 28rem)', // Prevent overflow - account for other widgets
                 top: 'auto',
                 left: 'auto',
-                transform: 'none'
+                transform: 'none',
+                width: 'auto' // Prevent width changes from affecting position
             }}
             id="eye-tracking-panel"
         >

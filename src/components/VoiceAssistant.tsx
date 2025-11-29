@@ -345,12 +345,13 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             className="fixed right-4 z-50"
             style={{
                 position: 'fixed',
-                bottom: '5rem', // Above AutoBrightness (1rem), below EyeTracking (18rem)
+                bottom: '7rem', // Above AutoBrightness (1rem + ~120px height + 1rem gap = ~7rem)
                 right: '1rem',
                 top: 'auto',
                 left: 'auto',
                 transform: 'none',
-                zIndex: 9999
+                zIndex: 9999,
+                width: 'auto' // Prevent width changes from affecting position
             }}
         >
             <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border border-slate-700 shadow-xl p-4 max-w-sm">
