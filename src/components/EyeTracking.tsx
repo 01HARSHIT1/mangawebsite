@@ -845,52 +845,6 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         }
     }, [eyeTrackingEnabled, showUI, isSupported]);
 
-    // Debug logging - REMOVED to prevent performance issues
-    // Excessive logging on every state change can cause page freezing
-
-    // Always show UI on chapter pages, even if not enabled
-    // This allows users to enable it from the chapter page itself
-    if (!showUI) {
-        return null;
-    }
-    
-    // Show UI on chapter pages, or if explicitly enabled
-    // ALWAYS show if we're on a chapter page OR if eyeTrackingEnabled is true
-    const shouldShow = isChapterPage || eyeTrackingEnabled;
-    
-    if (!shouldShow) {
-        return null;
-    }
-    
-    // Removed console.log to prevent performance issues
-
-    if (!isSupported) {
-        return (
-            <div 
-                className="fixed right-4 z-50" 
-                style={{ 
-                    zIndex: 9998, 
-                    position: 'fixed', 
-                    bottom: '26rem', 
-                    right: '1rem',
-                    top: 'auto',
-                    left: 'auto',
-                    transform: 'none'
-                }}
-                id="eye-tracking-panel-unsupported"
-            >
-                <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-4 max-w-sm">
-                    <div className="text-xs text-yellow-400 font-semibold">
-                        ⚠️ Eye tracking not supported in this browser
-                    </div>
-                    <div className="text-xs text-gray-400 mt-2">
-                        Please use Chrome, Edge, or another modern browser
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     // CRITICAL: Lock position when isActive changes to prevent movement when activated
     // This useEffect must be declared before any conditional returns (Rules of Hooks)
     useEffect(() => {
@@ -905,9 +859,12 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         el.style.setProperty('left', 'auto', 'important');
         el.style.setProperty('transform', 'none', 'important');
     }, [isActive]); // Run when isActive changes
-    
-    // Removed console.log to prevent performance issues
-    
+
+    // Debug logging - REMOVED to prevent performance issues
+    // Excessive logging on every state change can cause page freezing
+
+    // Always show UI on chapter pages, even if not enabled
+    // This allows users to enable it from the chapter page itself
     if (!showUI) {
         return null;
     }
