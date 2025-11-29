@@ -64,13 +64,40 @@ export default function ChapterReader({
     // Don't wait for preferences to load - render page immediately, load preferences in background
     const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = useAIFeatures();
     
-    // Use deferred loading - only enable after page is interactive (after initial render)
+    // Use deferred loading - only enable after page is interactive AND user has interacted
+    // This prevents heavy MediaPipe/camera initialization from blocking the page
     const [pageInteractive, setPageInteractive] = useState(false);
+    const [userInteracted, setUserInteracted] = useState(false);
+    
     useEffect(() => {
         // Mark page as interactive after initial render completes
-        const timer = setTimeout(() => setPageInteractive(true), 100);
+        const timer = setTimeout(() => setPageInteractive(true), 500); // Increased delay
         return () => clearTimeout(timer);
     }, []);
+    
+    // Only load heavy AI features after user interaction (scroll, click, etc.)
+    useEffect(() => {
+        if (!pageInteractive) return;
+        
+        const handleInteraction = () => {
+            setUserInteracted(true);
+            // Remove listeners after first interaction
+            window.removeEventListener('scroll', handleInteraction, { passive: true });
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction, { passive: true });
+        };
+        
+        // Wait for user to interact before loading heavy features
+        window.addEventListener('scroll', handleInteraction, { passive: true });
+        window.addEventListener('click', handleInteraction);
+        window.addEventListener('touchstart', handleInteraction, { passive: true });
+        
+        return () => {
+            window.removeEventListener('scroll', handleInteraction);
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction);
+        };
+    }, [pageInteractive]);
     
     // Only enable features after page is interactive AND preferences are loaded
     const chapterSummariesEnabled = useMemo(() => 
@@ -785,8 +812,8 @@ export default function ChapterReader({
                 />
             )}
 
-            {/* Eye Tracking - Only load after page is interactive */}
-            {pageInteractive && !aiFeaturesLoading && (
+            {/* Eye Tracking - Only load after user interaction to prevent blocking */}
+            {pageInteractive && userInteracted && !aiFeaturesLoading && (
                 <EyeTracking
                     onGazeDetected={(direction) => {
                         // Actual scrolling is handled in EyeTracking component
@@ -796,8 +823,8 @@ export default function ChapterReader({
                 />
             )}
 
-            {/* Auto-Brightness - Only load after page is interactive */}
-            {pageInteractive && !aiFeaturesLoading && (
+            {/* Auto-Brightness - Only load after user interaction to prevent blocking */}
+            {pageInteractive && userInteracted && !aiFeaturesLoading && (
                 <AutoBrightness
                     enabled={autoBrightnessEnabled}
                     showUI={true}

@@ -25,13 +25,18 @@ export default function AutoBrightness({ enabled = false, showUI = true }: AutoB
     const autoBrightnessRef = useRef<AutoBrightnessController | null>(null);
     const widgetRef = useRef<HTMLDivElement>(null);
     
-    // Check if browser supports camera
+    // Check if browser supports camera - defer to prevent blocking
     useEffect(() => {
-        setIsSupported(
-            typeof navigator !== 'undefined' &&
-            !!navigator.mediaDevices &&
-            !!navigator.mediaDevices.getUserMedia
-        );
+        // Defer camera support check to prevent blocking initial render
+        const checkTimer = setTimeout(() => {
+            setIsSupported(
+                typeof navigator !== 'undefined' &&
+                !!navigator.mediaDevices &&
+                !!navigator.mediaDevices.getUserMedia
+            );
+        }, 1000); // Wait 1 second before checking camera support
+        
+        return () => clearTimeout(checkTimer);
     }, []);
     
     const stopBrightness = () => {
