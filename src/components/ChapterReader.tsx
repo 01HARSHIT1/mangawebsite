@@ -61,27 +61,25 @@ export default function ChapterReader({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
 
-    // AI Features - Re-enabled with non-blocking initialization
-    // Don't wait for preferences to load - render page immediately, load preferences in background
-    const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = useAIFeatures();
-    
-    // Use deferred loading - only enable after page is interactive AND user has interacted
-    // This prevents heavy MediaPipe/camera initialization from blocking the page
+    // AI Features - Defer hook call to prevent blocking initial render
+    // Don't call useAIFeatures until page is interactive to prevent API call from blocking
     const [pageInteractive, setPageInteractive] = useState(false);
     const [userInteracted, setUserInteracted] = useState(false);
+    const [shouldLoadAIFeatures, setShouldLoadAIFeatures] = useState(false);
     
     useEffect(() => {
         // Mark page as interactive after initial render completes
-        const timer = setTimeout(() => setPageInteractive(true), 500); // Increased delay
+        const timer = setTimeout(() => setPageInteractive(true), 500);
         return () => clearTimeout(timer);
     }, []);
     
-    // Only load heavy AI features after user interaction (scroll, click, etc.)
+    // Only load AI features hook after user interaction to prevent blocking
     useEffect(() => {
         if (!pageInteractive) return;
         
         const handleInteraction = () => {
             setUserInteracted(true);
+            setShouldLoadAIFeatures(true); // Trigger AI features loading
             // Remove listeners after first interaction
             window.removeEventListener('scroll', handleInteraction, { passive: true });
             window.removeEventListener('click', handleInteraction);
@@ -100,14 +98,25 @@ export default function ChapterReader({
         };
     }, [pageInteractive]);
     
+    // Only call useAIFeatures hook after user interaction to prevent API call from blocking
+    const aiFeaturesResult = shouldLoadAIFeatures ? useAIFeatures() : {
+        voiceAssistantEnabled: false,
+        eyeTrackingEnabled: false,
+        autoBrightnessEnabled: false,
+        isFeatureEnabled: () => false,
+        loading: false
+    };
+    
+    const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = aiFeaturesResult;
+    
     // Only enable features after page is interactive AND preferences are loaded
     const chapterSummariesEnabled = useMemo(() => 
-        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('chapterSummaries'), 
-        [pageInteractive, aiFeaturesLoading, isFeatureEnabled]
+        shouldLoadAIFeatures && pageInteractive && !aiFeaturesLoading && isFeatureEnabled('chapterSummaries'), 
+        [shouldLoadAIFeatures, pageInteractive, aiFeaturesLoading, isFeatureEnabled]
     );
     const previouslyOnEnabled = useMemo(() => 
-        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('previouslyOnRecap'), 
-        [pageInteractive, aiFeaturesLoading, isFeatureEnabled]
+        shouldLoadAIFeatures && pageInteractive && !aiFeaturesLoading && isFeatureEnabled('previouslyOnRecap'), 
+        [shouldLoadAIFeatures, pageInteractive, aiFeaturesLoading, isFeatureEnabled]
     );
 
     const mangaId = typeof manga._id === 'string' ? manga._id : manga._id?.toString() || '';
