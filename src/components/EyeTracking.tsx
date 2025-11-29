@@ -56,34 +56,36 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        // Check if getUserMedia is supported
-        if (typeof window !== 'undefined') {
-            const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-            setIsSupported(hasGetUserMedia);
-            // Removed console.log to prevent performance issues
-            
-            // Detect manual scrolling to prevent interference
-            const handleScroll = () => {
-                isManualScrolling.current = true;
-                if (manualScrollTimeout.current) {
-                    clearTimeout(manualScrollTimeout.current);
-                }
-                // Disable eye tracking scrolling for 3 seconds after manual scroll
-                manualScrollTimeout.current = setTimeout(() => {
-                    isManualScrolling.current = false;
-                    // Removed console.log to prevent performance issues
-                }, 3000);
-            };
-            
-            window.addEventListener('scroll', handleScroll, { passive: true });
-            window.addEventListener('wheel', handleScroll, { passive: true });
-            
-            return () => {
-                window.removeEventListener('scroll', handleScroll);
-                window.removeEventListener('wheel', handleScroll);
-                if (manualScrollTimeout.current) clearTimeout(manualScrollTimeout.current);
-            };
-        }
+        // Defer heavy checks to prevent blocking initial render
+        // Only check for getUserMedia support after a delay
+        const checkTimer = setTimeout(() => {
+            if (typeof window !== 'undefined') {
+                const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                setIsSupported(hasGetUserMedia);
+            }
+        }, 1000); // Wait 1 second before checking camera support
+        
+        // Detect manual scrolling to prevent interference
+        const handleScroll = () => {
+            isManualScrolling.current = true;
+            if (manualScrollTimeout.current) {
+                clearTimeout(manualScrollTimeout.current);
+            }
+            // Disable eye tracking scrolling for 3 seconds after manual scroll
+            manualScrollTimeout.current = setTimeout(() => {
+                isManualScrolling.current = false;
+            }, 3000);
+        };
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('wheel', handleScroll, { passive: true });
+        
+        return () => {
+            clearTimeout(checkTimer);
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('wheel', handleScroll);
+            if (manualScrollTimeout.current) clearTimeout(manualScrollTimeout.current);
+        };
     }, []);
 
 
