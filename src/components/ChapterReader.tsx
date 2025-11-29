@@ -98,16 +98,9 @@ export default function ChapterReader({
         };
     }, [pageInteractive]);
     
-    // Only call useAIFeatures hook after user interaction to prevent API call from blocking
-    const aiFeaturesResult = shouldLoadAIFeatures ? useAIFeatures() : {
-        voiceAssistantEnabled: false,
-        eyeTrackingEnabled: false,
-        autoBrightnessEnabled: false,
-        isFeatureEnabled: () => false,
-        loading: false
-    };
-    
-    const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = aiFeaturesResult;
+    // Call useAIFeatures hook (but it won't fetch until shouldLoadAIFeatures is true)
+    // We'll modify the hook to respect shouldLoadAIFeatures
+    const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = useAIFeatures();
     
     // Only enable features after page is interactive AND preferences are loaded
     const chapterSummariesEnabled = useMemo(() => 

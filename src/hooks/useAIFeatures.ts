@@ -48,12 +48,18 @@ export function useAIFeatures() {
     }, []);
 
     useEffect(() => {
-        if (isAuthenticated) {
-            loadPreferences();
-        } else {
-            setPreferences(DEFAULT_AI_PREFERENCES);
-            setLoading(false);
-        }
+        // Defer loading preferences to prevent blocking initial page render
+        // Only load after a delay to ensure page is interactive first
+        const delayTimer = setTimeout(() => {
+            if (isAuthenticated) {
+                loadPreferences();
+            } else {
+                setPreferences(DEFAULT_AI_PREFERENCES);
+                setLoading(false);
+            }
+        }, 2000); // Wait 2 seconds before loading preferences
+        
+        return () => clearTimeout(delayTimer);
     }, [isAuthenticated, loadPreferences]);
 
     const updatePreference = async (feature: keyof UserAIPreferences, value: boolean) => {
