@@ -26,6 +26,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     
     const recognitionRef = useRef<any>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
+    
+    // CRITICAL: Panel ref for position locking - must be declared before any conditional returns
+    const panelRef = useRef<HTMLDivElement>(null);
 
     // Enhanced voice command patterns with better recognition
     const commands: VoiceCommand[] = [
@@ -328,20 +331,8 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         speak(helpText);
     };
 
-    if (!showUI) {
-        return null;
-    }
-
-    if (!isSupported) {
-        return (
-            <div className="text-xs text-gray-400 p-2">
-                Voice assistant not supported in this browser
-            </div>
-        );
-    }
-
     // CRITICAL: Lock position when isListening changes to prevent movement when activated
-    const panelRef = useRef<HTMLDivElement>(null);
+    // This useEffect must be declared before any conditional returns (Rules of Hooks)
     useEffect(() => {
         if (!panelRef.current) return;
         
@@ -354,6 +345,18 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         el.style.setProperty('left', 'auto', 'important');
         el.style.setProperty('transform', 'none', 'important');
     }, [isListening]); // Run when isListening changes
+    
+    if (!showUI) {
+        return null;
+    }
+
+    if (!isSupported) {
+        return (
+            <div className="text-xs text-gray-400 p-2">
+                Voice assistant not supported in this browser
+            </div>
+        );
+    }
     
     return (
         <div 
