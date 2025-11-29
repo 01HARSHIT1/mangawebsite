@@ -340,8 +340,24 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         );
     }
 
+    // CRITICAL: Lock position when isListening changes to prevent movement when activated
+    const panelRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!panelRef.current) return;
+        
+        const el = panelRef.current;
+        // Lock position immediately when isListening changes
+        el.style.setProperty('position', 'fixed', 'important');
+        el.style.setProperty('bottom', '7rem', 'important');
+        el.style.setProperty('right', '1rem', 'important');
+        el.style.setProperty('top', 'auto', 'important');
+        el.style.setProperty('left', 'auto', 'important');
+        el.style.setProperty('transform', 'none', 'important');
+    }, [isListening]); // Run when isListening changes
+    
     return (
         <div 
+            ref={panelRef}
             className="fixed right-4 z-50"
             style={{
                 position: 'fixed',
