@@ -868,8 +868,11 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 style={{ 
                     zIndex: 9998, 
                     position: 'fixed', 
-                    bottom: '18rem', 
-                    right: '1rem' 
+                    bottom: '26rem', 
+                    right: '1rem',
+                    top: 'auto',
+                    left: 'auto',
+                    transform: 'none'
                 }}
                 id="eye-tracking-panel-unsupported"
             >
