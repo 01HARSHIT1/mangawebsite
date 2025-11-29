@@ -864,8 +864,13 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     if (!isSupported) {
         return (
             <div 
-                className="fixed bottom-32 right-4 z-50" 
-                style={{ zIndex: 9998, position: 'fixed', bottom: '9rem', right: '1rem' }}
+                className="fixed right-4 z-50" 
+                style={{ 
+                    zIndex: 9998, 
+                    position: 'fixed', 
+                    bottom: '18rem', 
+                    right: '1rem' 
+                }}
                 id="eye-tracking-panel-unsupported"
             >
                 <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-4 max-w-sm">
@@ -884,12 +889,13 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
     
     return (
         <div 
-            className="fixed bottom-32 right-4 z-50" 
+            className="fixed right-4 z-50" 
             style={{ 
-                zIndex: 9998, // Lower than AutoBrightness (99999)
+                zIndex: 9998, // Lower than VoiceAssistant and AutoBrightness
                 position: 'fixed',
-                bottom: '9rem', // Moved up to make room for AutoBrightness at bottom
-                right: '1rem'
+                bottom: '18rem', // Top position - above VoiceAssistant (5rem) and AutoBrightness (1rem)
+                right: '1rem',
+                maxHeight: 'calc(100vh - 20rem)' // Prevent overflow
             }}
             id="eye-tracking-panel"
         >

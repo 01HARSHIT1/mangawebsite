@@ -341,7 +341,15 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     }
 
     return (
-        <div className="fixed bottom-20 right-4 z-50">
+        <div 
+            className="fixed right-4 z-50"
+            style={{
+                position: 'fixed',
+                bottom: '5rem', // Above AutoBrightness (1rem), below EyeTracking (18rem)
+                right: '1rem',
+                zIndex: 9999
+            }}
+        >
             <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border border-slate-700 shadow-xl p-4 max-w-sm">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-white font-semibold text-sm">Voice Assistant</h3>
