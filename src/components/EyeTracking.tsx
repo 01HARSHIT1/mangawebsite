@@ -1137,7 +1137,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             }}
             id="eye-tracking-panel"
         >
-            <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-green-500/50 shadow-xl p-4 max-w-sm">
+            <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-green-500/50 shadow-xl p-4 max-w-sm max-h-[calc(100vh-28rem)] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 28rem)' }}>
                 <div className="flex items-center justify-between mb-3">
                     <div>
                         <h3 className="text-white font-semibold text-sm">Eye Tracking</h3>
