@@ -645,9 +645,9 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             action = 'noScroll';
         }
         
-        // Save all collected samples
+        // Save all collected samples (keepAllSamples=true to save all 500+ samples)
         guidedCalibrationSamplesRef.current.forEach(sample => {
-            eyeTrackingEngineRef.current?.addCalibrationSample(action, sample.normalizedY);
+            eyeTrackingEngineRef.current?.addCalibrationSample(action, sample.normalizedY, true);
         });
         
         // Update sample count

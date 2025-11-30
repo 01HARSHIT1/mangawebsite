@@ -435,7 +435,7 @@ export class EyeTrackingEngine {
     }
     
     // Add a calibration sample
-    addCalibrationSample(action: 'scrollUp' | 'scrollDown' | 'noScroll', normalizedY: number): void {
+    addCalibrationSample(action: 'scrollUp' | 'scrollDown' | 'noScroll', normalizedY: number, keepAllSamples: boolean = false): void {
         if (!this.calibrationData) {
             this.calibrationData = {
                 scrollUp: { normalizedY: 0, samples: [], mean: 0, stdDev: 0, min: 0, max: 0 },
@@ -446,8 +446,8 @@ export class EyeTrackingEngine {
         }
         
         this.calibrationData[action].samples.push(normalizedY);
-        // Keep only last 20 samples per action
-        if (this.calibrationData[action].samples.length > 20) {
+        // For guided calibration (500+ samples), keep all samples. For quick feedback (30 samples), limit to 20.
+        if (!keepAllSamples && this.calibrationData[action].samples.length > 20) {
             this.calibrationData[action].samples.shift();
         }
         
