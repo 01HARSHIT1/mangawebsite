@@ -294,7 +294,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         },
         // Fallback: Only match if it's clearly a manga name (not a common page name)
         {
-            pattern: /^(open|read|start\s+reading|show)\s+(?!browse|browser|home|library|genres|search|profile|settings|stats|notifications|coins|pricing|dashboard|upload|login|signup|help|about|contact|synopsis|chapters|reviews)(.+)$/i,
+            pattern: /^(open|read|start\s+reading|show)\s+(?!browse|browser|home|library|genres|search|profile|settings|stats|notifications|coins|pricing|dashboard|upload|login|signup|help|about|contact|synopsis|chapters|reviews|chapter)(.+)$/i,
             action: 'openManga',
             params: (matches) => ({ mangaName: matches[2] })
         },
