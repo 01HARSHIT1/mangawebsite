@@ -846,18 +846,25 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openFirstVisibleChapter':
                 // Open the first visible chapter from the chapters tab
-                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                const isMangaDetailPage4 = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
+                if (isMangaDetailPage4) {
                     // First, make sure we're on the chapters tab
                     const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
-                    if (chaptersTab && !chaptersTab.classList.contains('active')) {
-                        chaptersTab.click();
-                        // Wait a bit for tab to switch
-                        setTimeout(() => {
-                            openFirstVisibleChapter();
-                        }, 300);
-                    } else {
-                        openFirstVisibleChapter();
+                    if (chaptersTab) {
+                        // Check if chapters tab is active by looking at its classes or computed styles
+                        const isActive = chaptersTab.classList.contains('active') || 
+                                        chaptersTab.style.borderBottomWidth === '2px' ||
+                                        chaptersTab.getAttribute('aria-selected') === 'true';
+                        if (!isActive) {
+                            chaptersTab.click();
+                            // Wait a bit for tab to switch
+                            setTimeout(() => {
+                                openFirstVisibleChapter();
+                            }, 300);
+                            return;
+                        }
                     }
+                    openFirstVisibleChapter();
                 } else {
                     speak('Chapter navigation is only available on manga detail pages.');
                 }
