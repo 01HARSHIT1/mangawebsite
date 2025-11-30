@@ -193,16 +193,17 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         },
         
         // ========== MANGA DETAIL PAGE TABS ==========
+        // IMPORTANT: These must come BEFORE openManga pattern to prevent "synopsis" from being treated as manga name
         {
-            pattern: /(open|go\s+to|show)\s+synopsis/i,
+            pattern: /^(open|go\s+to|show)\s+synopsis$/i,
             action: 'openSynopsisTab'
         },
         {
-            pattern: /(open|go\s+to|show)\s+chapters/i,
+            pattern: /^(open|go\s+to|show)\s+chapters$/i,
             action: 'openChaptersTab'
         },
         {
-            pattern: /(open|go\s+to|show)\s+reviews/i,
+            pattern: /^(open|go\s+to|show)\s+reviews$/i,
             action: 'openReviewsTab'
         },
         {
@@ -231,7 +232,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         },
         
         // ========== OPENING MANGA BY NAME ==========
-        // IMPORTANT: These patterns must come BEFORE generic "startReading" to match "read [manga name]"
+        // IMPORTANT: These patterns must come AFTER tab navigation to prevent conflicts
         {
             pattern: /(read|start\s+reading|begin\s+reading|open|show)\s+(manga\s+)?(.+)/i,
             action: 'openManga',
@@ -763,7 +764,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openSynopsisTab':
                 // Switch to synopsis tab on manga detail page
-                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                // Check if we're on a manga detail page (more flexible check)
+                const isMangaDetailPage = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
+                if (isMangaDetailPage) {
                     const synopsisTab = document.querySelector('[data-tab="synopsis"]') as HTMLElement;
                     if (synopsisTab) {
                         synopsisTab.click();
@@ -772,13 +775,15 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                         // Try alternative selector
                         const allButtons = Array.from(document.querySelectorAll('button'));
                         const synopsisButton = allButtons.find(btn => 
-                            btn.textContent?.toLowerCase().includes('synopsis')
+                            btn.textContent?.toLowerCase().includes('synopsis') && 
+                            !btn.textContent?.toLowerCase().includes('chapters') &&
+                            !btn.textContent?.toLowerCase().includes('reviews')
                         );
                         if (synopsisButton) {
                             (synopsisButton as HTMLElement).click();
                             speak('Opening synopsis tab.');
                         } else {
-                            speak('Could not find synopsis tab. Please navigate to a manga page first.');
+                            speak('Could not find synopsis tab. Please try again.');
                         }
                     }
                 } else {
@@ -787,7 +792,8 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openChaptersTab':
                 // Switch to chapters tab on manga detail page
-                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                const isMangaDetailPage2 = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
+                if (isMangaDetailPage2) {
                     const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
                     if (chaptersTab) {
                         chaptersTab.click();
@@ -796,13 +802,15 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                         // Try alternative selector - find button with "Chapters" text
                         const allButtons = Array.from(document.querySelectorAll('button'));
                         const chaptersButton = allButtons.find(btn => 
-                            btn.textContent?.toLowerCase().includes('chapters')
+                            btn.textContent?.toLowerCase().includes('chapters') &&
+                            !btn.textContent?.toLowerCase().includes('synopsis') &&
+                            !btn.textContent?.toLowerCase().includes('reviews')
                         );
                         if (chaptersButton) {
                             (chaptersButton as HTMLElement).click();
                             speak('Opening chapters tab.');
                         } else {
-                            speak('Could not find chapters tab. Please navigate to a manga page first.');
+                            speak('Could not find chapters tab. Please try again.');
                         }
                     }
                 } else {
@@ -811,7 +819,8 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openReviewsTab':
                 // Switch to reviews tab on manga detail page
-                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                const isMangaDetailPage3 = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
+                if (isMangaDetailPage3) {
                     const reviewsTab = document.querySelector('[data-tab="reviews"]') as HTMLElement;
                     if (reviewsTab) {
                         reviewsTab.click();
@@ -820,13 +829,15 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                         // Try alternative selector - find button with "Reviews" text
                         const allButtons = Array.from(document.querySelectorAll('button'));
                         const reviewsButton = allButtons.find(btn => 
-                            btn.textContent?.toLowerCase().includes('reviews')
+                            btn.textContent?.toLowerCase().includes('reviews') &&
+                            !btn.textContent?.toLowerCase().includes('synopsis') &&
+                            !btn.textContent?.toLowerCase().includes('chapters')
                         );
                         if (reviewsButton) {
                             (reviewsButton as HTMLElement).click();
                             speak('Opening reviews tab.');
                         } else {
-                            speak('Could not find reviews tab. Please navigate to a manga page first.');
+                            speak('Could not find reviews tab. Please try again.');
                         }
                     }
                 } else {
