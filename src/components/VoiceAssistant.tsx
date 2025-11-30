@@ -1079,6 +1079,53 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         }
     };
 
+    const openFirstVisibleChapter = () => {
+        // Find the first visible chapter link in the chapters tab
+        // Look for divs with onClick handlers that navigate to chapters (from MangaTabs.tsx)
+        const chapterDivs = Array.from(document.querySelectorAll('div[onclick*="chapter"], div[class*="chapter"]'));
+        
+        // Also look for any clickable elements that might navigate to chapters
+        const allClickableElements = Array.from(document.querySelectorAll('div[class*="cursor-pointer"], div[onclick]'));
+        
+        let firstChapterElement: HTMLElement | null = null;
+        
+        // First, try to find divs that are chapter cards (they have onClick handlers)
+        if (chapterDivs.length > 0) {
+            firstChapterElement = chapterDivs.find(div => {
+                const rect = div.getBoundingClientRect();
+                return rect.top >= 0 && rect.top < window.innerHeight && rect.height > 0;
+            }) as HTMLElement || (chapterDivs[0] as HTMLElement);
+        } else if (allClickableElements.length > 0) {
+            // Try to find clickable divs that might be chapter cards
+            firstChapterElement = allClickableElements.find(div => {
+                const rect = div.getBoundingClientRect();
+                const text = div.textContent?.toLowerCase() || '';
+                return rect.top >= 0 && rect.top < window.innerHeight && 
+                       rect.height > 0 && 
+                       (text.includes('chapter') || div.onclick !== null);
+            }) as HTMLElement || (allClickableElements[0] as HTMLElement);
+        }
+        
+        if (firstChapterElement) {
+            // Try clicking the div (it should have an onClick handler from MangaTabs.tsx)
+            firstChapterElement.click();
+            speak('Opening chapter.');
+        } else {
+            // Fallback: try to find and click the "Read Chapter 1" button
+            const readButton = Array.from(document.querySelectorAll('button, a')).find(el => {
+                const text = el.textContent?.toLowerCase() || '';
+                return text.includes('read chapter') || text.includes('chapter 1');
+            }) as HTMLElement;
+            
+            if (readButton) {
+                readButton.click();
+                speak('Opening chapter.');
+            } else {
+                speak('No visible chapters found. Please make sure you are on the chapters tab.');
+            }
+        }
+    };
+
     const speak = (text: string) => {
         if (synthRef.current) {
             // Cancel any ongoing speech
