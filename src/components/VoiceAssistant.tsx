@@ -510,6 +510,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                     openMangaByName(params.mangaName);
                 }
                 break;
+            case 'startReadingCurrentManga':
+                startReadingCurrentManga();
+                break;
             case 'searchByGenre':
                 if (params?.genre) {
                     router.push(`/manga?genre=${encodeURIComponent(params.genre)}`);
@@ -644,6 +647,58 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         } catch (error) {
             speak(`Error searching for ${mangaName}. Opening search page.`);
             router.push(`/manga?search=${encodeURIComponent(mangaName)}`);
+        }
+    };
+
+    const startReadingCurrentManga = async () => {
+        // Check if we're on a manga detail page (/manga/[mangaId])
+        const mangaDetailMatch = pathname?.match(/^\/manga\/([^\/]+)$/);
+        
+        if (!mangaDetailMatch) {
+            // Not on a manga detail page - try to find manga from current page
+            speak('Please navigate to a manga page first, or say "open [manga name]" to open a specific manga.');
+            return;
+        }
+        
+        const mangaId = mangaDetailMatch[1];
+        
+        try {
+            speak('Finding first chapter...');
+            
+            // Fetch manga details to get chapters
+            const response = await fetch(`/api/manga/${mangaId}`);
+            
+            if (!response.ok) {
+                speak('Could not load manga chapters. Please try clicking the read button manually.');
+                return;
+            }
+            
+            const data = await response.json();
+            const manga = data.manga;
+            const chapters = manga.chapters || [];
+            
+            if (chapters.length === 0) {
+                speak('No chapters available for this manga.');
+                return;
+            }
+            
+            // Get the first chapter (sorted by chapterNumber)
+            const sortedChapters = [...chapters].sort((a: any, b: any) => 
+                (a.chapterNumber || 0) - (b.chapterNumber || 0)
+            );
+            const firstChapter = sortedChapters[0];
+            const firstChapterId = firstChapter._id || firstChapter.id;
+            
+            if (!firstChapterId) {
+                speak('Could not find first chapter. Please try clicking the read button manually.');
+                return;
+            }
+            
+            // Navigate to first chapter
+            router.push(`/manga/${mangaId}/chapter/${firstChapterId}`);
+            speak(`Starting Chapter ${firstChapter.chapterNumber || 1}.`);
+        } catch (error) {
+            speak('Error loading chapters. Please try clicking the read button manually.');
         }
     };
 
