@@ -53,17 +53,26 @@ export default async function MangaDetailPage({ params }: { params: { mangaId: s
         }
 
         if (!mangaRaw) {
-            // If not found in MongoDB, check if it's a test manga from in-memory storage
-            const testManga = {
-                _id: params.mangaId,
-                title: params.mangaId === '1' ? 'Test Manga 1' : params.mangaId === '2' ? 'Test Manga 2' : 'Unknown Manga',
-                description: 'A test manga for development',
-                genre: 'Action',
-                coverImage: '/images/default-cover.jpg',
-                status: 'Ongoing',
-                createdAt: new Date().toISOString()
-            };
-            mangaRaw = testManga;
+            // Manga not found - return proper error page instead of test data
+            return (
+                <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+                    <div className="text-center max-w-2xl px-4">
+                        <h1 className="text-3xl font-bold mb-4 text-red-400">Manga Not Found</h1>
+                        <p className="text-gray-300 mb-2">The manga you're looking for doesn't exist or has been removed.</p>
+                        <p className="text-gray-400 text-sm mb-6">
+                            Manga ID: {params.mangaId}
+                        </p>
+                        <div className="space-y-2">
+                            <a 
+                                href="/manga" 
+                                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                            >
+                                Browse All Manga
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
         }
 
         const manga = {
