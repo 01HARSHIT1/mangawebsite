@@ -1437,7 +1437,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                         </div>
                     )}
                 </div>,
-                document.body
+                typeof document !== 'undefined' ? document.body : null
             )}
         </div>
     );
