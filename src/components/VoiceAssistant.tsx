@@ -1023,7 +1023,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openFirstVisibleChapter':
                 // Open the first visible chapter from the chapters tab
-                if (isOnMangaDetailPage()) {
+                // Use direct pathname check for reliability
+                const currentPathForChapter = getCurrentPathname();
+                const pathWithoutQuery = currentPathForChapter.split('?')[0].split('#')[0];
+                const isMangaDetail = pathWithoutQuery.includes('/manga/') && 
+                                     !pathWithoutQuery.includes('/chapter/') &&
+                                     pathWithoutQuery.match(/^\/manga\/[^\/]+$/);
+                
+                if (isMangaDetail) {
                     // First, make sure we're on the chapters tab
                     const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
                     if (chaptersTab) {
