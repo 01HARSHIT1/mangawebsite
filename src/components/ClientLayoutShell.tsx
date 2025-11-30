@@ -100,7 +100,8 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
             <PWAInstaller />
             
             {/* Voice Assistant - Global: Visible on all pages */}
-            {pageInteractive && !aiFeaturesLoading && (
+            {/* Only render one instance - check if already exists */}
+            {pageInteractive && !aiFeaturesLoading && typeof window !== 'undefined' && !document.getElementById('voice-assistant-panel') && (
                 <VoiceAssistant
                     enabled={voiceAssistantEnabled}
                     showUI={true}

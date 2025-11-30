@@ -519,6 +519,16 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             return;
         }
 
+        // Stop any existing recognition before starting a new one
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                // Ignore errors
+            }
+            recognitionRef.current = null;
+        }
+
         try {
             const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
             const recognition = new SpeechRecognition();
