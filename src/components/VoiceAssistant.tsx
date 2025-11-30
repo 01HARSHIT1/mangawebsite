@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { FaMicrophone, FaMicrophoneSlash, FaVolumeUp } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -40,6 +40,7 @@ const CONFIRMATION_REQUIRED = [
 export default function VoiceAssistant({ onCommand, enabled = false, showUI = true }: VoiceAssistantProps) {
     const { isAuthenticated, user } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const [isListening, setIsListening] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
     const [transcript, setTranscript] = useState('');
@@ -88,10 +89,6 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             params: (matches) => ({ direction: matches[0].toLowerCase().includes('down') ? 'down' : 'up' })
         },
         {
-            pattern: /(read|start\s+reading|begin\s+reading|continue\s+reading)/i,
-            action: 'startReading'
-        },
-        {
             pattern: /(pause\s+reading|stop\s+reading|take\s+a\s+break)/i,
             action: 'pauseReading'
         },
@@ -135,15 +132,18 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         },
         
         // ========== OPENING MANGA BY NAME ==========
+        // IMPORTANT: These patterns must come BEFORE generic "startReading" to match "read [manga name]"
         {
-            pattern: /(open|read|start\s+reading|show)\s+(manga\s+)?(.+)/i,
+            pattern: /(read|start\s+reading|begin\s+reading|open|show)\s+(manga\s+)?(.+)/i,
             action: 'openManga',
-            params: (matches) => ({ mangaName: matches[3] })
+            params: (matches) => ({ mangaName: matches[3] || matches[2] })
         },
+        
+        // ========== START READING CURRENT MANGA ==========
+        // This pattern matches "start reading" or "read" without a manga name (only on manga detail pages)
         {
-            pattern: /(read|start\s+reading|begin\s+reading)\s+(.+)/i,
-            action: 'openManga',
-            params: (matches) => ({ mangaName: matches[2] })
+            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter)$/i,
+            action: 'startReadingCurrentManga'
         },
         
         // ========== PERSONALIZED ASSISTANCE ==========
