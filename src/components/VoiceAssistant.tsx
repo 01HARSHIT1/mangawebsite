@@ -131,6 +131,66 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             pattern: /(open|go\s+to|show)\s+search/i,
             action: 'openSearch'
         },
+        {
+            pattern: /(open|go\s+to|show)\s+(my\s+)?profile/i,
+            action: 'openProfile'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+settings/i,
+            action: 'openSettings'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+statistics/i,
+            action: 'openStats'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+notifications/i,
+            action: 'openNotifications'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+coins/i,
+            action: 'openCoins'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+pricing/i,
+            action: 'openPricing'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+(creator\s+)?dashboard/i,
+            action: 'openCreatorDashboard'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+admin\s+dashboard/i,
+            action: 'openAdminDashboard'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+upload/i,
+            action: 'openUpload'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+become\s+creator/i,
+            action: 'openBecomeCreator'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+login/i,
+            action: 'openLogin'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+sign\s+up|signup/i,
+            action: 'openSignup'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+help/i,
+            action: 'openHelp'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+about/i,
+            action: 'openAbout'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+contact/i,
+            action: 'openContact'
+        },
         
         // ========== SEARCHING MANGA ==========
         {
@@ -158,8 +218,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         
         // ========== START READING CURRENT MANGA ==========
         // This pattern matches "start reading" or "read" without a manga name (only on manga detail pages)
+        // Also matches "open chapter 1", "go to chapter 1", etc.
         {
-            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter|go\s+to\s+chapter\s+1)$/i,
+            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter|go\s+to\s+chapter\s+1|open\s+chapter\s+1|read\s+now)$/i,
             action: 'startReadingCurrentManga'
         },
         
