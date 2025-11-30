@@ -1271,6 +1271,72 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             )}
                             {guidedCalibrationMode !== 'idle' && (
                                 <div className="space-y-3">
+                                    {/* Manual Zone Selection Buttons */}
+                                    <div className="p-2 bg-slate-800/50 rounded border border-slate-600">
+                                        <div className="text-xs font-semibold text-cyan-400 mb-2 text-center">
+                                            🎯 Switch Zone Manually
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    if (guidedCalibrationCountdownRef.current) {
+                                                        clearInterval(guidedCalibrationCountdownRef.current as any);
+                                                    }
+                                                    if (guidedCalibrationIntervalRef.current) {
+                                                        clearInterval(guidedCalibrationIntervalRef.current);
+                                                    }
+                                                    startGuidedCalibrationStep('top');
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
+                                                    guidedCalibrationMode === 'top' 
+                                                        ? 'bg-blue-600 text-white ring-2 ring-blue-300' 
+                                                        : 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/70'
+                                                }`}
+                                                disabled={guidedCalibrationCountdown > 0}
+                                            >
+                                                ↑ Top
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (guidedCalibrationCountdownRef.current) {
+                                                        clearInterval(guidedCalibrationCountdownRef.current as any);
+                                                    }
+                                                    if (guidedCalibrationIntervalRef.current) {
+                                                        clearInterval(guidedCalibrationIntervalRef.current);
+                                                    }
+                                                    startGuidedCalibrationStep('middle');
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
+                                                    guidedCalibrationMode === 'middle' 
+                                                        ? 'bg-yellow-600 text-white ring-2 ring-yellow-300' 
+                                                        : 'bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800/70'
+                                                }`}
+                                                disabled={guidedCalibrationCountdown > 0}
+                                            >
+                                                • Middle
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (guidedCalibrationCountdownRef.current) {
+                                                        clearInterval(guidedCalibrationCountdownRef.current as any);
+                                                    }
+                                                    if (guidedCalibrationIntervalRef.current) {
+                                                        clearInterval(guidedCalibrationIntervalRef.current);
+                                                    }
+                                                    startGuidedCalibrationStep('bottom');
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
+                                                    guidedCalibrationMode === 'bottom' 
+                                                        ? 'bg-green-600 text-white ring-2 ring-green-300' 
+                                                        : 'bg-green-900/50 text-green-300 hover:bg-green-800/70'
+                                                }`}
+                                                disabled={guidedCalibrationCountdown > 0}
+                                            >
+                                                ↓ Bottom
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
                                     {/* Current Zone Indicator */}
                                     <div className={`text-lg font-bold text-center p-3 rounded ${
                                         guidedCalibrationMode === 'top' ? 'bg-blue-600 text-white border-2 border-blue-300' :
@@ -1353,6 +1419,35 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                             <span>✅ Sample collection in progress - Keep looking at the {guidedCalibrationMode === 'top' ? 'blue' : guidedCalibrationMode === 'middle' ? 'yellow' : 'green'} box!</span>
                                         )}
                                     </div>
+                                    
+                                    {/* Check Saved Data Button */}
+                                    <button
+                                        onClick={() => {
+                                            if (eyeTrackingEngineRef.current) {
+                                                const calibration = eyeTrackingEngineRef.current.getCalibration();
+                                                if (calibration && calibration.calibrated) {
+                                                    const topCount = calibration.scrollUp?.samples?.length || 0;
+                                                    const middleCount = calibration.noScroll?.samples?.length || 0;
+                                                    const bottomCount = calibration.scrollDown?.samples?.length || 0;
+                                                    const total = topCount + middleCount + bottomCount;
+                                                    
+                                                    alert(`📊 Saved Calibration Data:\n\nTop (scrollUp): ${topCount} samples\nMiddle (noScroll): ${middleCount} samples\nBottom (scrollDown): ${bottomCount} samples\n\nTotal: ${total} samples\n\n✅ All data is saved in localStorage as 'eyeTrackingCalibration'`);
+                                                    
+                                                    // Update displayed counts
+                                                    setGuidedCalibrationSamples({
+                                                        top: topCount,
+                                                        middle: middleCount,
+                                                        bottom: bottomCount
+                                                    });
+                                                } else {
+                                                    alert('⚠️ No calibration data found yet. Samples are being collected...');
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm transition-all"
+                                    >
+                                        📊 Check Saved Data
+                                    </button>
                                     
                                     <button
                                         onClick={cancelGuidedCalibration}
