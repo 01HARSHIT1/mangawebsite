@@ -1319,20 +1319,21 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 <canvas ref={canvasRef} className="hidden" />
             </div>
             
-            {/* Guided Calibration Visual Overlay */}
+            {/* Guided Calibration Visual Overlay - More Prominent */}
             {guidedCalibrationMode !== 'idle' && typeof window !== 'undefined' && (
                 <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 99998 }}>
                     {guidedCalibrationMode === 'top' && (
                         <div 
-                            className="absolute left-0 right-0 bg-blue-500/30 border-4 border-blue-400 animate-pulse"
+                            className="absolute left-0 right-0 border-8 border-blue-500 animate-pulse"
                             style={{ 
                                 top: 0, 
-                                height: `${window.innerHeight * 0.06}px`,
-                                boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)'
+                                height: `${window.innerHeight * 0.07}px`,
+                                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                                boxShadow: '0 0 40px rgba(59, 130, 246, 0.8), inset 0 0 40px rgba(59, 130, 246, 0.3)'
                             }}
                         >
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-white font-bold text-xl bg-blue-600/80 px-4 py-2 rounded">
+                                <div className="text-white font-bold text-2xl bg-blue-600 px-6 py-3 rounded-lg shadow-2xl border-2 border-blue-300">
                                     ↑ LOOK HERE - TOP ZONE (5-7%)
                                 </div>
                             </div>
@@ -1340,15 +1341,16 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                     )}
                     {guidedCalibrationMode === 'middle' && (
                         <div 
-                            className="absolute left-0 right-0 bg-yellow-500/30 border-4 border-yellow-400 animate-pulse"
+                            className="absolute left-0 right-0 border-8 border-yellow-500 animate-pulse"
                             style={{ 
                                 top: `${window.innerHeight * 0.4}px`, 
                                 height: `${window.innerHeight * 0.2}px`,
-                                boxShadow: '0 0 20px rgba(234, 179, 8, 0.5)'
+                                backgroundColor: 'rgba(234, 179, 8, 0.5)',
+                                boxShadow: '0 0 40px rgba(234, 179, 8, 0.8), inset 0 0 40px rgba(234, 179, 8, 0.3)'
                             }}
                         >
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-white font-bold text-xl bg-yellow-600/80 px-4 py-2 rounded">
+                                <div className="text-white font-bold text-2xl bg-yellow-600 px-6 py-3 rounded-lg shadow-2xl border-2 border-yellow-300">
                                     • LOOK HERE - MIDDLE ZONE
                                 </div>
                             </div>
@@ -1356,15 +1358,16 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                     )}
                     {guidedCalibrationMode === 'bottom' && (
                         <div 
-                            className="absolute left-0 right-0 bg-green-500/30 border-4 border-green-400 animate-pulse"
+                            className="absolute left-0 right-0 border-8 border-green-500 animate-pulse"
                             style={{ 
                                 bottom: 0, 
                                 height: `${window.innerHeight * 0.05}px`,
-                                boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)'
+                                backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                                boxShadow: '0 0 40px rgba(34, 197, 94, 0.8), inset 0 0 40px rgba(34, 197, 94, 0.3)'
                             }}
                         >
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="text-white font-bold text-xl bg-green-600/80 px-4 py-2 rounded">
+                                <div className="text-white font-bold text-2xl bg-green-600 px-6 py-3 rounded-lg shadow-2xl border-2 border-green-300">
                                     ↓ LOOK HERE - BOTTOM ZONE (95-100%)
                                 </div>
                             </div>
