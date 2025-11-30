@@ -1176,178 +1176,19 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 )}
 
                 {isActive && (
-                    <div className="mb-2 space-y-2">
+                    <div className="mb-2 space-y-3">
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                             <span>Tracking gaze...</span>
                         </div>
                         
-                        {/* Accuracy Metrics Section */}
-                        <div className="mt-3 p-2 bg-slate-900/70 rounded border border-slate-700">
-                            <div className="text-xs font-semibold text-cyan-400 mb-2">📊 Accuracy Metrics</div>
-                            
-                            {/* Current Confidence */}
-                            <div className="mb-2">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-xs text-gray-400">Current Confidence:</span>
-                                    <span className={`text-xs font-bold ${
-                                        currentConfidence > 0.7 ? 'text-green-400' :
-                                        currentConfidence > 0.4 ? 'text-yellow-400' :
-                                        'text-red-400'
-                                    }`}>
-                                        {(currentConfidence * 100).toFixed(1)}%
-                                    </span>
-                                </div>
-                                <div className="w-full bg-slate-800 rounded-full h-1.5">
-                                    <div 
-                                        className={`h-1.5 rounded-full transition-all ${
-                                            currentConfidence > 0.7 ? 'bg-green-500' :
-                                            currentConfidence > 0.4 ? 'bg-yellow-500' :
-                                            'bg-red-500'
-                                        }`}
-                                        style={{ width: `${Math.min(currentConfidence * 100, 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            
-                            {/* Average Confidence */}
-                            <div className="mb-2">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-xs text-gray-400">Avg Confidence:</span>
-                                    <span className={`text-xs font-bold ${
-                                        averageConfidence > 0.7 ? 'text-green-400' :
-                                        averageConfidence > 0.4 ? 'text-yellow-400' :
-                                        'text-gray-400'
-                                    }`}>
-                                        {(averageConfidence * 100).toFixed(1)}%
-                                    </span>
-                                </div>
-                                <div className="w-full bg-slate-800 rounded-full h-1.5">
-                                    <div 
-                                        className={`h-1.5 rounded-full transition-all ${
-                                            averageConfidence > 0.7 ? 'bg-green-500' :
-                                            averageConfidence > 0.4 ? 'bg-yellow-500' :
-                                            'bg-gray-500'
-                                        }`}
-                                        style={{ width: `${Math.min(averageConfidence * 100, 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            
-                            {/* Detection Rate */}
-                            <div className="mb-2">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-400">Detection Rate:</span>
-                                    <span className={`text-xs font-bold ${
-                                        detectionRate > 80 ? 'text-green-400' :
-                                        detectionRate > 50 ? 'text-yellow-400' :
-                                        'text-red-400'
-                                    }`}>
-                                        {detectionRate.toFixed(1)}%
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            {/* Screen Position & Zone */}
-                            {screenPosition && (
-                                <div className="mt-2 pt-2 border-t border-slate-700 space-y-1">
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-gray-400">Screen Position:</span>
-                                        <span className="text-cyan-400 font-mono">
-                                            X: {screenPosition.x.toFixed(2)} Y: {screenPosition.y.toFixed(2)}
-                                        </span>
-                                    </div>
-                                    {viewportZone && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-gray-400">Viewport Zone:</span>
-                                            <span className={`font-bold ${
-                                                viewportZone === 'top' ? 'text-blue-400' :
-                                                viewportZone === 'bottom' ? 'text-green-400' :
-                                                'text-yellow-400'
-                                            }`}>
-                                                {viewportZone.toUpperCase()}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {scrollIntensity !== 0 && (
-                                        <div className="flex justify-between text-xs">
-                                            <span className="text-gray-400">Scroll Intensity:</span>
-                                            <span className={`font-bold ${
-                                                scrollIntensity > 0 ? 'text-green-400' : 'text-blue-400'
-                                            }`}>
-                                                {scrollIntensity > 0 ? '↓' : '↑'} {Math.abs(scrollIntensity).toFixed(2)}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* Gaze Direction */}
-                        {gazeDirection && (
-                            <div className="text-xs text-blue-400">
-                                Direction: <span className="font-bold">{gazeDirection}</span>
-                            </div>
-                        )}
-                        
-                        {/* Auto-scroll Status */}
-                        {autoScrollEnabled && (
-                            <div className="text-xs text-yellow-400">
-                                ✓ Auto-scroll enabled
-                            </div>
-                        )}
-                        {!autoScrollEnabled && (
-                            <div className="text-xs text-orange-400">
-                                ⚠ Enable auto-scroll in settings
-                            </div>
-                        )}
-                        
-                        
-                        {/* Accuracy Rating */}
-                        <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
-                            <div className="font-semibold text-cyan-400 mb-1">Accuracy Rating:</div>
-                            <div className={`text-sm font-bold ${
-                                averageConfidence > 0.7 && detectionRate > 80 ? 'text-green-400' :
-                                averageConfidence > 0.4 && detectionRate > 50 ? 'text-yellow-400' :
-                                'text-red-400'
-                            }`}>
-                                {averageConfidence > 0.7 && detectionRate > 80 ? '🟢 Excellent' :
-                                 averageConfidence > 0.4 && detectionRate > 50 ? '🟡 Good' :
-                                 currentConfidence === 0 ? '🔴 No Face Detected - Check camera & lighting' :
-                                 '🔴 Poor - Check lighting & camera position'}
-                            </div>
-                            {currentConfidence === 0 && (
-                                <div className="text-xs text-red-300 mt-2 space-y-1">
-                                    <div>⚠️ Troubleshooting:</div>
-                                    <div>• Ensure camera is on and working</div>
-                                    <div>• Check browser permissions</div>
-                                    <div>• Improve lighting (face should be visible)</div>
-                                    <div>• Look directly at camera</div>
-                                    <div>• Check browser console (F12) for errors</div>
-                                </div>
-                            )}
-                        </div>
-                        
-                        <div className="text-xs text-gray-500 mt-2 p-2 bg-slate-900/50 rounded">
-                            💡 Look down to scroll, look up to scroll back
-                        </div>
-                        
-                        {/* Calibration Stats Display */}
+                        {/* Calibration Stats Display - Simple */}
                         {calibrationStats && (
-                            <div className="mt-3 p-2 bg-blue-900/30 rounded border border-blue-700/50">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="text-xs font-semibold text-blue-400">
-                                        📊 Calibration Data
-                                    </div>
-                                    <button
-                                        onClick={checkLocalStorageData}
-                                        className="text-xs text-blue-300 hover:text-blue-200"
-                                        title="Check localStorage for your 30 samples"
-                                    >
-                                        🔍 Verify
-                                    </button>
+                            <div className="p-2 bg-blue-900/30 rounded border border-blue-700/50">
+                                <div className="text-xs font-semibold text-blue-400 mb-2 text-center">
+                                    📊 Calibration Progress
                                 </div>
-                                <div className="grid grid-cols-4 gap-2 text-xs">
+                                <div className="grid grid-cols-3 gap-2 text-xs">
                                     <div className="text-center">
                                         <div className="text-blue-300 font-bold">{calibrationStats.scrollUp}</div>
                                         <div className="text-gray-400">Top</div>
@@ -1360,75 +1201,39 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                         <div className="text-green-300 font-bold">{calibrationStats.scrollDown}</div>
                                         <div className="text-gray-400">Bottom</div>
                                     </div>
-                                    <div className="text-center">
-                                        <div className="text-purple-300 font-bold">{calibrationStats.total}</div>
-                                        <div className="text-gray-400">Total</div>
-                                    </div>
                                 </div>
-                                {calibrationStats.total >= 30 && (
-                                    <div className="text-xs text-green-400 mt-2 text-center">
-                                        ✅ Excellent! {calibrationStats.total} samples loaded (Master + Your 30 samples)
-                                    </div>
-                                )}
-                                {calibrationStats.total < 30 && calibrationStats.total > 15 && (
-                                    <div className="text-xs text-yellow-400 mt-2 text-center">
-                                        ⚠️ {calibrationStats.total} samples - Your 30 samples may not be in localStorage
-                                    </div>
-                                )}
+                                <div className="text-xs text-gray-400 text-center mt-2">
+                                    Total: <span className="font-bold text-purple-300">{calibrationStats.total}</span> samples
+                                </div>
                             </div>
                         )}
                         
-                        {/* Zone System Explanation */}
-                        <div className="mt-3 p-3 bg-cyan-900/30 rounded border border-cyan-700/50">
-                            <div className="text-xs font-semibold text-cyan-400 mb-2">
-                                📐 How Zones Work
-                            </div>
-                            <div className="text-xs text-gray-400 space-y-1">
-                                <div><strong className="text-cyan-300">You calibrate with 3 zones:</strong></div>
-                                <div className="ml-2">• <span className="text-blue-400">TOP</span> - Look at top of screen</div>
-                                <div className="ml-2">• <span className="text-yellow-400">MIDDLE</span> - Look at center</div>
-                                <div className="ml-2">• <span className="text-green-400">BOTTOM</span> - Look at bottom</div>
-                                <div className="mt-2"><strong className="text-cyan-300">System automatically uses 5 zones:</strong></div>
-                                <div className="ml-2 text-xs">
-                                    <div>• <span className="text-blue-400">0-5%</span> Top Scroll (scrolls UP)</div>
-                                    <div>• <span className="text-gray-400">5-15%</span> Top Reading (no scroll)</div>
-                                    <div>• <span className="text-yellow-400">15-75%</span> Middle (no scroll)</div>
-                                    <div>• <span className="text-gray-400">75-95%</span> Bottom Reading (no scroll)</div>
-                                    <div>• <span className="text-green-400">95-100%</span> Bottom Scroll (scrolls DOWN)</div>
-                                </div>
-                                <div className="mt-2 text-cyan-300">
-                                    ✅ Only top 5% and bottom 5% trigger scrolling
-                                </div>
-                            </div>
-                        </div>
-                        
                         {/* Guided Calibration Mode */}
-                        <div className="mt-3 p-3 bg-green-900/30 rounded border border-green-700/50">
+                        <div className="p-3 bg-green-900/30 rounded border border-green-700/50">
                             <div className="text-xs font-semibold text-green-400 mb-2">
                                 🎯 Guided Calibration (500 Samples Per Zone)
                             </div>
-                            <div className="text-xs text-gray-400 mb-3 space-y-1">
-                                <div><strong>How it works:</strong></div>
-                                <div>1. System shows you where to look (top 5-7%, middle, bottom 95-100%)</div>
-                                <div>2. Stare at the highlighted zone for 2-3 seconds</div>
-                                <div>3. System automatically collects ~50 samples per run</div>
-                                <div>4. Repeats each zone ~10 times to collect 500 samples</div>
-                                <div>5. Automatically moves to next zone when complete</div>
-                                <div className="mt-2 text-green-300">
-                                    <strong>Target: 500 samples per zone (Total: 1,500 samples)</strong>
-                                </div>
-                                <div className="mt-1 text-yellow-300 text-xs">
-                                    ⏱️ Estimated time: ~5-7 minutes per zone = ~15-20 minutes total
-                                </div>
-                            </div>
                             {guidedCalibrationMode === 'idle' && (
-                                <button
-                                    onClick={startGuidedCalibration}
-                                    className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm transition-all"
-                                    disabled={!isActive}
-                                >
-                                    🚀 Start Guided Calibration
-                                </button>
+                                <>
+                                    <div className="text-xs text-gray-400 mb-3 space-y-1">
+                                        <div>• System shows colored overlay on screen</div>
+                                        <div>• Stare at highlighted zone when countdown ends</div>
+                                        <div>• Automatically collects 500 samples per zone</div>
+                                        <div className="mt-2 text-green-300">
+                                            <strong>Target: 500 samples per zone</strong>
+                                        </div>
+                                        <div className="mt-1 text-yellow-300 text-xs">
+                                            ⏱️ ~15-20 minutes total
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={startGuidedCalibration}
+                                        className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm transition-all"
+                                        disabled={!isActive}
+                                    >
+                                        🚀 Start Guided Calibration
+                                    </button>
+                                </>
                             )}
                             {guidedCalibrationMode !== 'idle' && (
                                 <div className="space-y-3">
@@ -1461,9 +1266,9 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                     )}
                                     <div className="text-xs text-gray-400 text-center space-y-1">
                                         <div>
-                                            Samples: Top: {guidedCalibrationSamples.top}/500 | Middle: {guidedCalibrationSamples.middle}/500 | Bottom: {guidedCalibrationSamples.bottom}/500
+                                            Top: {guidedCalibrationSamples.top}/500 | Middle: {guidedCalibrationSamples.middle}/500 | Bottom: {guidedCalibrationSamples.bottom}/500
                                         </div>
-                                        <div className="text-yellow-400">
+                                        <div className="text-yellow-400 font-bold">
                                             {guidedCalibrationMode === 'top' && `Progress: ${Math.round((guidedCalibrationSamples.top / 500) * 100)}%`}
                                             {guidedCalibrationMode === 'middle' && `Progress: ${Math.round((guidedCalibrationSamples.middle / 500) * 100)}%`}
                                             {guidedCalibrationMode === 'bottom' && `Progress: ${Math.round((guidedCalibrationSamples.bottom / 500) * 100)}%`}
@@ -1475,139 +1280,6 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                     >
                                         ❌ Cancel
                                     </button>
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* Step-by-Step Feedback System for Active Learning */}
-                        <div className="mt-3 p-3 bg-purple-900/30 rounded border border-purple-700/50">
-                            <div className="text-xs font-semibold text-purple-400 mb-3">
-                                🎯 Step-by-Step Zone Training
-                            </div>
-                            
-                            {feedbackMode === 'idle' && (
-                                <div className="space-y-2">
-                                    <div className="text-xs text-gray-400 mb-3 space-y-1">
-                                        <div><strong>How to calibrate:</strong></div>
-                                        <div>1. Look at TOP/MIDDLE/BOTTOM of screen</div>
-                                        <div>2. Click "Start Test" and hold your gaze for 1.5 seconds</div>
-                                        <div>3. System collects 20-50 frames automatically</div>
-                                        <div>4. Confirm the detected zone (or correct it)</div>
-                                        <div className="mt-2 text-cyan-400">
-                                            <strong>Target: 30-50 samples per zone</strong> (repeat 2-3 times per zone)
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={startZoneTest}
-                                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-semibold text-sm transition-all"
-                                    >
-                                        🚀 Start Test
-                                    </button>
-                                    {testCount > 0 && (
-                                        <div className="text-xs text-gray-400 text-center">
-                                            Tests completed: {testCount} | Feedback given: {feedbackCount}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            
-                            {feedbackMode === 'testing' && (
-                                <div className="space-y-3">
-                                    <div className="text-xs text-yellow-400 font-semibold animate-pulse">
-                                        ⏳ Testing... Look at TOP, MIDDLE, or BOTTOM of screen
-                                    </div>
-                                    <div className="text-xs text-gray-400">
-                                        Collecting 20-50 frames (1.5 seconds)... Keep looking at the zone!
-                                    </div>
-                                    <div className="text-xs text-cyan-400">
-                                        Frames collected: {testSamplesRef.current.length}
-                                    </div>
-                                    <button
-                                        onClick={stopZoneTest}
-                                        className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-semibold text-sm transition-all"
-                                    >
-                                        Stop Test
-                                    </button>
-                                </div>
-                            )}
-                            
-                            {feedbackMode === 'feedback' && testResult.zone && (
-                                <div className="space-y-3">
-                                    <div className="text-xs text-gray-400 mb-2">
-                                        Detected Zone:
-                                    </div>
-                                    <div className={`text-lg font-bold text-center p-3 rounded ${
-                                        testResult.zone === 'top' ? 'bg-blue-600 text-white' :
-                                        testResult.zone === 'bottom' ? 'bg-green-600 text-white' :
-                                        'bg-yellow-600 text-white'
-                                    }`}>
-                                        {testResult.zone.toUpperCase()}
-                                    </div>
-                                    <div className="text-xs text-gray-500 text-center mb-3">
-                                        Is this correct? Select the actual zone you were looking at:
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button
-                                            onClick={() => handleZoneFeedback('top')}
-                                            className={`px-3 py-2 rounded text-xs font-semibold transition-all ${
-                                                testResult.zone === 'top'
-                                                    ? 'bg-blue-600 text-white ring-2 ring-blue-300'
-                                                    : 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/70'
-                                            }`}
-                                        >
-                                            ↑ TOP
-                                        </button>
-                                        <button
-                                            onClick={() => handleZoneFeedback('middle')}
-                                            className={`px-3 py-2 rounded text-xs font-semibold transition-all ${
-                                                testResult.zone === 'middle'
-                                                    ? 'bg-yellow-600 text-white ring-2 ring-yellow-300'
-                                                    : 'bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800/70'
-                                            }`}
-                                        >
-                                            • MIDDLE
-                                        </button>
-                                        <button
-                                            onClick={() => handleZoneFeedback('bottom')}
-                                            className={`px-3 py-2 rounded text-xs font-semibold transition-all ${
-                                                testResult.zone === 'bottom'
-                                                    ? 'bg-green-600 text-white ring-2 ring-green-300'
-                                                    : 'bg-green-900/50 text-green-300 hover:bg-green-800/70'
-                                            }`}
-                                        >
-                                            ↓ BOTTOM
-                                        </button>
-                                    </div>
-                                    <button
-                                        onClick={() => setFeedbackMode('idle')}
-                                        className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold text-sm transition-all mt-2"
-                                    >
-                                        Try Again
-                                    </button>
-                                </div>
-                            )}
-                            
-                            {feedbackCount > 0 && (
-                                <div className="space-y-2">
-                                    <div className="text-xs text-green-400 mt-3 pt-3 border-t border-purple-700/50 text-center">
-                                        ✓ {feedbackCount} feedback sample{feedbackCount !== 1 ? 's' : ''} collected - System is learning!
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={exportCalibrationData}
-                                            className="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold transition-all"
-                                            title="Export your calibration data to console"
-                                        >
-                                            📤 Export
-                                        </button>
-                                        <button
-                                            onClick={copyLocalStorageToClipboard}
-                                            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-all"
-                                            title="Copy localStorage data to clipboard for merging with master calibration"
-                                        >
-                                            📋 Copy
-                                        </button>
-                                    </div>
                                 </div>
                             )}
                         </div>
