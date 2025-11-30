@@ -666,9 +666,29 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
             window.scrollBy({ top: window.innerHeight * 0.3, behavior: 'smooth' });
         }
         
-        // Check if we need more samples (target: 500 per zone)
-        const totalSamples = guidedCalibrationSamples.top + guidedCalibrationSamples.middle + guidedCalibrationSamples.bottom;
-        const currentZoneSamples = guidedCalibrationSamples[zone];
+        // Check actual saved samples from engine (more accurate than state)
+        const calibration = eyeTrackingEngineRef.current.getCalibration();
+        let actualTopSamples = 0;
+        let actualMiddleSamples = 0;
+        let actualBottomSamples = 0;
+        
+        if (calibration && calibration.calibrated) {
+            actualTopSamples = calibration.scrollUp?.samples?.length || 0;
+            actualMiddleSamples = calibration.noScroll?.samples?.length || 0;
+            actualBottomSamples = calibration.scrollDown?.samples?.length || 0;
+        }
+        
+        // Update state to reflect actual saved samples
+        setGuidedCalibrationSamples({
+            top: actualTopSamples,
+            middle: actualMiddleSamples,
+            bottom: actualBottomSamples
+        });
+        
+        // Check if we need more samples (target: 500 per zone) - use actual saved samples
+        const currentZoneSamples = zone === 'top' ? actualTopSamples : 
+                                   zone === 'middle' ? actualMiddleSamples : 
+                                   actualBottomSamples;
         
         // If we have less than 500 samples for current zone, repeat this zone
         // Otherwise, move to next zone
@@ -678,12 +698,22 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                 startGuidedCalibrationStep(zone);
             }, 1000);
         } else {
-            // Move to next zone
+            // Move to next zone automatically
             setTimeout(() => {
                 if (zone === 'top') {
-                    startGuidedCalibrationStep('middle');
+                    if (actualMiddleSamples < 500) {
+                        startGuidedCalibrationStep('middle');
+                    } else if (actualBottomSamples < 500) {
+                        startGuidedCalibrationStep('bottom');
+                    } else {
+                        completeGuidedCalibration();
+                    }
                 } else if (zone === 'middle') {
-                    startGuidedCalibrationStep('bottom');
+                    if (actualBottomSamples < 500) {
+                        startGuidedCalibrationStep('bottom');
+                    } else {
+                        completeGuidedCalibration();
+                    }
                 } else {
                     // Complete calibration
                     completeGuidedCalibration();
