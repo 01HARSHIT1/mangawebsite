@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import OnboardingTutorial from "@/components/OnboardingTutorial";
 import { HelpCircle } from "lucide-react";
 import Image from "next/image";
@@ -15,6 +16,13 @@ import { NotificationProvider } from '@/contexts/NotificationContext';
 import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import PushNotifications from './PushNotifications';
 import PWAInstaller from './PWAInstaller';
+import { useAIFeatures } from '@/hooks/useAIFeatures';
+
+// VoiceAssistant - Load globally for all pages (lazy loaded to prevent blocking)
+const VoiceAssistant = dynamic(() => import('./VoiceAssistant'), { 
+    ssr: false,
+    loading: () => null
+});
 
 export default function ClientLayoutShell({ children }: { children: React.ReactNode }) {
     return (
@@ -40,6 +48,16 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
+    
+    // AI Features - Get voice assistant preference (deferred to prevent blocking)
+    const [pageInteractive, setPageInteractive] = useState(false);
+    const { voiceAssistantEnabled, loading: aiFeaturesLoading } = useAIFeatures();
+    
+    useEffect(() => {
+        // Mark page as interactive after initial render
+        const timer = setTimeout(() => setPageInteractive(true), 500);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Hide main navigation on creator/admin dashboard pages and chapter reading pages
     const hideMainNav = pathname?.startsWith('/creator/dashboard') || 
@@ -80,6 +98,14 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
             {!hideMainNav && <Footer />}
             <PushNotifications />
             <PWAInstaller />
+            
+            {/* Voice Assistant - Global: Visible on all pages */}
+            {pageInteractive && !aiFeaturesLoading && (
+                <VoiceAssistant
+                    enabled={voiceAssistantEnabled}
+                    showUI={true}
+                />
+            )}
         </ErrorBoundary>
     );
 } 

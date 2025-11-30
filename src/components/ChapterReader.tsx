@@ -30,10 +30,7 @@ const EyeTracking = dynamic(() => import('./EyeTracking'), {
     loading: () => null
 });
 
-const VoiceAssistant = dynamic(() => import('./VoiceAssistant'), { 
-    ssr: false,
-    loading: () => null
-});
+// VoiceAssistant - REMOVED: Now rendered globally in ClientLayoutShell for all pages
 
 interface ChapterReaderProps {
     manga: any;
@@ -802,15 +799,8 @@ export default function ChapterReader({
             </div>
 
             {/* AI Features - Re-enabled with deferred initialization */}
-            {/* Voice Assistant - Only load after page is interactive */}
-            {pageInteractive && voiceAssistantEnabled && !aiFeaturesLoading && (
-                <VoiceAssistant
-                    onCommand={handleVoiceCommand}
-                    enabled={voiceAssistantEnabled}
-                    showUI={true}
-                />
-            )}
-
+            {/* Voice Assistant - REMOVED: Now rendered globally in ClientLayoutShell for all pages */}
+            
             {/* Eye Tracking - Only load after user interaction to prevent blocking */}
             {pageInteractive && userInteracted && !aiFeaturesLoading && (
                 <EyeTracking
