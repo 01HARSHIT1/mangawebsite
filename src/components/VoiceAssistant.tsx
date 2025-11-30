@@ -255,11 +255,15 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             action: 'openReviewsTab'
         },
         {
-            pattern: /(open|read|start)\s+(first\s+)?(visible\s+)?chapter/i,
+            pattern: /^(open|read|start)\s+chapter$/i,
             action: 'openFirstVisibleChapter'
         },
         {
-            pattern: /(open|read|start)\s+this\s+chapter/i,
+            pattern: /^(open|read|start)\s+(first\s+)?(visible\s+)?chapter$/i,
+            action: 'openFirstVisibleChapter'
+        },
+        {
+            pattern: /^(open|read|start)\s+this\s+chapter$/i,
             action: 'openFirstVisibleChapter'
         },
         
