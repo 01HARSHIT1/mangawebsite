@@ -497,11 +497,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         // Small delay to ensure DOM is ready after navigation
         const timer = setTimeout(() => {
             if (isListening) {
-                startListening();
+                // Only start if not already listening
+                if (!recognitionRef.current) {
+                    startListening();
+                }
             } else {
                 stopListening();
             }
-        }, 100);
+        }, 200);
 
         return () => {
             clearTimeout(timer);
@@ -1367,6 +1370,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     return (
         <div 
             ref={panelRef}
+            id="voice-assistant-panel"
             className="fixed right-4 z-50"
             style={{
                 position: 'fixed',
