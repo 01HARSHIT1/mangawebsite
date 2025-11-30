@@ -611,6 +611,36 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
 
     const openMangaByName = async (mangaName: string) => {
         try {
+            // Check if we're already on a manga detail page
+            const mangaDetailMatch = pathname?.match(/^\/manga\/([^\/]+)$/);
+            
+            if (mangaDetailMatch) {
+                // We're on a manga detail page - check if this is the same manga
+                const currentMangaId = mangaDetailMatch[1];
+                
+                try {
+                    // Fetch current manga to check title
+                    const currentMangaResponse = await fetch(`/api/manga/${currentMangaId}`);
+                    if (currentMangaResponse.ok) {
+                        const currentMangaData = await currentMangaResponse.json();
+                        const currentManga = currentMangaData.manga;
+                        const currentTitle = (currentManga.title || '').toLowerCase();
+                        const searchName = mangaName.toLowerCase();
+                        
+                        // Check if the manga name matches current manga (fuzzy match)
+                        if (currentTitle.includes(searchName) || searchName.includes(currentTitle) || 
+                            currentTitle === searchName) {
+                            // Same manga - go to first chapter instead
+                            speak(`Starting to read ${currentManga.title || mangaName}...`);
+                            await startReadingCurrentManga();
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    // If we can't fetch current manga, proceed with search
+                }
+            }
+            
             speak(`Searching for ${mangaName}...`);
             
             // Search for manga by name
@@ -638,6 +668,13 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             if (!mangaId) {
                 speak(`Found ${mangaName} but could not open it. Opening search page.`);
                 router.push(`/manga?search=${encodeURIComponent(mangaName)}`);
+                return;
+            }
+            
+            // If we're already on this manga's page, go to first chapter instead
+            if (mangaDetailMatch && mangaDetailMatch[1] === mangaId.toString()) {
+                speak(`Starting to read ${manga.title || mangaName}...`);
+                await startReadingCurrentManga();
                 return;
             }
             
