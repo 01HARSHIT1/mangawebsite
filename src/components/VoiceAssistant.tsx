@@ -1015,16 +1015,23 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     };
 
     const startReadingCurrentManga = async () => {
-        // Check if we're on a manga detail page (/manga/[mangaId])
-        const mangaDetailMatch = pathname?.match(/^\/manga\/([^\/]+)$/);
+        // Check if we're on a manga detail page (more flexible check)
+        const isMangaDetailPage = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
         
-        if (!mangaDetailMatch) {
+        if (!isMangaDetailPage) {
             // Not on a manga detail page - try to find manga from current page
             speak('Please navigate to a manga page first, or say "open [manga name]" to open a specific manga.');
             return;
         }
         
-        const mangaId = mangaDetailMatch[1];
+        // Extract mangaId from pathname
+        const mangaIdMatch = pathname?.match(/\/manga\/([^\/\?]+)/);
+        if (!mangaIdMatch) {
+            speak('Could not find manga ID. Please try navigating to the manga page again.');
+            return;
+        }
+        
+        const mangaId = mangaIdMatch[1];
         
         try {
             speak('Finding first chapter...');
