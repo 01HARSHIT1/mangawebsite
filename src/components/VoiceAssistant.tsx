@@ -525,7 +525,10 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         // Stop any existing recognition before starting a new one
         if (recognitionRef.current) {
             try {
-                recognitionRef.current.stop();
+                const oldRecognition = recognitionRef.current;
+                // Suppress aborted errors when stopping old recognition
+                oldRecognition.onerror = () => {};
+                oldRecognition.stop();
             } catch (e) {
                 // Ignore errors
             }
