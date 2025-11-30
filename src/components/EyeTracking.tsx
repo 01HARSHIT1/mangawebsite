@@ -39,6 +39,14 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const testTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const testSamplesRef = useRef<{normalizedY: number, zone: string | null}[]>([]);
     
+    // New guided calibration mode
+    const [guidedCalibrationMode, setGuidedCalibrationMode] = useState<'idle' | 'top' | 'middle' | 'bottom'>('idle');
+    const [guidedCalibrationCountdown, setGuidedCalibrationCountdown] = useState<number>(0);
+    const [guidedCalibrationSamples, setGuidedCalibrationSamples] = useState<{top: number, middle: number, bottom: number}>({top: 0, middle: 0, bottom: 0});
+    const guidedCalibrationSamplesRef = useRef<{normalizedY: number, zone: 'top' | 'middle' | 'bottom'}[]>([]);
+    const guidedCalibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const guidedCalibrationCountdownRef = useRef<NodeJS.Timeout | null>(null);
+    
     // Statistics tracking
     const detectionCountRef = useRef<number>(0);
     const totalFramesRef = useRef<number>(0);
@@ -1188,6 +1196,72 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                     ✅ Only top 5% and bottom 5% trigger scrolling
                                 </div>
                             </div>
+                        </div>
+                        
+                        {/* Guided Calibration Mode */}
+                        <div className="mt-3 p-3 bg-green-900/30 rounded border border-green-700/50">
+                            <div className="text-xs font-semibold text-green-400 mb-2">
+                                🎯 Guided Calibration (Recommended)
+                            </div>
+                            <div className="text-xs text-gray-400 mb-3 space-y-1">
+                                <div><strong>How it works:</strong></div>
+                                <div>1. System shows you where to look (top 5-7%, middle, bottom 95-100%)</div>
+                                <div>2. Stare at the highlighted zone for 2-3 seconds</div>
+                                <div>3. System automatically collects samples and scrolls</div>
+                                <div>4. Moves to next zone automatically</div>
+                                <div className="mt-2 text-green-300">
+                                    <strong>Perfect for accurate calibration!</strong>
+                                </div>
+                            </div>
+                            {guidedCalibrationMode === 'idle' && (
+                                <button
+                                    onClick={startGuidedCalibration}
+                                    className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm transition-all"
+                                    disabled={!isActive}
+                                >
+                                    🚀 Start Guided Calibration
+                                </button>
+                            )}
+                            {guidedCalibrationMode !== 'idle' && (
+                                <div className="space-y-3">
+                                    <div className={`text-lg font-bold text-center p-3 rounded ${
+                                        guidedCalibrationMode === 'top' ? 'bg-blue-600 text-white' :
+                                        guidedCalibrationMode === 'middle' ? 'bg-yellow-600 text-white' :
+                                        'bg-green-600 text-white'
+                                    }`}>
+                                        {guidedCalibrationMode === 'top' && '↑ TOP ZONE (5-7%)'}
+                                        {guidedCalibrationMode === 'middle' && '• MIDDLE ZONE'}
+                                        {guidedCalibrationMode === 'bottom' && '↓ BOTTOM ZONE (95-100%)'}
+                                    </div>
+                                    {guidedCalibrationCountdown > 0 && (
+                                        <div className="text-center">
+                                            <div className="text-3xl font-bold text-yellow-400 animate-pulse">
+                                                {guidedCalibrationCountdown}
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-1">Get ready to stare at the zone...</div>
+                                        </div>
+                                    )}
+                                    {guidedCalibrationCountdown === 0 && (
+                                        <div className="text-center">
+                                            <div className="text-lg font-bold text-green-400 animate-pulse">
+                                                ⏳ Staring... Keep looking!
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-1">
+                                                Collecting samples... ({guidedCalibrationSamplesRef.current.length} collected)
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="text-xs text-gray-400 text-center">
+                                        Samples: Top: {guidedCalibrationSamples.top} | Middle: {guidedCalibrationSamples.middle} | Bottom: {guidedCalibrationSamples.bottom}
+                                    </div>
+                                    <button
+                                        onClick={cancelGuidedCalibration}
+                                        className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-semibold text-sm transition-all"
+                                    >
+                                        ❌ Cancel
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         
                         {/* Step-by-Step Feedback System for Active Learning */}
