@@ -134,6 +134,18 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             action: 'showLatest'
         },
         
+        // ========== OPENING MANGA BY NAME ==========
+        {
+            pattern: /(open|read|start\s+reading|show)\s+(manga\s+)?(.+)/i,
+            action: 'openManga',
+            params: (matches) => ({ mangaName: matches[3] })
+        },
+        {
+            pattern: /(read|start\s+reading|begin\s+reading)\s+(.+)/i,
+            action: 'openManga',
+            params: (matches) => ({ mangaName: matches[2] })
+        },
+        
         // ========== PERSONALIZED ASSISTANCE ==========
         {
             pattern: /(show|display|list)\s+(my\s+)?bookmarks/i,
@@ -491,6 +503,11 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 if (params?.query) {
                     router.push(`/manga?search=${encodeURIComponent(params.query)}`);
                     speak(`Searching for ${params.query}.`);
+                }
+                break;
+            case 'openManga':
+                if (params?.mangaName) {
+                    openMangaByName(params.mangaName);
                 }
                 break;
             case 'searchByGenre':
