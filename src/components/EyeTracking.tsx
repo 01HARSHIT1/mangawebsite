@@ -569,6 +569,210 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
         }
     };
     
+    // New guided calibration mode - user stares at target zone for 2-3 seconds
+    const startGuidedCalibration = () => {
+        if (!isActive) {
+            setError('Please start eye tracking first');
+            return;
+        }
+        setIsCalibrating(true);
+        setGuidedCalibrationMode('top');
+        setGuidedCalibrationSamples({ top: 0, middle: 0, bottom: 0 });
+        guidedCalibrationSamplesRef.current = [];
+        startGuidedCalibrationStep('top');
+    };
+    
+    const startGuidedCalibrationStep = (zone: 'top' | 'middle' | 'bottom') => {
+        setGuidedCalibrationMode(zone);
+        setGuidedCalibrationCountdown(3); // 3 second countdown
+        guidedCalibrationSamplesRef.current = [];
+        
+        // Countdown timer
+        let countdown = 3;
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            setGuidedCalibrationCountdown(countdown);
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                // Start collecting samples
+                collectGuidedCalibrationSamples(zone);
+            }
+        }, 1000);
+        guidedCalibrationCountdownRef.current = countdownInterval as any;
+    };
+    
+    const collectGuidedCalibrationSamples = (zone: 'top' | 'middle' | 'bottom') => {
+        setGuidedCalibrationCountdown(0);
+        
+        // Collect samples for 2.5 seconds (2500ms) - increased for more samples
+        const SAMPLE_INTERVAL = 50; // Sample every 50ms (20 samples/second)
+        const DURATION = 2500; // 2.5 seconds = ~50 samples per run
+        
+        let elapsed = 0;
+        
+        const sampleInterval = setInterval(() => {
+            if (!eyeTrackingEngineRef.current || currentNormalizedYRef.current === null) {
+                clearInterval(sampleInterval);
+                return;
+            }
+            
+            const normalizedY = currentNormalizedYRef.current;
+            guidedCalibrationSamplesRef.current.push({ normalizedY, zone });
+            
+            elapsed += SAMPLE_INTERVAL;
+            if (elapsed >= DURATION) {
+                clearInterval(sampleInterval);
+                // Save all collected samples
+                saveGuidedCalibrationSamples(zone);
+            }
+        }, SAMPLE_INTERVAL);
+        
+        guidedCalibrationIntervalRef.current = sampleInterval as any;
+    };
+    
+    const saveGuidedCalibrationSamples = (zone: 'top' | 'middle' | 'bottom') => {
+        if (!eyeTrackingEngineRef.current) return;
+        
+        // Map zone to calibration action
+        let action: 'scrollUp' | 'scrollDown' | 'noScroll';
+        if (zone === 'top') {
+            action = 'scrollUp';
+        } else if (zone === 'bottom') {
+            action = 'scrollDown';
+        } else {
+            action = 'noScroll';
+        }
+        
+        // Save all collected samples
+        guidedCalibrationSamplesRef.current.forEach(sample => {
+            eyeTrackingEngineRef.current?.addCalibrationSample(action, sample.normalizedY);
+        });
+        
+        // Update sample count
+        const sampleCount = guidedCalibrationSamplesRef.current.length;
+        setGuidedCalibrationSamples(prev => ({
+            ...prev,
+            [zone]: prev[zone] + sampleCount
+        }));
+        
+        // Trigger scroll if needed
+        if (zone === 'top') {
+            // Scroll up
+            window.scrollBy({ top: -window.innerHeight * 0.3, behavior: 'smooth' });
+        } else if (zone === 'bottom') {
+            // Scroll down
+            window.scrollBy({ top: window.innerHeight * 0.3, behavior: 'smooth' });
+        }
+        
+        // Check if we need more samples (target: 500 per zone)
+        const totalSamples = guidedCalibrationSamples.top + guidedCalibrationSamples.middle + guidedCalibrationSamples.bottom;
+        const currentZoneSamples = guidedCalibrationSamples[zone];
+        
+        // If we have less than 500 samples for current zone, repeat this zone
+        // Otherwise, move to next zone
+        if (currentZoneSamples < 500) {
+            // Repeat this zone (need ~10 more runs to get 500 samples: 50 samples per run)
+            setTimeout(() => {
+                startGuidedCalibrationStep(zone);
+            }, 1000);
+        } else {
+            // Move to next zone
+            setTimeout(() => {
+                if (zone === 'top') {
+                    startGuidedCalibrationStep('middle');
+                } else if (zone === 'middle') {
+                    startGuidedCalibrationStep('bottom');
+                } else {
+                    // Complete calibration
+                    completeGuidedCalibration();
+                }
+            }, 1000);
+        }
+    };
+    
+    const completeGuidedCalibration = () => {
+        setGuidedCalibrationMode('idle');
+        setIsCalibrating(false);
+        
+        // Get final calibration data
+        if (eyeTrackingEngineRef.current) {
+            const calibration = eyeTrackingEngineRef.current.getCalibration();
+            if (calibration && calibration.calibrated) {
+                // Save to master calibration
+                import('@/lib/eye-tracking').then(({ EyeTrackingEngine }) => {
+                    EyeTrackingEngine.setMasterCalibration({
+                        scrollUp: calibration.scrollUp.samples,
+                        scrollDown: calibration.scrollDown.samples,
+                        noScroll: calibration.noScroll.samples
+                    });
+                    
+                    // Generate hardcoded code (same as regular calibration)
+                    const { scrollUp, scrollDown, noScroll } = calibration;
+                    const code = `// MASTER CALIBRATION - Hardcoded from guided calibration samples
+// Generated automatically: ${new Date().toISOString()}
+let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
+    scrollUp: {
+        normalizedY: ${scrollUp.mean},
+        samples: [${scrollUp.samples.join(', ')}],
+        mean: ${scrollUp.mean},
+        stdDev: ${scrollUp.stdDev},
+        min: ${scrollUp.min},
+        max: ${scrollUp.max}
+    },
+    scrollDown: {
+        normalizedY: ${scrollDown.mean},
+        samples: [${scrollDown.samples.join(', ')}],
+        mean: ${scrollDown.mean},
+        stdDev: ${scrollDown.stdDev},
+        min: ${scrollDown.min},
+        max: ${scrollDown.max}
+    },
+    noScroll: {
+        normalizedY: ${noScroll.mean},
+        samples: [${noScroll.samples.join(', ')}],
+        mean: ${noScroll.mean},
+        stdDev: ${noScroll.stdDev},
+        min: ${noScroll.min},
+        max: ${noScroll.max}
+    },
+    calibrated: true
+};`;
+                    
+                    (window as any).__MASTER_CALIBRATION_CODE__ = code;
+                    (window as any).__MASTER_CALIBRATION_DATA__ = calibration;
+                    
+                    localStorage.setItem('__MASTER_CALIBRATION_FOR_HARDCODING__', JSON.stringify({
+                        code: code,
+                        data: calibration,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    // Save to server
+                    fetch('/api/eye-tracking/save-master-calibration', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(calibration)
+                    }).catch(() => {});
+                });
+            }
+        }
+    };
+    
+    const cancelGuidedCalibration = () => {
+        if (guidedCalibrationIntervalRef.current) {
+            clearInterval(guidedCalibrationIntervalRef.current);
+            guidedCalibrationIntervalRef.current = null;
+        }
+        if (guidedCalibrationCountdownRef.current) {
+            clearInterval(guidedCalibrationCountdownRef.current);
+            guidedCalibrationCountdownRef.current = null;
+        }
+        setGuidedCalibrationMode('idle');
+        setIsCalibrating(false);
+        setGuidedCalibrationCountdown(0);
+        guidedCalibrationSamplesRef.current = [];
+    };
+    
     // Start zone test - captures current gaze for feedback
     const startZoneTest = () => {
         if (!isActive || !eyeTrackingEngineRef.current) {
