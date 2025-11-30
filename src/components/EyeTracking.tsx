@@ -1215,15 +1215,17 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             </div>
                             {guidedCalibrationMode === 'idle' && (
                                 <>
-                                    <div className="text-xs text-gray-400 mb-3 space-y-1">
-                                        <div>• System shows colored overlay on screen</div>
-                                        <div>• Stare at highlighted zone when countdown ends</div>
-                                        <div>• Automatically collects 500 samples per zone</div>
-                                        <div className="mt-2 text-green-300">
-                                            <strong>Target: 500 samples per zone</strong>
+                                    <div className="text-xs text-gray-300 mb-3 space-y-2 p-2 bg-slate-900/50 rounded">
+                                        <div className="font-bold text-green-300 mb-2">📋 How It Works:</div>
+                                        <div className="space-y-1">
+                                            <div>1️⃣ <strong>Look at your screen</strong> - A bright colored box will appear</div>
+                                            <div>2️⃣ <strong>Wait for countdown</strong> - "3... 2... 1..." will show</div>
+                                            <div>3️⃣ <strong>Stare at the colored box</strong> - Keep looking until it disappears</div>
+                                            <div>4️⃣ <strong>Repeat automatically</strong> - System does this ~10 times per zone</div>
                                         </div>
-                                        <div className="mt-1 text-yellow-300 text-xs">
-                                            ⏱️ ~15-20 minutes total
+                                        <div className="mt-2 pt-2 border-t border-gray-600">
+                                            <div className="text-green-300 font-bold">Target: 500 samples per zone</div>
+                                            <div className="text-yellow-300 text-xs">⏱️ ~15-20 minutes total</div>
                                         </div>
                                     </div>
                                     <button
@@ -1237,48 +1239,94 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                             )}
                             {guidedCalibrationMode !== 'idle' && (
                                 <div className="space-y-3">
+                                    {/* Current Zone Indicator */}
                                     <div className={`text-lg font-bold text-center p-3 rounded ${
-                                        guidedCalibrationMode === 'top' ? 'bg-blue-600 text-white' :
-                                        guidedCalibrationMode === 'middle' ? 'bg-yellow-600 text-white' :
-                                        'bg-green-600 text-white'
+                                        guidedCalibrationMode === 'top' ? 'bg-blue-600 text-white border-2 border-blue-300' :
+                                        guidedCalibrationMode === 'middle' ? 'bg-yellow-600 text-white border-2 border-yellow-300' :
+                                        'bg-green-600 text-white border-2 border-green-300'
                                     }`}>
-                                        {guidedCalibrationMode === 'top' && '↑ TOP ZONE (5-7%)'}
-                                        {guidedCalibrationMode === 'middle' && '• MIDDLE ZONE'}
-                                        {guidedCalibrationMode === 'bottom' && '↓ BOTTOM ZONE (95-100%)'}
+                                        {guidedCalibrationMode === 'top' && '↑ LOOK AT TOP OF SCREEN'}
+                                        {guidedCalibrationMode === 'middle' && '• LOOK AT MIDDLE OF SCREEN'}
+                                        {guidedCalibrationMode === 'bottom' && '↓ LOOK AT BOTTOM OF SCREEN'}
                                     </div>
+                                    
+                                    {/* Countdown Phase */}
                                     {guidedCalibrationCountdown > 0 && (
-                                        <div className="text-center">
-                                            <div className="text-3xl font-bold text-yellow-400 animate-pulse">
+                                        <div className="text-center p-3 bg-yellow-900/30 rounded border border-yellow-500">
+                                            <div className="text-4xl font-bold text-yellow-400 animate-pulse mb-2">
                                                 {guidedCalibrationCountdown}
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-1">Get ready to stare at the zone...</div>
-                                        </div>
-                                    )}
-                                    {guidedCalibrationCountdown === 0 && (
-                                        <div className="text-center">
-                                            <div className="text-lg font-bold text-green-400 animate-pulse">
-                                                ⏳ Staring... Keep looking!
+                                            <div className="text-sm text-yellow-300 font-semibold mb-1">
+                                                ⏳ Get Ready!
+                                            </div>
+                                            <div className="text-xs text-gray-300">
+                                                A bright {guidedCalibrationMode === 'top' ? 'BLUE' : guidedCalibrationMode === 'middle' ? 'YELLOW' : 'GREEN'} box will appear on your screen
                                             </div>
                                             <div className="text-xs text-gray-400 mt-1">
-                                                Collecting samples... ({guidedCalibrationSamplesRef.current.length} collected)
+                                                When countdown reaches 0, stare at that box!
                                             </div>
                                         </div>
                                     )}
-                                    <div className="text-xs text-gray-400 text-center space-y-1">
-                                        <div>
-                                            Top: {guidedCalibrationSamples.top}/500 | Middle: {guidedCalibrationSamples.middle}/500 | Bottom: {guidedCalibrationSamples.bottom}/500
+                                    
+                                    {/* Collection Phase */}
+                                    {guidedCalibrationCountdown === 0 && (
+                                        <div className="text-center p-3 bg-green-900/30 rounded border-2 border-green-500">
+                                            <div className="text-xl font-bold text-green-400 animate-pulse mb-2">
+                                                👀 KEEP LOOKING AT THE BOX!
+                                            </div>
+                                            <div className="text-sm text-green-300 mb-2">
+                                                ⏳ Collecting samples... ({guidedCalibrationSamplesRef.current.length} collected this round)
+                                            </div>
+                                            <div className="text-xs text-gray-300">
+                                                Don't look away! Keep staring at the {guidedCalibrationMode === 'top' ? 'BLUE' : guidedCalibrationMode === 'middle' ? 'YELLOW' : 'GREEN'} box on your screen
+                                            </div>
+                                            <div className="mt-2 text-xs text-yellow-300">
+                                                ⏱️ This round will finish in ~2-3 seconds
+                                            </div>
                                         </div>
-                                        <div className="text-yellow-400 font-bold">
-                                            {guidedCalibrationMode === 'top' && `Progress: ${Math.round((guidedCalibrationSamples.top / 500) * 100)}%`}
-                                            {guidedCalibrationMode === 'middle' && `Progress: ${Math.round((guidedCalibrationSamples.middle / 500) * 100)}%`}
-                                            {guidedCalibrationMode === 'bottom' && `Progress: ${Math.round((guidedCalibrationSamples.bottom / 500) * 100)}%`}
+                                    )}
+                                    
+                                    {/* Progress Display */}
+                                    <div className="p-2 bg-slate-900/50 rounded space-y-2">
+                                        <div className="text-xs font-semibold text-cyan-400 text-center mb-2">
+                                            📊 Overall Progress
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1 text-xs">
+                                            <div className={`text-center p-1 rounded ${guidedCalibrationMode === 'top' ? 'bg-blue-900/50 border border-blue-500' : ''}`}>
+                                                <div className="text-blue-300 font-bold">{guidedCalibrationSamples.top}</div>
+                                                <div className="text-gray-400">Top</div>
+                                                <div className="text-xs text-gray-500">{Math.round((guidedCalibrationSamples.top / 500) * 100)}%</div>
+                                            </div>
+                                            <div className={`text-center p-1 rounded ${guidedCalibrationMode === 'middle' ? 'bg-yellow-900/50 border border-yellow-500' : ''}`}>
+                                                <div className="text-yellow-300 font-bold">{guidedCalibrationSamples.middle}</div>
+                                                <div className="text-gray-400">Middle</div>
+                                                <div className="text-xs text-gray-500">{Math.round((guidedCalibrationSamples.middle / 500) * 100)}%</div>
+                                            </div>
+                                            <div className={`text-center p-1 rounded ${guidedCalibrationMode === 'bottom' ? 'bg-green-900/50 border border-green-500' : ''}`}>
+                                                <div className="text-green-300 font-bold">{guidedCalibrationSamples.bottom}</div>
+                                                <div className="text-gray-400">Bottom</div>
+                                                <div className="text-xs text-gray-500">{Math.round((guidedCalibrationSamples.bottom / 500) * 100)}%</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-center text-xs text-gray-400 pt-1 border-t border-gray-700">
+                                            Total: <span className="font-bold text-purple-300">{guidedCalibrationSamples.top + guidedCalibrationSamples.middle + guidedCalibrationSamples.bottom}</span> / 1,500 samples
                                         </div>
                                     </div>
+                                    
+                                    {/* Status Message */}
+                                    <div className="text-xs text-center text-gray-300 p-2 bg-slate-800/50 rounded">
+                                        {guidedCalibrationCountdown > 0 ? (
+                                            <span>⏳ Waiting for countdown...</span>
+                                        ) : (
+                                            <span>✅ Sample collection in progress - Keep looking at the {guidedCalibrationMode === 'top' ? 'blue' : guidedCalibrationMode === 'middle' ? 'yellow' : 'green'} box!</span>
+                                        )}
+                                    </div>
+                                    
                                     <button
                                         onClick={cancelGuidedCalibration}
                                         className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-semibold text-sm transition-all"
                                     >
-                                        ❌ Cancel
+                                        ❌ Cancel Calibration
                                     </button>
                                 </div>
                             )}
