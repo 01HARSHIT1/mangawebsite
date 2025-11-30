@@ -41,6 +41,7 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
     const testSamplesRef = useRef<{normalizedY: number, zone: string | null}[]>([]);
     
     // New guided calibration mode
+    const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
     const [guidedCalibrationMode, setGuidedCalibrationMode] = useState<'idle' | 'top' | 'middle' | 'bottom'>('idle');
     const [guidedCalibrationCountdown, setGuidedCalibrationCountdown] = useState<number>(0);
     const [guidedCalibrationSamples, setGuidedCalibrationSamples] = useState<{top: number, middle: number, bottom: number}>({top: 0, middle: 0, bottom: 0});
