@@ -985,15 +985,15 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openChaptersTab':
                 // Switch to chapters tab on manga detail page
-                // ALWAYS use window.location.pathname for most reliable detection
-                const currentPathForChaptersTab = typeof window !== 'undefined' ? window.location.pathname : getCurrentPathname();
-                const pathWithoutQueryForTab = currentPathForChaptersTab.split('?')[0].split('#')[0];
-                // More lenient check - just needs /manga/ and not /chapter/
+                // ALWAYS use window.location.pathname directly for most reliable detection
+                const currentPathForChaptersTab = typeof window !== 'undefined' ? window.location.pathname : (pathname || '');
+                const pathWithoutQueryForTab = currentPathForChaptersTab.split('?')[0].split('#')[0].replace(/\/$/, '');
+                // Simple, lenient check - just needs /manga/ and not /chapter/
                 const isMangaDetailForTab = pathWithoutQueryForTab.includes('/manga/') && 
                                           !pathWithoutQueryForTab.includes('/chapter/');
                 
                 if (isMangaDetailForTab) {
-                    // Try to find chapters tab
+                    // Try to find chapters tab with multiple fallback methods
                     let chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
                     
                     // If not found, try alternative selectors
@@ -1007,31 +1007,25 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                         }) as HTMLElement;
                     }
                     
+                    // If still not found, try finding by text content with parentheses (e.g., "Chapters (1)")
+                    if (!chaptersTab) {
+                        const allClickable = Array.from(document.querySelectorAll('button, a, div[onclick], div[role="button"]'));
+                        chaptersTab = allClickable.find(el => {
+                            const text = el.textContent?.toLowerCase() || '';
+                            return text.includes('chapters') && 
+                                   (text.includes('(') || el.getAttribute('data-tab') === 'chapters') &&
+                                   !text.includes('synopsis') &&
+                                   !text.includes('reviews');
+                        }) as HTMLElement;
+                    }
+                    
                     if (chaptersTab) {
                         chaptersTab.click();
                         speak('Opening chapters tab.');
                     } else {
-                        // Last resort: try to find any element with "Chapters" text that's clickable
-                        const allClickable = Array.from(document.querySelectorAll('button, a, div[onclick]'));
-                        const chaptersElement = allClickable.find(el => {
-                            const text = el.textContent?.toLowerCase() || '';
-                            return text.includes('chapters') && text.includes('(') && !text.includes('synopsis');
-                        }) as HTMLElement;
-                        
-                        if (chaptersElement) {
-                            chaptersElement.click();
-                            speak('Opening chapters tab.');
-                        } else {
-                            speak('Could not find chapters tab. Please try again.');
-                        }
+                        speak('Could not find chapters tab. Please try again.');
                     }
                 } else {
-                    // Debug: log the pathname for troubleshooting
-                    console.log('Pathname check failed:', { 
-                        currentPath: currentPathForChaptersTab, 
-                        pathWithoutQuery: pathWithoutQueryForTab,
-                        isMangaDetail: isMangaDetailForTab 
-                    });
                     speak('Chapters tab is only available on manga detail pages.');
                 }
                 break;
