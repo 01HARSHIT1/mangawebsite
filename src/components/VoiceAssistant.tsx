@@ -606,6 +606,47 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         }, 2000);
     };
 
+    const openMangaByName = async (mangaName: string) => {
+        try {
+            speak(`Searching for ${mangaName}...`);
+            
+            // Search for manga by name
+            const response = await fetch(`/api/manga/search?q=${encodeURIComponent(mangaName)}&limit=1`);
+            
+            if (!response.ok) {
+                speak(`Could not find ${mangaName}. Please try searching manually.`);
+                router.push(`/manga?search=${encodeURIComponent(mangaName)}`);
+                return;
+            }
+            
+            const data = await response.json();
+            const results = data.manga || data.results || [];
+            
+            if (results.length === 0) {
+                speak(`No manga found with name ${mangaName}. Opening search page.`);
+                router.push(`/manga?search=${encodeURIComponent(mangaName)}`);
+                return;
+            }
+            
+            // Get the first result
+            const manga = results[0];
+            const mangaId = manga._id || manga.id;
+            
+            if (!mangaId) {
+                speak(`Found ${mangaName} but could not open it. Opening search page.`);
+                router.push(`/manga?search=${encodeURIComponent(mangaName)}`);
+                return;
+            }
+            
+            // Navigate to manga detail page
+            router.push(`/manga/${mangaId}`);
+            speak(`Opening ${manga.title || mangaName}.`);
+        } catch (error) {
+            speak(`Error searching for ${mangaName}. Opening search page.`);
+            router.push(`/manga?search=${encodeURIComponent(mangaName)}`);
+        }
+    };
+
     const speak = (text: string) => {
         if (synthRef.current) {
             // Cancel any ongoing speech
