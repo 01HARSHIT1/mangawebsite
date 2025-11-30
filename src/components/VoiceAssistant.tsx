@@ -275,7 +275,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         // Also matches "open chapter 1", "go to chapter 1", etc.
         // IMPORTANT: Must come AFTER manga search patterns to avoid conflicts
         {
-            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter|go\s+to\s+chapter\s+1|open\s+chapter\s+1|read\s+now|start\s+reading\s+at\s+this\s+page)$/i,
+            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter|go\s+to\s+chapter\s+1|open\s+chapter\s+1|read\s+now)(\s+at\s+this\s+page)?$/i,
             action: 'startReadingCurrentManga'
         },
         
