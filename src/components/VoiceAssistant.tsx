@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { FaMicrophone, FaMicrophoneSlash, FaVolumeUp } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -14,15 +15,37 @@ interface VoiceCommand {
     pattern: RegExp;
     action: string;
     params?: (matches: RegExpMatchArray) => any;
+    requiresConfirmation?: boolean;
+    restricted?: boolean; // Actions that should never be allowed
 }
 
+// Security: Actions that should NEVER be allowed via voice
+const RESTRICTED_ACTIONS = [
+    'deleteAccount',
+    'changePassword',
+    'payment',
+    'purchase',
+    'modifyPayment',
+    'accessSensitiveData'
+];
+
+// Actions that require confirmation
+const CONFIRMATION_REQUIRED = [
+    'removeBookmark',
+    'clearHistory',
+    'logout',
+    'removeFromLibrary'
+];
+
 export default function VoiceAssistant({ onCommand, enabled = false, showUI = true }: VoiceAssistantProps) {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
+    const router = useRouter();
     const [isListening, setIsListening] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
     const [transcript, setTranscript] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [lastCommand, setLastCommand] = useState<string | null>(null);
+    const [pendingConfirmation, setPendingConfirmation] = useState<{ action: string; params?: any } | null>(null);
     
     const recognitionRef = useRef<any>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -30,9 +53,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     // CRITICAL: Panel ref for position locking - must be declared before any conditional returns
     const panelRef = useRef<HTMLDivElement>(null);
 
-    // Enhanced voice command patterns with better recognition
+    // Comprehensive voice command patterns
     const commands: VoiceCommand[] = [
-        // Navigation commands
+        // ========== NAVIGATION & READING CONTROLS ==========
         {
             pattern: /(next|forward|advance|skip)\s+(page|chapter|episode)?/i,
             action: 'next'
@@ -50,7 +73,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             action: 'last'
         },
         {
-            pattern: /go\s+to\s+(chapter|episode|page)\s+(\d+)/i,
+            pattern: /go\s+to\s+(chapter|episode)\s+(\d+)/i,
             action: 'goToChapter',
             params: (matches) => ({ chapterNumber: parseInt(matches[2]) })
         },
@@ -60,92 +83,150 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             params: (matches) => ({ pageNumber: parseInt(matches[1]) })
         },
         {
-            pattern: /(dark\s+mode|light\s+mode|toggle\s+theme)/i,
-            action: 'toggleTheme'
-        },
-        {
-            pattern: /(zoom\s+in|zoom\s+out|increase\s+zoom|decrease\s+zoom)/i,
-            action: 'zoom',
-            params: (matches) => ({ direction: matches[0].toLowerCase().includes('in') || matches[0].toLowerCase().includes('increase') ? 'in' : 'out' })
-        },
-        {
-            pattern: /(play|pause|resume)/i,
-            action: 'toggleAutoplay'
-        },
-        {
-            pattern: /(scroll\s+down|scroll\s+up)/i,
+            pattern: /(scroll\s+down|scroll\s+up|scroll\s+downward|scroll\s+upward)/i,
             action: 'scroll',
             params: (matches) => ({ direction: matches[0].toLowerCase().includes('down') ? 'down' : 'up' })
         },
         {
-            pattern: /(like|unlike)/i,
-            action: 'toggleLike'
-        },
-        {
-            pattern: /(share|share\s+this)/i,
-            action: 'share'
-        },
-        {
-            pattern: /(close|exit|stop)/i,
-            action: 'close'
-        },
-        {
-            pattern: /(help|what\s+can\s+you\s+do|commands)/i,
-            action: 'help'
-        },
-        // Bookmark commands
-        {
-            pattern: /(bookmark|save|mark)\s+(this|current|page|chapter)?/i,
-            action: 'bookmark'
-        },
-        {
-            pattern: /(remove|delete|unbookmark)\s+bookmark/i,
-            action: 'removeBookmark'
-        },
-        // Search commands
-        {
-            pattern: /(search|find)\s+(for\s+)?(.+)/i,
-            action: 'search',
-            params: (matches) => ({ query: matches[3] })
-        },
-        // Reading mode commands
-        {
-            pattern: /(fullscreen|full\s+screen|enter\s+fullscreen)/i,
-            action: 'fullscreen'
-        },
-        {
-            pattern: /(exit\s+fullscreen|leave\s+fullscreen)/i,
-            action: 'exitFullscreen'
-        },
-        // Speed control
-        {
-            pattern: /(faster|speed\s+up|increase\s+speed)/i,
-            action: 'increaseSpeed'
-        },
-        {
-            pattern: /(slower|slow\s+down|decrease\s+speed)/i,
-            action: 'decreaseSpeed'
-        },
-        // Manga-specific commands
-        {
-            pattern: /(read|start\s+reading|begin\s+reading)/i,
+            pattern: /(read|start\s+reading|begin\s+reading|continue\s+reading)/i,
             action: 'startReading'
         },
         {
             pattern: /(pause\s+reading|stop\s+reading|take\s+a\s+break)/i,
             action: 'pauseReading'
         },
+        
+        // ========== NAVIGATION TO PAGES ==========
+        {
+            pattern: /(open|go\s+to|show|navigate\s+to)\s+(my\s+)?library/i,
+            action: 'openLibrary'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+home/i,
+            action: 'openHome'
+        },
+        {
+            pattern: /(open|go\s+to|show|browse)\s+manga/i,
+            action: 'openBrowse'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+genres/i,
+            action: 'openGenres'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+search/i,
+            action: 'openSearch'
+        },
+        
+        // ========== SEARCHING MANGA ==========
+        {
+            pattern: /(search|find)\s+(for\s+)?(.+)/i,
+            action: 'search',
+            params: (matches) => ({ query: matches[3] })
+        },
+        {
+            pattern: /(search|find)\s+(comedy|action|romance|horror|fantasy|sci-fi|drama|slice\s+of\s+life)\s+manga/i,
+            action: 'searchByGenre',
+            params: (matches) => ({ genre: matches[2] })
+        },
+        {
+            pattern: /(show|find|search)\s+(latest|recent|new)\s+(updates|manga|chapters)/i,
+            action: 'showLatest'
+        },
+        
+        // ========== PERSONALIZED ASSISTANCE ==========
+        {
+            pattern: /(show|display|list)\s+(my\s+)?bookmarks/i,
+            action: 'showBookmarks'
+        },
+        {
+            pattern: /(what|show|tell\s+me)\s+(did\s+i\s+read\s+last|my\s+last\s+read|what\s+i\s+read\s+last)/i,
+            action: 'lastRead'
+        },
+        {
+            pattern: /(continue|resume)\s+(where\s+i\s+left\s+off|reading|from\s+where\s+i\s+stopped)/i,
+            action: 'continueReading'
+        },
+        {
+            pattern: /(notify|alert|tell\s+me)\s+(when|if)\s+(a\s+)?new\s+(chapter|update)\s+(arrives|comes|is\s+released)/i,
+            action: 'notifyNewChapter'
+        },
+        
+        // ========== BOOKMARKING ==========
+        {
+            pattern: /(bookmark|save|mark)\s+(this|current|page|chapter)?/i,
+            action: 'bookmark'
+        },
         {
             pattern: /(bookmark\s+here|save\s+position|remember\s+this)/i,
             action: 'bookmark'
         },
         {
-            pattern: /(what\s+chapter|current\s+chapter|which\s+chapter)/i,
-            action: 'currentChapter'
+            pattern: /(remove|delete|unbookmark)\s+bookmark/i,
+            action: 'removeBookmark',
+            requiresConfirmation: true
+        },
+        
+        // ========== CONTENT DISCOVERY ==========
+        {
+            pattern: /(suggest|recommend|give\s+me)\s+something\s+(funny|comedy|humorous)/i,
+            action: 'suggestComedy'
         },
         {
-            pattern: /(go\s+to\s+manga|open\s+manga|show\s+manga)/i,
-            action: 'goToManga'
+            pattern: /(suggest|recommend|give\s+me)\s+(new\s+)?(action|adventure)\s+manga/i,
+            action: 'suggestAction'
+        },
+        {
+            pattern: /(what's|what\s+is)\s+(popular|trending|hot)\s+(today|now|right\s+now)/i,
+            action: 'showTrending'
+        },
+        {
+            pattern: /(find|suggest|recommend)\s+(something\s+)?like\s+(.+)/i,
+            action: 'suggestSimilar',
+            params: (matches) => ({ similarTo: matches[3] })
+        },
+        {
+            pattern: /(find|show)\s+(short|quick)\s+manga\s+(under|below|less\s+than)\s+(\d+)\s+chapters/i,
+            action: 'findShortManga',
+            params: (matches) => ({ maxChapters: parseInt(matches[4]) })
+        },
+        {
+            pattern: /(show|find|recommend)\s+(romance|romantic)\s+(that\s+is\s+)?(trending|popular)/i,
+            action: 'showTrendingRomance'
+        },
+        
+        // ========== HELP & FEATURE EXPLANATIONS ==========
+        {
+            pattern: /(help|what\s+can\s+you\s+do|commands|available\s+commands)/i,
+            action: 'help'
+        },
+        {
+            pattern: /(how\s+do\s+i|how\s+to)\s+bookmark\s+manga/i,
+            action: 'helpBookmark'
+        },
+        {
+            pattern: /(how\s+do\s+i|how\s+to)\s+download\s+chapters/i,
+            action: 'helpDownload'
+        },
+        {
+            pattern: /(how\s+do\s+i|how\s+to)\s+switch\s+to\s+dark\s+mode/i,
+            action: 'helpDarkMode'
+        },
+        {
+            pattern: /(explain|tell\s+me\s+about|what\s+is)\s+(eye\s+tracking|auto\s+brightness|voice\s+assistant)/i,
+            action: 'explainFeature',
+            params: (matches) => ({ feature: matches[2] })
+        },
+        
+        // ========== READING MODE & SETTINGS ==========
+        {
+            pattern: /(dark\s+mode|light\s+mode|toggle\s+theme|switch\s+theme)/i,
+            action: 'toggleTheme'
+        },
+        {
+            pattern: /(zoom\s+in|zoom\s+out|increase\s+zoom|decrease\s+zoom)/i,
+            action: 'zoom',
+            params: (matches) => ({ direction: matches[0].toLowerCase().includes('in') || matches[0].toLowerCase().includes('increase') ? 'in' : 'out' })
         },
         {
             pattern: /(brightness\s+up|increase\s+brightness|make\s+brighter)/i,
@@ -156,8 +237,76 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             action: 'decreaseBrightness'
         },
         {
-            pattern: /(toggle\s+eye\s+tracking|enable\s+eye\s+tracking|disable\s+eye\s+tracking)/i,
+            pattern: /(toggle|enable|disable)\s+eye\s+tracking/i,
             action: 'toggleEyeTracking'
+        },
+        {
+            pattern: /(toggle|enable|disable)\s+auto\s+scroll/i,
+            action: 'toggleAutoScroll'
+        },
+        {
+            pattern: /(fullscreen|full\s+screen|enter\s+fullscreen)/i,
+            action: 'fullscreen'
+        },
+        {
+            pattern: /(exit\s+fullscreen|leave\s+fullscreen)/i,
+            action: 'exitFullscreen'
+        },
+        
+        // ========== QUICK ACTIONS ==========
+        {
+            pattern: /(like|unlike)/i,
+            action: 'toggleLike'
+        },
+        {
+            pattern: /(share|share\s+this)/i,
+            action: 'share'
+        },
+        {
+            pattern: /(what\s+chapter|current\s+chapter|which\s+chapter)/i,
+            action: 'currentChapter'
+        },
+        {
+            pattern: /(go\s+to\s+manga|open\s+manga|show\s+manga)/i,
+            action: 'goToManga'
+        },
+        
+        // ========== RESTRICTED ACTIONS (with security check) ==========
+        {
+            pattern: /(delete|remove)\s+(my\s+)?account/i,
+            action: 'deleteAccount',
+            restricted: true
+        },
+        {
+            pattern: /(change|modify|update)\s+(my\s+)?password/i,
+            action: 'changePassword',
+            restricted: true
+        },
+        {
+            pattern: /(make|do|process)\s+(a\s+)?payment/i,
+            action: 'payment',
+            restricted: true
+        },
+        {
+            pattern: /(clear|delete|remove)\s+(my\s+)?(reading\s+)?history/i,
+            action: 'clearHistory',
+            requiresConfirmation: true
+        },
+        {
+            pattern: /(logout|sign\s+out|log\s+out)/i,
+            action: 'logout',
+            requiresConfirmation: true
+        },
+        {
+            pattern: /(remove|delete)\s+(from\s+)?(my\s+)?library/i,
+            action: 'removeFromLibrary',
+            requiresConfirmation: true
+        },
+        
+        // ========== CLOSE/EXIT ==========
+        {
+            pattern: /(close|exit|stop)/i,
+            action: 'close'
         }
     ];
 
@@ -226,9 +375,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             };
 
             recognition.onerror = (event: any) => {
-                // Silently handle errors to prevent console spam
                 if (event.error === 'no-speech') {
-                    // Restart listening if no speech detected
                     setTimeout(() => {
                         if (isListening && enabled) {
                             recognition.start();
@@ -243,7 +390,6 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             };
 
             recognition.onend = () => {
-                // Restart if still listening
                 if (isListening && enabled) {
                     setTimeout(() => {
                         try {
@@ -258,7 +404,6 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             recognition.start();
             recognitionRef.current = recognition;
         } catch (error) {
-            // Silently handle errors
             setError('Failed to start voice recognition');
             setIsListening(false);
         }
@@ -276,24 +421,39 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     };
 
     const processCommand = (text: string) => {
+        // Handle confirmation responses
+        if (pendingConfirmation) {
+            if (text.match(/(yes|confirm|ok|sure|proceed|do\s+it)/i)) {
+                executeCommand(pendingConfirmation.action, pendingConfirmation.params);
+                setPendingConfirmation(null);
+                return;
+            } else if (text.match(/(no|cancel|abort|stop)/i)) {
+                speak('Action cancelled.');
+                setPendingConfirmation(null);
+                return;
+            }
+        }
+
         for (const command of commands) {
             const matches = text.match(command.pattern);
             if (matches) {
                 const action = command.action;
                 const params = command.params ? command.params(matches) : undefined;
                 
-                setLastCommand(action);
-                onCommand?.(action, params);
+                // Security check: Block restricted actions
+                if (command.restricted || RESTRICTED_ACTIONS.includes(action)) {
+                    speak("I can't perform that action for security reasons. Please use the website interface for sensitive operations.");
+                    return;
+                }
                 
-                // Provide audio feedback
-                speak(`Executing ${action}`);
+                // Confirmation check
+                if (command.requiresConfirmation || CONFIRMATION_REQUIRED.includes(action)) {
+                    setPendingConfirmation({ action, params });
+                    speak(`Are you sure you want to ${action}? Say yes to confirm or no to cancel.`);
+                    return;
+                }
                 
-                // Clear transcript after processing
-                setTimeout(() => {
-                    setTranscript('');
-                    setLastCommand(null);
-                }, 2000);
-                
+                executeCommand(action, params);
                 return;
             }
         }
@@ -302,8 +462,138 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         speak("I didn't understand that command. Say 'help' for available commands.");
     };
 
+    const executeCommand = (action: string, params?: any) => {
+        setLastCommand(action);
+        
+        // Handle navigation commands that VoiceAssistant can do directly
+        switch (action) {
+            case 'openLibrary':
+                router.push('/library');
+                speak('Opening your library.');
+                break;
+            case 'openHome':
+                router.push('/');
+                speak('Going to home page.');
+                break;
+            case 'openBrowse':
+                router.push('/manga');
+                speak('Opening manga browse page.');
+                break;
+            case 'openGenres':
+                router.push('/genres');
+                speak('Opening genres page.');
+                break;
+            case 'openSearch':
+                router.push('/manga?search=true');
+                speak('Opening search page.');
+                break;
+            case 'search':
+                if (params?.query) {
+                    router.push(`/manga?search=${encodeURIComponent(params.query)}`);
+                    speak(`Searching for ${params.query}.`);
+                }
+                break;
+            case 'searchByGenre':
+                if (params?.genre) {
+                    router.push(`/manga?genre=${encodeURIComponent(params.genre)}`);
+                    speak(`Searching for ${params.genre} manga.`);
+                }
+                break;
+            case 'showLatest':
+                router.push('/manga?sort=latest');
+                speak('Showing latest updates.');
+                break;
+            case 'showBookmarks':
+                router.push('/library?tab=bookmarks');
+                speak('Showing your bookmarks.');
+                break;
+            case 'lastRead':
+                router.push('/library?tab=history');
+                speak('Showing your reading history.');
+                break;
+            case 'continueReading':
+                router.push('/library?tab=continue');
+                speak('Opening continue reading.');
+                break;
+            case 'notifyNewChapter':
+                speak('I will notify you when new chapters arrive. Make sure notifications are enabled in your settings.');
+                break;
+            case 'suggestComedy':
+                router.push('/manga?genre=comedy&sort=popular');
+                speak('Showing popular comedy manga.');
+                break;
+            case 'suggestAction':
+                router.push('/manga?genre=action&sort=popular');
+                speak('Showing popular action manga.');
+                break;
+            case 'showTrending':
+                router.push('/manga?sort=trending');
+                speak('Showing trending manga.');
+                break;
+            case 'suggestSimilar':
+                if (params?.similarTo) {
+                    router.push(`/manga?search=${encodeURIComponent(params.similarTo)}`);
+                    speak(`Searching for manga similar to ${params.similarTo}.`);
+                }
+                break;
+            case 'findShortManga':
+                if (params?.maxChapters) {
+                    router.push(`/manga?maxChapters=${params.maxChapters}`);
+                    speak(`Finding manga with less than ${params.maxChapters} chapters.`);
+                }
+                break;
+            case 'showTrendingRomance':
+                router.push('/manga?genre=romance&sort=trending');
+                speak('Showing trending romance manga.');
+                break;
+            case 'help':
+                handleHelp();
+                break;
+            case 'helpBookmark':
+                speak('To bookmark, say "bookmark this" while reading a chapter. To view bookmarks, say "show my bookmarks".');
+                break;
+            case 'helpDownload':
+                speak('Download feature is coming soon. You can bookmark chapters to access them later.');
+                break;
+            case 'helpDarkMode':
+                speak('Say "toggle theme" or "dark mode" to switch between light and dark themes.');
+                break;
+            case 'explainFeature':
+                if (params?.feature) {
+                    const feature = params.feature.toLowerCase();
+                    if (feature.includes('eye')) {
+                        speak('Eye tracking allows you to scroll by looking up or down. Enable it from the settings.');
+                    } else if (feature.includes('brightness')) {
+                        speak('Auto brightness adjusts your screen brightness based on ambient light. Enable it from the settings.');
+                    } else if (feature.includes('voice')) {
+                        speak('Voice assistant lets you control the website using voice commands. Say "help" to see all available commands.');
+                    }
+                }
+                break;
+            case 'clearHistory':
+                speak('To clear reading history, please go to your library settings and confirm there.');
+                break;
+            case 'logout':
+                speak('To logout, please use the logout button in your profile menu for security.');
+                break;
+            default:
+                // Pass other commands to parent component (ChapterReader)
+                onCommand?.(action, params);
+                speak(`Executing ${action.replace(/([A-Z])/g, ' $1').toLowerCase()}.`);
+        }
+        
+        // Clear transcript after processing
+        setTimeout(() => {
+            setTranscript('');
+            setLastCommand(null);
+        }, 2000);
+    };
+
     const speak = (text: string) => {
         if (synthRef.current) {
+            // Cancel any ongoing speech
+            synthRef.current.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = 1.0;
             utterance.pitch = 1.0;
@@ -324,10 +614,21 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         }
 
         setIsListening(!isListening);
+        if (!isListening) {
+            speak('Voice assistant activated. Say "help" for available commands.');
+        } else {
+            speak('Voice assistant deactivated.');
+        }
     };
 
     const handleHelp = () => {
-        const helpText = "Available commands: next page, previous page, bookmark this, go to chapter number, toggle theme, zoom in, zoom out, like, share, and more. Say 'help' anytime for this list.";
+        const helpText = `Available commands: Navigation - next page, previous page, go to chapter number, open library, open home, browse manga. 
+        Search - search for manga name, find comedy manga, show latest updates. 
+        Personal - show my bookmarks, continue reading, what did I read last. 
+        Content - suggest comedy manga, show trending, recommend action manga. 
+        Settings - toggle theme, zoom in, zoom out, brightness up, brightness down. 
+        Help - how do I bookmark, how to switch to dark mode, explain features. 
+        Say any command to use it.`;
         speak(helpText);
     };
 
@@ -396,6 +697,12 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                     </div>
                 )}
 
+                {pendingConfirmation && (
+                    <div className="text-xs text-yellow-400 mb-2 p-2 bg-yellow-900/20 rounded">
+                        ⚠️ Waiting for confirmation: {pendingConfirmation.action}
+                    </div>
+                )}
+
                 {isListening && (
                     <div className="mb-2">
                         <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -432,4 +739,3 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         </div>
     );
 }
-
