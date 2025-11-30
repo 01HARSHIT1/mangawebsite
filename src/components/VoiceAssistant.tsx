@@ -494,16 +494,24 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             return;
         }
 
-        if (isListening) {
-            startListening();
-        } else {
-            stopListening();
-        }
+        // Small delay to ensure DOM is ready after navigation
+        const timer = setTimeout(() => {
+            if (isListening) {
+                startListening();
+            } else {
+                stopListening();
+            }
+        }, 100);
 
         return () => {
-            stopListening();
+            clearTimeout(timer);
+            // Don't stop listening on cleanup - let it persist across navigation
+            // Only stop if explicitly disabled
+            if (!enabled || !isSupported || !isAuthenticated) {
+                stopListening();
+            }
         };
-    }, [enabled, isListening, isSupported, isAuthenticated]);
+    }, [enabled, isListening, isSupported, isAuthenticated, pathname]);
 
     const startListening = () => {
         if (!isSupported) {
@@ -1114,17 +1122,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 return;
             }
             
-            // Navigate to manga detail page - use window.location for more reliable navigation
+            // Navigate to manga detail page - use router.push to preserve Voice Assistant state
             const mangaUrl = `/manga/${mangaId}`;
             speak(`Opening ${manga.title || mangaName}.`);
             
+            // Use router.push instead of window.location to preserve Voice Assistant state
             // Use setTimeout to ensure speech is heard before navigation
             setTimeout(() => {
-                if (typeof window !== 'undefined') {
-                    window.location.href = mangaUrl;
-                } else {
-                    router.push(mangaUrl);
-                }
+                router.push(mangaUrl);
             }, 500);
         } catch (error) {
             speak(`Error searching for ${mangaName}. Opening search page.`);
@@ -1208,8 +1213,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         if (readButton) {
             const href = (readButton as HTMLAnchorElement).href;
             if (href && href.includes('/chapter/')) {
-                // If it's a link, navigate directly
-                window.location.href = href;
+                // If it's a link, use router.push to preserve Voice Assistant state
+                const path = new URL(href, window.location.origin).pathname;
+                router.push(path);
             } else {
                 // If it's a button, click it
                 readButton.click();
@@ -1261,7 +1267,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                         const firstChapter = sortedChapters[0];
                         const firstChapterId = firstChapter._id || firstChapter.id;
                         if (firstChapterId) {
-                            window.location.href = `/manga/${mangaId}/chapter/${firstChapterId}`;
+                            router.push(`/manga/${mangaId}/chapter/${firstChapterId}`);
                             speak('Opening chapter.');
                         } else {
                             speak('Could not find chapter. Please try clicking the read button manually.');
