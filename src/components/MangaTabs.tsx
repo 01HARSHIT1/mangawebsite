@@ -319,6 +319,7 @@ export default function MangaTabs({ manga, chapters, mangaId }: { manga: any; ch
             {/* Tab Navigation */}
             <div className="flex gap-6 mb-6 border-b border-gray-700">
                 <button
+                    data-tab="synopsis"
                     onClick={() => setTab('synopsis')}
                     className={`pb-2 px-1 font-semibold text-lg transition-colors ${tab === 'synopsis'
                         ? 'text-white border-b-2 border-red-500'
@@ -328,6 +329,7 @@ export default function MangaTabs({ manga, chapters, mangaId }: { manga: any; ch
                     Synopsis
                 </button>
                 <button
+                    data-tab="chapters"
                     onClick={() => setTab('chapters')}
                     className={`pb-2 px-1 font-semibold text-lg transition-colors ${tab === 'chapters'
                         ? 'text-white border-b-2 border-red-500'
@@ -337,6 +339,7 @@ export default function MangaTabs({ manga, chapters, mangaId }: { manga: any; ch
                     Chapters ({chapters.length})
                 </button>
                 <button
+                    data-tab="reviews"
                     onClick={() => setTab('reviews')}
                     className={`pb-2 px-1 font-semibold text-lg transition-colors ${tab === 'reviews'
                         ? 'text-white border-b-2 border-red-500'
