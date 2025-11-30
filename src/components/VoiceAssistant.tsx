@@ -668,9 +668,21 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'scroll':
                 // Handle scroll up/down commands
-                if (params?.direction) {
-                    const direction = params.direction;
-                    const scrollAmount = window.innerHeight * 0.5; // Scroll 50% of viewport height
+                // Try to extract direction from params first, then from transcript
+                let direction = params?.direction;
+                
+                // If direction not in params, try to extract from the last transcript
+                if (!direction && transcript) {
+                    const lowerTranscript = transcript.toLowerCase();
+                    if (lowerTranscript.includes('down') || lowerTranscript.includes('downward')) {
+                        direction = 'down';
+                    } else if (lowerTranscript.includes('up') || lowerTranscript.includes('upward')) {
+                        direction = 'up';
+                    }
+                }
+                
+                if (direction) {
+                    const scrollAmount = window.innerHeight * 0.8; // Scroll 80% of viewport height for better visibility
                     
                     if (direction === 'down') {
                         window.scrollBy({ 
@@ -686,7 +698,17 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                         speak('Scrolling up.');
                     }
                 } else {
-                    speak('Please specify scroll direction: scroll up or scroll down.');
+                    // Fallback: try to scroll based on common patterns
+                    const lowerTranscript = (transcript || '').toLowerCase();
+                    if (lowerTranscript.includes('down')) {
+                        window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+                        speak('Scrolling down.');
+                    } else if (lowerTranscript.includes('up')) {
+                        window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+                        speak('Scrolling up.');
+                    } else {
+                        speak('Please specify scroll direction: scroll up or scroll down.');
+                    }
                 }
                 break;
             case 'searchByGenre':
