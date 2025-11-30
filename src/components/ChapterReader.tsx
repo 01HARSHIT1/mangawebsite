@@ -226,6 +226,19 @@ export default function ChapterReader({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Listen for voice commands from global VoiceAssistant
+    useEffect(() => {
+        const handleVoiceCommandEvent = (event: CustomEvent) => {
+            const { command, params } = event.detail;
+            handleVoiceCommand(command, params);
+        };
+
+        window.addEventListener('voiceCommand', handleVoiceCommandEvent as EventListener);
+        return () => {
+            window.removeEventListener('voiceCommand', handleVoiceCommandEvent as EventListener);
+        };
+    }, [chapterImages.length, nextChapter, prevChapter, allChapters, mangaId, chapterId]); // Re-bind when dependencies change
+
     // Helper function to find which page is currently in viewport
     const findCurrentPageInViewport = (): number => {
         const viewportTop = window.scrollY;

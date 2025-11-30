@@ -530,6 +530,21 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             case 'startReadingCurrentManga':
                 startReadingCurrentManga();
                 break;
+            case 'goToPage':
+            case 'nextPage':
+            case 'previousPage':
+            case 'goToLastPage':
+                // Dispatch to ChapterReader if on chapter page
+                if (pathname?.includes('/chapter/')) {
+                    window.dispatchEvent(new CustomEvent('voiceCommand', { detail: { command: action, params } }));
+                    speak(action === 'goToPage' ? `Going to page ${params?.pageNumber || ''}.` : 
+                          action === 'nextPage' ? 'Going to next page.' :
+                          action === 'previousPage' ? 'Going to previous page.' :
+                          'Going to last page.');
+                } else {
+                    speak('Page navigation is only available on chapter reading pages.');
+                }
+                break;
             case 'searchByGenre':
                 if (params?.genre) {
                     router.push(`/manga?genre=${encodeURIComponent(params.genre)}`);
