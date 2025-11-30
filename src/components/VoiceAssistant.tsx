@@ -628,6 +628,117 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 router.push('/library?tab=continue');
                 speak('Opening continue reading.');
                 break;
+            case 'openProfile':
+                if (!isAuthenticated) {
+                    speak('Please log in to view your profile.');
+                    router.push('/login');
+                } else {
+                    router.push('/profile');
+                    speak('Opening your profile.');
+                }
+                break;
+            case 'openSettings':
+                if (!isAuthenticated) {
+                    speak('Please log in to access settings.');
+                    router.push('/login');
+                } else {
+                    router.push('/settings');
+                    speak('Opening settings.');
+                }
+                break;
+            case 'openStats':
+                router.push('/stats');
+                speak('Opening statistics.');
+                break;
+            case 'openNotifications':
+                if (!isAuthenticated) {
+                    speak('Please log in to view notifications.');
+                    router.push('/login');
+                } else {
+                    router.push('/notifications');
+                    speak('Opening notifications.');
+                }
+                break;
+            case 'openCoins':
+                if (!isAuthenticated) {
+                    speak('Please log in to purchase coins.');
+                    router.push('/login');
+                } else {
+                    router.push('/coins');
+                    speak('Opening coins page.');
+                }
+                break;
+            case 'openPricing':
+                router.push('/pricing');
+                speak('Opening pricing page.');
+                break;
+            case 'openCreatorDashboard':
+                if (!isAuthenticated) {
+                    speak('Please log in to access creator dashboard.');
+                    router.push('/login');
+                } else if (!user?.isCreator && user?.role !== 'admin') {
+                    speak('You need to be a creator to access the creator dashboard. Say "become creator" to learn more.');
+                    router.push('/become-creator');
+                } else {
+                    router.push('/creator/dashboard');
+                    speak('Opening creator dashboard.');
+                }
+                break;
+            case 'openAdminDashboard':
+                if (!isAuthenticated) {
+                    speak('Please log in to access admin dashboard.');
+                    router.push('/login');
+                } else if (user?.role !== 'admin') {
+                    speak('You do not have permission to access the admin dashboard.');
+                } else {
+                    router.push('/admin/dashboard');
+                    speak('Opening admin dashboard.');
+                }
+                break;
+            case 'openUpload':
+                if (!isAuthenticated) {
+                    speak('Please log in to upload manga.');
+                    router.push('/login');
+                } else if (!user?.isCreator && user?.role !== 'admin') {
+                    speak('You need to be a creator to upload manga. Say "become creator" to learn more.');
+                    router.push('/become-creator');
+                } else {
+                    router.push('/upload');
+                    speak('Opening upload page.');
+                }
+                break;
+            case 'openBecomeCreator':
+                router.push('/become-creator');
+                speak('Opening become creator page.');
+                break;
+            case 'openLogin':
+                if (isAuthenticated) {
+                    speak('You are already logged in.');
+                } else {
+                    router.push('/login');
+                    speak('Opening login page.');
+                }
+                break;
+            case 'openSignup':
+                if (isAuthenticated) {
+                    speak('You are already logged in.');
+                } else {
+                    router.push('/signup');
+                    speak('Opening sign up page.');
+                }
+                break;
+            case 'openHelp':
+                router.push('/help');
+                speak('Opening help page.');
+                break;
+            case 'openAbout':
+                router.push('/about');
+                speak('Opening about page.');
+                break;
+            case 'openContact':
+                router.push('/contact');
+                speak('Opening contact page.');
+                break;
             case 'notifyNewChapter':
                 speak('I will notify you when new chapters arrive. Make sure notifications are enabled in your settings.');
                 break;
