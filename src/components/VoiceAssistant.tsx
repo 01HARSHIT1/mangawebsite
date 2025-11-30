@@ -56,7 +56,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         const currentPath = getCurrentPathname();
         return currentPath.includes('/manga/') && !currentPath.includes('/chapter/');
     };
-    const [isListening, setIsListening] = useState(false);
+    // Persist listening state across navigation
+    const [isListening, setIsListening] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = sessionStorage.getItem('voiceAssistantListening');
+            return saved === 'true';
+        }
+        return false;
+    });
     const [isSupported, setIsSupported] = useState(false);
     const [transcript, setTranscript] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -65,6 +72,13 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     
     const recognitionRef = useRef<any>(null);
     const synthRef = useRef<SpeechSynthesis | null>(null);
+    
+    // Persist listening state to sessionStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('voiceAssistantListening', isListening.toString());
+        }
+    }, [isListening]);
     
     // CRITICAL: Panel ref for position locking - must be declared before any conditional returns
     const panelRef = useRef<HTMLDivElement>(null);
@@ -1168,18 +1182,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 return;
             }
             
-            // Navigate to first chapter - use window.location for more reliable navigation
+            // Navigate to first chapter - use router.push to preserve Voice Assistant state
             const chapterUrl = `/manga/${mangaId}/chapter/${firstChapterId}`;
             speak(`Starting Chapter ${firstChapter.chapterNumber || 1}.`);
             
+            // Use router.push instead of window.location to preserve Voice Assistant state
             // Use setTimeout to ensure speech is heard before navigation
-            // Use window.location.href for more reliable navigation
             setTimeout(() => {
-                if (typeof window !== 'undefined') {
-                    window.location.href = chapterUrl;
-                } else {
-                    router.push(chapterUrl);
-                }
+                router.push(chapterUrl);
             }, 800);
         } catch (error) {
             console.error('Error loading chapters:', error);
