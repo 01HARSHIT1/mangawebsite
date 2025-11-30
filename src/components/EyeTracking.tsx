@@ -1405,16 +1405,20 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                         {/* Guided Calibration Mode */}
                         <div className="mt-3 p-3 bg-green-900/30 rounded border border-green-700/50">
                             <div className="text-xs font-semibold text-green-400 mb-2">
-                                🎯 Guided Calibration (Recommended)
+                                🎯 Guided Calibration (500 Samples Per Zone)
                             </div>
                             <div className="text-xs text-gray-400 mb-3 space-y-1">
                                 <div><strong>How it works:</strong></div>
                                 <div>1. System shows you where to look (top 5-7%, middle, bottom 95-100%)</div>
                                 <div>2. Stare at the highlighted zone for 2-3 seconds</div>
-                                <div>3. System automatically collects samples and scrolls</div>
-                                <div>4. Moves to next zone automatically</div>
+                                <div>3. System automatically collects ~50 samples per run</div>
+                                <div>4. Repeats each zone ~10 times to collect 500 samples</div>
+                                <div>5. Automatically moves to next zone when complete</div>
                                 <div className="mt-2 text-green-300">
-                                    <strong>Perfect for accurate calibration!</strong>
+                                    <strong>Target: 500 samples per zone (Total: 1,500 samples)</strong>
+                                </div>
+                                <div className="mt-1 text-yellow-300 text-xs">
+                                    ⏱️ Estimated time: ~5-7 minutes per zone = ~15-20 minutes total
                                 </div>
                             </div>
                             {guidedCalibrationMode === 'idle' && (
@@ -1455,8 +1459,15 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                             </div>
                                         </div>
                                     )}
-                                    <div className="text-xs text-gray-400 text-center">
-                                        Samples: Top: {guidedCalibrationSamples.top} | Middle: {guidedCalibrationSamples.middle} | Bottom: {guidedCalibrationSamples.bottom}
+                                    <div className="text-xs text-gray-400 text-center space-y-1">
+                                        <div>
+                                            Samples: Top: {guidedCalibrationSamples.top}/500 | Middle: {guidedCalibrationSamples.middle}/500 | Bottom: {guidedCalibrationSamples.bottom}/500
+                                        </div>
+                                        <div className="text-yellow-400">
+                                            {guidedCalibrationMode === 'top' && `Progress: ${Math.round((guidedCalibrationSamples.top / 500) * 100)}%`}
+                                            {guidedCalibrationMode === 'middle' && `Progress: ${Math.round((guidedCalibrationSamples.middle / 500) * 100)}%`}
+                                            {guidedCalibrationMode === 'bottom' && `Progress: ${Math.round((guidedCalibrationSamples.bottom / 500) * 100)}%`}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={cancelGuidedCalibration}
