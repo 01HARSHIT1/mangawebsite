@@ -192,6 +192,28 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             action: 'openContact'
         },
         
+        // ========== MANGA DETAIL PAGE TABS ==========
+        {
+            pattern: /(open|go\s+to|show)\s+synopsis/i,
+            action: 'openSynopsisTab'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+chapters/i,
+            action: 'openChaptersTab'
+        },
+        {
+            pattern: /(open|go\s+to|show)\s+reviews/i,
+            action: 'openReviewsTab'
+        },
+        {
+            pattern: /(open|read|start)\s+(first\s+)?(visible\s+)?chapter/i,
+            action: 'openFirstVisibleChapter'
+        },
+        {
+            pattern: /(open|read|start)\s+this\s+chapter/i,
+            action: 'openFirstVisibleChapter'
+        },
+        
         // ========== SEARCHING MANGA ==========
         {
             pattern: /(search|find)\s+(for\s+)?(.+)/i,
