@@ -54,7 +54,12 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     // Helper function to check if we're on a manga detail page
     const isOnMangaDetailPage = () => {
         const currentPath = getCurrentPathname();
-        return currentPath.includes('/manga/') && !currentPath.includes('/chapter/');
+        // More robust check: must have /manga/ but not /chapter/
+        // Also handle query parameters and hash
+        const pathWithoutQuery = currentPath.split('?')[0].split('#')[0];
+        return pathWithoutQuery.includes('/manga/') && 
+               !pathWithoutQuery.includes('/chapter/') &&
+               pathWithoutQuery.match(/^\/manga\/[^\/]+$/); // Matches /manga/[id] exactly
     };
     // Persist listening state across navigation
     const [isListening, setIsListening] = useState(() => {
