@@ -273,8 +273,9 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         // ========== START READING CURRENT MANGA ==========
         // This pattern matches "start reading" or "read" without a manga name (only on manga detail pages)
         // Also matches "open chapter 1", "go to chapter 1", etc.
+        // IMPORTANT: Must come AFTER manga search patterns to avoid conflicts
         {
-            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter|go\s+to\s+chapter\s+1|open\s+chapter\s+1|read\s+now)$/i,
+            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter|go\s+to\s+chapter\s+1|open\s+chapter\s+1|read\s+now|start\s+reading\s+at\s+this\s+page)$/i,
             action: 'startReadingCurrentManga'
         },
         
@@ -643,7 +644,12 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 }
                 break;
             case 'startReadingCurrentManga':
-                startReadingCurrentManga();
+                // Check if we're on a manga detail page before executing
+                if (isOnMangaDetailPage()) {
+                    startReadingCurrentManga();
+                } else {
+                    speak('Please navigate to a manga page first, or say "open [manga name]" to open a specific manga.');
+                }
                 break;
             case 'goToPage':
             case 'nextPage':
