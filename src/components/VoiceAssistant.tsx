@@ -935,10 +935,16 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 return;
             }
             
-            // Navigate to first chapter
-            router.push(`/manga/${mangaId}/chapter/${firstChapterId}`);
+            // Navigate to first chapter - use router.push with a slight delay to ensure speech is heard
+            const chapterUrl = `/manga/${mangaId}/chapter/${firstChapterId}`;
             speak(`Starting Chapter ${firstChapter.chapterNumber || 1}.`);
+            
+            // Use setTimeout to ensure speech is heard before navigation
+            setTimeout(() => {
+                router.push(chapterUrl);
+            }, 800);
         } catch (error) {
+            console.error('Error loading chapters:', error);
             speak('Error loading chapters. Please try clicking the read button manually.');
         }
     };
