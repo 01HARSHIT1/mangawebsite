@@ -41,6 +41,21 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     const { isAuthenticated, user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
+    
+    // Helper function to get current pathname (with fallback to window.location)
+    const getCurrentPathname = () => {
+        if (pathname) return pathname;
+        if (typeof window !== 'undefined') {
+            return window.location.pathname;
+        }
+        return '';
+    };
+    
+    // Helper function to check if we're on a manga detail page
+    const isOnMangaDetailPage = () => {
+        const currentPath = getCurrentPathname();
+        return currentPath.includes('/manga/') && !currentPath.includes('/chapter/');
+    };
     const [isListening, setIsListening] = useState(false);
     const [isSupported, setIsSupported] = useState(false);
     const [transcript, setTranscript] = useState('');
@@ -764,9 +779,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openSynopsisTab':
                 // Switch to synopsis tab on manga detail page
-                // Check if we're on a manga detail page (more flexible check)
-                const isMangaDetailPage = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
-                if (isMangaDetailPage) {
+                if (isOnMangaDetailPage()) {
                     const synopsisTab = document.querySelector('[data-tab="synopsis"]') as HTMLElement;
                     if (synopsisTab) {
                         synopsisTab.click();
@@ -792,8 +805,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openChaptersTab':
                 // Switch to chapters tab on manga detail page
-                const isMangaDetailPage2 = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
-                if (isMangaDetailPage2) {
+                if (isOnMangaDetailPage()) {
                     const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
                     if (chaptersTab) {
                         chaptersTab.click();
@@ -819,8 +831,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openReviewsTab':
                 // Switch to reviews tab on manga detail page
-                const isMangaDetailPage3 = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
-                if (isMangaDetailPage3) {
+                if (isOnMangaDetailPage()) {
                     const reviewsTab = document.querySelector('[data-tab="reviews"]') as HTMLElement;
                     if (reviewsTab) {
                         reviewsTab.click();
@@ -846,8 +857,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openFirstVisibleChapter':
                 // Open the first visible chapter from the chapters tab
-                const isMangaDetailPage4 = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
-                if (isMangaDetailPage4) {
+                if (isOnMangaDetailPage()) {
                     // First, make sure we're on the chapters tab
                     const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
                     if (chaptersTab) {
@@ -1023,16 +1033,15 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
 
     const startReadingCurrentManga = async () => {
         // Check if we're on a manga detail page (more flexible check)
-        const isMangaDetailPage = pathname?.includes('/manga/') && !pathname?.includes('/chapter/');
-        
-        if (!isMangaDetailPage) {
+        if (!isOnMangaDetailPage()) {
             // Not on a manga detail page - try to find manga from current page
             speak('Please navigate to a manga page first, or say "open [manga name]" to open a specific manga.');
             return;
         }
         
-        // Extract mangaId from pathname
-        const mangaIdMatch = pathname?.match(/\/manga\/([^\/\?]+)/);
+        // Extract mangaId from pathname (use getCurrentPathname for reliability)
+        const currentPath = getCurrentPathname();
+        const mangaIdMatch = currentPath.match(/\/manga\/([^\/\?]+)/);
         if (!mangaIdMatch) {
             speak('Could not find manga ID. Please try navigating to the manga page again.');
             return;
