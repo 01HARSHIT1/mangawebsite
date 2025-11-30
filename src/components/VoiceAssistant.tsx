@@ -44,10 +44,11 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     
     // Helper function to get current pathname (with fallback to window.location)
     const getCurrentPathname = () => {
-        if (pathname) return pathname;
+        // Always use window.location.pathname for reliability (Next.js pathname can be delayed)
         if (typeof window !== 'undefined') {
             return window.location.pathname;
         }
+        if (pathname) return pathname;
         return '';
     };
     
@@ -57,9 +58,11 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         // More robust check: must have /manga/ but not /chapter/
         // Also handle query parameters and hash
         const pathWithoutQuery = currentPath.split('?')[0].split('#')[0];
-        return pathWithoutQuery.includes('/manga/') && 
-               !pathWithoutQuery.includes('/chapter/') &&
-               pathWithoutQuery.match(/^\/manga\/[^\/]+$/); // Matches /manga/[id] exactly
+        // Check: /manga/[id] format (no /chapter/ in path)
+        const isMangaDetail = pathWithoutQuery.includes('/manga/') && 
+                            !pathWithoutQuery.includes('/chapter/') &&
+                            pathWithoutQuery.match(/^\/manga\/[^\/]+$/); // Matches /manga/[id] exactly
+        return isMangaDetail;
     };
     // Persist listening state across navigation
     const [isListening, setIsListening] = useState(() => {
@@ -982,34 +985,53 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openChaptersTab':
                 // Switch to chapters tab on manga detail page
-                // Use direct pathname check for reliability (same as openFirstVisibleChapter)
-                const currentPathForChaptersTab = getCurrentPathname();
+                // ALWAYS use window.location.pathname for most reliable detection
+                const currentPathForChaptersTab = typeof window !== 'undefined' ? window.location.pathname : getCurrentPathname();
                 const pathWithoutQueryForTab = currentPathForChaptersTab.split('?')[0].split('#')[0];
+                // More lenient check - just needs /manga/ and not /chapter/
                 const isMangaDetailForTab = pathWithoutQueryForTab.includes('/manga/') && 
-                                          !pathWithoutQueryForTab.includes('/chapter/') &&
-                                          pathWithoutQueryForTab.match(/^\/manga\/[^\/]+$/);
+                                          !pathWithoutQueryForTab.includes('/chapter/');
                 
                 if (isMangaDetailForTab) {
-                    const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
+                    // Try to find chapters tab
+                    let chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
+                    
+                    // If not found, try alternative selectors
+                    if (!chaptersTab) {
+                        const allButtons = Array.from(document.querySelectorAll('button'));
+                        chaptersTab = allButtons.find(btn => {
+                            const text = btn.textContent?.toLowerCase() || '';
+                            return text.includes('chapters') &&
+                                   !text.includes('synopsis') &&
+                                   !text.includes('reviews');
+                        }) as HTMLElement;
+                    }
+                    
                     if (chaptersTab) {
                         chaptersTab.click();
                         speak('Opening chapters tab.');
                     } else {
-                        // Try alternative selector - find button with "Chapters" text
-                        const allButtons = Array.from(document.querySelectorAll('button'));
-                        const chaptersButton = allButtons.find(btn => 
-                            btn.textContent?.toLowerCase().includes('chapters') &&
-                            !btn.textContent?.toLowerCase().includes('synopsis') &&
-                            !btn.textContent?.toLowerCase().includes('reviews')
-                        );
-                        if (chaptersButton) {
-                            (chaptersButton as HTMLElement).click();
+                        // Last resort: try to find any element with "Chapters" text that's clickable
+                        const allClickable = Array.from(document.querySelectorAll('button, a, div[onclick]'));
+                        const chaptersElement = allClickable.find(el => {
+                            const text = el.textContent?.toLowerCase() || '';
+                            return text.includes('chapters') && text.includes('(') && !text.includes('synopsis');
+                        }) as HTMLElement;
+                        
+                        if (chaptersElement) {
+                            chaptersElement.click();
                             speak('Opening chapters tab.');
                         } else {
                             speak('Could not find chapters tab. Please try again.');
                         }
                     }
                 } else {
+                    // Debug: log the pathname for troubleshooting
+                    console.log('Pathname check failed:', { 
+                        currentPath: currentPathForChaptersTab, 
+                        pathWithoutQuery: pathWithoutQueryForTab,
+                        isMangaDetail: isMangaDetailForTab 
+                    });
                     speak('Chapters tab is only available on manga detail pages.');
                 }
                 break;
