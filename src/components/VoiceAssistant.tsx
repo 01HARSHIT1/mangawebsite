@@ -135,6 +135,10 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             action: 'openHome'
         },
         {
+            pattern: /^(open|go\s+to|show)\s+(browse|browser)$/i,
+            action: 'openBrowse'
+        },
+        {
             pattern: /(open|go\s+to|show|browse)\s+manga/i,
             action: 'openBrowse'
         },
@@ -247,11 +251,23 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         },
         
         // ========== OPENING MANGA BY NAME ==========
-        // IMPORTANT: These patterns must come AFTER tab navigation to prevent conflicts
+        // IMPORTANT: These patterns must come AFTER page navigation to prevent conflicts
+        // Require "manga" keyword OR be more specific to avoid matching page names
         {
-            pattern: /(read|start\s+reading|begin\s+reading|open|show)\s+(manga\s+)?(.+)/i,
+            pattern: /(read|start\s+reading|begin\s+reading|open|show)\s+(manga\s+)(.+)/i,
             action: 'openManga',
-            params: (matches) => ({ mangaName: matches[3] || matches[2] })
+            params: (matches) => ({ mangaName: matches[3] })
+        },
+        {
+            pattern: /(open|read|start\s+reading|show)\s+(.+)\s+(manga)/i,
+            action: 'openManga',
+            params: (matches) => ({ mangaName: matches[2] })
+        },
+        // Fallback: Only match if it's clearly a manga name (not a common page name)
+        {
+            pattern: /^(open|read|start\s+reading|show)\s+(?!browse|browser|home|library|genres|search|profile|settings|stats|notifications|coins|pricing|dashboard|upload|login|signup|help|about|contact|synopsis|chapters|reviews)(.+)$/i,
+            action: 'openManga',
+            params: (matches) => ({ mangaName: matches[2] })
         },
         
         // ========== START READING CURRENT MANGA ==========

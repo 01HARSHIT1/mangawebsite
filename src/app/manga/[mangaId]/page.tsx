@@ -109,8 +109,45 @@ export default async function MangaDetailPage({ params }: { params: { mangaId: s
 
         // Pass all needed data as props to the client component
         return <MangaDetailClient manga={manga} chapters={chaptersPlain} ratings={ratings} favorites={favorites} author={author} lastUpdate={lastUpdate} status={status} type={type} genres={genres} tags={tags} />;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error loading manga detail:', error);
-        return <div style={{ color: '#fff', padding: 40 }}>Error loading manga. Please try again.</div>;
+        console.error('MangaId:', params.mangaId);
+        console.error('Error details:', {
+            message: error?.message,
+            name: error?.name,
+            stack: error?.stack
+        });
+        
+        // Try to provide more helpful error message
+        return (
+            <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+                <div className="text-center max-w-2xl px-4">
+                    <h1 className="text-3xl font-bold mb-4 text-red-400">Error Loading Manga</h1>
+                    <p className="text-gray-300 mb-2">We couldn't load the manga you requested.</p>
+                    <p className="text-gray-400 text-sm mb-6">
+                        Manga ID: {params.mangaId}
+                    </p>
+                    <div className="space-y-2">
+                        <a 
+                            href="/manga" 
+                            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                        >
+                            Browse All Manga
+                        </a>
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="block w-full mt-2 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                    {process.env.NODE_ENV === 'development' && (
+                        <p className="text-gray-500 text-xs mt-4">
+                            Error: {error?.message || 'Unknown error'}
+                        </p>
+                    )}
+                </div>
+            </div>
+        );
     }
 } 
