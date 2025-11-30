@@ -949,7 +949,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openSynopsisTab':
                 // Switch to synopsis tab on manga detail page
-                if (isOnMangaDetailPage()) {
+                // Use direct pathname check for reliability
+                const currentPathForSynopsis = getCurrentPathname();
+                const pathWithoutQueryForSynopsis = currentPathForSynopsis.split('?')[0].split('#')[0];
+                const isMangaDetailForSynopsis = pathWithoutQueryForSynopsis.includes('/manga/') && 
+                                                 !pathWithoutQueryForSynopsis.includes('/chapter/') &&
+                                                 pathWithoutQueryForSynopsis.match(/^\/manga\/[^\/]+$/);
+                
+                if (isMangaDetailForSynopsis) {
                     const synopsisTab = document.querySelector('[data-tab="synopsis"]') as HTMLElement;
                     if (synopsisTab) {
                         synopsisTab.click();
@@ -975,7 +982,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openChaptersTab':
                 // Switch to chapters tab on manga detail page
-                if (isOnMangaDetailPage()) {
+                // Use direct pathname check for reliability (same as openFirstVisibleChapter)
+                const currentPathForChaptersTab = getCurrentPathname();
+                const pathWithoutQueryForTab = currentPathForChaptersTab.split('?')[0].split('#')[0];
+                const isMangaDetailForTab = pathWithoutQueryForTab.includes('/manga/') && 
+                                          !pathWithoutQueryForTab.includes('/chapter/') &&
+                                          pathWithoutQueryForTab.match(/^\/manga\/[^\/]+$/);
+                
+                if (isMangaDetailForTab) {
                     const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
                     if (chaptersTab) {
                         chaptersTab.click();
@@ -1001,7 +1015,14 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 break;
             case 'openReviewsTab':
                 // Switch to reviews tab on manga detail page
-                if (isOnMangaDetailPage()) {
+                // Use direct pathname check for reliability
+                const currentPathForReviews = getCurrentPathname();
+                const pathWithoutQueryForReviews = currentPathForReviews.split('?')[0].split('#')[0];
+                const isMangaDetailForReviews = pathWithoutQueryForReviews.includes('/manga/') && 
+                                                !pathWithoutQueryForReviews.includes('/chapter/') &&
+                                                pathWithoutQueryForReviews.match(/^\/manga\/[^\/]+$/);
+                
+                if (isMangaDetailForReviews) {
                     const reviewsTab = document.querySelector('[data-tab="reviews"]') as HTMLElement;
                     if (reviewsTab) {
                         reviewsTab.click();
