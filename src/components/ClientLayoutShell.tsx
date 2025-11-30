@@ -101,7 +101,8 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
             
             {/* Voice Assistant - Global: Visible on all pages */}
             {/* Only render one instance - check if already exists */}
-            {pageInteractive && !aiFeaturesLoading && typeof window !== 'undefined' && !document.getElementById('voice-assistant-panel') && (
+            {/* Always render if page is interactive to prevent disappearing */}
+            {pageInteractive && !aiFeaturesLoading && (
                 <VoiceAssistant
                     enabled={voiceAssistantEnabled}
                     showUI={true}

@@ -565,29 +565,69 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             };
 
             recognition.onerror = (event: any) => {
+                // Handle different error types
                 if (event.error === 'no-speech') {
+                    // No speech detected - silently restart
                     setTimeout(() => {
-                        if (isListening && enabled) {
-                            recognition.start();
+                        if (isListening && enabled && !recognitionRef.current) {
+                            try {
+                                recognition.start();
+                            } catch (e) {
+                                // Ignore restart errors
+                            }
                         }
                     }, 1000);
+                } else if (event.error === 'aborted') {
+                    // Aborted is normal when stopping recognition - don't show as error
+                    // Only show if we're still supposed to be listening
+                    if (isListening && enabled) {
+                        // Restart if we're still supposed to be listening
+                        setTimeout(() => {
+                            if (isListening && enabled && !recognitionRef.current) {
+                                try {
+                                    startListening();
+                                } catch (e) {
+                                    // Ignore restart errors
+                                }
+                            }
+                        }, 500);
+                    }
+                    // Clear error state for aborted
+                    setError(null);
                 } else if (event.error === 'not-allowed') {
                     setError('Microphone permission denied. Please enable microphone access.');
                     setIsListening(false);
+                } else if (event.error === 'network') {
+                    setError('Network error. Please check your connection.');
+                } else if (event.error === 'service-not-allowed') {
+                    setError('Speech recognition service not available.');
+                    setIsListening(false);
                 } else {
-                    setError(`Speech recognition error: ${event.error}`);
+                    // Only show non-transient errors
+                    if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                        setError(`Speech recognition error: ${event.error}`);
+                    }
                 }
             };
 
             recognition.onend = () => {
-                if (isListening && enabled) {
+                // Only restart if we're still supposed to be listening and no error occurred
+                if (isListening && enabled && !error) {
                     setTimeout(() => {
-                        try {
-                            recognition.start();
-                        } catch (e) {
-                            // Silently handle errors
+                        // Check again before restarting (state might have changed)
+                        if (isListening && enabled && !recognitionRef.current) {
+                            try {
+                                recognition.start();
+                            } catch (e) {
+                                // If restart fails, try creating a new recognition instance
+                                if (isListening && enabled) {
+                                    setTimeout(() => {
+                                        startListening();
+                                    }, 500);
+                                }
+                            }
                         }
-                    }, 100);
+                    }, 200);
                 }
             };
 
