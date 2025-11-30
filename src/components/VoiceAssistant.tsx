@@ -645,11 +645,17 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     const stopListening = () => {
         if (recognitionRef.current) {
             try {
-                recognitionRef.current.stop();
+                // Stop recognition gracefully
+                const recognition = recognitionRef.current;
+                // Remove error handler temporarily to prevent "aborted" error from showing
+                recognition.onerror = () => {}; // Empty handler to suppress aborted errors
+                recognition.stop();
             } catch (e) {
                 // Ignore errors when stopping
             }
             recognitionRef.current = null;
+            // Clear any error state when stopping
+            setError(null);
         }
     };
 
