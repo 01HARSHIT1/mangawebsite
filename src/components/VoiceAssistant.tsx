@@ -79,9 +79,26 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
             params: (matches) => ({ chapterNumber: parseInt(matches[2]) })
         },
         {
-            pattern: /go\s+to\s+page\s+(\d+)/i,
+            pattern: /(go\s+to\s+)?page\s+(\d+)/i,
             action: 'goToPage',
-            params: (matches) => ({ pageNumber: parseInt(matches[1]) })
+            params: (matches) => ({ pageNumber: parseInt(matches[2]) })
+        },
+        {
+            pattern: /(next\s+page|page\s+next)/i,
+            action: 'nextPage'
+        },
+        {
+            pattern: /(previous\s+page|prev\s+page|page\s+previous|page\s+back)/i,
+            action: 'previousPage'
+        },
+        {
+            pattern: /(first\s+page|page\s+1|page\s+one)/i,
+            action: 'goToPage',
+            params: () => ({ pageNumber: 1 })
+        },
+        {
+            pattern: /(last\s+page|final\s+page)/i,
+            action: 'goToLastPage'
         },
         {
             pattern: /(scroll\s+down|scroll\s+up|scroll\s+downward|scroll\s+upward)/i,
@@ -142,7 +159,7 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         // ========== START READING CURRENT MANGA ==========
         // This pattern matches "start reading" or "read" without a manga name (only on manga detail pages)
         {
-            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter)$/i,
+            pattern: /^(start\s+reading|begin\s+reading|read\s+chapter\s+1|read\s+first\s+chapter|go\s+to\s+chapter\s+1)$/i,
             action: 'startReadingCurrentManga'
         },
         
