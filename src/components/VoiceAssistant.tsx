@@ -956,9 +956,10 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     const openMangaByName = async (mangaName: string) => {
         try {
             // Check if we're already on a manga detail page
-            const mangaDetailMatch = pathname?.match(/^\/manga\/([^\/]+)$/);
+            const currentPath = getCurrentPathname();
+            const mangaDetailMatch = currentPath.match(/\/manga\/([^\/\?]+)/);
             
-            if (mangaDetailMatch) {
+            if (mangaDetailMatch && isOnMangaDetailPage()) {
                 // We're on a manga detail page - check if this is the same manga
                 const currentMangaId = mangaDetailMatch[1];
                 
@@ -1081,13 +1082,18 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 return;
             }
             
-            // Navigate to first chapter - use router.push with a slight delay to ensure speech is heard
+            // Navigate to first chapter - use window.location for more reliable navigation
             const chapterUrl = `/manga/${mangaId}/chapter/${firstChapterId}`;
             speak(`Starting Chapter ${firstChapter.chapterNumber || 1}.`);
             
             // Use setTimeout to ensure speech is heard before navigation
+            // Use window.location.href for more reliable navigation
             setTimeout(() => {
-                router.push(chapterUrl);
+                if (typeof window !== 'undefined') {
+                    window.location.href = chapterUrl;
+                } else {
+                    router.push(chapterUrl);
+                }
             }, 800);
         } catch (error) {
             console.error('Error loading chapters:', error);
@@ -1096,49 +1102,83 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
     };
 
     const openFirstVisibleChapter = () => {
-        // Find the first visible chapter link in the chapters tab
-        // Look for divs with onClick handlers that navigate to chapters (from MangaTabs.tsx)
-        const chapterDivs = Array.from(document.querySelectorAll('div[onclick*="chapter"], div[class*="chapter"]'));
+        // First, try to find and click the "Read Chapter 1" button (most reliable)
+        const readButton = Array.from(document.querySelectorAll('button, a')).find(el => {
+            const text = el.textContent?.toLowerCase() || '';
+            return (text.includes('read chapter') || text.includes('chapter 1')) && 
+                   !text.includes('chapters (');
+        }) as HTMLElement;
         
-        // Also look for any clickable elements that might navigate to chapters
-        const allClickableElements = Array.from(document.querySelectorAll('div[class*="cursor-pointer"], div[onclick]'));
-        
-        let firstChapterElement: HTMLElement | null = null;
-        
-        // First, try to find divs that are chapter cards (they have onClick handlers)
-        if (chapterDivs.length > 0) {
-            firstChapterElement = chapterDivs.find(div => {
-                const rect = div.getBoundingClientRect();
-                return rect.top >= 0 && rect.top < window.innerHeight && rect.height > 0;
-            }) as HTMLElement || (chapterDivs[0] as HTMLElement);
-        } else if (allClickableElements.length > 0) {
-            // Try to find clickable divs that might be chapter cards
-            firstChapterElement = allClickableElements.find(div => {
-                const rect = div.getBoundingClientRect();
-                const text = div.textContent?.toLowerCase() || '';
-                return rect.top >= 0 && rect.top < window.innerHeight && 
-                       rect.height > 0 && 
-                       (text.includes('chapter') || div.onclick !== null);
-            }) as HTMLElement || (allClickableElements[0] as HTMLElement);
+        if (readButton) {
+            const href = (readButton as HTMLAnchorElement).href;
+            if (href && href.includes('/chapter/')) {
+                // If it's a link, navigate directly
+                window.location.href = href;
+            } else {
+                // If it's a button, click it
+                readButton.click();
+            }
+            speak('Opening chapter.');
+            return;
         }
         
-        if (firstChapterElement) {
-            // Try clicking the div (it should have an onClick handler from MangaTabs.tsx)
-            firstChapterElement.click();
-            speak('Opening chapter.');
-        } else {
-            // Fallback: try to find and click the "Read Chapter 1" button
-            const readButton = Array.from(document.querySelectorAll('button, a')).find(el => {
-                const text = el.textContent?.toLowerCase() || '';
-                return text.includes('read chapter') || text.includes('chapter 1');
-            }) as HTMLElement;
+        // Fallback: Find chapter divs with onClick handlers (from MangaTabs.tsx)
+        const chapterDivs = Array.from(document.querySelectorAll('div[onclick*="chapter"], div[class*="cursor-pointer"]'));
+        
+        // Filter to find actual chapter cards (they contain "Chapter" text)
+        const chapterCards = chapterDivs.filter(div => {
+            const text = div.textContent?.toLowerCase() || '';
+            return text.includes('chapter') && 
+                   !text.includes('chapters (') &&
+                   !text.includes('synopsis') &&
+                   !text.includes('reviews');
+        });
+        
+        if (chapterCards.length > 0) {
+            // Get the first visible chapter card
+            const firstVisible = chapterCards.find(div => {
+                const rect = div.getBoundingClientRect();
+                return rect.top >= 0 && rect.top < window.innerHeight && rect.height > 0;
+            }) as HTMLElement || (chapterCards[0] as HTMLElement);
             
-            if (readButton) {
-                readButton.click();
+            if (firstVisible) {
+                firstVisible.click();
                 speak('Opening chapter.');
-            } else {
-                speak('No visible chapters found. Please make sure you are on the chapters tab.');
+                return;
             }
+        }
+        
+        // Last resort: Try to extract chapter ID from the page and navigate directly
+        const currentPath = getCurrentPathname();
+        const mangaIdMatch = currentPath.match(/\/manga\/([^\/\?]+)/);
+        if (mangaIdMatch) {
+            const mangaId = mangaIdMatch[1];
+            // Try to fetch chapters and open the first one
+            fetch(`/api/manga/${mangaId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const chapters = data.manga?.chapters || [];
+                    if (chapters.length > 0) {
+                        const sortedChapters = [...chapters].sort((a: any, b: any) => 
+                            (a.chapterNumber || 0) - (b.chapterNumber || 0)
+                        );
+                        const firstChapter = sortedChapters[0];
+                        const firstChapterId = firstChapter._id || firstChapter.id;
+                        if (firstChapterId) {
+                            window.location.href = `/manga/${mangaId}/chapter/${firstChapterId}`;
+                            speak('Opening chapter.');
+                        } else {
+                            speak('Could not find chapter. Please try clicking the read button manually.');
+                        }
+                    } else {
+                        speak('No chapters available.');
+                    }
+                })
+                .catch(() => {
+                    speak('Could not load chapters. Please try clicking the read button manually.');
+                });
+        } else {
+            speak('No visible chapters found. Please make sure you are on the chapters tab.');
         }
     };
 
