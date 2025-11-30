@@ -666,6 +666,29 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                     speak('Page navigation is only available on chapter reading pages.');
                 }
                 break;
+            case 'scroll':
+                // Handle scroll up/down commands
+                if (params?.direction) {
+                    const direction = params.direction;
+                    const scrollAmount = window.innerHeight * 0.5; // Scroll 50% of viewport height
+                    
+                    if (direction === 'down') {
+                        window.scrollBy({ 
+                            top: scrollAmount, 
+                            behavior: 'smooth' 
+                        });
+                        speak('Scrolling down.');
+                    } else if (direction === 'up') {
+                        window.scrollBy({ 
+                            top: -scrollAmount, 
+                            behavior: 'smooth' 
+                        });
+                        speak('Scrolling up.');
+                    }
+                } else {
+                    speak('Please specify scroll direction: scroll up or scroll down.');
+                }
+                break;
             case 'searchByGenre':
                 if (params?.genre) {
                     router.push(`/manga?genre=${encodeURIComponent(params.genre)}`);
