@@ -226,6 +226,38 @@ export default function ChapterReader({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Helper function to find which page is currently in viewport
+    const findCurrentPageInViewport = (): number => {
+        const viewportTop = window.scrollY;
+        const viewportBottom = viewportTop + window.innerHeight;
+        const viewportCenter = viewportTop + window.innerHeight / 2;
+
+        let closestPageIndex = -1;
+        let closestDistance = Infinity;
+
+        for (let i = 0; i < chapterImages.length; i++) {
+            const pageElement = document.getElementById(`chapter-page-${i}`);
+            if (pageElement) {
+                const rect = pageElement.getBoundingClientRect();
+                const pageTop = rect.top + window.scrollY;
+                const pageBottom = pageTop + rect.height;
+                const pageCenter = pageTop + rect.height / 2;
+
+                // Check if page is in viewport
+                if (pageTop <= viewportBottom && pageBottom >= viewportTop) {
+                    // Calculate distance from viewport center
+                    const distance = Math.abs(pageCenter - viewportCenter);
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestPageIndex = i;
+                    }
+                }
+            }
+        }
+
+        return closestPageIndex;
+    };
+
     // Handle voice commands
     const handleVoiceCommand = (command: string, params?: any) => {
         switch (command) {
@@ -244,6 +276,54 @@ export default function ChapterReader({
                     const targetChapter = allChapters.find(ch => ch.chapterNumber === params.chapterNumber);
                     if (targetChapter) {
                         router.push(`/manga/${mangaId}/chapter/${targetChapter._id}`);
+                    }
+                }
+                break;
+            case 'goToPage':
+                if (params?.pageNumber) {
+                    const pageNumber = params.pageNumber;
+                    if (pageNumber >= 1 && pageNumber <= chapterImages.length) {
+                        // Find the page element by ID and scroll to it
+                        const pageElement = document.getElementById(`chapter-page-${pageNumber - 1}`);
+                        if (pageElement) {
+                            pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        } else {
+                            // If element not found yet, wait a bit and try again
+                            setTimeout(() => {
+                                const retryElement = document.getElementById(`chapter-page-${pageNumber - 1}`);
+                                if (retryElement) {
+                                    retryElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            }, 500);
+                        }
+                    }
+                }
+                break;
+            case 'nextPage':
+                // Find current page by checking which page is in viewport
+                const currentPageIndex = findCurrentPageInViewport();
+                if (currentPageIndex >= 0 && currentPageIndex < chapterImages.length - 1) {
+                    const nextPageElement = document.getElementById(`chapter-page-${currentPageIndex + 1}`);
+                    if (nextPageElement) {
+                        nextPageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+                break;
+            case 'previousPage':
+                // Find current page by checking which page is in viewport
+                const currentPageIdx = findCurrentPageInViewport();
+                if (currentPageIdx > 0) {
+                    const prevPageElement = document.getElementById(`chapter-page-${currentPageIdx - 1}`);
+                    if (prevPageElement) {
+                        prevPageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+                break;
+            case 'goToLastPage':
+                if (chapterImages.length > 0) {
+                    const lastPageElement = document.getElementById(`chapter-page-${chapterImages.length - 1}`);
+                    if (lastPageElement) {
+                        lastPageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 }
                 break;
@@ -568,24 +648,29 @@ export default function ChapterReader({
                             }
 
                             return (
-                                <img
-                                    key={`page-${index}-${imageSrc.slice(-20)}`} // More stable key
-                                    src={imageSrc}
-                                    alt={`Page ${index + 1}`}
-                                    className="w-full h-auto"
-                                    onLoad={() => {
-                                        // Use requestAnimationFrame to batch updates
-                                        requestAnimationFrame(() => handleImageLoad(index));
-                                    }}
-                                    onError={(e) => {
-                                        handleImageError(index, e);
-                                        // Hide broken images (pages beyond actual count)
-                                        e.currentTarget.style.display = 'none';
-                                        e.currentTarget.style.visibility = 'hidden';
-                                    }}
-                                    loading="lazy"
-                                    decoding="async"
-                                />
+                                <div 
+                                    key={`page-${index}-${imageSrc.slice(-20)}`}
+                                    id={`chapter-page-${index}`}
+                                    className="w-full mb-4"
+                                >
+                                    <img
+                                        src={imageSrc}
+                                        alt={`Page ${index + 1}`}
+                                        className="w-full h-auto rounded-lg shadow-2xl"
+                                        onLoad={() => {
+                                            // Use requestAnimationFrame to batch updates
+                                            requestAnimationFrame(() => handleImageLoad(index));
+                                        }}
+                                        onError={(e) => {
+                                            handleImageError(index, e);
+                                            // Hide broken images (pages beyond actual count)
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.style.visibility = 'hidden';
+                                        }}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                </div>
                             );
                         })}
                     </div>
