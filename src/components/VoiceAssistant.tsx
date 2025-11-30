@@ -761,6 +761,96 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 router.push('/contact');
                 speak('Opening contact page.');
                 break;
+            case 'openSynopsisTab':
+                // Switch to synopsis tab on manga detail page
+                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                    const synopsisTab = document.querySelector('[data-tab="synopsis"]') as HTMLElement;
+                    if (synopsisTab) {
+                        synopsisTab.click();
+                        speak('Opening synopsis tab.');
+                    } else {
+                        // Try alternative selector
+                        const allButtons = Array.from(document.querySelectorAll('button'));
+                        const synopsisButton = allButtons.find(btn => 
+                            btn.textContent?.toLowerCase().includes('synopsis')
+                        );
+                        if (synopsisButton) {
+                            (synopsisButton as HTMLElement).click();
+                            speak('Opening synopsis tab.');
+                        } else {
+                            speak('Could not find synopsis tab. Please navigate to a manga page first.');
+                        }
+                    }
+                } else {
+                    speak('Synopsis tab is only available on manga detail pages.');
+                }
+                break;
+            case 'openChaptersTab':
+                // Switch to chapters tab on manga detail page
+                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                    const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
+                    if (chaptersTab) {
+                        chaptersTab.click();
+                        speak('Opening chapters tab.');
+                    } else {
+                        // Try alternative selector - find button with "Chapters" text
+                        const allButtons = Array.from(document.querySelectorAll('button'));
+                        const chaptersButton = allButtons.find(btn => 
+                            btn.textContent?.toLowerCase().includes('chapters')
+                        );
+                        if (chaptersButton) {
+                            (chaptersButton as HTMLElement).click();
+                            speak('Opening chapters tab.');
+                        } else {
+                            speak('Could not find chapters tab. Please navigate to a manga page first.');
+                        }
+                    }
+                } else {
+                    speak('Chapters tab is only available on manga detail pages.');
+                }
+                break;
+            case 'openReviewsTab':
+                // Switch to reviews tab on manga detail page
+                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                    const reviewsTab = document.querySelector('[data-tab="reviews"]') as HTMLElement;
+                    if (reviewsTab) {
+                        reviewsTab.click();
+                        speak('Opening reviews tab.');
+                    } else {
+                        // Try alternative selector - find button with "Reviews" text
+                        const allButtons = Array.from(document.querySelectorAll('button'));
+                        const reviewsButton = allButtons.find(btn => 
+                            btn.textContent?.toLowerCase().includes('reviews')
+                        );
+                        if (reviewsButton) {
+                            (reviewsButton as HTMLElement).click();
+                            speak('Opening reviews tab.');
+                        } else {
+                            speak('Could not find reviews tab. Please navigate to a manga page first.');
+                        }
+                    }
+                } else {
+                    speak('Reviews tab is only available on manga detail pages.');
+                }
+                break;
+            case 'openFirstVisibleChapter':
+                // Open the first visible chapter from the chapters tab
+                if (pathname?.match(/^\/manga\/[^\/]+$/)) {
+                    // First, make sure we're on the chapters tab
+                    const chaptersTab = document.querySelector('[data-tab="chapters"]') as HTMLElement;
+                    if (chaptersTab && !chaptersTab.classList.contains('active')) {
+                        chaptersTab.click();
+                        // Wait a bit for tab to switch
+                        setTimeout(() => {
+                            openFirstVisibleChapter();
+                        }, 300);
+                    } else {
+                        openFirstVisibleChapter();
+                    }
+                } else {
+                    speak('Chapter navigation is only available on manga detail pages.');
+                }
+                break;
             case 'notifyNewChapter':
                 speak('I will notify you when new chapters arrive. Make sure notifications are enabled in your settings.');
                 break;
