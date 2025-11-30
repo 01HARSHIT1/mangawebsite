@@ -1039,9 +1039,18 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
                 return;
             }
             
-            // Navigate to manga detail page
-            router.push(`/manga/${mangaId}`);
+            // Navigate to manga detail page - use window.location for more reliable navigation
+            const mangaUrl = `/manga/${mangaId}`;
             speak(`Opening ${manga.title || mangaName}.`);
+            
+            // Use setTimeout to ensure speech is heard before navigation
+            setTimeout(() => {
+                if (typeof window !== 'undefined') {
+                    window.location.href = mangaUrl;
+                } else {
+                    router.push(mangaUrl);
+                }
+            }, 500);
         } catch (error) {
             speak(`Error searching for ${mangaName}. Opening search page.`);
             router.push(`/manga?search=${encodeURIComponent(mangaName)}`);
