@@ -118,7 +118,17 @@ export default function VoiceAssistant({ onCommand, enabled = false, showUI = tr
         {
             pattern: /(scroll\s+down|scroll\s+up|scroll\s+downward|scroll\s+upward)/i,
             action: 'scroll',
-            params: (matches) => ({ direction: matches[0].toLowerCase().includes('down') ? 'down' : 'up' })
+            params: (matches) => {
+                const matchText = matches[0].toLowerCase();
+                // Check for 'down' first, then default to 'up'
+                if (matchText.includes('down')) {
+                    return { direction: 'down' };
+                } else if (matchText.includes('up')) {
+                    return { direction: 'up' };
+                }
+                // Fallback: default to down if unclear
+                return { direction: 'down' };
+            }
         },
         {
             pattern: /(pause\s+reading|stop\s+reading|take\s+a\s+break)/i,
