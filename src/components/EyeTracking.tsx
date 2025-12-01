@@ -158,6 +158,28 @@ export default function EyeTracking({ onGazeDetected, enabled = false, showUI = 
             const engine = new EyeTrackingEngine();
             eyeTrackingEngineRef.current = engine;
 
+            // Load and verify calibration data
+            const calibration = engine.loadCalibration();
+            if (calibration && calibration.calibrated) {
+                const topCount = calibration.scrollUp?.samples?.length || 0;
+                const middleCount = calibration.noScroll?.samples?.length || 0;
+                const bottomCount = calibration.scrollDown?.samples?.length || 0;
+                const total = topCount + middleCount + bottomCount;
+                
+                if (total >= 1500) {
+                    console.log(`✅ Eye Tracking: Loaded ${total} calibration samples (Top: ${topCount}, Middle: ${middleCount}, Bottom: ${bottomCount}) - System is using this data for optimal accuracy!`);
+                    // Update calibration stats display
+                    setCalibrationStats({
+                        scrollUp: topCount,
+                        scrollDown: bottomCount,
+                        noScroll: middleCount,
+                        total: total
+                    });
+                } else {
+                    console.log(`👁️ Eye Tracking: Loaded ${total} calibration samples (Top: ${topCount}, Middle: ${middleCount}, Bottom: ${bottomCount})`);
+                }
+            }
+
             // Removed console.log to prevent performance issues
             await engine.initialize(videoRef.current, (gaze) => {
                 // Store current normalized Y for manual feedback
