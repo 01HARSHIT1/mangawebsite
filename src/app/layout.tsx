@@ -418,7 +418,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-gray-950 dark:bg-gray-950 text-white dark:text-white min-h-screen font-sans">
         <AuthProvider>
-          <ClientLayoutShell>{children}</ClientLayoutShell>
+          <AppModeProvider>
+            <ClientLayoutShell>{children}</ClientLayoutShell>
+          </AppModeProvider>
         </AuthProvider>
       </body>
     </html>

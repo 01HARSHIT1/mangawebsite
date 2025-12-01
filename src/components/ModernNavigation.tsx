@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppMode } from '@/contexts/AppModeContext';
+import AppModeSwitcher from '@/components/AppModeSwitcher';
 import { FaSearch, FaBell, FaUser, FaBookmark, FaChartBar, FaUpload, FaCog, FaSignOutAlt, FaBars, FaTimes, FaHome, FaBook, FaTags, FaCoins, FaCrown, FaExchangeAlt, FaShieldAlt, FaQuestionCircle, FaHeadset, FaMoon, FaSun, FaCoffee, FaHeart } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import RazorpayPayment from './RazorpayPayment';
@@ -18,6 +20,7 @@ export default function ModernNavigation() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [showCoffeeModal, setShowCoffeeModal] = useState(false);
     const { isAuthenticated, user, logout, isCreator } = useAuth();
+    const { appMode } = useAppMode();
     const router = useRouter();
 
     // Handle scroll effect
@@ -112,6 +115,11 @@ export default function ModernNavigation() {
         { href: '/admin/dashboard', label: 'Admin Dashboard', icon: FaShieldAlt },
     ] : [];
 
+    // Don't show manga navigation in anime mode
+    if (appMode === 'anime') {
+        return null;
+    }
+
     return (
         <>
             {/* Main Navigation */}
@@ -121,6 +129,11 @@ export default function ModernNavigation() {
                 }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16 gap-4">
+                        {/* App Mode Switcher - Desktop */}
+                        <div className="hidden lg:block mr-4">
+                            <AppModeSwitcher />
+                        </div>
+
                         {/* Logo */}
                         <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
                             <div className="relative">

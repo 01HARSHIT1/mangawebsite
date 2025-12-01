@@ -17,6 +17,9 @@ import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import PushNotifications from './PushNotifications';
 import PWAInstaller from './PWAInstaller';
 import { useAIFeatures } from '@/hooks/useAIFeatures';
+import { useAppMode } from '@/contexts/AppModeContext';
+import MangaAppNavigator from '@/components/manga/MangaAppNavigator';
+import AnimeAppNavigator from '@/components/anime/AnimeAppNavigator';
 
 // VoiceAssistant - Load globally for all pages (lazy loaded to prevent blocking)
 const VoiceAssistant = dynamic(() => import('./VoiceAssistant'), { 
@@ -48,6 +51,7 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const { user } = useAuth();
+    const { appMode } = useAppMode();
     
     // AI Features - Get voice assistant preference (deferred to prevent blocking)
     const [pageInteractive, setPageInteractive] = useState(false);
@@ -90,12 +94,30 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
         localStorage.setItem("onboardingComplete", "true");
     };
 
+    // Determine which app to render based on mode
+    const isAnimeRoute = pathname?.startsWith('/anime');
+    const shouldShowAnime = appMode === 'anime' || isAnimeRoute;
+    const shouldShowManga = appMode === 'manga' || (!isAnimeRoute && !pathname?.startsWith('/anime'));
+
     return (
         <ErrorBoundary>
             <PerformanceMonitor />
-            {!hideMainNav && <ModernNavigation />}
-            <main role="main">{children}</main>
-            {!hideMainNav && <Footer />}
+            
+            {/* Render based on app mode */}
+            {shouldShowAnime ? (
+                <AnimeAppNavigator>
+                    <main role="main">{children}</main>
+                </AnimeAppNavigator>
+            ) : shouldShowManga ? (
+                <MangaAppNavigator>
+                    {!hideMainNav && <ModernNavigation />}
+                    <main role="main">{children}</main>
+                    {!hideMainNav && <Footer />}
+                </MangaAppNavigator>
+            ) : (
+                <main role="main">{children}</main>
+            )}
+            
             <PushNotifications />
             <PWAInstaller />
             
