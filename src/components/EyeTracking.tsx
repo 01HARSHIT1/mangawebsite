@@ -1420,10 +1420,13 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                         )}
                                     </div>
                                     
-                                    {/* Check Saved Data Button */}
+                                    {/* Check Saved Data & Verify Button */}
                                     <button
-                                        onClick={() => {
+                                        onClick={async () => {
                                             if (eyeTrackingEngineRef.current) {
+                                                // Reload calibration to get latest data
+                                                eyeTrackingEngineRef.current.loadCalibration();
+                                                
                                                 const calibration = eyeTrackingEngineRef.current.getCalibration();
                                                 if (calibration && calibration.calibrated) {
                                                     const topCount = calibration.scrollUp?.samples?.length || 0;
@@ -1431,7 +1434,11 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                                     const bottomCount = calibration.scrollDown?.samples?.length || 0;
                                                     const total = topCount + middleCount + bottomCount;
                                                     
-                                                    alert(`📊 Saved Calibration Data:\n\nTop (scrollUp): ${topCount} samples\nMiddle (noScroll): ${middleCount} samples\nBottom (scrollDown): ${bottomCount} samples\n\nTotal: ${total} samples\n\n✅ All data is saved in localStorage as 'eyeTrackingCalibration'`);
+                                                    // Check if we have 1500 samples
+                                                    const has1500 = total >= 1500;
+                                                    const status = has1500 ? '✅ COMPLETE!' : '⚠️ In Progress';
+                                                    
+                                                    alert(`📊 Calibration Data Status: ${status}\n\nTop (scrollUp): ${topCount} samples\nMiddle (noScroll): ${middleCount} samples\nBottom (scrollDown): ${bottomCount} samples\n\nTotal: ${total} / 1,500 samples\n\n${has1500 ? '✅ All 1500 samples collected! System is using this data for eye tracking.' : '⏳ Continue collecting samples to reach 1,500 total.'}\n\n✅ Data is saved in localStorage and actively being used.`);
                                                     
                                                     // Update displayed counts
                                                     setGuidedCalibrationSamples({
@@ -1439,6 +1446,16 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                                         middle: middleCount,
                                                         bottom: bottomCount
                                                     });
+                                                    
+                                                    // If we have 1500 samples, retrain ML model
+                                                    if (has1500) {
+                                                        try {
+                                                            await eyeTrackingEngineRef.current.initializeMLModel();
+                                                            alert('✅ ML Model retrained with your 1500 samples! Eye tracking is now optimized.');
+                                                        } catch (error) {
+                                                            console.error('Failed to retrain ML model:', error);
+                                                        }
+                                                    }
                                                 } else {
                                                     alert('⚠️ No calibration data found yet. Samples are being collected...');
                                                 }
@@ -1446,7 +1463,7 @@ let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
                                         }}
                                         className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm transition-all"
                                     >
-                                        📊 Check Saved Data
+                                        📊 Verify & Use Data
                                     </button>
                                     
                                     <button
