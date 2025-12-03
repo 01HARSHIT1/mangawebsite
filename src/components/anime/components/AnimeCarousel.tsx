@@ -53,18 +53,18 @@ export default function AnimeCarousel({ anime }: AnimeCarouselProps) {
                 ))}
             </div>
 
-            {/* Navigation Buttons */}
+            {/* Navigation Buttons - Crunchyroll Style */}
             <button
                 onClick={() => scroll('left')}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 bg-gray-900/80 hover:bg-gray-800 rounded-full flex items-center justify-center transition-all z-10"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 w-12 h-12 bg-black/80 backdrop-blur-sm hover:bg-orange-500/20 border border-orange-500/30 rounded-full flex items-center justify-center transition-all z-10 group"
             >
-                <ChevronLeft className="w-6 h-6 text-white" />
+                <ChevronLeft className="w-6 h-6 text-orange-400 group-hover:text-orange-300" />
             </button>
             <button
                 onClick={() => scroll('right')}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 bg-gray-900/80 hover:bg-gray-800 rounded-full flex items-center justify-center transition-all z-10"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 w-12 h-12 bg-black/80 backdrop-blur-sm hover:bg-orange-500/20 border border-orange-500/30 rounded-full flex items-center justify-center transition-all z-10 group"
             >
-                <ChevronRight className="w-6 h-6 text-white" />
+                <ChevronRight className="w-6 h-6 text-orange-400 group-hover:text-orange-300" />
             </button>
         </div>
     );
