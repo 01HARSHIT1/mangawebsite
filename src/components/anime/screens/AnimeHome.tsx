@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import AnimeCarousel from '@/components/anime/components/AnimeCarousel';
 import EpisodeCard from '@/components/anime/components/EpisodeCard';
+import ContinueWatching from '@/components/anime/components/ContinueWatching';
 
 interface AnimeSeries {
     _id: string;
@@ -375,39 +376,7 @@ export default function AnimeHome() {
                 )}
 
                 {/* Continue Watching */}
-                {recentAnime.length > 0 && (
-                    <motion.section
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-1">
-                                        <Clock className="w-6 h-6 text-orange-400" />
-                                        <h2 className="text-3xl font-black text-white">CONTINUE WATCHING</h2>
-                                    </div>
-                                    <p className="text-sm text-gray-400">Pick up where you left off</p>
-                                </div>
-                            </div>
-                            <Link
-                                href="/anime/library"
-                                className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
-                            >
-                                <span>VIEW ALL</span>
-                                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                            {recentAnime.slice(0, 12).map((anime) => (
-                                <EpisodeCard key={anime._id} anime={anime} episodeNumber={anime.latestEpisode} progress={Math.floor(Math.random() * 80 + 10)} />
-                            ))}
-                        </div>
-                    </motion.section>
-                )}
+                <ContinueWatching limit={12} />
 
                 {/* Popular Anime */}
                 {popularAnime.length > 0 && (

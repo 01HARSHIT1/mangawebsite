@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAppMode } from '@/contexts/AppModeContext';
-import VideoPlayer from '@/components/anime/components/VideoPlayer';
+import EnhancedVideoPlayer from '@/components/anime/components/EnhancedVideoPlayer';
 
 interface Episode {
     _id: string;
@@ -51,14 +51,14 @@ export default function EpisodePage() {
             const seriesRes = await fetch(`/api/anime/${seriesId}`);
             if (seriesRes.ok) {
                 const seriesData = await seriesRes.json();
-                setSeries(seriesData);
+                setSeries(seriesData.series || seriesData);
             }
 
             // Fetch episode info
             const episodeRes = await fetch(`/api/anime/${seriesId}/episodes/${episodeNumber}`);
             if (episodeRes.ok) {
                 const episodeData = await episodeRes.json();
-                setEpisode(episodeData);
+                setEpisode(episodeData.episode || episodeData);
             }
         } catch (error) {
             console.error('Error fetching episode data:', error);
@@ -95,15 +95,15 @@ export default function EpisodePage() {
     }
 
     return (
-        <VideoPlayer
+        <EnhancedVideoPlayer
             episode={episode}
             series={series}
             onNextEpisode={() => {
-                router.push(`/anime/${seriesId}/episode/${episodeNumber + 1}`);
+                router.push(`/anime/watch/${seriesId}/episode/${episodeNumber + 1}`);
             }}
             onPreviousEpisode={() => {
                 if (episodeNumber > 1) {
-                    router.push(`/anime/${seriesId}/episode/${episodeNumber - 1}`);
+                    router.push(`/anime/watch/${seriesId}/episode/${episodeNumber - 1}`);
                 }
             }}
             onBackToSeries={() => {

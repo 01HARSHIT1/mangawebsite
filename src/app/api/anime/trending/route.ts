@@ -1,10 +1,53 @@
 import { NextResponse } from 'next/server';
+import clientPromise from '@/lib/mongodb';
 
-// Mock data - Replace with actual database queries
 export async function GET() {
     try {
-        // TODO: Replace with actual database query
-        const trendingAnime = [
+        const client = await clientPromise;
+        const db = client.db('mangawebsite');
+
+        // Get trending anime (high rating, recent, or based on watch history)
+        const trendingAnime = await db.collection('anime_series')
+            .find({})
+            .sort({ rating: -1, year: -1 })
+            .limit(10)
+            .toArray();
+
+        if (trendingAnime.length === 0) {
+            // Return mock data if no anime in database
+            return NextResponse.json({ anime: getMockTrendingAnime() });
+        }
+
+        // Get episode counts for each series
+        const animeWithCounts = await Promise.all(
+            trendingAnime.map(async (series) => {
+                const episodeCount = await db.collection('anime_episodes')
+                    .countDocuments({ seriesId: series._id.toString() });
+                return {
+                    _id: series._id.toString(),
+                    title: series.title,
+                    description: series.description || '',
+                    coverImage: series.coverImage,
+                    bannerImage: series.bannerImage || series.coverImage,
+                    genres: series.genres || [],
+                    rating: series.rating || 0,
+                    year: series.year || new Date().getFullYear(),
+                    status: series.status || 'ongoing',
+                    episodeCount: episodeCount || series.episodeCount || 0,
+                    latestEpisode: series.latestEpisode || episodeCount,
+                };
+            })
+        );
+
+        return NextResponse.json({ anime: animeWithCounts });
+    } catch (error) {
+        console.error('Error fetching trending anime:', error);
+        return NextResponse.json({ error: 'Failed to fetch trending anime' }, { status: 500 });
+    }
+}
+
+function getMockTrendingAnime() {
+    return [
             {
                 _id: '1',
                 title: 'Demon Slayer: Kimetsu no Yaiba',
@@ -70,12 +113,6 @@ export async function GET() {
                 episodeCount: 12,
                 latestEpisode: 12,
             },
-        ];
-
-        return NextResponse.json({ anime: trendingAnime });
-    } catch (error) {
-        console.error('Error fetching trending anime:', error);
-        return NextResponse.json({ error: 'Failed to fetch trending anime' }, { status: 500 });
-    }
+    ];
 }
 
