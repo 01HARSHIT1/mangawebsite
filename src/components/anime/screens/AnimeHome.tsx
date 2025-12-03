@@ -179,28 +179,30 @@ export default function AnimeHome() {
                     </div>
 
                     {/* Animated Particles Effect */}
-                    <div className="absolute inset-0 overflow-hidden">
-                        {[...Array(20)].map((_, i) => (
-                            <motion.div
-                                key={i}
-                                className="absolute w-1 h-1 bg-orange-400 rounded-full"
-                                initial={{
-                                    x: Math.random() * window.innerWidth,
-                                    y: Math.random() * window.innerHeight,
-                                    opacity: 0,
-                                }}
-                                animate={{
-                                    y: [null, Math.random() * window.innerHeight],
-                                    opacity: [0, 0.6, 0],
-                                }}
-                                transition={{
-                                    duration: Math.random() * 3 + 2,
-                                    repeat: Infinity,
-                                    delay: Math.random() * 2,
-                                }}
-                            />
-                        ))}
-                    </div>
+                    {typeof window !== 'undefined' && (
+                        <div className="absolute inset-0 overflow-hidden">
+                            {[...Array(20)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="absolute w-1 h-1 bg-orange-400 rounded-full"
+                                    initial={{
+                                        x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+                                        y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
+                                        opacity: 0,
+                                    }}
+                                    animate={{
+                                        y: [null, Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080)],
+                                        opacity: [0, 0.6, 0],
+                                    }}
+                                    transition={{
+                                        duration: Math.random() * 3 + 2,
+                                        repeat: Infinity,
+                                        delay: Math.random() * 2,
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
 
                     {/* Hero Content */}
                     <div className="relative z-10 h-full flex items-center">
