@@ -496,11 +496,17 @@ export default function ModernNavigation() {
                                     </AnimatePresence>
                                 </div>
                             ) : (
-                                <div className="flex items-center space-x-3">
-                                    <Link href="/login" className="btn btn-ghost btn-sm">
+                                <div className="flex items-center space-x-2 sm:space-x-3">
+                                    <Link 
+                                        href="/login" 
+                                        className="px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 text-white text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                                    >
                                         Sign In
                                     </Link>
-                                    <Link href="/signup" className="btn btn-primary btn-sm">
+                                    <Link 
+                                        href="/signup" 
+                                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 whitespace-nowrap"
+                                    >
                                         Sign Up
                                     </Link>
                                 </div>
@@ -584,14 +590,14 @@ export default function ModernNavigation() {
                                             <div className="border-t border-slate-700 my-4"></div>
                                             <Link
                                                 href="/login"
-                                                className="block w-full btn btn-ghost text-center"
+                                                className="block w-full px-4 py-3 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 text-white text-center font-medium transition-all duration-200 mb-2"
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
                                                 Sign In
                                             </Link>
                                             <Link
                                                 href="/signup"
-                                                className="block w-full btn btn-primary text-center"
+                                                className="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-center font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20"
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
                                                 Sign Up
