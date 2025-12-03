@@ -3,6 +3,7 @@ import "./globals.css";
 
 import ClientLayoutShell from "@/components/ClientLayoutShell";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AppModeProvider } from "@/contexts/AppModeContext";
 
 export const metadata: Metadata = {
   title: {

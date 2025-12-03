@@ -14,20 +14,30 @@ interface AppModeContextType {
 const AppModeContext = createContext<AppModeContextType | undefined>(undefined);
 
 export function AppModeProvider({ children }: { children: React.ReactNode }) {
-    const [appMode, setAppModeState] = useState<AppMode>('manga');
-
-    // Load mode from localStorage on mount
-    useEffect(() => {
-        const savedMode = localStorage.getItem('appMode') as AppMode;
-        if (savedMode === 'manga' || savedMode === 'anime') {
-            setAppModeState(savedMode);
+    const [appMode, setAppModeState] = useState<AppMode>(() => {
+        // Initialize from localStorage only on client side
+        if (typeof window !== 'undefined') {
+            const savedMode = localStorage.getItem('appMode') as AppMode;
+            if (savedMode === 'manga' || savedMode === 'anime') {
+                return savedMode;
+            }
         }
-    }, []);
+        return 'manga';
+    });
+
+    // Save mode to localStorage when it changes (client-side only)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('appMode', appMode);
+        }
+    }, [appMode]);
 
     // Save mode to localStorage when it changes
     const setAppMode = (mode: AppMode) => {
         setAppModeState(mode);
-        localStorage.setItem('appMode', mode);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('appMode', mode);
+        }
     };
 
     const switchToAnime = () => {
