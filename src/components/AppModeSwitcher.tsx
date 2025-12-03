@@ -35,8 +35,8 @@ export default function AppModeSwitcher({ className = '' }: AppModeSwitcherProps
                 onClick={handleSwitchToManga}
                 className={`
                     flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300
-                    ${appMode === 'manga' 
-                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50' 
+                    ${appMode === 'manga'
+                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }
                 `}
@@ -49,8 +49,8 @@ export default function AppModeSwitcher({ className = '' }: AppModeSwitcherProps
                 onClick={handleSwitchToAnime}
                 className={`
                     flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300
-                    ${appMode === 'anime' 
-                        ? 'bg-red-600 text-white shadow-lg shadow-red-500/50' 
+                    ${appMode === 'anime'
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-500/50'
                         : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     }
                 `}
