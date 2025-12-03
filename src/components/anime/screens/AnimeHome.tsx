@@ -37,13 +37,14 @@ export default function AnimeHome() {
 
     // Auto-rotate featured anime
     useEffect(() => {
-        if (trendingAnime.length > 0) {
+        const heroList = trendingAnime.length > 0 ? trendingAnime : (featuredAnime ? [featuredAnime] : []);
+        if (heroList.length > 1) {
             const interval = setInterval(() => {
-                setHeroIndex((prev) => (prev + 1) % Math.min(trendingAnime.length, 5));
+                setHeroIndex((prev) => (prev + 1) % Math.min(heroList.length, 5));
             }, 8000);
             return () => clearInterval(interval);
         }
-    }, [trendingAnime]);
+    }, [trendingAnime, featuredAnime]);
 
     const fetchAnimeData = async () => {
         try {
@@ -58,6 +59,13 @@ export default function AnimeHome() {
             if (featuredRes.ok) {
                 const featured = await featuredRes.json();
                 setFeaturedAnime(featured.anime || featured);
+                // If we have featured anime, also add it to trending for hero rotation
+                if (featured.anime || featured) {
+                    const featuredItem = featured.anime || featured;
+                    if (trendingAnime.length === 0) {
+                        setTrendingAnime([featuredItem]);
+                    }
+                }
             }
 
             if (trendingRes.ok) {
@@ -81,7 +89,8 @@ export default function AnimeHome() {
         }
     };
 
-    const currentHero = trendingAnime[heroIndex] || featuredAnime;
+    const heroList = trendingAnime.length > 0 ? trendingAnime : (featuredAnime ? [featuredAnime] : []);
+    const currentHero = heroList[heroIndex] || featuredAnime;
 
     if (loading) {
         return (
@@ -314,16 +323,16 @@ export default function AnimeHome() {
                     </div>
 
                     {/* Hero Navigation Dots */}
-                    {trendingAnime.length > 1 && (
+                    {heroList.length > 1 && (
                         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2">
-                            {trendingAnime.slice(0, 5).map((_, index) => (
+                            {heroList.slice(0, 5).map((_, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setHeroIndex(index)}
-                                    className={`w-2 h-2 rounded-full transition-all ${
+                                    className={`h-2 rounded-full transition-all ${
                                         index === heroIndex
                                             ? 'w-8 bg-orange-500'
-                                            : 'bg-white/30 hover:bg-white/50'
+                                            : 'w-2 bg-white/30 hover:bg-white/50'
                                     }`}
                                 />
                             ))}
