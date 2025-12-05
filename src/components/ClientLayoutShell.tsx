@@ -121,10 +121,9 @@ function ClientLayoutContent({ children }: { children: React.ReactNode }) {
             <PushNotifications />
             <PWAInstaller />
             
-            {/* Voice Assistant - Global: Visible on all pages */}
-            {/* Only render one instance - check if already exists */}
-            {/* Always render if page is interactive to prevent disappearing */}
-            {pageInteractive && !aiFeaturesLoading && (
+            {/* Voice Assistant - Global: Only show when enabled */}
+            {/* Only render if voice assistant is enabled and page is interactive */}
+            {pageInteractive && !aiFeaturesLoading && voiceAssistantEnabled && (
                 <VoiceAssistant
                     enabled={voiceAssistantEnabled}
                     showUI={true}

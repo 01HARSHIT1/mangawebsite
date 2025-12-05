@@ -34,6 +34,10 @@ export default function AIFeatureToggles({ position = 'fixed' }: AIFeatureToggle
     const voiceAssistantEnabled = isFeatureEnabled('voiceAssistant');
     const autoBrightnessEnabled = isFeatureEnabled('autoBrightness');
 
+    // Only show the toggle panel if at least one feature is enabled
+    // If all features are disabled, hide the entire component
+    const hasAnyFeatureEnabled = eyeTrackingEnabled || voiceAssistantEnabled || autoBrightnessEnabled;
+
     const toggleEyeTracking = async () => {
         const newValue = !eyeTrackingEnabled;
         await updatePreference('eyeTracking', newValue);
@@ -63,7 +67,8 @@ export default function AIFeatureToggles({ position = 'fixed' }: AIFeatureToggle
         return null;
     }
 
-    if (!isMounted) {
+    // Hide the entire component if all features are disabled
+    if (!hasAnyFeatureEnabled) {
         return null;
     }
 
