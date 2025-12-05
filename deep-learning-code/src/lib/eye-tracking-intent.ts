@@ -1,0 +1,229 @@
+// Professional Eye Tracking Intent Detection
+// Implements fixation time, velocity detection, and 5-zone system
+// Based on industry standards (Tobii, Apple Vision Pro, Meta Quest)
+
+export type ScrollZone = 'top-scroll' | 'top-reading' | 'middle' | 'bottom-reading' | 'bottom-scroll';
+
+export interface GazeIntent {
+    zone: ScrollZone;
+    screenY: number; // 0.0 = top, 1.0 = bottom
+    fixationTime: number; // How long user has been looking at this zone (ms)
+    shouldScroll: boolean; // Whether scrolling should be triggered
+    scrollDirection: 'up' | 'down' | null;
+    confidence: number; // 0.0 to 1.0
+    velocity: number; // Gaze velocity (normalized units/ms)
+}
+
+export class EyeTrackingIntentDetector {
+    // ⭐ 5-Zone System (Professional Standard) - Automatically mapped from 3 calibration zones
+    // You calibrate with 3 zones (TOP, MIDDLE, BOTTOM), system automatically uses 5 zones for scrolling
+    // 
+    // Screen Zones (0.0 = top of screen, 1.0 = bottom of screen):
+    // - Top Scroll:    0% - 5%   (scrolls UP to previous content)
+    // - Top Reading:   5% - 15%  (safe reading zone, no scroll)
+    // - Middle:       15% - 75%  (main reading zone, no scroll)
+    // - Bottom Reading: 75% - 95% (safe reading zone, no scroll)
+    // - Bottom Scroll:  95% - 100% (scrolls DOWN to new content)
+    //
+    // Only scroll zones (top 5% and bottom 5%) trigger scrolling
+    private readonly TOP_SCROLL_ZONE = 0.05; // Top 5% - scroll zone (was 7%, now 3-5% as per recommendation)
+    private readonly TOP_READING_ZONE = 0.15; // 5-15% - safe reading zone (was 30%)
+    private readonly MIDDLE_ZONE = 0.75; // 15-75% - middle reading zone (was 70%)
+    private readonly BOTTOM_READING_ZONE = 0.95; // 75-95% - safe reading zone (was 93%)
+    private readonly BOTTOM_SCROLL_ZONE = 0.95; // Bottom 5% - scroll zone (95-100%)
+    
+    // Fixation & Intent Detection
+    private readonly FIXATION_TIME_THRESHOLD = 400; // Reduced to 400ms for better responsiveness (was 700ms)
+    private readonly SCROLL_COOLDOWN = 800; // Reduced to 800ms for better responsiveness (was 1000ms)
+    private readonly VELOCITY_THRESHOLD = 0.3; // Lowered velocity threshold for easier detection (was 0.5)
+    
+    // State Tracking
+    private currentZone: ScrollZone | null = null;
+    private fixationStartTime: number = 0;
+    private lastScrollTime: number = 0;
+    private previousGazeY: number = 0.5;
+    private previousGazeTime: number = 0;
+    private smoothedGazeY: number = 0.5;
+    private readonly SMOOTHING_ALPHA = 0.25; // Exponential moving average (0.2-0.3)
+    
+    /**
+     * Detect which zone the user is looking at (5-zone system)
+     */
+    detectZone(screenY: number): ScrollZone {
+        if (screenY <= this.TOP_SCROLL_ZONE) {
+            return 'top-scroll';
+        } else if (screenY <= this.TOP_READING_ZONE) {
+            return 'top-reading';
+        } else if (screenY <= this.MIDDLE_ZONE) {
+            return 'middle';
+        } else if (screenY < this.BOTTOM_READING_ZONE) {
+            return 'bottom-reading';
+        } else {
+            return 'bottom-scroll';
+        }
+    }
+    
+    /**
+     * Calculate gaze velocity (how fast eyes are moving)
+     */
+    calculateVelocity(currentY: number, currentTime: number): number {
+        if (this.previousGazeTime === 0) {
+            this.previousGazeY = currentY;
+            this.previousGazeTime = currentTime;
+            return 0;
+        }
+        
+        const deltaY = Math.abs(currentY - this.previousGazeY);
+        const deltaTime = currentTime - this.previousGazeTime;
+        
+        if (deltaTime === 0) return 0;
+        
+        const velocity = deltaY / deltaTime; // normalized units per ms
+        
+        this.previousGazeY = currentY;
+        this.previousGazeTime = currentTime;
+        
+        return velocity;
+    }
+    
+    /**
+     * Apply exponential moving average smoothing (micro-stability filter)
+     */
+    smoothGaze(gazeY: number): number {
+        if (this.smoothedGazeY === 0.5 && gazeY !== 0.5) {
+            // Initialize
+            this.smoothedGazeY = gazeY;
+        } else {
+            // Exponential moving average: smoothed = alpha * current + (1 - alpha) * previous
+            this.smoothedGazeY = this.SMOOTHING_ALPHA * gazeY + (1 - this.SMOOTHING_ALPHA) * this.smoothedGazeY;
+        }
+        return this.smoothedGazeY;
+    }
+    
+    /**
+     * Detect user intent to scroll using multi-layer detection
+     */
+    detectIntent(
+        screenY: number,
+        confidence: number,
+        viewportZone: 'top' | 'middle' | 'bottom',
+        currentTime: number = Date.now()
+    ): GazeIntent {
+        // Step 1: Smooth the gaze position (micro-stability filter)
+        const smoothedY = this.smoothGaze(screenY);
+        
+        // Step 2: Calculate gaze velocity
+        const velocity = this.calculateVelocity(smoothedY, currentTime);
+        
+        // Step 3: Detect which zone user is looking at (5-zone system)
+        const zone = this.detectZone(smoothedY);
+        
+        // Step 4: Track fixation time (how long user has been in this zone)
+        let fixationTime = 0;
+        if (zone === this.currentZone) {
+            // Still in same zone - accumulate fixation time
+            if (this.fixationStartTime === 0) {
+                this.fixationStartTime = currentTime;
+            }
+            fixationTime = currentTime - this.fixationStartTime;
+        } else {
+            // Zone changed - reset fixation timer
+            this.currentZone = zone;
+            this.fixationStartTime = currentTime;
+            fixationTime = 0;
+        }
+        
+        // Step 5: Check if scrolling is allowed (cooldown period)
+        const timeSinceLastScroll = currentTime - this.lastScrollTime;
+        const inCooldown = timeSinceLastScroll < this.SCROLL_COOLDOWN;
+        
+        // Step 6: Determine if scrolling should be triggered
+        let shouldScroll = false;
+        let scrollDirection: 'up' | 'down' | null = null;
+        
+        // Only scroll zones can trigger scrolling
+        // Made more lenient for better responsiveness
+        if (zone === 'top-scroll' && !inCooldown) {
+            // Top scroll zone: Check fixation time and velocity
+            const hasFixation = fixationTime >= this.FIXATION_TIME_THRESHOLD;
+            const hasFastMovement = velocity > this.VELOCITY_THRESHOLD; // Fast upward movement = intent
+            
+            // Also allow if confidence is high (>= 70%) even with shorter fixation
+            const hasHighConfidence = confidence >= 0.70 && fixationTime >= 200; // 200ms minimum
+            
+            // Scroll if: (fixation time met) OR (fast intentional movement) OR (high confidence)
+            if (hasFixation || hasFastMovement || hasHighConfidence) {
+                shouldScroll = true;
+                scrollDirection = 'up';
+            }
+        } else if (zone === 'bottom-scroll' && !inCooldown) {
+            // Bottom scroll zone: Check fixation time and velocity
+            const hasFixation = fixationTime >= this.FIXATION_TIME_THRESHOLD;
+            const hasFastMovement = velocity > this.VELOCITY_THRESHOLD; // Fast downward movement = intent
+            
+            // Also allow if confidence is high (>= 70%) even with shorter fixation
+            const hasHighConfidence = confidence >= 0.70 && fixationTime >= 200; // 200ms minimum
+            
+            // Scroll if: (fixation time met) OR (fast intentional movement) OR (high confidence)
+            if (hasFixation || hasFastMovement || hasHighConfidence) {
+                shouldScroll = true;
+                scrollDirection = 'down';
+            }
+        }
+        
+        // Step 7: Calculate confidence (higher if fixation time is longer)
+        let intentConfidence = confidence;
+        if (shouldScroll) {
+            // Boost confidence if fixation time exceeds threshold significantly
+            const fixationBoost = Math.min(1.0, fixationTime / (this.FIXATION_TIME_THRESHOLD * 1.5));
+            intentConfidence = Math.min(1.0, confidence * (0.7 + 0.3 * fixationBoost));
+        }
+        
+        return {
+            zone,
+            screenY: smoothedY,
+            fixationTime,
+            shouldScroll,
+            scrollDirection,
+            confidence: intentConfidence,
+            velocity
+        };
+    }
+    
+    /**
+     * Record that a scroll event occurred (for cooldown tracking)
+     */
+    recordScroll(): void {
+        this.lastScrollTime = Date.now();
+        // Reset fixation when scroll happens
+        this.fixationStartTime = 0;
+    }
+    
+    /**
+     * Reset all state (useful when stopping eye tracking)
+     */
+    reset(): void {
+        this.currentZone = null;
+        this.fixationStartTime = 0;
+        this.lastScrollTime = 0;
+        this.previousGazeY = 0.5;
+        this.previousGazeTime = 0;
+        this.smoothedGazeY = 0.5;
+    }
+    
+    /**
+     * Get current zone information
+     */
+    getCurrentZone(): ScrollZone | null {
+        return this.currentZone;
+    }
+    
+    /**
+     * Get fixation time for current zone
+     */
+    getFixationTime(): number {
+        if (this.fixationStartTime === 0) return 0;
+        return Date.now() - this.fixationStartTime;
+    }
+}
+

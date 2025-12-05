@@ -231,14 +231,14 @@ export default function CreatorAnalytics() {
                         <p className="text-red-400 text-lg font-medium">Failed to load analytics</p>
                         <button onClick={fetchAnalytics} className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
                             Retry
-                        </button>
+                                </button>
                     </div>
                 </div>
             </div>
         );
     }
 
-    return (
+        return (
         <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white pt-32">
             {/* Header Section */}
             <div className="bg-gray-800/50 border-b border-gray-700 backdrop-blur-sm fixed top-16 left-0 right-0 z-40">
@@ -247,9 +247,9 @@ export default function CreatorAnalytics() {
                         <div>
                             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                                 Analytics Overview
-                            </h1>
+                        </h1>
                             <p className="text-gray-400 mt-1">Track your content performance and earnings</p>
-                        </div>
+                    </div>
 
                         <div className="flex flex-wrap items-center gap-3">
                             {/* Time Filter */}
@@ -265,7 +265,7 @@ export default function CreatorAnalytics() {
                                     <option value="custom">Custom Range</option>
                                 </select>
                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                            </div>
+                        </div>
 
                             {/* Manga Selector */}
                             {analytics.detailedSeries.length > 0 && (
@@ -444,7 +444,7 @@ export default function CreatorAnalytics() {
                             </BarChart>
                         </ResponsiveContainer>
                     </ChartCard>
-                </div>
+                    </div>
 
                 {/* Engagement Breakdown & Top Chapters */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -492,22 +492,22 @@ export default function CreatorAnalytics() {
                                                 }`}>
                                                 {index + 1}
                                             </div>
-                                            <div>
+                            <div>
                                                 <p className="text-white font-medium">{chapter.title}</p>
                                                 <p className="text-sm text-gray-400">{chapter.manga}</p>
-                                            </div>
-                                        </div>
+                            </div>
+                        </div>
                                         <div className="text-right">
                                             <p className="text-white font-semibold">{formatNumber(chapter.views)}</p>
                                             <p className="text-sm text-gray-400">views</p>
-                                        </div>
-                                    </div>
+                            </div>
+                        </div>
                                 ))
                             ) : (
                                 <div className="text-center py-8 text-gray-400">
                                     <Target className="w-12 h-12 mx-auto mb-2 opacity-50" />
                                     <p>No chapter data available yet</p>
-                                </div>
+                    </div>
                             )}
                         </div>
                     </ChartCard>
@@ -516,9 +516,9 @@ export default function CreatorAnalytics() {
                 {/* Chapter Performance Table */}
                 {viewMode === 'manga' && selectedMangaData && selectedMangaData.chapters.length > 0 && (
                     <ChartCard title={`${selectedMangaData.title} - Chapter Performance`} icon={<BarChart3 className="w-5 h-5" />}>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
                                     <tr className="border-b border-gray-700">
                                         <th className="text-left py-3 px-4 text-gray-400 font-medium">Chapter</th>
                                         <th className="text-right py-3 px-4 text-gray-400 font-medium">Views</th>
@@ -527,9 +527,9 @@ export default function CreatorAnalytics() {
                                         <th className="text-right py-3 px-4 text-gray-400 font-medium">Avg Read Time</th>
                                         <th className="text-right py-3 px-4 text-gray-400 font-medium">Earnings</th>
                                         <th className="text-center py-3 px-4 text-gray-400 font-medium">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                                </tr>
+                            </thead>
+                            <tbody>
                                     {selectedMangaData.chapters.map((chapter) => (
                                         <tr
                                             key={chapter._id}
@@ -539,7 +539,7 @@ export default function CreatorAnalytics() {
                                                 setViewMode('chapter');
                                             }}
                                         >
-                                            <td className="py-3 px-4">
+                                        <td className="py-3 px-4">
                                                 <div>
                                                     <p className="text-white font-medium">Chapter {chapter.chapterNumber}</p>
                                                     <p className="text-sm text-gray-400">{chapter.title}</p>
@@ -559,12 +559,12 @@ export default function CreatorAnalytics() {
                                                         chapter.status === 'scheduled' ? '🕒 Scheduled' :
                                                             '📝 Draft'}
                                                 </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                     </ChartCard>
                 )}
 
@@ -679,7 +679,7 @@ export default function CreatorAnalytics() {
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                            </div>
                     </ChartCard>
                 )}
 
@@ -733,7 +733,7 @@ function MetricCard({ title, value, icon, change, color }: {
                 </div>
             </div>
             <div className="flex items-end justify-between">
-                <div>
+                                <div>
                     <p className="text-2xl font-bold text-white">{value}</p>
                     <div className="flex items-center gap-1 mt-1">
                         {isPositive ? (

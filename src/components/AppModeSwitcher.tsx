@@ -14,19 +14,20 @@ export default function AppModeSwitcher({ className = '' }: AppModeSwitcherProps
     const pathname = usePathname();
 
     const handleSwitchToAnime = () => {
+        // Set mode first
         switchToAnime();
-        // Use Next.js router to navigate to anime page
+        // Always navigate to anime page when switching to anime mode
         if (pathname !== '/anime' && !pathname?.startsWith('/anime/')) {
-            router.push('/anime');
+            router.replace('/anime');
         }
     };
 
     const handleSwitchToManga = () => {
+        // Set mode first
         switchToManga();
-        // Use Next.js router to navigate to manga home
-        if (pathname?.startsWith('/anime')) {
-            router.push('/');
-        }
+        // Always navigate to manga home when switching to manga mode
+        // Use replace to avoid adding to history
+        router.replace('/');
     };
 
     return (

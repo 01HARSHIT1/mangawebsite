@@ -42,18 +42,12 @@ export function AppModeProvider({ children }: { children: React.ReactNode }) {
 
     const switchToAnime = () => {
         setAppMode('anime');
-        // Clear any manga-specific navigation state
-        if (typeof window !== 'undefined') {
-            window.history.replaceState({}, '', '/anime');
-        }
+        // Navigation is handled by AppModeSwitcher component
     };
 
     const switchToManga = () => {
         setAppMode('manga');
-        // Clear any anime-specific navigation state
-        if (typeof window !== 'undefined') {
-            window.history.replaceState({}, '', '/');
-        }
+        // Navigation is handled by AppModeSwitcher component
     };
 
     return (

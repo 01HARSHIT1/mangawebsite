@@ -1,0 +1,1609 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useAIFeatures } from '@/hooks/useAIFeatures';
+import { EyeTrackingEngine } from '@/lib/eye-tracking';
+
+interface EyeTrackingProps {
+    onGazeDetected?: (direction: 'up' | 'down' | 'left' | 'right' | 'center') => void;
+    enabled?: boolean;
+    showUI?: boolean;
+}
+
+export default function EyeTracking({ onGazeDetected, enabled = false, showUI = true }: EyeTrackingProps) {
+    const { isFeatureEnabled } = useAIFeatures();
+    const eyeTrackingEnabled = enabled || isFeatureEnabled('eyeTracking');
+    const autoScrollEnabled = isFeatureEnabled('autoScroll');
+    
+    const [isActive, setIsActive] = useState(false);
+    const [isSupported, setIsSupported] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [gazeDirection, setGazeDirection] = useState<string | null>(null);
+    
+    // Accuracy tracking metrics
+    const [currentConfidence, setCurrentConfidence] = useState<number>(0);
+    const [averageConfidence, setAverageConfidence] = useState<number>(0);
+    const [detectionRate, setDetectionRate] = useState<number>(0);
+    const [screenPosition, setScreenPosition] = useState<{ x: number; y: number } | null>(null);
+    const [viewportZone, setViewportZone] = useState<string | null>(null);
+    const [scrollIntensity, setScrollIntensity] = useState<number>(0);
+    
+    // Step-by-step feedback system for active learning
+    const [feedbackMode, setFeedbackMode] = useState<'idle' | 'testing' | 'feedback'>('idle');
+    const [testResult, setTestResult] = useState<{zone: string | null, normalizedY: number | null}>({zone: null, normalizedY: null});
+    const [feedbackCount, setFeedbackCount] = useState(0);
+    const [testCount, setTestCount] = useState(0);
+    const [calibrationStats, setCalibrationStats] = useState<{scrollUp: number, scrollDown: number, noScroll: number, total: number} | null>(null);
+    const currentNormalizedYRef = useRef<number | null>(null);
+    const testTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const testSamplesRef = useRef<{normalizedY: number, zone: string | null}[]>([]);
+    
+    // New guided calibration mode
+    const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
+    const [guidedCalibrationMode, setGuidedCalibrationMode] = useState<'idle' | 'top' | 'middle' | 'bottom'>('idle');
+    const [guidedCalibrationCountdown, setGuidedCalibrationCountdown] = useState<number>(0);
+    const [guidedCalibrationSamples, setGuidedCalibrationSamples] = useState<{top: number, middle: number, bottom: number}>({top: 0, middle: 0, bottom: 0});
+    const guidedCalibrationSamplesRef = useRef<{normalizedY: number, zone: 'top' | 'middle' | 'bottom'}[]>([]);
+    const guidedCalibrationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const guidedCalibrationCountdownRef = useRef<NodeJS.Timeout | null>(null);
+    
+    // Statistics tracking
+    const detectionCountRef = useRef<number>(0);
+    const totalFramesRef = useRef<number>(0);
+    const confidenceHistoryRef = useRef<number[]>([]);
+    const lastUpdateTimeRef = useRef<number>(Date.now());
+    
+    
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const eyeTrackingEngineRef = useRef<EyeTrackingEngine | null>(null);
+    const lastScrollTime = useRef<number>(0);
+    const scrollCooldown = 200; // 200ms between scrolls to prevent vibration (increased from 30ms)
+    const isManualScrolling = useRef<boolean>(false);
+    const manualScrollTimeout = useRef<NodeJS.Timeout | null>(null);
+    
+    // CRITICAL: Panel ref for position locking - must be declared before any conditional returns
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // Defer heavy checks to prevent blocking initial render
+        // Only check for getUserMedia support after a delay
+        const checkTimer = setTimeout(() => {
+            if (typeof window !== 'undefined') {
+                const hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                setIsSupported(hasGetUserMedia);
+            }
+        }, 1000); // Wait 1 second before checking camera support
+        
+        // Detect manual scrolling to prevent interference
+        const handleScroll = () => {
+            isManualScrolling.current = true;
+            if (manualScrollTimeout.current) {
+                clearTimeout(manualScrollTimeout.current);
+            }
+            // Disable eye tracking scrolling for 3 seconds after manual scroll
+            manualScrollTimeout.current = setTimeout(() => {
+                isManualScrolling.current = false;
+            }, 3000);
+        };
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('wheel', handleScroll, { passive: true });
+        
+        return () => {
+            clearTimeout(checkTimer);
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('wheel', handleScroll);
+            if (manualScrollTimeout.current) clearTimeout(manualScrollTimeout.current);
+        };
+    }, []);
+
+
+    useEffect(() => {
+        // Removed all console.log to prevent performance issues and infinite loops
+        
+        // Only start tracking if all conditions are met
+        if (!eyeTrackingEnabled || !isSupported || !isActive) {
+            stopTracking();
+            return;
+        }
+
+        // Start tracking when active
+        if (isActive && eyeTrackingEnabled && isSupported) {
+            startTracking();
+        }
+
+        return () => {
+            stopTracking();
+            // Clean up test timeout
+            if (testTimeoutRef.current) {
+                clearTimeout(testTimeoutRef.current);
+                testTimeoutRef.current = null;
+            }
+        };
+    }, [eyeTrackingEnabled, isActive, isSupported]);
+
+    const startTracking = async () => {
+        try {
+            if (!videoRef.current) {
+                setError('Video element not available');
+                return;
+            }
+
+            // Removed console.log to prevent performance issues
+            
+            // Request camera access
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'user',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            });
+
+            streamRef.current = stream;
+            // Removed console.log to prevent performance issues
+
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                await videoRef.current.play();
+                // Removed console.log to prevent performance issues
+            }
+
+            // Initialize MediaPipe Eye Tracking Engine
+            // Removed console.log to prevent performance issues
+            const engine = new EyeTrackingEngine();
+            eyeTrackingEngineRef.current = engine;
+
+            // Load and verify calibration data
+            const calibration = engine.loadCalibration();
+            if (calibration && calibration.calibrated) {
+                const topCount = calibration.scrollUp?.samples?.length || 0;
+                const middleCount = calibration.noScroll?.samples?.length || 0;
+                const bottomCount = calibration.scrollDown?.samples?.length || 0;
+                const total = topCount + middleCount + bottomCount;
+                
+                if (total >= 1500) {
+                    console.log(`✅ Eye Tracking: Loaded ${total} calibration samples (Top: ${topCount}, Middle: ${middleCount}, Bottom: ${bottomCount}) - System is using this data for optimal accuracy!`);
+                    // Update calibration stats display
+                    setCalibrationStats({
+                        scrollUp: topCount,
+                        scrollDown: bottomCount,
+                        noScroll: middleCount,
+                        total: total
+                    });
+                } else {
+                    console.log(`👁️ Eye Tracking: Loaded ${total} calibration samples (Top: ${topCount}, Middle: ${middleCount}, Bottom: ${bottomCount})`);
+                }
+            }
+
+            // Removed console.log to prevent performance issues
+            await engine.initialize(videoRef.current, (gaze) => {
+                // Store current normalized Y for manual feedback
+                if (gaze.normalizedEyePosition) {
+                    currentNormalizedYRef.current = gaze.normalizedEyePosition.y;
+                }
+                
+                // Update calibration stats display (check on first load and periodically)
+                if (eyeTrackingEngineRef.current) {
+                    const calibration = eyeTrackingEngineRef.current.getCalibration();
+                    if (calibration) {
+                        const totalSamples = (calibration.scrollUp?.samples?.length || 0) + 
+                                            (calibration.scrollDown?.samples?.length || 0) + 
+                                            (calibration.noScroll?.samples?.length || 0);
+                        
+                        setCalibrationStats({
+                            scrollUp: calibration.scrollUp?.samples?.length || 0,
+                            scrollDown: calibration.scrollDown?.samples?.length || 0,
+                            noScroll: calibration.noScroll?.samples?.length || 0,
+                            total: totalSamples
+                        });
+                        
+                        // Log calibration info on first load
+                        if (totalSamples > 15) {
+                            // Removed console.log to prevent performance issues
+                            // Removed console.log to prevent performance issues
+                        }
+                    }
+                }
+                
+                // Update accuracy metrics
+                totalFramesRef.current += 1;
+                if (gaze.confidence > 0.1) {
+                    detectionCountRef.current += 1;
+                    confidenceHistoryRef.current.push(gaze.confidence);
+                    // Keep only last 100 readings for average
+                    if (confidenceHistoryRef.current.length > 100) {
+                        confidenceHistoryRef.current.shift();
+                    }
+                }
+                
+                // Calculate detection rate (last 1 second)
+                const now = Date.now();
+                if (now - lastUpdateTimeRef.current > 1000) {
+                    const rate = (detectionCountRef.current / totalFramesRef.current) * 100;
+                    setDetectionRate(rate);
+                    
+                    // Calculate average confidence
+                    if (confidenceHistoryRef.current.length > 0) {
+                        const avg = confidenceHistoryRef.current.reduce((a, b) => a + b, 0) / confidenceHistoryRef.current.length;
+                        setAverageConfidence(avg);
+                    }
+                    
+                    // Reset counters
+                    detectionCountRef.current = 0;
+                    totalFramesRef.current = 0;
+                    lastUpdateTimeRef.current = now;
+                }
+                
+                // Update real-time metrics
+                setCurrentConfidence(gaze.confidence);
+                setScreenPosition(gaze.screenPosition || null);
+                setViewportZone(gaze.viewportZone || null);
+                setScrollIntensity(gaze.scrollIntensity || 0);
+                
+                // Log more frequently when confidence is low to help debug
+                if (gaze.confidence < 0.2 || Math.random() < 0.05) {
+                    // Removed console.log to prevent performance issues
+                }
+                
+                // Handle gaze detection
+                setGazeDirection(gaze.direction);
+                onGazeDetected?.(gaze.direction);
+
+                // Enhanced auto-scroll based on viewport zones
+                // Skip if user is manually scrolling
+                if (isManualScrolling.current) {
+                    return; // Don't interfere with manual scrolling
+                }
+                
+                // Use new zone-based scrolling system
+                if (autoScrollEnabled && gaze.viewportZone && gaze.scrollIntensity !== undefined) {
+                    const now = Date.now();
+                    const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+                    
+                    // MAXIMUM PRECISION: Optimized scroll speed calculation
+                    // SIGNIFICANTLY INCREASED speeds for better page coverage
+                    // Base and max speeds are now much higher to cover more content per scroll
+                    const baseScrollSpeed = 8.0; // Increased from 3.0 - covers more content per scroll
+                    const maxScrollSpeed = 25.0; // Increased from 12.0 - covers much more content per scroll
+                    const intensityFactor = Math.abs(gaze.scrollIntensity);
+                    const confidenceFactor = Math.max(0.6, gaze.confidence); // Use confidence to adjust speed
+                    
+                    // Smooth acceleration curve (ease-in-out) - more aggressive for better responsiveness
+                    const easedIntensity = intensityFactor < 0.5 
+                        ? 2 * intensityFactor * intensityFactor 
+                        : 1 - Math.pow(-2 * intensityFactor + 2, 2) / 2;
+                    
+                    // Calculate scroll speed with higher minimum for better page coverage
+                    const calculatedSpeed = baseScrollSpeed + (easedIntensity * (maxScrollSpeed - baseScrollSpeed) * confidenceFactor);
+                    const scrollSpeed = Math.max(8.0, calculatedSpeed); // Minimum 8.0 to ensure good page coverage
+                    
+                    // PROFESSIONAL INTENT-BASED SCROLLING
+                    // Uses fixation time, velocity detection, and 5-zone system
+                    // Prevents accidental scrolling while reading
+                    
+                    // Get screen position (0.0 = top, 1.0 = bottom)
+                    const screenY = gaze.screenPosition?.y ?? 0.5;
+                    // Note: 'now' is already defined above (line 255)
+                    
+                    // CRITICAL: Middle zone NEVER scrolls (user is reading)
+                    if (gaze.viewportZone === 'middle') {
+                        return; // NO SCROLLING in middle zone - safe reading zone
+                    }
+                    
+                    // Intent detection is already done in eye-tracking.ts
+                    // scrollIntensity is set to 0 if intent detector says no scroll
+                    // Only proceed if scrollIntensity is non-zero (intent confirmed)
+                    if (Math.abs(gaze.scrollIntensity) === 0) {
+                        return; // Intent detector blocked scrolling
+                    }
+                    
+                    // Minimum confidence threshold
+                    const minConfidence = 0.65;
+                    if (gaze.confidence < minConfidence) {
+                        return; // Not confident enough
+                    }
+                    
+                    // Calculate scroll amount (4% of viewport height - between 3-5%)
+                    const viewportHeight = window.innerHeight;
+                    const scrollPercentage = 0.04; // 4% of viewport
+                    const scrollAmount = viewportHeight * scrollPercentage;
+                    
+                    // Scroll based on intent (scrollIntensity already validated by intent detector)
+                    if (gaze.scrollIntensity < 0 && currentScroll > 50) {
+                        // Scroll UP (negative intensity)
+                        lastScrollTime.current = now;
+                        
+                        // Record scroll in intent detector (for cooldown)
+                        if (eyeTrackingEngineRef.current) {
+                            eyeTrackingEngineRef.current.recordScroll();
+                        }
+                        
+                        requestAnimationFrame(() => {
+                            window.scrollBy({ 
+                                top: -scrollAmount, // Scroll UP (to previous content)
+                                behavior: 'auto'
+                            });
+                        });
+                        
+                        // Removed console.log to prevent performance issues
+                    } else if (gaze.scrollIntensity > 0 && currentScroll < maxScroll - 50) {
+                        // Scroll DOWN (positive intensity)
+                        lastScrollTime.current = now;
+                        
+                        // Record scroll in intent detector (for cooldown)
+                        if (eyeTrackingEngineRef.current) {
+                            eyeTrackingEngineRef.current.recordScroll();
+                        }
+                        
+                        requestAnimationFrame(() => {
+                            window.scrollBy({ 
+                                top: scrollAmount, // Scroll DOWN (to new content)
+                                behavior: 'auto'
+                            });
+                        });
+                        
+                        // Removed console.log to prevent performance issues
+                    }
+                }
+            });
+            
+            // Removed console.log to prevent performance issues
+
+            setError(null);
+        } catch (err: any) {
+            // Silently handle errors to prevent console spam
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                setError('Camera permission denied. Please enable camera access.');
+            } else {
+                setError(`Failed to start eye tracking: ${err.message}`);
+            }
+            setIsActive(false);
+        }
+    };
+
+    const stopTracking = () => {
+        // Stop eye tracking engine
+        if (eyeTrackingEngineRef.current) {
+            eyeTrackingEngineRef.current.stop();
+            eyeTrackingEngineRef.current = null;
+        }
+
+        // Stop camera stream
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+
+        setGazeDirection(null);
+    };
+
+    // Gaze detection is now handled by EyeTrackingEngine
+
+    const toggleTracking = async () => {
+        // Removed console.log to prevent performance issues
+        
+        if (!isSupported) {
+            // Silently handle - error already set
+            setError('Eye tracking not supported in this browser');
+            return;
+        }
+
+        if (!isActive) {
+            // Starting tracking - request camera permission
+            // Removed console.log to prevent performance issues
+            try {
+                // Request permission first
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Immediately stop it - we just wanted permission
+                stream.getTracks().forEach(track => track.stop());
+                // Removed console.log to prevent performance issues
+            } catch (err: any) {
+                // Silently handle errors to prevent console spam
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    setError('Camera permission denied. Please allow camera access in your browser settings.');
+                    return;
+                } else {
+                    setError(`Failed to access camera: ${err.message}`);
+                    return;
+                }
+            }
+        } else {
+            // Removed console.log to prevent performance issues
+        }
+
+        setIsActive(!isActive);
+        setError(null);
+        // Removed console.log to prevent performance issues
+    };
+    
+    const startCalibration = () => {
+        if (!isActive) {
+            setError('Please start eye tracking first');
+            return;
+        }
+        setIsCalibrating(true);
+        setCalibrationStep('scrollUp');
+        setCalibrationSamples({ scrollUp: 0, scrollDown: 0, noScroll: 0 });
+        // Removed console.log to prevent performance issues
+    };
+    
+    const addCalibrationSample = (action: 'scrollUp' | 'scrollDown' | 'noScroll') => {
+        if (!eyeTrackingEngineRef.current || currentNormalizedYRef.current === null) {
+            setError('Eye tracking not ready. Please wait a moment.');
+            return;
+        }
+        
+        const normalizedY = currentNormalizedYRef.current;
+        eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
+        
+        // Update sample count
+        setCalibrationSamples(prev => ({
+            ...prev,
+            [action]: prev[action] + 1
+        }));
+        
+        // Removed console.log to prevent performance issues
+        
+        // Move to next step
+        if (action === 'scrollUp' && calibrationSamples.scrollUp < 4) {
+            // Continue collecting scrollUp samples
+        } else if (action === 'scrollUp' && calibrationSamples.scrollUp >= 4) {
+            setCalibrationStep('scrollDown');
+            // Removed console.log to prevent performance issues
+        } else if (action === 'scrollDown' && calibrationSamples.scrollDown < 4) {
+            // Continue collecting scrollDown samples
+        } else if (action === 'scrollDown' && calibrationSamples.scrollDown >= 4) {
+            setCalibrationStep('noScroll');
+            // Removed console.log to prevent performance issues
+        } else if (action === 'noScroll' && calibrationSamples.noScroll < 4) {
+            // Continue collecting noScroll samples
+        } else if (action === 'noScroll' && calibrationSamples.noScroll >= 4) {
+            setCalibrationStep('complete');
+            setIsCalibrating(false);
+            
+            // Collect all samples and set as master calibration for all users
+            if (eyeTrackingEngineRef.current) {
+                const calibration = eyeTrackingEngineRef.current.getCalibration();
+                if (calibration && calibration.calibrated && 
+                    calibration.scrollUp.samples.length >= 5 &&
+                    calibration.scrollDown.samples.length >= 5 &&
+                    calibration.noScroll.samples.length >= 5) {
+                    // Set master calibration from collected samples
+                    import('@/lib/eye-tracking').then(({ EyeTrackingEngine }) => {
+                        EyeTrackingEngine.setMasterCalibration({
+                            scrollUp: calibration.scrollUp.samples,
+                            scrollDown: calibration.scrollDown.samples,
+                            noScroll: calibration.noScroll.samples
+                        });
+                        
+                        // Automatically generate hardcoded code
+                        const generateHardcodedCode = () => {
+                            const { scrollUp, scrollDown, noScroll } = calibration;
+                            
+                            const code = `// MASTER CALIBRATION - Hardcoded from final calibration samples
+// This is the permanent default for all users
+// Generated automatically: ${new Date().toISOString()}
+let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
+    scrollUp: {
+        normalizedY: ${scrollUp.mean},
+        samples: [${scrollUp.samples.join(', ')}],
+        mean: ${scrollUp.mean},
+        stdDev: ${scrollUp.stdDev},
+        min: ${scrollUp.min},
+        max: ${scrollUp.max}
+    },
+    scrollDown: {
+        normalizedY: ${scrollDown.mean},
+        samples: [${scrollDown.samples.join(', ')}],
+        mean: ${scrollDown.mean},
+        stdDev: ${scrollDown.stdDev},
+        min: ${scrollDown.min},
+        max: ${scrollDown.max}
+    },
+    noScroll: {
+        normalizedY: ${noScroll.mean},
+        samples: [${noScroll.samples.join(', ')}],
+        mean: ${noScroll.mean},
+        stdDev: ${noScroll.stdDev},
+        min: ${noScroll.min},
+        max: ${noScroll.max}
+    },
+    calibrated: true
+};`;
+                            
+                            // Removed console.log to prevent performance issues
+                            
+                            // Store in a global variable for automatic extraction
+                            (window as any).__MASTER_CALIBRATION_CODE__ = code;
+                            (window as any).__MASTER_CALIBRATION_DATA__ = calibration;
+                            
+                            // Also store in localStorage for automatic retrieval
+                            localStorage.setItem('__MASTER_CALIBRATION_FOR_HARDCODING__', JSON.stringify({
+                                code: code,
+                                data: calibration,
+                                timestamp: new Date().toISOString()
+                            }));
+                            
+                            // Automatically save to server file for direct access
+                            fetch('/api/eye-tracking/save-master-calibration', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify(calibration)
+                            }).then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    // Removed console.log to prevent performance issues
+                                } else {
+                                    // Silently handle errors
+                                }
+                            }).catch(error => {
+                                // Silently handle errors
+                            });
+                            
+                            // Removed console.log to prevent performance issues
+                            
+                            // Try to copy to clipboard
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(code).catch(() => {
+                                    // Silently handle clipboard errors
+                                });
+                            }
+                            
+                            // Removed console.log to prevent performance issues
+                            // Calibration data summary removed to prevent performance issues
+                        };
+                        
+                        generateHardcodedCode();
+                    });
+                }
+            }
+            
+            // Removed console.log to prevent performance issues
+        }
+    };
+    
+    const cancelCalibration = () => {
+        setIsCalibrating(false);
+        setCalibrationStep(null);
+        setCalibrationSamples({ scrollUp: 0, scrollDown: 0, noScroll: 0 });
+        if (eyeTrackingEngineRef.current) {
+            eyeTrackingEngineRef.current.clearCalibration();
+        }
+        // Removed console.log to prevent performance issues
+    };
+    
+    const clearCalibration = () => {
+        if (eyeTrackingEngineRef.current) {
+            eyeTrackingEngineRef.current.clearCalibration();
+            setError(null);
+            setFeedbackCount(0);
+            // Removed console.log to prevent performance issues
+        }
+    };
+    
+    // New guided calibration mode - user stares at target zone for 2-3 seconds
+    const startGuidedCalibration = () => {
+        if (!isActive) {
+            setError('Please start eye tracking first');
+            return;
+        }
+        setIsCalibrating(true);
+        setGuidedCalibrationMode('top');
+        setGuidedCalibrationSamples({ top: 0, middle: 0, bottom: 0 });
+        guidedCalibrationSamplesRef.current = [];
+        startGuidedCalibrationStep('top');
+    };
+    
+    const startGuidedCalibrationStep = (zone: 'top' | 'middle' | 'bottom') => {
+        setGuidedCalibrationMode(zone);
+        setGuidedCalibrationCountdown(3); // 3 second countdown
+        guidedCalibrationSamplesRef.current = [];
+        
+        // Countdown timer
+        let countdown = 3;
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            setGuidedCalibrationCountdown(countdown);
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                // Start collecting samples
+                collectGuidedCalibrationSamples(zone);
+            }
+        }, 1000);
+        guidedCalibrationCountdownRef.current = countdownInterval as any;
+    };
+    
+    const collectGuidedCalibrationSamples = (zone: 'top' | 'middle' | 'bottom') => {
+        setGuidedCalibrationCountdown(0);
+        
+        // Collect samples for 2.5 seconds (2500ms) - increased for more samples
+        const SAMPLE_INTERVAL = 50; // Sample every 50ms (20 samples/second)
+        const DURATION = 2500; // 2.5 seconds = ~50 samples per run
+        
+        let elapsed = 0;
+        
+        const sampleInterval = setInterval(() => {
+            if (!eyeTrackingEngineRef.current || currentNormalizedYRef.current === null) {
+                clearInterval(sampleInterval);
+                return;
+            }
+            
+            const normalizedY = currentNormalizedYRef.current;
+            guidedCalibrationSamplesRef.current.push({ normalizedY, zone });
+            
+            elapsed += SAMPLE_INTERVAL;
+            if (elapsed >= DURATION) {
+                clearInterval(sampleInterval);
+                // Save all collected samples
+                saveGuidedCalibrationSamples(zone);
+            }
+        }, SAMPLE_INTERVAL);
+        
+        guidedCalibrationIntervalRef.current = sampleInterval as any;
+    };
+    
+    const saveGuidedCalibrationSamples = (zone: 'top' | 'middle' | 'bottom') => {
+        if (!eyeTrackingEngineRef.current) return;
+        
+        // Map zone to calibration action
+        let action: 'scrollUp' | 'scrollDown' | 'noScroll';
+        if (zone === 'top') {
+            action = 'scrollUp';
+        } else if (zone === 'bottom') {
+            action = 'scrollDown';
+        } else {
+            action = 'noScroll';
+        }
+        
+        // Save all collected samples (keepAllSamples=true to save all 500+ samples)
+        guidedCalibrationSamplesRef.current.forEach(sample => {
+            eyeTrackingEngineRef.current?.addCalibrationSample(action, sample.normalizedY, true);
+        });
+        
+        // Update sample count
+        const sampleCount = guidedCalibrationSamplesRef.current.length;
+        setGuidedCalibrationSamples(prev => ({
+            ...prev,
+            [zone]: prev[zone] + sampleCount
+        }));
+        
+        // Trigger scroll if needed
+        if (zone === 'top') {
+            // Scroll up
+            window.scrollBy({ top: -window.innerHeight * 0.3, behavior: 'smooth' });
+        } else if (zone === 'bottom') {
+            // Scroll down
+            window.scrollBy({ top: window.innerHeight * 0.3, behavior: 'smooth' });
+        }
+        
+        // Check actual saved samples from engine (more accurate than state)
+        const calibration = eyeTrackingEngineRef.current.getCalibration();
+        let actualTopSamples = 0;
+        let actualMiddleSamples = 0;
+        let actualBottomSamples = 0;
+        
+        if (calibration && calibration.calibrated) {
+            actualTopSamples = calibration.scrollUp?.samples?.length || 0;
+            actualMiddleSamples = calibration.noScroll?.samples?.length || 0;
+            actualBottomSamples = calibration.scrollDown?.samples?.length || 0;
+        }
+        
+        // Update state to reflect actual saved samples
+        setGuidedCalibrationSamples({
+            top: actualTopSamples,
+            middle: actualMiddleSamples,
+            bottom: actualBottomSamples
+        });
+        
+        // Check if we need more samples (target: 500 per zone) - use actual saved samples
+        const currentZoneSamples = zone === 'top' ? actualTopSamples : 
+                                   zone === 'middle' ? actualMiddleSamples : 
+                                   actualBottomSamples;
+        
+        // If we have less than 500 samples for current zone, repeat this zone
+        // Otherwise, move to next zone
+        if (currentZoneSamples < 500) {
+            // Repeat this zone (need ~10 more runs to get 500 samples: 50 samples per run)
+            setTimeout(() => {
+                startGuidedCalibrationStep(zone);
+            }, 1000);
+        } else {
+            // Move to next zone automatically
+            setTimeout(() => {
+                if (zone === 'top') {
+                    if (actualMiddleSamples < 500) {
+                        startGuidedCalibrationStep('middle');
+                    } else if (actualBottomSamples < 500) {
+                        startGuidedCalibrationStep('bottom');
+                    } else {
+                        completeGuidedCalibration();
+                    }
+                } else if (zone === 'middle') {
+                    if (actualBottomSamples < 500) {
+                        startGuidedCalibrationStep('bottom');
+                    } else {
+                        completeGuidedCalibration();
+                    }
+                } else {
+                    // Complete calibration
+                    completeGuidedCalibration();
+                }
+            }, 1000);
+        }
+    };
+    
+    const completeGuidedCalibration = () => {
+        setGuidedCalibrationMode('idle');
+        setIsCalibrating(false);
+        
+        // Get final calibration data
+        if (eyeTrackingEngineRef.current) {
+            const calibration = eyeTrackingEngineRef.current.getCalibration();
+            if (calibration && calibration.calibrated) {
+                // Save to master calibration
+                import('@/lib/eye-tracking').then(({ EyeTrackingEngine }) => {
+                    EyeTrackingEngine.setMasterCalibration({
+                        scrollUp: calibration.scrollUp.samples,
+                        scrollDown: calibration.scrollDown.samples,
+                        noScroll: calibration.noScroll.samples
+                    });
+                    
+                    // Generate hardcoded code (same as regular calibration)
+                    const { scrollUp, scrollDown, noScroll } = calibration;
+                    const code = `// MASTER CALIBRATION - Hardcoded from guided calibration samples
+// Generated automatically: ${new Date().toISOString()}
+let DEFAULT_MASTER_CALIBRATION: CalibrationData = {
+    scrollUp: {
+        normalizedY: ${scrollUp.mean},
+        samples: [${scrollUp.samples.join(', ')}],
+        mean: ${scrollUp.mean},
+        stdDev: ${scrollUp.stdDev},
+        min: ${scrollUp.min},
+        max: ${scrollUp.max}
+    },
+    scrollDown: {
+        normalizedY: ${scrollDown.mean},
+        samples: [${scrollDown.samples.join(', ')}],
+        mean: ${scrollDown.mean},
+        stdDev: ${scrollDown.stdDev},
+        min: ${scrollDown.min},
+        max: ${scrollDown.max}
+    },
+    noScroll: {
+        normalizedY: ${noScroll.mean},
+        samples: [${noScroll.samples.join(', ')}],
+        mean: ${noScroll.mean},
+        stdDev: ${noScroll.stdDev},
+        min: ${noScroll.min},
+        max: ${noScroll.max}
+    },
+    calibrated: true
+};`;
+                    
+                    (window as any).__MASTER_CALIBRATION_CODE__ = code;
+                    (window as any).__MASTER_CALIBRATION_DATA__ = calibration;
+                    
+                    localStorage.setItem('__MASTER_CALIBRATION_FOR_HARDCODING__', JSON.stringify({
+                        code: code,
+                        data: calibration,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    // Save to server
+                    fetch('/api/eye-tracking/save-master-calibration', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(calibration)
+                    }).catch(() => {});
+                });
+            }
+        }
+    };
+    
+    const cancelGuidedCalibration = () => {
+        if (guidedCalibrationIntervalRef.current) {
+            clearInterval(guidedCalibrationIntervalRef.current);
+            guidedCalibrationIntervalRef.current = null;
+        }
+        if (guidedCalibrationCountdownRef.current) {
+            clearInterval(guidedCalibrationCountdownRef.current);
+            guidedCalibrationCountdownRef.current = null;
+        }
+        setGuidedCalibrationMode('idle');
+        setIsCalibrating(false);
+        setGuidedCalibrationCountdown(0);
+        guidedCalibrationSamplesRef.current = [];
+    };
+    
+    // Start zone test - captures current gaze for feedback
+    const startZoneTest = () => {
+        if (!isActive || !eyeTrackingEngineRef.current) {
+            setError('Please start eye tracking first');
+            return;
+        }
+        
+        setFeedbackMode('testing');
+        setTestResult({zone: null, normalizedY: null});
+        testSamplesRef.current = []; // Clear previous samples
+        
+        // Collect samples for 1.5 seconds (captures ~20-50 frames at 30fps)
+        const startTime = Date.now();
+        const TEST_DURATION = 1500; // 1.5 seconds (as per recommendation)
+        const SAMPLE_INTERVAL = 30; // Sample every 30ms (~33 samples/second)
+        
+        const sampleInterval = setInterval(() => {
+            if (currentNormalizedYRef.current !== null && viewportZone) {
+                testSamplesRef.current.push({
+                    normalizedY: currentNormalizedYRef.current,
+                    zone: viewportZone
+                });
+            }
+        }, SAMPLE_INTERVAL);
+        
+        // Stop collecting after TEST_DURATION
+        testTimeoutRef.current = setTimeout(() => {
+            clearInterval(sampleInterval);
+            
+            if (testSamplesRef.current.length > 0) {
+                // Calculate average normalizedY and most common zone from collected samples
+                const avgNormalizedY = testSamplesRef.current.reduce((sum, s) => sum + s.normalizedY, 0) / testSamplesRef.current.length;
+                const zoneCounts: {[key: string]: number} = {};
+                testSamplesRef.current.forEach(s => {
+                    if (s.zone) zoneCounts[s.zone] = (zoneCounts[s.zone] || 0) + 1;
+                });
+                const mostCommonZone = Object.keys(zoneCounts).reduce((a, b) => 
+                    zoneCounts[a] > zoneCounts[b] ? a : b
+                ) as 'top' | 'middle' | 'bottom' | null;
+                
+                setTestResult({
+                    zone: mostCommonZone,
+                    normalizedY: avgNormalizedY
+                });
+                setFeedbackMode('feedback');
+                setTestCount(prev => prev + 1);
+                
+                // Removed console.log to prevent performance issues
+            } else {
+                setError('Could not detect gaze. Please try again.');
+                setFeedbackMode('idle');
+            }
+        }, TEST_DURATION);
+    };
+    
+    // Stop zone test
+    const stopZoneTest = () => {
+        if (testTimeoutRef.current) {
+            clearTimeout(testTimeoutRef.current);
+            testTimeoutRef.current = null;
+        }
+        setFeedbackMode('idle');
+        setTestResult({zone: null, normalizedY: null});
+        testSamplesRef.current = []; // Clear collected samples
+    };
+    
+    // Handle zone feedback for active learning
+    // ⭐ Now saves ALL collected frames (20-50 samples per test) instead of just 1
+    const handleZoneFeedback = (correctZone: 'top' | 'middle' | 'bottom') => {
+        if (!eyeTrackingEngineRef.current || !isActive) {
+            setError('Eye tracking not ready. Please wait a moment.');
+            return;
+        }
+        
+        // Map zone to calibration action
+        let action: 'scrollUp' | 'scrollDown' | 'noScroll';
+        if (correctZone === 'top') {
+            action = 'scrollUp';
+        } else if (correctZone === 'bottom') {
+            action = 'scrollDown';
+        } else {
+            action = 'noScroll';
+        }
+        
+        // ⭐ Save ALL collected frames (20-50 samples) instead of just 1
+        // This gives the system much better data distribution
+        if (testSamplesRef.current.length > 0) {
+            let savedCount = 0;
+            testSamplesRef.current.forEach(sample => {
+                eyeTrackingEngineRef.current?.addCalibrationSample(action, sample.normalizedY);
+                savedCount++;
+            });
+            
+            // Removed console.log to prevent performance issues
+        } else {
+            // Fallback: use single sample if collection failed
+            const normalizedY = testResult.normalizedY || currentNormalizedYRef.current;
+            if (normalizedY !== null) {
+                eyeTrackingEngineRef.current.addCalibrationSample(action, normalizedY);
+                // Removed console.log to prevent performance issues
+            } else {
+                setError('No gaze data available. Please try the test again.');
+                return;
+            }
+        }
+        
+            // Update feedback count
+            setFeedbackCount(prev => prev + 1);
+            
+            // Update calibration stats
+            const updatedCalibration = eyeTrackingEngineRef.current.getCalibration();
+            if (updatedCalibration && updatedCalibration.calibrated) {
+                setCalibrationStats({
+                    scrollUp: updatedCalibration.scrollUp.samples.length,
+                    scrollDown: updatedCalibration.scrollDown.samples.length,
+                    noScroll: updatedCalibration.noScroll.samples.length,
+                    total: updatedCalibration.scrollUp.samples.length + updatedCalibration.scrollDown.samples.length + updatedCalibration.noScroll.samples.length
+                });
+            }
+            
+            // Removed console.log to prevent performance issues
+            
+            // Show success and reset for next test
+            setError(null);
+            setTimeout(() => {
+                setFeedbackMode('idle');
+                setTestResult({zone: null, normalizedY: null});
+            }, 1500); // Show success for 1.5 seconds
+    };
+    
+    // Copy localStorage data to clipboard for easy sharing
+    const copyLocalStorageToClipboard = async () => {
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (!stored) {
+                alert('❌ No calibration data found in localStorage.\n\nPlease use the step-by-step feedback system to provide samples first.');
+                return;
+            }
+            
+            const data = JSON.parse(stored);
+            const jsonString = JSON.stringify(data, null, 2);
+            
+            // Copy to clipboard
+            await navigator.clipboard.writeText(jsonString);
+            
+            const topSamples = data.scrollUp?.samples?.length || 0;
+            const middleSamples = data.noScroll?.samples?.length || 0;
+            const bottomSamples = data.scrollDown?.samples?.length || 0;
+            const total = topSamples + middleSamples + bottomSamples;
+            
+            // Removed console.log to prevent performance issues
+            
+            alert(`✅ Copied to clipboard!\n\nYour data: ${total} samples\n- Top: ${topSamples}\n- Middle: ${middleSamples}\n- Bottom: ${bottomSamples}\n\nNext: Save to user-calibration.json and run the merge script.\n\nCheck console (F12) for instructions.`);
+        } catch (error) {
+            // Silently handle errors
+            alert('❌ Could not copy to clipboard.');
+        }
+    };
+    
+    // Check localStorage data to verify 30 samples
+    const checkLocalStorageData = () => {
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (stored) {
+                const data = JSON.parse(stored);
+                const topSamples = data.scrollUp?.samples?.length || 0;
+                const middleSamples = data.noScroll?.samples?.length || 0;
+                const bottomSamples = data.scrollDown?.samples?.length || 0;
+                const total = topSamples + middleSamples + bottomSamples;
+                
+                // Removed console.log to prevent performance issues
+                
+                if (total >= 30) {
+                    alert(`✅ Found your 30 samples in localStorage!\n\nTop: ${topSamples}\nMiddle: ${middleSamples}\nBottom: ${bottomSamples}\nTotal: ${total}\n\nCheck console (F12) for full data.`);
+                } else {
+                    alert(`⚠️ Found ${total} samples in localStorage (expected 30)\n\nTop: ${topSamples}\nMiddle: ${middleSamples}\nBottom: ${bottomSamples}\n\nCheck console (F12) for full data.`);
+                }
+            } else {
+                alert('❌ No calibration data found in localStorage.\n\nYour 30 samples may not have been saved.\nPlease use the step-by-step feedback system to provide samples.');
+            }
+        } catch (error) {
+            // Silently handle errors
+            alert('Error checking localStorage.');
+        }
+    };
+    
+    // Export calibration data to share with system
+    const exportCalibrationData = async () => {
+        if (!eyeTrackingEngineRef.current) {
+            setError('Eye tracking not initialized');
+            return;
+        }
+        
+        // Get both merged calibration and raw localStorage data
+        const calibration = eyeTrackingEngineRef.current.getCalibration();
+        let localStorageData = null;
+        
+        // Also get raw localStorage data
+        try {
+            const stored = localStorage.getItem('eyeTrackingCalibration');
+            if (stored) {
+                localStorageData = JSON.parse(stored);
+            }
+        } catch (error) {
+            // Silently handle errors
+        }
+        
+        if (!calibration || (!calibration.calibrated && !localStorageData)) {
+            setError('No calibration data available. Please provide feedback samples first.');
+            return;
+        }
+        
+        // Removed console.log to prevent performance issues
+        
+        // Calculate stats
+        const stats = {
+            merged: {
+                scrollUp: calibration.scrollUp?.samples?.length || 0,
+                scrollDown: calibration.scrollDown?.samples?.length || 0,
+                noScroll: calibration.noScroll?.samples?.length || 0,
+                total: (calibration.scrollUp?.samples?.length || 0) + 
+                       (calibration.scrollDown?.samples?.length || 0) + 
+                       (calibration.noScroll?.samples?.length || 0)
+            },
+            localStorage: localStorageData ? {
+                scrollUp: localStorageData.scrollUp?.samples?.length || 0,
+                scrollDown: localStorageData.scrollDown?.samples?.length || 0,
+                noScroll: localStorageData.noScroll?.samples?.length || 0,
+                total: (localStorageData.scrollUp?.samples?.length || 0) + 
+                       (localStorageData.scrollDown?.samples?.length || 0) + 
+                       (localStorageData.noScroll?.samples?.length || 0)
+            } : null
+        };
+        
+        // Removed console.log to prevent performance issues
+        
+        // Also try to send to API for analysis
+        try {
+            const response = await fetch('/api/eye-tracking/export-calibration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    calibrationData: calibration,
+                    localStorageData: localStorageData,
+                    stats: stats
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                // Removed console.log to prevent performance issues
+                alert(`✅ Calibration data exported!\n\nMerged Total: ${stats.merged.total} samples\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}\n\n${stats.localStorage ? `Your localStorage: ${stats.localStorage.total} samples` : 'No localStorage data'}`);
+            }
+        } catch (error) {
+            // Silently handle errors
+            alert(`✅ Calibration data exported!\n\nTotal samples: ${stats.merged.total}\n- Top: ${stats.merged.scrollUp}\n- Middle: ${stats.merged.noScroll}\n- Bottom: ${stats.merged.scrollDown}`);
+        }
+    };
+
+    // Only show UI and work on chapter reading pages
+    // Check if we're on a chapter page by checking the URL
+    const [isChapterPage, setIsChapterPage] = useState(false);
+    
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const checkChapterPage = () => {
+                const path = window.location.pathname;
+                const isChapter = path.includes('/chapter/');
+                setIsChapterPage(isChapter);
+                // Removed console.log to prevent performance issues
+            };
+            checkChapterPage();
+            // Check on route changes only (removed interval to prevent performance issues)
+            const handleRouteChange = () => checkChapterPage();
+            window.addEventListener('popstate', handleRouteChange);
+            // Listen for Next.js route changes
+            window.addEventListener('pushstate', handleRouteChange);
+            return () => {
+                window.removeEventListener('popstate', handleRouteChange);
+                window.removeEventListener('pushstate', handleRouteChange);
+            };
+        }
+    }, [eyeTrackingEnabled, showUI, isSupported]);
+
+    // CRITICAL: Lock position when isActive changes to prevent movement when activated
+    // This useEffect must be declared before any conditional returns (Rules of Hooks)
+    useEffect(() => {
+        if (!panelRef.current) return;
+        
+        const el = panelRef.current;
+        // Lock position immediately when isActive changes
+        el.style.setProperty('position', 'fixed', 'important');
+        el.style.setProperty('bottom', '26rem', 'important');
+        el.style.setProperty('right', '1rem', 'important');
+        el.style.setProperty('top', 'auto', 'important');
+        el.style.setProperty('left', 'auto', 'important');
+        el.style.setProperty('transform', 'none', 'important');
+    }, [isActive]); // Run when isActive changes
+
+    // Debug logging - REMOVED to prevent performance issues
+    // Excessive logging on every state change can cause page freezing
+
+    // Always show UI on chapter pages, even if not enabled
+    // This allows users to enable it from the chapter page itself
+    if (!showUI) {
+        return null;
+    }
+    
+    // Show UI on chapter pages, or if explicitly enabled
+    // ALWAYS show if we're on a chapter page OR if eyeTrackingEnabled is true
+    const shouldShow = isChapterPage || eyeTrackingEnabled;
+    
+    if (!shouldShow) {
+        return null;
+    }
+    
+    // Removed console.log to prevent performance issues
+
+    if (!isSupported) {
+        return (
+            <div 
+                className="fixed right-4 z-50" 
+                style={{ 
+                    zIndex: 9998, 
+                    position: 'fixed', 
+                    bottom: '26rem', 
+                    right: '1rem',
+                    top: 'auto',
+                    left: 'auto',
+                    transform: 'none'
+                }}
+                id="eye-tracking-panel-unsupported"
+            >
+                <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-yellow-500/50 shadow-xl p-4 max-w-sm">
+                    <div className="text-xs text-yellow-400 font-semibold">
+                        ⚠️ Eye tracking not supported in this browser
+                    </div>
+                    <div className="text-xs text-gray-400 mt-2">
+                        Please use Chrome, Edge, or another modern browser
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Removed console.log to prevent performance issues
+    
+    return (
+        <div 
+            ref={panelRef}
+            className="fixed right-4 z-50" 
+            style={{ 
+                zIndex: 9998, // Lower than VoiceAssistant and AutoBrightness
+                position: 'fixed',
+                bottom: '26rem', // Top position - above VoiceAssistant (7rem + ~200px height + 1rem gap = ~26rem)
+                right: '1rem',
+                maxHeight: 'calc(100vh - 28rem)', // Prevent overflow - account for other widgets
+                top: 'auto',
+                left: 'auto',
+                transform: 'none',
+                width: 'auto' // Prevent width changes from affecting position
+            }}
+            id="eye-tracking-panel"
+        >
+            <div className="bg-slate-800/90 backdrop-blur-md rounded-lg border-2 border-green-500/50 shadow-xl p-4 max-w-sm max-h-[calc(100vh-28rem)] overflow-y-auto" style={{ maxHeight: 'calc(100vh - 28rem)' }}>
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 className="text-white font-semibold text-sm">Eye Tracking</h3>
+                        {!eyeTrackingEnabled && (
+                            <p className="text-xs text-gray-400 mt-0.5">Enable in top-right toggle</p>
+                        )}
+                    </div>
+                    <button
+                        onClick={toggleTracking}
+                        disabled={!eyeTrackingEnabled || !isSupported}
+                        className={`p-2 rounded-full transition-all ${
+                            isActive
+                                ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse'
+                                : eyeTrackingEnabled
+                                ? 'bg-slate-700 hover:bg-slate-600 text-gray-300'
+                                : 'bg-slate-800 text-gray-500'
+                        } ${(!eyeTrackingEnabled || !isSupported) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={
+                            !eyeTrackingEnabled 
+                                ? 'Enable eye tracking from top-right toggle first'
+                                : !isSupported
+                                ? 'Not supported in this browser'
+                                : isActive 
+                                ? 'Stop tracking' 
+                                : 'Start tracking (will request camera permission)'
+                        }
+                    >
+                        {isActive ? <FaEye /> : <FaEyeSlash />}
+                    </button>
+                </div>
+
+                {error && (
+                    <div className="text-xs text-red-400 mb-2 p-2 bg-red-900/20 rounded">
+                        {error}
+                    </div>
+                )}
+
+                {isActive && (
+                    <div className="mb-2 space-y-3">
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span>Tracking gaze...</span>
+                        </div>
+                        
+                        {/* Calibration Stats Display - Simple */}
+                        {calibrationStats && (
+                            <div className="p-2 bg-blue-900/30 rounded border border-blue-700/50">
+                                <div className="text-xs font-semibold text-blue-400 mb-2 text-center">
+                                    📊 Calibration Progress
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                    <div className="text-center">
+                                        <div className="text-blue-300 font-bold">{calibrationStats.scrollUp}</div>
+                                        <div className="text-gray-400">Top</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-yellow-300 font-bold">{calibrationStats.noScroll}</div>
+                                        <div className="text-gray-400">Middle</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-green-300 font-bold">{calibrationStats.scrollDown}</div>
+                                        <div className="text-gray-400">Bottom</div>
+                                    </div>
+                                </div>
+                                <div className="text-xs text-gray-400 text-center mt-2">
+                                    Total: <span className="font-bold text-purple-300">{calibrationStats.total}</span> samples
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Guided Calibration Mode */}
+                        <div className="p-3 bg-green-900/30 rounded border border-green-700/50">
+                            <div className="text-xs font-semibold text-green-400 mb-2">
+                                🎯 Guided Calibration (500 Samples Per Zone)
+                            </div>
+                            {guidedCalibrationMode === 'idle' && (
+                                <>
+                                    <div className="text-xs text-gray-300 mb-3 space-y-2 p-2 bg-slate-900/50 rounded">
+                                        <div className="font-bold text-green-300 mb-2">📋 How It Works:</div>
+                                        <div className="space-y-1">
+                                            <div>1️⃣ <strong>Look at your screen</strong> - A bright colored box will appear</div>
+                                            <div>2️⃣ <strong>Wait for countdown</strong> - "3... 2... 1..." will show</div>
+                                            <div>3️⃣ <strong>Stare at the colored box</strong> - Keep looking until it disappears</div>
+                                            <div>4️⃣ <strong>Repeat automatically</strong> - System does this ~10 times per zone</div>
+                                        </div>
+                                        <div className="mt-2 pt-2 border-t border-gray-600">
+                                            <div className="text-green-300 font-bold">Target: 500 samples per zone</div>
+                                            <div className="text-yellow-300 text-xs">⏱️ ~15-20 minutes total</div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={startGuidedCalibration}
+                                        className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm transition-all"
+                                        disabled={!isActive}
+                                    >
+                                        🚀 Start Guided Calibration
+                                    </button>
+                                </>
+                            )}
+                            {guidedCalibrationMode !== 'idle' && (
+                                <div className="space-y-3">
+                                    {/* Manual Zone Selection Buttons */}
+                                    <div className="p-2 bg-slate-800/50 rounded border border-slate-600">
+                                        <div className="text-xs font-semibold text-cyan-400 mb-2 text-center">
+                                            🎯 Switch Zone Manually
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    if (guidedCalibrationCountdownRef.current) {
+                                                        clearInterval(guidedCalibrationCountdownRef.current as any);
+                                                    }
+                                                    if (guidedCalibrationIntervalRef.current) {
+                                                        clearInterval(guidedCalibrationIntervalRef.current);
+                                                    }
+                                                    startGuidedCalibrationStep('top');
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
+                                                    guidedCalibrationMode === 'top' 
+                                                        ? 'bg-blue-600 text-white ring-2 ring-blue-300' 
+                                                        : 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/70'
+                                                }`}
+                                                disabled={guidedCalibrationCountdown > 0}
+                                            >
+                                                ↑ Top
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (guidedCalibrationCountdownRef.current) {
+                                                        clearInterval(guidedCalibrationCountdownRef.current as any);
+                                                    }
+                                                    if (guidedCalibrationIntervalRef.current) {
+                                                        clearInterval(guidedCalibrationIntervalRef.current);
+                                                    }
+                                                    startGuidedCalibrationStep('middle');
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
+                                                    guidedCalibrationMode === 'middle' 
+                                                        ? 'bg-yellow-600 text-white ring-2 ring-yellow-300' 
+                                                        : 'bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800/70'
+                                                }`}
+                                                disabled={guidedCalibrationCountdown > 0}
+                                            >
+                                                • Middle
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (guidedCalibrationCountdownRef.current) {
+                                                        clearInterval(guidedCalibrationCountdownRef.current as any);
+                                                    }
+                                                    if (guidedCalibrationIntervalRef.current) {
+                                                        clearInterval(guidedCalibrationIntervalRef.current);
+                                                    }
+                                                    startGuidedCalibrationStep('bottom');
+                                                }}
+                                                className={`px-2 py-1 rounded text-xs font-semibold transition-all ${
+                                                    guidedCalibrationMode === 'bottom' 
+                                                        ? 'bg-green-600 text-white ring-2 ring-green-300' 
+                                                        : 'bg-green-900/50 text-green-300 hover:bg-green-800/70'
+                                                }`}
+                                                disabled={guidedCalibrationCountdown > 0}
+                                            >
+                                                ↓ Bottom
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Current Zone Indicator */}
+                                    <div className={`text-lg font-bold text-center p-3 rounded ${
+                                        guidedCalibrationMode === 'top' ? 'bg-blue-600 text-white border-2 border-blue-300' :
+                                        guidedCalibrationMode === 'middle' ? 'bg-yellow-600 text-white border-2 border-yellow-300' :
+                                        'bg-green-600 text-white border-2 border-green-300'
+                                    }`}>
+                                        {guidedCalibrationMode === 'top' && '↑ LOOK AT TOP OF SCREEN'}
+                                        {guidedCalibrationMode === 'middle' && '• LOOK AT MIDDLE OF SCREEN'}
+                                        {guidedCalibrationMode === 'bottom' && '↓ LOOK AT BOTTOM OF SCREEN'}
+                                    </div>
+                                    
+                                    {/* Countdown Phase */}
+                                    {guidedCalibrationCountdown > 0 && (
+                                        <div className="text-center p-3 bg-yellow-900/30 rounded border border-yellow-500">
+                                            <div className="text-4xl font-bold text-yellow-400 animate-pulse mb-2">
+                                                {guidedCalibrationCountdown}
+                                            </div>
+                                            <div className="text-sm text-yellow-300 font-semibold mb-1">
+                                                ⏳ Get Ready!
+                                            </div>
+                                            <div className="text-xs text-gray-300">
+                                                A bright {guidedCalibrationMode === 'top' ? 'BLUE' : guidedCalibrationMode === 'middle' ? 'YELLOW' : 'GREEN'} box will appear on your screen
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-1">
+                                                When countdown reaches 0, stare at that box!
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Collection Phase */}
+                                    {guidedCalibrationCountdown === 0 && (
+                                        <div className="text-center p-3 bg-green-900/30 rounded border-2 border-green-500">
+                                            <div className="text-xl font-bold text-green-400 animate-pulse mb-2">
+                                                👀 KEEP LOOKING AT THE BOX!
+                                            </div>
+                                            <div className="text-sm text-green-300 mb-2">
+                                                ⏳ Collecting samples... ({guidedCalibrationSamplesRef.current.length} collected this round)
+                                            </div>
+                                            <div className="text-xs text-gray-300">
+                                                Don't look away! Keep staring at the {guidedCalibrationMode === 'top' ? 'BLUE' : guidedCalibrationMode === 'middle' ? 'YELLOW' : 'GREEN'} box on your screen
+                                            </div>
+                                            <div className="mt-2 text-xs text-yellow-300">
+                                                ⏱️ This round will finish in ~2-3 seconds
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Progress Display */}
+                                    <div className="p-2 bg-slate-900/50 rounded space-y-2">
+                                        <div className="text-xs font-semibold text-cyan-400 text-center mb-2">
+                                            📊 Overall Progress
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1 text-xs">
+                                            <div className={`text-center p-1 rounded ${guidedCalibrationMode === 'top' ? 'bg-blue-900/50 border border-blue-500' : ''}`}>
+                                                <div className="text-blue-300 font-bold">{guidedCalibrationSamples.top}</div>
+                                                <div className="text-gray-400">Top</div>
+                                                <div className="text-xs text-gray-500">{Math.round((guidedCalibrationSamples.top / 500) * 100)}%</div>
+                                            </div>
+                                            <div className={`text-center p-1 rounded ${guidedCalibrationMode === 'middle' ? 'bg-yellow-900/50 border border-yellow-500' : ''}`}>
+                                                <div className="text-yellow-300 font-bold">{guidedCalibrationSamples.middle}</div>
+                                                <div className="text-gray-400">Middle</div>
+                                                <div className="text-xs text-gray-500">{Math.round((guidedCalibrationSamples.middle / 500) * 100)}%</div>
+                                            </div>
+                                            <div className={`text-center p-1 rounded ${guidedCalibrationMode === 'bottom' ? 'bg-green-900/50 border border-green-500' : ''}`}>
+                                                <div className="text-green-300 font-bold">{guidedCalibrationSamples.bottom}</div>
+                                                <div className="text-gray-400">Bottom</div>
+                                                <div className="text-xs text-gray-500">{Math.round((guidedCalibrationSamples.bottom / 500) * 100)}%</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-center text-xs text-gray-400 pt-1 border-t border-gray-700">
+                                            Total: <span className="font-bold text-purple-300">{guidedCalibrationSamples.top + guidedCalibrationSamples.middle + guidedCalibrationSamples.bottom}</span> / 1,500 samples
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Status Message */}
+                                    <div className="text-xs text-center text-gray-300 p-2 bg-slate-800/50 rounded">
+                                        {guidedCalibrationCountdown > 0 ? (
+                                            <span>⏳ Waiting for countdown...</span>
+                                        ) : (
+                                            <span>✅ Sample collection in progress - Keep looking at the {guidedCalibrationMode === 'top' ? 'blue' : guidedCalibrationMode === 'middle' ? 'yellow' : 'green'} box!</span>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Check Saved Data & Verify Button */}
+                                    <button
+                                        onClick={async () => {
+                                            if (eyeTrackingEngineRef.current) {
+                                                // Reload calibration to get latest data
+                                                eyeTrackingEngineRef.current.loadCalibration();
+                                                
+                                                const calibration = eyeTrackingEngineRef.current.getCalibration();
+                                                if (calibration && calibration.calibrated) {
+                                                    const topCount = calibration.scrollUp?.samples?.length || 0;
+                                                    const middleCount = calibration.noScroll?.samples?.length || 0;
+                                                    const bottomCount = calibration.scrollDown?.samples?.length || 0;
+                                                    const total = topCount + middleCount + bottomCount;
+                                                    
+                                                    // Check if we have 1500 samples
+                                                    const has1500 = total >= 1500;
+                                                    const status = has1500 ? '✅ COMPLETE!' : '⚠️ In Progress';
+                                                    
+                                                    alert(`📊 Calibration Data Status: ${status}\n\nTop (scrollUp): ${topCount} samples\nMiddle (noScroll): ${middleCount} samples\nBottom (scrollDown): ${bottomCount} samples\n\nTotal: ${total} / 1,500 samples\n\n${has1500 ? '✅ All 1500 samples collected! System is using this data for eye tracking.' : '⏳ Continue collecting samples to reach 1,500 total.'}\n\n✅ Data is saved in localStorage and actively being used.`);
+                                                    
+                                                    // Update displayed counts
+                                                    setGuidedCalibrationSamples({
+                                                        top: topCount,
+                                                        middle: middleCount,
+                                                        bottom: bottomCount
+                                                    });
+                                                    
+                                                    // If we have 1500 samples, retrain ML model
+                                                    if (has1500) {
+                                                        try {
+                                                            await eyeTrackingEngineRef.current.initializeMLModel();
+                                                            alert('✅ ML Model retrained with your 1500 samples! Eye tracking is now optimized.');
+                                                        } catch (error) {
+                                                            console.error('Failed to retrain ML model:', error);
+                                                        }
+                                                    }
+                                                } else {
+                                                    alert('⚠️ No calibration data found yet. Samples are being collected...');
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm transition-all"
+                                    >
+                                        📊 Verify & Use Data
+                                    </button>
+                                    
+                                    <button
+                                        onClick={cancelGuidedCalibration}
+                                        className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-semibold text-sm transition-all"
+                                    >
+                                        ❌ Cancel Calibration
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+
+                {/* Instructions when not active */}
+                {!isActive && eyeTrackingEnabled && (
+                    <div className="mt-3 p-2 bg-slate-900/50 rounded text-xs text-gray-400 border border-slate-700">
+                        <p className="font-semibold text-yellow-400 mb-1">📖 How to use:</p>
+                        <ol className="list-decimal list-inside space-y-0.5 text-xs">
+                            <li>Click the eye icon above to start</li>
+                            <li>Allow camera access when prompted</li>
+                            <li>Look down to scroll down, look up to scroll up</li>
+                            <li>The system uses pre-calibrated settings for optimal accuracy</li>
+                        </ol>
+                    </div>
+                )}
+                
+                {/* Message when not enabled */}
+                {!eyeTrackingEnabled && (
+                    <div className="mt-3 p-2 bg-slate-900/50 rounded text-xs text-orange-400 border border-orange-700/50">
+                        <p className="font-semibold mb-1">⚠️ Not Enabled</p>
+                        <p className="text-xs">Enable "Eye Tracking" from the toggle button in the top-right corner of the homepage.</p>
+                    </div>
+                )}
+
+                {/* Hidden video and canvas for processing */}
+                <video
+                    ref={videoRef}
+                    className="hidden"
+                    autoPlay
+                    playsInline
+                    muted
+                />
+                <canvas ref={canvasRef} className="hidden" />
+            </div>
+            
+            {/* Guided Calibration Visual Overlay - Rendered via Portal at document root */}
+            {guidedCalibrationMode !== 'idle' && typeof window !== 'undefined' && createPortal(
+                <div 
+                    className="fixed inset-0 pointer-events-none" 
+                    style={{ 
+                        zIndex: 999999,
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0
+                    }}
+                >
+                    {guidedCalibrationMode === 'top' && (
+                        <div 
+                            className="absolute left-0 right-0 border-8 border-blue-500 animate-pulse"
+                            style={{ 
+                                top: 0, 
+                                height: `${window.innerHeight * 0.07}px`,
+                                backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                                boxShadow: '0 0 50px rgba(59, 130, 246, 1), inset 0 0 50px rgba(59, 130, 246, 0.5)',
+                                zIndex: 999999
+                            }}
+                        >
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-white font-bold text-3xl bg-blue-600 px-8 py-4 rounded-lg shadow-2xl border-4 border-blue-300 animate-pulse">
+                                    ↑ LOOK HERE - TOP ZONE (5-7%)
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {guidedCalibrationMode === 'middle' && (
+                        <div 
+                            className="absolute left-0 right-0 border-8 border-yellow-500 animate-pulse"
+                            style={{ 
+                                top: `${window.innerHeight * 0.4}px`, 
+                                height: `${window.innerHeight * 0.2}px`,
+                                backgroundColor: 'rgba(234, 179, 8, 0.6)',
+                                boxShadow: '0 0 50px rgba(234, 179, 8, 1), inset 0 0 50px rgba(234, 179, 8, 0.5)',
+                                zIndex: 999999
+                            }}
+                        >
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-white font-bold text-3xl bg-yellow-600 px-8 py-4 rounded-lg shadow-2xl border-4 border-yellow-300 animate-pulse">
+                                    • LOOK HERE - MIDDLE ZONE
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {guidedCalibrationMode === 'bottom' && (
+                        <div 
+                            className="absolute left-0 right-0 border-8 border-green-500 animate-pulse"
+                            style={{ 
+                                bottom: 0, 
+                                height: `${window.innerHeight * 0.05}px`,
+                                backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                                boxShadow: '0 0 50px rgba(34, 197, 94, 1), inset 0 0 50px rgba(34, 197, 94, 0.5)',
+                                zIndex: 999999
+                            }}
+                        >
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="text-white font-bold text-3xl bg-green-600 px-8 py-4 rounded-lg shadow-2xl border-4 border-green-300 animate-pulse">
+                                    ↓ LOOK HERE - BOTTOM ZONE (95-100%)
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>,
+                typeof document !== 'undefined' ? document.body : null
+            )}
+        </div>
+    );
+}
+

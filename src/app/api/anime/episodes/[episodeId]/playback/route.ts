@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
+import { ObjectId } from 'mongodb';
 import crypto from 'crypto';
 
-// Get playback URL with entitlement check
+/**
+ * Playback API - Get playback URL with entitlement check
+ * This endpoint uses the streaming service logic directly
+ * For new implementations, use /api/streaming/playback-request
+ */
+
+export const dynamic = 'force-dynamic';
+
+// GET /api/anime/episodes/{episodeId}/playback - Get playback URL
 export async function GET(
     request: NextRequest,
     { params }: { params: { episodeId: string } }
@@ -15,20 +24,20 @@ export async function GET(
         // Get user info if authenticated
         let userId: string | null = null;
         let subscription: any = null;
+        let user: any = null;
         
         if (token) {
             const payload = verifyToken(token);
             if (payload) {
                 userId = payload.userId;
-                
-                // Get user subscription
                 const client = await clientPromise;
                 const db = client.db('mangawebsite');
-                const user = await db.collection('users').findOne({ _id: userId });
+                user = await db.collection('users').findOne({ 
+                    _id: new ObjectId(payload.userId) 
+                });
                 subscription = user?.subscription || { planName: 'free', status: 'active' };
             }
         } else {
-            // Anonymous user - free tier
             subscription = { planName: 'free', status: 'active' };
         }
 
@@ -36,28 +45,44 @@ export async function GET(
         const db = client.db('mangawebsite');
 
         // Get episode data
-        const episode = await db.collection('anime_episodes').findOne({ _id: episodeId });
+        const episode = await db.collection('anime_episodes').findOne({ 
+            _id: new ObjectId(episodeId) 
+        });
+        
         if (!episode) {
             return NextResponse.json({ error: 'Episode not found' }, { status: 404 });
         }
 
         // Get series for geo-restrictions check
-        const series = await db.collection('anime_series').findOne({ _id: episode.seriesId });
+        const series = await db.collection('anime_series').findOne({ 
+            _id: new ObjectId(episode.seriesId) 
+        });
         
-        // Check geo-restrictions (simplified - would use actual IP geolocation in production)
-        const userRegion = request.headers.get('x-vercel-ip-country') || 'US';
-        if (series?.geoRestrictions?.blocked?.includes(userRegion)) {
-            return NextResponse.json({ error: 'Content not available in your region' }, { status: 403 });
+        if (!series) {
+            return NextResponse.json({ error: 'Series not found' }, { status: 404 });
+        }
+
+        // Check geo-restrictions
+        const userRegion = request.headers.get('x-vercel-ip-country') || 
+                          request.headers.get('cf-ipcountry') || 
+                          'US';
+        
+        if (series.geoRestrictions?.blocked?.includes(userRegion)) {
+            return NextResponse.json(
+                { error: 'Content not available in your region' },
+                { status: 403 }
+            );
         }
 
         // Check subscription entitlement
         const isFreeEpisode = episode.isPreview || false;
-        const requiresPremium = episode.drmEnabled || series?.isExclusive;
+        const requiresPremium = episode.drmEnabled || series.isExclusive || series.drmEnabled;
         
         if (requiresPremium && subscription.planName === 'free') {
             return NextResponse.json({ 
                 error: 'Premium subscription required',
-                requiresUpgrade: true 
+                requiresUpgrade: true,
+                upgradeUrl: '/anime/subscriptions',
             }, { status: 403 });
         }
 
@@ -65,53 +90,112 @@ export async function GET(
         const expiresIn = 3600; // 1 hour
         const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
         
-        // In production, use proper CDN signed URLs (CloudFront, Cloudflare)
-        const manifestUrl = episode.hlsManifestUrl || episode.videoUrl;
+        // Get manifest URL from episode or transcode job
+        let manifestUrl = episode.hlsManifestUrl;
         
-        // For now, return the URL with expiration info
-        // In production, this would be a signed CDN URL
+        if (!manifestUrl && episode.assetId) {
+            const transcodeJob = await db.collection('transcode_jobs').findOne({
+                assetId: episode.assetId,
+                status: 'completed',
+            });
+            
+            if (transcodeJob?.outputManifests?.hls) {
+                manifestUrl = transcodeJob.outputManifests.hls;
+            }
+        }
+
+        if (!manifestUrl) {
+            manifestUrl = episode.videoUrl; // Fallback to direct URL
+        }
+
+        // Generate playback token
+        const playbackToken = generatePlaybackToken(episodeId, userId, expiresAt, 'web', userRegion);
+        const signedManifestUrl = `${manifestUrl}?token=${playbackToken}&exp=${expiresAt}`;
+
+        // DRM config
+        let drmConfig = null;
+        if (episode.drmEnabled || series.drmEnabled) {
+            drmConfig = {
+                enabled: true,
+                licenseUrl: episode.drmLicenseUrl || `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/drm/license`,
+                licenseToken: generateDRMToken(episodeId, userId, expiresAt),
+            };
+        }
+
         const playbackData = {
-            manifestUrl: manifestUrl,
-            expiresAt: expiresAt,
-            drmEnabled: episode.drmEnabled || false,
-            drmLicenseUrl: episode.drmLicenseUrl || null,
+            manifestUrl: signedManifestUrl,
+            manifestExpiry: expiresAt,
+            drm: drmConfig,
             subtitles: episode.subtitles || [],
             audioTracks: episode.audioTracks || [],
             qualityLevels: episode.qualityLevels || [],
             duration: episode.duration,
-            // Add token for player to use
-            playbackToken: generatePlaybackToken(episodeId, userId, expiresAt),
+            playbackToken,
         };
 
         // Log playback request (analytics)
-        if (userId) {
-            await db.collection('anime_playback_events').insertOne({
-                userId,
-                episodeId,
-                seriesId: episode.seriesId,
-                eventType: 'play',
-                timestamp: new Date(),
-                device: 'web',
-                region: userRegion,
-            });
-        }
+        await db.collection('anime_playback_events').insertOne({
+            userId: userId || null,
+            episodeId,
+            seriesId: episode.seriesId,
+            eventType: 'playback_request',
+            timestamp: new Date(),
+            device: 'web',
+            region: userRegion,
+            subscriptionTier: subscription.planName,
+        });
 
         return NextResponse.json(playbackData);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error getting playback URL:', error);
-        return NextResponse.json({ error: 'Failed to get playback URL' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Failed to get playback URL', details: error.message },
+            { status: 500 }
+        );
     }
 }
 
-function generatePlaybackToken(episodeId: string, userId: string | null, expiresAt: number): string {
-    // In production, use JWT or proper token generation
+function generatePlaybackToken(
+    episodeId: string,
+    userId: string | null,
+    expiresAt: number,
+    clientId?: string,
+    region?: string
+): string {
     const payload = {
         episodeId,
         userId: userId || 'anonymous',
         expiresAt,
+        clientId: clientId || 'web',
+        region: region || 'US',
+        timestamp: Date.now(),
     };
     
-    // Simple token (in production, use proper signing)
-    return Buffer.from(JSON.stringify(payload)).toString('base64');
+    const secret = process.env.PLAYBACK_TOKEN_SECRET || 'playback-secret';
+    const token = Buffer.from(JSON.stringify(payload)).toString('base64');
+    
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(token);
+    const signature = hmac.digest('hex');
+    
+    return `${token}.${signature}`;
+}
+
+function generateDRMToken(episodeId: string, userId: string | null, expiresAt: number): string {
+    const payload = {
+        episodeId,
+        userId: userId || 'anonymous',
+        expiresAt,
+        timestamp: Date.now(),
+    };
+    
+    const secret = process.env.DRM_TOKEN_SECRET || 'drm-secret';
+    const token = Buffer.from(JSON.stringify(payload)).toString('base64');
+    
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(token);
+    const signature = hmac.digest('hex');
+    
+    return `${token}.${signature}`;
 }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppMode } from '@/contexts/AppModeContext';
 import { FaPlay, FaBookOpen, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaGem, FaRocket, FaSearch, FaHeart, FaEye } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -64,11 +65,19 @@ const featuredManga = [
 
 export default function ImprovedHomePage() {
     const { user, isAuthenticated } = useAuth();
+    const { appMode, switchToManga } = useAppMode();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Ensure we're in manga mode when on manga home page
+    useEffect(() => {
+        if (appMode !== 'manga') {
+            switchToManga();
+        }
+    }, [appMode, switchToManga]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
