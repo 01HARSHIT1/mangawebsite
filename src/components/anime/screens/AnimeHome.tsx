@@ -110,59 +110,7 @@ export default function AnimeHome() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-orange-950 via-red-950 to-black text-white overflow-hidden">
-            {/* Top Navigation Bar - Crunchyroll Style */}
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        {/* Logo */}
-                        <Link href="/anime" className="flex items-center space-x-3 group">
-                            <motion.div
-                                whileHover={{ scale: 1.1, rotate: 5 }}
-                                className="relative"
-                            >
-                                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/50">
-                                    <Play className="w-7 h-7 text-white fill-white" />
-                                </div>
-                                <motion.div
-                                    animate={{ scale: [1, 1.2, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400 rounded-full border-2 border-black"
-                                />
-                            </motion.div>
-                            <div className="hidden md:block">
-                                <h1 className="text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent">
-                                    ANIMESTREAM
-                                </h1>
-                                <p className="text-xs text-orange-300/70 -mt-1">Premium Anime Hub</p>
-                            </div>
-                        </Link>
-
-                        {/* Navigation Links */}
-                        <div className="hidden lg:flex items-center space-x-8">
-                            <Link href="/anime" className="text-orange-400 font-bold text-sm hover:text-orange-300 transition-colors border-b-2 border-orange-400 pb-1">
-                                HOME
-                            </Link>
-                            <Link href="/anime/browse" className="text-gray-400 hover:text-orange-400 transition-colors text-sm font-medium">
-                                BROWSE
-                            </Link>
-                            <Link href="/anime/genres" className="text-gray-400 hover:text-orange-400 transition-colors text-sm font-medium">
-                                GENRES
-                            </Link>
-                            <Link href="/anime/library" className="text-gray-400 hover:text-orange-400 transition-colors text-sm font-medium">
-                                MY LIBRARY
-                            </Link>
-                        </div>
-
-                        {/* Right Side Actions */}
-                        <div className="flex items-center space-x-4">
-                            <button className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30">
-                                <Search className="w-5 h-5 text-orange-400" />
-                            </button>
-                            <AppModeSwitcher />
-                        </div>
-                    </div>
-                </div>
-            </nav>
+            {/* Navigation is now handled by AnimeAppNavigator */}
 
             {/* Hero Section - Massive Crunchyroll Style Banner */}
             {currentHero && (
@@ -172,7 +120,7 @@ export default function AnimeHome() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="relative h-[85vh] mt-16 overflow-hidden"
+                    className="relative h-[85vh] overflow-hidden"
                 >
                     {/* Background Image with Overlay */}
                     <div className="absolute inset-0">

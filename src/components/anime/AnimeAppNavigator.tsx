@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAppMode } from '@/contexts/AppModeContext';
+import AnimeNavigation from './AnimeNavigation';
 
 interface AnimeAppNavigatorProps {
     children: React.ReactNode;
@@ -22,7 +23,12 @@ export default function AnimeAppNavigator({ children }: AnimeAppNavigatorProps) 
 
     return (
         <div className="min-h-screen bg-gray-950 text-white">
-            {children}
+            {/* Shared Navigation for all anime pages */}
+            <AnimeNavigation />
+            {/* Content with top padding to account for fixed nav */}
+            <div className="pt-16">
+                {children}
+            </div>
         </div>
     );
 }

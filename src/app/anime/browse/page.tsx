@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAppMode } from '@/contexts/AppModeContext';
 import EpisodeCard from '@/components/anime/components/EpisodeCard';
-import AppModeSwitcher from '@/components/AppModeSwitcher';
-import Link from 'next/link';
-import { Play, Search, Filter } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 
 interface AnimeSeries {
     _id: string;
@@ -60,26 +58,8 @@ export default function BrowsePage() {
     const statuses = ['all', 'ongoing', 'completed', 'upcoming'];
 
     return (
-        <div className="min-h-screen bg-gray-950 text-white pt-16">
-            {/* Navigation */}
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-red-500/20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <Link href="/anime" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-orange-600 rounded-xl flex items-center justify-center">
-                                <Play className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="hidden md:block">
-                                <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-                                    AnimeStream
-                                </h1>
-                            </div>
-                        </Link>
-                        <AppModeSwitcher />
-                    </div>
-                </div>
-            </nav>
-
+        <div className="min-h-screen bg-gray-950 text-white">
+            {/* Navigation is handled by AnimeAppNavigator */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <h1 className="text-3xl font-bold mb-8">Browse Anime</h1>
 
