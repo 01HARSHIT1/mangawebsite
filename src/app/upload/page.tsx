@@ -77,7 +77,7 @@ function UploadPageContent() {
         const type = searchParams?.get("type");
         const mangaId = searchParams?.get("mangaId");
 
-        if (type === "manga" || type === "chapter" || type === "anime") {
+        if (type === "manga" || type === "chapter") {
             setUploadType(type);
         }
 
@@ -335,16 +335,6 @@ function UploadPageContent() {
                 setMessage("Please select a PDF file");
                 return;
             }
-        } else if (uploadType === "anime") {
-            // Anime series validation
-            if (!form.title || !form.creatorName || !form.description || !form.genre) {
-                setMessage("Please fill in all required fields");
-                return;
-            }
-            if (!form.coverImage) {
-                setMessage("Please select a cover image");
-                return;
-            }
         }
 
         setLoading(true);
@@ -500,76 +490,6 @@ function UploadPageContent() {
             } catch (err) {
                 setMessage("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));
             }
-        } else if (uploadType === "anime") {
-            // Anime series upload
-            try {
-                const token = localStorage.getItem('authToken');
-                
-                // Upload cover image to Cloudinary
-                const coverInfo = form.coverImage 
-                    ? await uploadToCloudinary(form.coverImage, 'anime/series')
-                    : null;
-
-                if (!coverInfo) {
-                    throw new Error('Failed to upload cover image');
-                }
-
-                // Save anime series metadata - using existing anime API structure
-                const saveRes = await fetch('/api/anime/upload', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        type: 'series',
-                        title: form.title,
-                        creatorName: form.creatorName,
-                        description: form.description,
-                        genres: form.genre.split(',').map((g: string) => g.trim()),
-                        status: form.status || 'ongoing',
-                        coverImage: coverInfo.secure_url,
-                        tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()) : [],
-                    })
-                });
-
-                const saveData = await saveRes.json();
-                if (!saveRes.ok) {
-                    throw new Error(saveData?.error || 'Failed to save anime series');
-                }
-
-                setMessage("Anime series uploaded successfully! You can now add episodes from the creator dashboard.");
-
-                // Reset form
-                setForm({
-                    title: "",
-                    creatorName: "",
-                    description: "",
-                    genre: "",
-                    chapterNumber: "",
-                    tags: "",
-                    status: "",
-                    coverImage: null,
-                    pdfFile: null,
-                    mangaId: "",
-                    subtitle: "",
-                    coverPage: null,
-                });
-
-                // If the user isn't a creator yet, navigate to become-creator page to complete profile (matches manga behavior)
-                if (!isCreator) {
-                    setTimeout(() => {
-                        router.push('/become-creator');
-                    }, 2000);
-                } else {
-                    // Redirect to creator dashboard if already a creator
-                    setTimeout(() => {
-                        router.push('/creator/dashboard');
-                    }, 2000);
-                }
-            } catch (err) {
-                setMessage("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));
-            }
         }
 
         setLoading(false);
@@ -586,9 +506,7 @@ function UploadPageContent() {
                         Upload Content
                     </h1>
                     <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                        {uploadType === 'anime' 
-                            ? 'Share your anime with the world. Upload new series or add episodes to existing ones.'
-                            : 'Share your manga with the world. Upload new series or add chapters to existing ones.'}
+                        Share your manga with the world. Upload new series or add chapters to existing ones.
                     </p>
                 </div>
 
@@ -624,22 +542,6 @@ function UploadPageContent() {
                             </span>
                             {uploadType === "chapter" && (
                                 <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl opacity-20"></div>
-                            )}
-                        </button>
-                        <button
-                            onClick={() => handleTypeChange("anime")}
-                            className={`group relative px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 transform hover:scale-105 ${uploadType === "anime"
-                                ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-orange-500/25"
-                                : "bg-slate-700/50 text-gray-300 hover:bg-slate-600/50 border border-gray-600"
-                                }`}
-                            aria-label="Switch to Anime Upload"
-                        >
-                            <span className="relative z-10 flex items-center">
-                                <span className="mr-2">🎬</span>
-                                New Anime
-                            </span>
-                            {uploadType === "anime" && (
-                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl opacity-20"></div>
                             )}
                         </button>
                     </div>
@@ -1153,192 +1055,6 @@ function UploadPageContent() {
                             </div>
                         </form>
                     )}
-                    {uploadType === "anime" && (
-                        <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-300">
-                                        <span className="flex items-center">
-                                            <span className="mr-2">🎬</span>
-                                            Anime Title
-                                            <span className="text-red-400 ml-1">*</span>
-                                        </span>
-                                    </label>
-                                    <input
-                                        name="title"
-                                        value={form.title}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-slate-700/50 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
-                                        placeholder="Enter anime series title"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-300">
-                                        <span className="flex items-center">
-                                            <span className="mr-2">👤</span>
-                                            Creator Name
-                                            <span className="text-red-400 ml-1">*</span>
-                                        </span>
-                                    </label>
-                                    <input
-                                        name="creatorName"
-                                        value={form.creatorName || ""}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-slate-700/50 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
-                                        placeholder="e.g., Studio Ghibli"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-300">
-                                        <span className="flex items-center">
-                                            <span className="mr-2">📝</span>
-                                            Description
-                                            <span className="text-red-400 ml-1">*</span>
-                                        </span>
-                                    </label>
-                                    <textarea
-                                        name="description"
-                                        value={form.description}
-                                        onChange={handleChange}
-                                        rows={4}
-                                        className="w-full px-4 py-3 bg-slate-700/50 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400 resize-none"
-                                        placeholder="Describe your anime series..."
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-300">
-                                        <span className="flex items-center">
-                                            <span className="mr-2">🏷️</span>
-                                            Genres
-                                            <span className="text-red-400 ml-1">*</span>
-                                        </span>
-                                    </label>
-                                    <input
-                                        name="genre"
-                                        value={form.genre}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-slate-700/50 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
-                                        placeholder="Action, Drama, Fantasy (comma separated)"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-300">
-                                        <span className="flex items-center">
-                                            <span className="mr-2">📊</span>
-                                            Status
-                                        </span>
-                                    </label>
-                                    <select
-                                        name="status"
-                                        value={form.status}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 bg-slate-700/50 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
-                                    >
-                                        <option value="ongoing">Ongoing</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="upcoming">Upcoming</option>
-                                    </select>
-                                </div>
-
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-300">
-                                        <span className="flex items-center">
-                                            <span className="mr-2">🖼️</span>
-                                            Cover Image
-                                            <span className="text-red-400 ml-1">*</span>
-                                        </span>
-                                    </label>
-                                    <div
-                                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${coverImageDragActive
-                                            ? 'border-orange-500 bg-orange-500/10'
-                                            : 'border-gray-600 bg-slate-700/30 hover:border-orange-500/50'
-                                            }`}
-                                        onDragOver={(e) => {
-                                            e.preventDefault();
-                                            setCoverImageDragActive(true);
-                                        }}
-                                        onDragLeave={() => setCoverImageDragActive(false)}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            setCoverImageDragActive(false);
-                                            const file = e.dataTransfer.files[0];
-                                            if (file && file.type.startsWith('image/')) {
-                                                setForm({ ...form, coverImage: file });
-                                            }
-                                        }}
-                                    >
-                                        {form.coverImage ? (
-                                            <div className="space-y-4">
-                                                <img
-                                                    src={URL.createObjectURL(form.coverImage)}
-                                                    alt="Cover preview"
-                                                    className="max-h-48 mx-auto rounded-lg"
-                                                />
-                                                <p className="text-gray-300">{form.coverImage.name}</p>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setForm({ ...form, coverImage: null })}
-                                                    className="text-red-400 hover:text-red-300"
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                <p className="text-gray-400 mb-4">Drag & drop or click to select</p>
-                                                <input
-                                                    ref={coverImageRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) setForm({ ...form, coverImage: file });
-                                                    }}
-                                                    className="hidden"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => coverImageRef.current?.click()}
-                                                    className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors"
-                                                >
-                                                    Select Cover Image
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="group relative w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-4 px-8 rounded-xl font-bold text-lg shadow-2xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                            >
-                                <span className="relative z-10 flex items-center justify-center">
-                                    {loading ? (
-                                        <>
-                                            <span className="mr-2 animate-spin">🔄</span>
-                                            Uploading...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="mr-2">🚀</span>
-                                            Upload Anime Series
-                                        </>
-                                    )}
-                                </span>
-                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                            </button>
-                        </form>
-                    )}
                     {message && (
                         <div className={`mt-8 p-4 rounded-xl text-center font-semibold ${message.includes('success')
                             ? 'bg-green-500/10 border border-green-500/20 text-green-300'
@@ -1417,8 +1133,7 @@ function UploadPageContent() {
                         onClose={() => setShowCreatorUpgrade(false)}
                         onSuccess={() => {
                             setShowCreatorUpgrade(false);
-                            const contentType = uploadType === 'anime' ? 'anime' : 'manga';
-                            setMessage(`Welcome to the creator community! You can now upload ${contentType}.`);
+                            setMessage("Welcome to the creator community! You can now upload manga.");
                         }}
                     />
                 </div>

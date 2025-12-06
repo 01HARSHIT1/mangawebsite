@@ -31,14 +31,14 @@ export default function AnimeNavigation() {
         { href: '/anime/browse', label: 'BROWSE' },
         { href: '/anime/genres', label: 'GENRES' },
         { href: '/anime/library', label: 'MY LIBRARY' },
-        // Show Become a Creator for authenticated non-creators (matches manga behavior)
-        ...(isAuthenticated && !isCreator ? [{ href: '/upload?type=anime', label: 'BECOME CREATOR', icon: Upload }] : []),
+        // Show Become a Creator for authenticated non-creators - points to anime-specific upload
+        ...(isAuthenticated && !isCreator ? [{ href: '/anime/creator/upload', label: 'BECOME CREATOR', icon: Upload }] : []),
     ];
 
-    // Creator navigation items (shown when user is already a creator) - matches manga structure
+    // Creator navigation items (shown when user is already a creator) - anime-specific routes
     const creatorNavItems = isCreator ? [
-        { href: '/upload?type=anime', label: 'UPLOAD', icon: Upload },
-        { href: '/creator/dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
+        { href: '/anime/creator/upload', label: 'UPLOAD', icon: Upload },
+        { href: '/anime/creator/dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
     ] : [];
 
     return (
@@ -72,7 +72,7 @@ export default function AnimeNavigation() {
                     <div className="hidden lg:flex items-center space-x-8">
                         {[...navItems, ...creatorNavItems].map((item) => {
                             const active = isActive(item.href);
-                            const isCreatorButton = item.href?.includes('/upload?type=anime') || item.href === '/become-creator';
+                            const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
                             const isDashboardButton = item.href === '/creator/dashboard';
                             return (
                                 <Link
@@ -140,7 +140,7 @@ export default function AnimeNavigation() {
                         <div className="flex flex-col space-y-3">
                             {[...navItems, ...creatorNavItems].map((item) => {
                                 const active = isActive(item.href);
-                                const isCreatorButton = item.href?.includes('/upload?type=anime') || item.href === '/become-creator';
+                                const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
                                 return (
                                     <Link
                                         key={item.href}
