@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Play, Search, Menu, X } from 'lucide-react';
+import { Play, Search, Menu, X, Upload } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 
 /**
@@ -13,7 +14,8 @@ import AppModeSwitcher from '@/components/AppModeSwitcher';
  */
 export default function AnimeNavigation() {
     const pathname = usePathname();
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { isAuthenticated, isCreator } = useAuth();
 
     // Check if current path matches
     const isActive = (path: string) => {
@@ -28,6 +30,8 @@ export default function AnimeNavigation() {
         { href: '/anime/browse', label: 'BROWSE' },
         { href: '/anime/genres', label: 'GENRES' },
         { href: '/anime/library', label: 'MY LIBRARY' },
+        // Show Become a Creator for authenticated non-creators
+        ...(isAuthenticated && !isCreator ? [{ href: '/become-creator', label: 'BECOME CREATOR', icon: Upload }] : []),
     ];
 
     return (
@@ -61,20 +65,24 @@ export default function AnimeNavigation() {
                     <div className="hidden lg:flex items-center space-x-8">
                         {navItems.map((item) => {
                             const active = isActive(item.href);
+                            const isCreatorButton = item.href === '/become-creator';
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
                                     className={`
-                                        text-sm font-medium transition-colors relative
-                                        ${active
+                                        text-sm font-medium transition-colors relative flex items-center gap-2
+                                        ${isCreatorButton
+                                            ? 'px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-bold shadow-lg shadow-orange-500/50'
+                                            : active
                                             ? 'text-orange-400 font-bold'
                                             : 'text-gray-400 hover:text-orange-400'
                                         }
                                     `}
                                 >
+                                    {item.icon && <item.icon className="w-4 h-4" />}
                                     {item.label}
-                                    {active && (
+                                    {active && !isCreatorButton && (
                                         <motion.div
                                             layoutId="activeIndicator"
                                             className="absolute -bottom-1 left-0 right-0 h-0.5 bg-orange-400"
@@ -90,11 +98,11 @@ export default function AnimeNavigation() {
                     {/* Mobile Menu Button */}
                     <div className="lg:hidden flex items-center space-x-2">
                         <button
-                            onClick={() => setIsSearchOpen(!isSearchOpen)}
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                             className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30"
                             aria-label="Toggle menu"
                         >
-                            {isSearchOpen ? (
+                            {isMobileMenuOpen ? (
                                 <X className="w-5 h-5 text-orange-400" />
                             ) : (
                                 <Menu className="w-5 h-5 text-orange-400" />
@@ -114,7 +122,7 @@ export default function AnimeNavigation() {
                 </div>
 
                 {/* Mobile Navigation Menu */}
-                {isSearchOpen && (
+                {isMobileMenuOpen && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -124,19 +132,23 @@ export default function AnimeNavigation() {
                         <div className="flex flex-col space-y-3">
                             {navItems.map((item) => {
                                 const active = isActive(item.href);
+                                const isCreatorButton = item.href === '/become-creator';
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        onClick={() => setIsSearchOpen(false)}
+                                        onClick={() => setIsMobileMenuOpen(false)}
                                         className={`
-                                            px-4 py-2 rounded-lg transition-colors
-                                            ${active
+                                            px-4 py-2 rounded-lg transition-colors flex items-center gap-2
+                                            ${isCreatorButton
+                                                ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold shadow-lg shadow-orange-500/50'
+                                                : active
                                                 ? 'bg-orange-500/20 text-orange-400 font-bold'
                                                 : 'text-gray-400 hover:bg-orange-500/10 hover:text-orange-400'
                                             }
                                         `}
                                     >
+                                        {item.icon && <item.icon className="w-4 h-4" />}
                                         {item.label}
                                     </Link>
                                 );
