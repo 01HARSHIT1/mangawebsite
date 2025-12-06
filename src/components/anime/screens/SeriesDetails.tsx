@@ -360,11 +360,11 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         {/* Episodes List */}
                         <div className="space-y-2">
                             {episodes.map((episode) => (
-                            <div
-                                key={episode._id}
-                                className="flex items-center space-x-4 p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
-                                onClick={() => handlePlayEpisode(episode.episodeNumber)}
-                            >
+                                <div
+                                    key={episode._id}
+                                    className="flex items-center space-x-4 p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+                                    onClick={() => handlePlayEpisode(episode.episodeNumber)}
+                                >
                                 <div className="relative w-32 h-20 flex-shrink-0 rounded overflow-hidden bg-gray-800">
                                     {episode.thumbnail ? (
                                         <Image
@@ -409,8 +409,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     )}
                                     <Play className="w-5 h-5 text-red-400" />
                                 </div>
-                            </div>
-                        ))}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
