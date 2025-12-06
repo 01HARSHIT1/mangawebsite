@@ -25,13 +25,24 @@ export default function AnimeNavigation() {
         return pathname?.startsWith(path);
     };
 
+    // Determine Become Creator button href based on auth status
+    const getBecomeCreatorHref = () => {
+        if (!isAuthenticated) {
+            return '/login'; // Redirect to login if not authenticated
+        }
+        if (isCreator) {
+            return '/creator/earnings'; // Redirect to creator dashboard if already a creator
+        }
+        return '/become-creator'; // Show become creator page for authenticated non-creators
+    };
+
     const navItems = [
         { href: '/anime', label: 'HOME' },
         { href: '/anime/browse', label: 'BROWSE' },
         { href: '/anime/genres', label: 'GENRES' },
         { href: '/anime/library', label: 'MY LIBRARY' },
-        // Show Become a Creator for authenticated non-creators
-        ...(isAuthenticated && !isCreator ? [{ href: '/become-creator', label: 'BECOME CREATOR', icon: Upload }] : []),
+        // Always show Become a Creator button
+        { href: getBecomeCreatorHref(), label: 'BECOME CREATOR', icon: Upload },
     ];
 
     return (
