@@ -73,7 +73,7 @@ export default function AnimeNavigation() {
                         {[...navItems, ...creatorNavItems].map((item) => {
                             const active = isActive(item.href);
                             const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
-                            const isDashboardButton = item.href === '/creator/dashboard';
+                            const isDashboardButton = item.href === '/anime/creator/dashboard';
                             return (
                                 <Link
                                     key={item.href}
