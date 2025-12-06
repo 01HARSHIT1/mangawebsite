@@ -64,7 +64,10 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
     const fetchSeasons = useCallback(async () => {
         try {
-            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            let token: string | null = null;
+            if (typeof window !== 'undefined') {
+                token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            }
             const response = await fetch(`/api/anime/${seriesId}/seasons`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
@@ -82,7 +85,10 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
     const fetchEpisodes = useCallback(async () => {
         try {
-            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            let token: string | null = null;
+            if (typeof window !== 'undefined') {
+                token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            }
             const response = await fetch(
                 `/api/anime/seasons/${selectedSeason}/episodes?seriesId=${seriesId}&seasonNumber=${selectedSeason}`,
                 {
