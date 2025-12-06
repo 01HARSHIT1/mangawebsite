@@ -44,21 +44,41 @@ export default function EpisodePage() {
         }
     }, [seriesId, episodeNumber]);
 
+    const [prevEpisode, setPrevEpisode] = useState<any>(null);
+    const [nextEpisode, setNextEpisode] = useState<any>(null);
+
     const fetchEpisodeData = async () => {
         try {
             setLoading(true);
-            // Fetch series info
-            const seriesRes = await fetch(`/api/anime/${seriesId}`);
-            if (seriesRes.ok) {
-                const seriesData = await seriesRes.json();
-                setSeries(seriesData.series || seriesData);
-            }
-
-            // Fetch episode info
-            const episodeRes = await fetch(`/api/anime/${seriesId}/episodes/${episodeNumber}`);
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            
+            // Fetch episode info with prev/next
+            const episodeRes = await fetch(`/api/anime/${seriesId}/episodes/${episodeNumber}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
             if (episodeRes.ok) {
                 const episodeData = await episodeRes.json();
-                setEpisode(episodeData.episode || episodeData);
+                // Map API response to component format
+                const mappedEpisode: Episode = {
+                    _id: episodeData.id || episodeData._id,
+                    id: episodeData.id,
+                    episodeNumber: episodeData.episodeNumber,
+                    seasonNumber: episodeData.seasonNumber,
+                    title: episodeData.title,
+                    description: episodeData.description,
+                    videoUrl: episodeData.videoUrl,
+                    hlsManifestUrl: episodeData.hlsManifestUrl,
+                    dashManifestUrl: episodeData.dashManifestUrl,
+                    thumbnail: episodeData.thumbnail,
+                    duration: episodeData.duration,
+                    airDate: episodeData.airDate,
+                    availableTracks: episodeData.availableTracks,
+                    qualityLevels: episodeData.qualityLevels,
+                };
+                setEpisode(mappedEpisode);
+                setSeries(episodeData.series || { _id: seriesId, title: 'Loading...', coverImage: '' });
+                setPrevEpisode(episodeData.prevEpisode);
+                setNextEpisode(episodeData.nextEpisode);
             }
         } catch (error) {
             console.error('Error fetching episode data:', error);
@@ -94,18 +114,26 @@ export default function EpisodePage() {
         );
     }
 
+    const handleNextEpisode = () => {
+        if (nextEpisode) {
+            router.push(`/anime/${seriesId}/episode/${nextEpisode.episodeNumber}`);
+        }
+    };
+
+    const handlePreviousEpisode = () => {
+        if (prevEpisode) {
+            router.push(`/anime/${seriesId}/episode/${prevEpisode.episodeNumber}`);
+        }
+    };
+
     return (
         <EnhancedVideoPlayer
             episode={episode}
-            series={series}
-            onNextEpisode={() => {
-                router.push(`/anime/watch/${seriesId}/episode/${episodeNumber + 1}`);
-            }}
-            onPreviousEpisode={() => {
-                if (episodeNumber > 1) {
-                    router.push(`/anime/watch/${seriesId}/episode/${episodeNumber - 1}`);
-                }
-            }}
+            series={series || { _id: seriesId, title: 'Loading...', coverImage: '' }}
+            onNextEpisode={handleNextEpisode}
+            onPreviousEpisode={handlePreviousEpisode}
+            hasNextEpisode={!!nextEpisode}
+            hasPreviousEpisode={!!prevEpisode}
             onBackToSeries={() => {
                 router.push(`/anime/${seriesId}`);
             }}

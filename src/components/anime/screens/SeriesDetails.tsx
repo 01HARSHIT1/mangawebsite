@@ -43,13 +43,21 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const router = useRouter();
     const [series, setSeries] = useState<AnimeSeries | null>(null);
     const [episodes, setEpisodes] = useState<Episode[]>([]);
+    const [seasons, setSeasons] = useState<any[]>([]);
+    const [selectedSeason, setSelectedSeason] = useState<number>(1);
     const [loading, setLoading] = useState(true);
     const [selectedTab, setSelectedTab] = useState<'overview' | 'episodes'>('overview');
 
     useEffect(() => {
         fetchSeriesDetails();
-        fetchEpisodes();
+        fetchSeasons();
     }, [seriesId]);
+
+    useEffect(() => {
+        if (selectedSeason) {
+            fetchEpisodes();
+        }
+    }, [seriesId, selectedSeason]);
 
     const fetchSeriesDetails = async () => {
         try {
@@ -65,9 +73,33 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         }
     };
 
+    const fetchSeasons = async () => {
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(`/api/anime/${seriesId}/seasons`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setSeasons(data.seasons || []);
+                if (data.seasons && data.seasons.length > 0) {
+                    setSelectedSeason(data.seasons[0].seasonNumber);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching seasons:', error);
+        }
+    };
+
     const fetchEpisodes = async () => {
         try {
-            const response = await fetch(`/api/anime/${seriesId}/episodes`);
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(
+                `/api/anime/seasons/${selectedSeason}/episodes?seriesId=${seriesId}&seasonNumber=${selectedSeason}`,
+                {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                }
+            );
             if (response.ok) {
                 const data = await response.json();
                 setEpisodes(data.episodes || []);
@@ -280,8 +312,54 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                 )}
 
                 {selectedTab === 'episodes' && (
-                    <div className="space-y-2">
-                        {episodes.map((episode) => (
+                    <div className="space-y-6">
+                        {/* Season Selector */}
+                        {seasons.length > 1 && (
+                            <div className="mb-6">
+                                <label className="block text-sm font-semibold text-gray-400 mb-2">
+                                    Select Season
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {seasons.map((season) => (
+                                        <button
+                                            key={season.seasonNumber}
+                                            onClick={() => setSelectedSeason(season.seasonNumber)}
+                                            className={`
+                                                px-4 py-2 rounded-lg font-semibold transition-all
+                                                ${selectedSeason === season.seasonNumber
+                                                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/50'
+                                                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                                                }
+                                            `}
+                                        >
+                                            Season {season.seasonNumber}
+                                            {season.watchedEpisodes > 0 && (
+                                                <span className="ml-2 text-xs opacity-75">
+                                                    ({season.watchedEpisodes}/{season.episodeCount})
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* View All Episodes Link */}
+                        {seasons.length > 0 && (
+                            <div className="mb-4">
+                                <Link
+                                    href={`/anime/${seriesId}/seasons/${selectedSeason}`}
+                                    className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold"
+                                >
+                                    <span>View All Episodes in Season {selectedSeason}</span>
+                                    <ChevronLeft className="w-4 h-4 rotate-180" />
+                                </Link>
+                            </div>
+                        )}
+
+                        {/* Episodes List */}
+                        <div className="space-y-2">
+                            {episodes.map((episode) => (
                             <div
                                 key={episode._id}
                                 className="flex items-center space-x-4 p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"

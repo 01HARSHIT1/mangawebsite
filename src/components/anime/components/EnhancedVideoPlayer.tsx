@@ -52,6 +52,8 @@ interface VideoPlayerProps {
     onNextEpisode: () => void;
     onPreviousEpisode: () => void;
     onBackToSeries: () => void;
+    hasNextEpisode?: boolean;
+    hasPreviousEpisode?: boolean;
 }
 
 export default function EnhancedVideoPlayer({
@@ -60,6 +62,8 @@ export default function EnhancedVideoPlayer({
     onNextEpisode,
     onPreviousEpisode,
     onBackToSeries,
+    hasNextEpisode = true,
+    hasPreviousEpisode = true,
 }: VideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const { user, isAuthenticated } = useAuth();
@@ -95,7 +99,14 @@ export default function EnhancedVideoPlayer({
             const token = localStorage.getItem('token');
             
             // Get playback URL with entitlement
-            const playbackRes = await fetch(`/api/anime/episodes/${episode._id}/playback`, {
+            const episodeId = episode._id || episode.id;
+            if (!episodeId) {
+                console.error('Episode ID not found');
+                setLoading(false);
+                return;
+            }
+            
+            const playbackRes = await fetch(`/api/anime/episodes/${episodeId}/playback`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
 
@@ -124,7 +135,9 @@ export default function EnhancedVideoPlayer({
                 });
                 if (historyRes.ok) {
                     const historyData = await historyRes.json();
-                    const episodeHistory = historyData.watchHistory?.find((h: any) => h.episodeId === episode._id);
+                    const episodeHistory = historyData.watchHistory?.find((h: any) => 
+                        h.episodeId === episodeId || h.episodeId === episode._id || h.episodeId === episode.id
+                    );
                     if (episodeHistory && !episodeHistory.completed) {
                         setResumePosition(episodeHistory.lastPosition || 0);
                     }
@@ -163,8 +176,9 @@ export default function EnhancedVideoPlayer({
     }, [playbackData, resumePosition, selectedSubtitle, episode.videoUrl]);
 
     // Track playback events
+    const episodeId = episode._id || episode.id;
     const trackEvent = useCallback(async (eventType: string, position?: number) => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated || !episodeId) return;
         
         try {
             const token = localStorage.getItem('token');
@@ -175,7 +189,7 @@ export default function EnhancedVideoPlayer({
                     ...(token ? { Authorization: `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify({
-                    episodeId: episode._id,
+                    episodeId: episodeId,
                     seriesId: series._id,
                     eventType,
                     position: position || currentTime,
@@ -186,7 +200,7 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-    }, [isAuthenticated, episode._id, series._id, currentTime, duration, selectedQuality]);
+    }, [isAuthenticated, episodeId, series._id, currentTime, duration, selectedQuality]);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -509,13 +523,31 @@ export default function EnhancedVideoPlayer({
                     {/* Control Buttons */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                            <button onClick={onPreviousEpisode} className="p-2 hover:bg-white/10 rounded transition-colors" title="Previous">
+                            <button 
+                                onClick={onPreviousEpisode} 
+                                disabled={!hasPreviousEpisode}
+                                className={`p-2 rounded transition-colors ${
+                                    hasPreviousEpisode 
+                                        ? 'hover:bg-white/10' 
+                                        : 'opacity-50 cursor-not-allowed'
+                                }`}
+                                title={hasPreviousEpisode ? "Previous Episode" : "No previous episode"}
+                            >
                                 <SkipBack className="w-5 h-5 text-white" />
                             </button>
                             <button onClick={togglePlay} className="p-2 hover:bg-white/10 rounded transition-colors">
                                 {isPlaying ? <Pause className="w-6 h-6 text-white" /> : <Play className="w-6 h-6 text-white" />}
                             </button>
-                            <button onClick={onNextEpisode} className="p-2 hover:bg-white/10 rounded transition-colors" title="Next">
+                            <button 
+                                onClick={onNextEpisode} 
+                                disabled={!hasNextEpisode}
+                                className={`p-2 rounded transition-colors ${
+                                    hasNextEpisode 
+                                        ? 'hover:bg-white/10' 
+                                        : 'opacity-50 cursor-not-allowed'
+                                }`}
+                                title={hasNextEpisode ? "Next Episode" : "No next episode"}
+                            >
                                 <SkipForward className="w-5 h-5 text-white" />
                             </button>
 

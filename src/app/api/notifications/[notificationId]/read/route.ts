@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
+import { ObjectId } from 'mongodb';
 
 /**
- * Mark all notifications as read
+ * Mark notification as read
  */
 
 export const dynamic = 'force-dynamic';
 
-export async function PUT(request: NextRequest) {
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: { notificationId: string } }
+) {
     try {
         const token = request.headers.get('Authorization')?.replace('Bearer ', '');
         if (!token) {
@@ -20,13 +24,15 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
+        const { notificationId } = params;
+
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        const result = await db.collection('notifications').updateMany(
+        await db.collection('notifications').updateOne(
             {
+                _id: new ObjectId(notificationId),
                 userId: payload.userId,
-                read: { $ne: true },
             },
             {
                 $set: {
@@ -37,15 +43,13 @@ export async function PUT(request: NextRequest) {
             }
         );
 
-        return NextResponse.json({
-            success: true,
-            updated: result.modifiedCount,
-        });
+        return NextResponse.json({ success: true });
     } catch (error: any) {
-        console.error('Error marking all notifications as read:', error);
+        console.error('Error marking notification as read:', error);
         return NextResponse.json(
-            { error: 'Failed to mark all notifications as read' },
+            { error: 'Failed to mark notification as read' },
             { status: 500 }
         );
     }
 }
+

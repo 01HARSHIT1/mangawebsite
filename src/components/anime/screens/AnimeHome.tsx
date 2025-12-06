@@ -50,6 +50,19 @@ export default function AnimeHome() {
     const fetchAnimeData = async () => {
         try {
             setLoading(true);
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const userId = token ? 'user' : null; // In production, get actual userId from token
+            
+            // Fetch home blocks (includes personalized content)
+            const homeBlocksRes = await fetch(`/api/homeblocks?user_id=${userId || ''}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            
+            let homeBlocks: any = null;
+            if (homeBlocksRes.ok) {
+                homeBlocks = await homeBlocksRes.json();
+            }
+
             const [featuredRes, trendingRes, recentRes, popularRes] = await Promise.all([
                 fetch('/api/anime/featured'),
                 fetch('/api/anime/trending'),
@@ -57,7 +70,68 @@ export default function AnimeHome() {
                 fetch('/api/anime/popular'),
             ]);
 
-            if (featuredRes.ok) {
+            // Use home blocks if available, otherwise fallback to individual APIs
+            if (homeBlocks && homeBlocks.blocks) {
+                for (const block of homeBlocks.blocks) {
+                    if (block.type === 'hero' && block.items && block.items.length > 0) {
+                        const heroItem = block.items[0];
+                        setFeaturedAnime({
+                            _id: heroItem.id,
+                            title: heroItem.title,
+                            description: heroItem.description || '',
+                            coverImage: heroItem.poster,
+                            bannerImage: heroItem.poster,
+                            genres: [],
+                            rating: heroItem.rating || 0,
+                            year: heroItem.year || 0,
+                            status: 'ongoing' as const,
+                            episodeCount: 0,
+                        });
+                    }
+                    if (block.type === 'carousel') {
+                        if (block.title === 'Trending Now') {
+                            setTrendingAnime(block.items.map((item: any) => ({
+                                _id: item.id,
+                                title: item.title,
+                                description: '',
+                                coverImage: item.poster,
+                                genres: [],
+                                rating: item.rating || 0,
+                                year: 0,
+                                status: 'ongoing' as const,
+                                episodeCount: item.episodeCount || 0,
+                            })));
+                        } else if (block.title === 'New Releases') {
+                            setRecentAnime(block.items.map((item: any) => ({
+                                _id: item.id,
+                                title: item.title,
+                                description: '',
+                                coverImage: item.poster,
+                                genres: [],
+                                rating: item.rating || 0,
+                                year: item.year || 0,
+                                status: 'ongoing' as const,
+                                episodeCount: 0,
+                            })));
+                        } else if (block.title === 'Popular This Week') {
+                            setPopularAnime(block.items.map((item: any) => ({
+                                _id: item.id,
+                                title: item.title,
+                                description: '',
+                                coverImage: item.poster,
+                                genres: [],
+                                rating: item.rating || 0,
+                                year: 0,
+                                status: 'ongoing' as const,
+                                episodeCount: item.episodeCount || 0,
+                            })));
+                        }
+                    }
+                }
+            }
+
+            // Fallback to individual APIs if home blocks not available
+            if (featuredRes.ok && !homeBlocks) {
                 const featured = await featuredRes.json();
                 setFeaturedAnime(featured.anime || featured);
                 // If we have featured anime, also add it to trending for hero rotation
