@@ -4,13 +4,14 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Play, Search, Menu, X, Upload } from 'lucide-react';
+import { Play, Search, Menu, X, Upload, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 
 /**
  * Anime Navigation Component
  * Shared navigation bar for all anime pages
+ * Matches manga navigation structure exactly
  */
 export default function AnimeNavigation() {
     const pathname = usePathname();
@@ -25,25 +26,20 @@ export default function AnimeNavigation() {
         return pathname?.startsWith(path);
     };
 
-    // Determine Become Creator button href based on auth status
-    const getBecomeCreatorHref = () => {
-        if (!isAuthenticated) {
-            return '/login'; // Redirect to login if not authenticated
-        }
-        if (isCreator) {
-            return '/creator/earnings'; // Redirect to creator dashboard if already a creator
-        }
-        return '/become-creator'; // Show become creator page for authenticated non-creators
-    };
-
     const navItems = [
         { href: '/anime', label: 'HOME' },
         { href: '/anime/browse', label: 'BROWSE' },
         { href: '/anime/genres', label: 'GENRES' },
         { href: '/anime/library', label: 'MY LIBRARY' },
-        // Always show Become a Creator button
-        { href: getBecomeCreatorHref(), label: 'BECOME CREATOR', icon: Upload },
+        // Show Become a Creator for authenticated non-creators (matches manga behavior)
+        ...(isAuthenticated && !isCreator ? [{ href: '/upload?type=anime', label: 'BECOME CREATOR', icon: Upload }] : []),
     ];
+
+    // Creator navigation items (shown when user is already a creator) - matches manga structure
+    const creatorNavItems = isCreator ? [
+        { href: '/upload?type=anime', label: 'UPLOAD', icon: Upload },
+        { href: '/creator/dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
+    ] : [];
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
@@ -74,9 +70,10 @@ export default function AnimeNavigation() {
 
                     {/* Navigation Links */}
                     <div className="hidden lg:flex items-center space-x-8">
-                        {navItems.map((item) => {
+                        {[...navItems, ...creatorNavItems].map((item) => {
                             const active = isActive(item.href);
-                            const isCreatorButton = item.href === '/become-creator';
+                            const isCreatorButton = item.href?.includes('/upload?type=anime') || item.href === '/become-creator';
+                            const isDashboardButton = item.href === '/creator/dashboard';
                             return (
                                 <Link
                                     key={item.href}
@@ -93,7 +90,7 @@ export default function AnimeNavigation() {
                                 >
                                     {item.icon && <item.icon className="w-4 h-4" />}
                                     {item.label}
-                                    {active && !isCreatorButton && (
+                                    {active && !isCreatorButton && !isDashboardButton && (
                                         <motion.div
                                             layoutId="activeIndicator"
                                             className="absolute -bottom-1 left-0 right-0 h-0.5 bg-orange-400"
@@ -141,9 +138,9 @@ export default function AnimeNavigation() {
                         className="lg:hidden border-t border-orange-500/20 py-4"
                     >
                         <div className="flex flex-col space-y-3">
-                            {navItems.map((item) => {
+                            {[...navItems, ...creatorNavItems].map((item) => {
                                 const active = isActive(item.href);
-                                const isCreatorButton = item.href === '/become-creator';
+                                const isCreatorButton = item.href?.includes('/upload?type=anime') || item.href === '/become-creator';
                                 return (
                                     <Link
                                         key={item.href}

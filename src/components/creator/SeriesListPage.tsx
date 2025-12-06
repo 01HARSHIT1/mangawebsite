@@ -19,7 +19,9 @@ interface Series {
     genres: string[];
     views: number;
     likes: number;
-    chapterCount: number;
+    chapterCount?: number;
+    episodeCount?: number;
+    type?: 'manga' | 'anime';
     createdAt: string;
     updatedAt: string;
 }
@@ -29,6 +31,7 @@ export default function SeriesListPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft'>('all');
+    const [filterType, setFilterType] = useState<'all' | 'manga' | 'anime'>('all');
     const [sortBy, setSortBy] = useState<'recent' | 'views' | 'likes'>('recent');
 
     useEffect(() => {
@@ -57,6 +60,7 @@ export default function SeriesListPage() {
     const filteredSeries = series
         .filter(s => {
             if (filterStatus !== 'all' && s.status !== filterStatus) return false;
+            if (filterType !== 'all' && s.type !== filterType) return false;
             if (searchQuery && !s.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
             return true;
         })
@@ -73,7 +77,7 @@ export default function SeriesListPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-white mb-2">My Series</h1>
-                        <p className="text-gray-400">Manage your manga library</p>
+                        <p className="text-gray-400">Manage your content library</p>
                     </div>
 
                     <Link
@@ -87,7 +91,7 @@ export default function SeriesListPage() {
 
                 {/* Filters & Search */}
                 <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 backdrop-blur-sm">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {/* Search */}
                         <div className="relative">
                             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -111,6 +115,20 @@ export default function SeriesListPage() {
                                 <option value="all">All Status</option>
                                 <option value="published">Published</option>
                                 <option value="draft">Draft</option>
+                            </select>
+                        </div>
+
+                        {/* Type Filter */}
+                        <div className="relative">
+                            <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                            <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value as any)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-purple-500 appearance-none cursor-pointer"
+                            >
+                                <option value="all">All Types</option>
+                                <option value="manga">Manga</option>
+                                <option value="anime">Anime</option>
                             </select>
                         </div>
 
@@ -185,11 +203,27 @@ export default function SeriesListPage() {
                                     <h3 className="font-bold text-white text-lg mb-2 truncate">{s.title}</h3>
                                     <p className="text-sm text-gray-400 mb-4 line-clamp-2">{s.description}</p>
 
+                                    {/* Type Badge */}
+                                    {s.type && (
+                                        <div className="mb-2">
+                                            <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                                                s.type === 'anime' 
+                                                    ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                                    : 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                            }`}>
+                                                {s.type === 'anime' ? '🎬 Anime' : '📚 Manga'}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     {/* Stats */}
                                     <div className="flex items-center space-x-4 text-sm text-gray-400 mb-4">
                                         <span className="flex items-center">
                                             <FaBook className="mr-1" />
-                                            {s.chapterCount || 0}
+                                            {s.type === 'anime' 
+                                                ? `${s.episodeCount || 0} ${(s.episodeCount || 0) === 1 ? 'episode' : 'episodes'}`
+                                                : `${s.chapterCount || 0} ${(s.chapterCount || 0) === 1 ? 'chapter' : 'chapters'}`
+                                            }
                                         </span>
                                         <span className="flex items-center">
                                             <FaEye className="mr-1" />
@@ -204,7 +238,7 @@ export default function SeriesListPage() {
                                     {/* Actions */}
                                     <div className="grid grid-cols-3 gap-2">
                                         <Link
-                                            href={`/manga/${s._id}`}
+                                            href={s.type === 'anime' ? `/anime/${s._id}` : `/manga/${s._id}`}
                                             className="flex items-center justify-center space-x-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
                                         >
                                             <FaEye className="text-xs" />
@@ -234,9 +268,9 @@ export default function SeriesListPage() {
                         <div className="text-6xl mb-4">📚</div>
                         <h3 className="text-xl font-bold text-white mb-2">No Series Found</h3>
                         <p className="text-gray-400 mb-6">
-                            {searchQuery || filterStatus !== 'all' 
+                            {searchQuery || filterStatus !== 'all' || filterType !== 'all'
                                 ? 'Try adjusting your filters'
-                                : 'Create your first manga series to get started!'
+                                : 'Create your first series to get started!'
                             }
                         </p>
                         {!searchQuery && filterStatus === 'all' && (
