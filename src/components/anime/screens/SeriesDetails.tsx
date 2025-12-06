@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -48,18 +48,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [loading, setLoading] = useState(true);
     const [selectedTab, setSelectedTab] = useState<'overview' | 'episodes'>('overview');
 
-    useEffect(() => {
-        fetchSeriesDetails();
-        fetchSeasons();
-    }, [seriesId]);
-
-    useEffect(() => {
-        if (selectedSeason) {
-            fetchEpisodes();
-        }
-    }, [seriesId, selectedSeason]);
-
-    const fetchSeriesDetails = async () => {
+    const fetchSeriesDetails = useCallback(async () => {
         try {
             const response = await fetch(`/api/anime/${seriesId}`);
             if (response.ok) {
@@ -71,9 +60,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [seriesId]);
 
-    const fetchSeasons = async () => {
+    const fetchSeasons = useCallback(async () => {
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const response = await fetch(`/api/anime/${seriesId}/seasons`, {
@@ -89,9 +78,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         } catch (error) {
             console.error('Error fetching seasons:', error);
         }
-    };
+    }, [seriesId]);
 
-    const fetchEpisodes = async () => {
+    const fetchEpisodes = useCallback(async () => {
         try {
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const response = await fetch(
@@ -107,7 +96,18 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         } catch (error) {
             console.error('Error fetching episodes:', error);
         }
-    };
+    }, [seriesId, selectedSeason]);
+
+    useEffect(() => {
+        fetchSeriesDetails();
+        fetchSeasons();
+    }, [fetchSeriesDetails, fetchSeasons]);
+
+    useEffect(() => {
+        if (selectedSeason) {
+            fetchEpisodes();
+        }
+    }, [fetchEpisodes, selectedSeason]);
 
     const handlePlayEpisode = (episodeNumber: number) => {
         router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
