@@ -5,7 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import LoginForm from "@/components/LoginForm";
 import RegisterForm from "@/components/RegisterForm";
 import CreatorUpgradeModal from "@/components/CreatorUpgradeModal";
-import AnimeDashboardLayout from "@/components/anime/creator/AnimeDashboardLayout";
 
 export default function AnimeUploadPage() {
     const { user, isAuthenticated, isCreator } = useAuth();
@@ -115,7 +114,7 @@ export default function AnimeUploadPage() {
                 throw new Error(saveData?.error || 'Failed to save anime series');
             }
 
-            setMessage("Anime series uploaded successfully! You can now add episodes from the creator dashboard.");
+            setMessage("Anime series uploaded successfully! You can now access the creator dashboard.");
 
             setForm({
                 title: "",
@@ -127,15 +126,11 @@ export default function AnimeUploadPage() {
                 coverImage: null,
             });
 
-            if (!isCreator) {
-                setTimeout(() => {
-                    router.push('/become-creator');
-                }, 2000);
-            } else {
-                setTimeout(() => {
-                    router.push('/anime/creator/dashboard');
-                }, 2000);
-            }
+            // After successful upload, user is upgraded to creator
+            // Redirect to dashboard after a short delay
+            setTimeout(() => {
+                router.push('/anime/creator/dashboard');
+            }, 2000);
         } catch (err) {
             setMessage("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));
         } finally {
@@ -143,9 +138,50 @@ export default function AnimeUploadPage() {
         }
     };
 
+    // Show login/register modals if not authenticated
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 flex items-center justify-center p-4">
+                <div className="max-w-md w-full">
+                    {showLogin ? (
+                        <div className="bg-gray-900/90 backdrop-blur-xl rounded-2xl p-8 border border-orange-500/20">
+                            <h2 className="text-2xl font-bold text-white mb-4">Login Required</h2>
+                            <p className="text-gray-400 mb-6">You need to be logged in to upload anime.</p>
+                            <LoginForm
+                                onSuccess={() => {
+                                    setShowLogin(false);
+                                    setMessage("Login successful! You can now upload anime.");
+                                }}
+                                onSwitchToRegister={() => {
+                                    setShowLogin(false);
+                                    setShowRegister(true);
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="bg-gray-900/90 backdrop-blur-xl rounded-2xl p-8 border border-orange-500/20">
+                            <h2 className="text-2xl font-bold text-white mb-4">Create Account</h2>
+                            <p className="text-gray-400 mb-6">Sign up to start uploading anime.</p>
+                            <RegisterForm
+                                onSuccess={() => {
+                                    setShowRegister(false);
+                                    setMessage("Account created! You can now upload anime.");
+                                }}
+                                onSwitchToLogin={() => {
+                                    setShowRegister(false);
+                                    setShowLogin(true);
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <AnimeDashboardLayout>
-            <div className="space-y-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
+            <div className="max-w-4xl mx-auto p-6 space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">Upload Anime Series</h1>
                     <p className="text-orange-400">Share your anime with the world</p>
@@ -360,7 +396,7 @@ export default function AnimeUploadPage() {
                     />
                 </div>
             </div>
-        </AnimeDashboardLayout>
+        </div>
     );
 }
 

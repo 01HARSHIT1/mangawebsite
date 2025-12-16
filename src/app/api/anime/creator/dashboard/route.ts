@@ -12,9 +12,14 @@ export async function GET(request: NextRequest) {
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        // Get creator's anime series
+        // Get creator's anime series (check both creatorId and uploaderId for compatibility)
         const animeSeries = await db.collection('anime_series')
-            .find({ creatorId: user._id })
+            .find({ 
+                $or: [
+                    { creatorId: user._id },
+                    { uploaderId: user._id.toString() }
+                ]
+            })
             .sort({ createdAt: -1 })
             .toArray();
 
@@ -57,6 +62,7 @@ export async function GET(request: NextRequest) {
             })
         );
 
+        // Return stats even if no anime uploaded (for dashboard check)
         return NextResponse.json({
             stats: {
                 totalAnime,
@@ -64,7 +70,7 @@ export async function GET(request: NextRequest) {
                 totalViews,
                 totalLikes,
             },
-            series,
+            series: series || [],
         });
 
     } catch (error) {

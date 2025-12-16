@@ -35,6 +35,7 @@ interface KPIData {
 export default function AnimeOverviewPage() {
     const [kpiData, setKpiData] = useState<KPIData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
     const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
     useEffect(() => {
@@ -51,6 +52,11 @@ export default function AnimeOverviewPage() {
             if (response.ok) {
                 const data = await response.json();
                 setKpiData(data);
+                // Check if user has uploaded anime
+                setHasUploadedAnime(data.stats?.totalAnime > 0 || data.series?.length > 0);
+            } else if (response.status === 404) {
+                // No anime uploaded yet
+                setHasUploadedAnime(false);
             }
         } catch (error) {
             console.error('Error fetching KPI data:', error);
@@ -66,6 +72,35 @@ export default function AnimeOverviewPage() {
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
                         <p className="text-gray-400">Loading dashboard...</p>
+                    </div>
+                </div>
+            </AnimeDashboardLayout>
+        );
+    }
+
+    // Show upload prompt if user hasn't uploaded anime yet
+    if (!hasUploadedAnime) {
+        return (
+            <AnimeDashboardLayout>
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center max-w-2xl mx-auto p-8 bg-gray-900/50 rounded-2xl border border-orange-500/20">
+                        <div className="mb-6">
+                            <FaUpload className="text-6xl text-orange-400 mx-auto mb-4" />
+                            <h2 className="text-3xl font-bold text-white mb-2">Welcome to Creator Dashboard!</h2>
+                            <p className="text-gray-400 text-lg">
+                                You need to upload your first anime series to access the full dashboard.
+                            </p>
+                        </div>
+                        <Link
+                            href="/anime/creator/upload"
+                            className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-orange-500/50"
+                        >
+                            <FaUpload />
+                            <span>Upload Your First Anime Series</span>
+                        </Link>
+                        <p className="text-sm text-gray-500 mt-4">
+                            After uploading, you'll get full access to analytics, earnings, and more!
+                        </p>
                     </div>
                 </div>
             </AnimeDashboardLayout>

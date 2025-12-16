@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -17,6 +17,29 @@ export default function AnimeNavigation() {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { isAuthenticated, isCreator } = useAuth();
+    const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
+
+    // Check if user has uploaded anime (only for creators)
+    useEffect(() => {
+        if (isCreator && isAuthenticated) {
+            const checkAnimeUpload = async () => {
+                try {
+                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                    const response = await fetch('/api/anime/creator/dashboard', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setHasUploadedAnime(data.stats?.totalAnime > 0 || data.series?.length > 0);
+                    }
+                } catch (error) {
+                    // Silently fail - user might not have uploaded yet
+                    setHasUploadedAnime(false);
+                }
+            };
+            checkAnimeUpload();
+        }
+    }, [isCreator, isAuthenticated]);
 
     // Check if current path matches
     const isActive = (path: string) => {
@@ -36,9 +59,11 @@ export default function AnimeNavigation() {
     ];
 
     // Creator navigation items (shown when user is already a creator) - anime-specific routes
+    // Only show dashboard if user has uploaded anime (like manga mode)
     const creatorNavItems = isCreator ? [
         { href: '/anime/creator/upload', label: 'UPLOAD', icon: Upload },
-        { href: '/anime/creator/dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
+        // Only show dashboard if user has uploaded anime
+        ...(hasUploadedAnime ? [{ href: '/anime/creator/dashboard', label: 'DASHBOARD', icon: LayoutDashboard }] : []),
     ] : [];
 
     return (
