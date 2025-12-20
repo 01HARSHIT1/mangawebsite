@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { generateEmbedding } from '@/lib/embeddings';
-import { cosineSimilarity } from '@/lib/ai-semantic-search-v2';
 
 /**
  * Enhanced Search Service - Anime Search
@@ -229,17 +228,6 @@ export async function GET(request: NextRequest) {
             // Get total count
             total = await db.collection('anime_series').countDocuments(mongoQuery);
         }
-
-        // Get facets (for filter UI)
-        const genres = await db.collection('anime_series')
-            .distinct('genres');
-        
-        const years = await db.collection('anime_series')
-            .distinct('year')
-            .then(years => years.sort((a, b) => b - a));
-
-        const statuses = await db.collection('anime_series')
-            .distinct('status');
 
         // Get facets (for filter UI)
         const genres = await db.collection('anime_series')
