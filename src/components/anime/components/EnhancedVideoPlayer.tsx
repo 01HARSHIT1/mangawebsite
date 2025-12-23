@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward, ChevronLeft, Settings, Subtitles, Languages } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward, ChevronLeft, Settings, Subtitles, Languages, RotateCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 
@@ -93,6 +93,7 @@ export default function EnhancedVideoPlayer({
     const [loading, setLoading] = useState(true);
     const [resumePosition, setResumePosition] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [hasEnded, setHasEnded] = useState(false);
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const trackRef = useRef<HTMLTrackElement>(null);
 
@@ -281,15 +282,38 @@ export default function EnhancedVideoPlayer({
 
         const updateTime = () => {
             const time = video.currentTime;
+            const videoDuration = video.duration;
+            
+            // Update current time
             setCurrentTime(time);
+            
+            // Update duration if available and different
+            if (videoDuration && !isNaN(videoDuration) && videoDuration !== duration) {
+                setDuration(videoDuration);
+            }
+            
+            // Check if video has ended (within 0.5 seconds of end)
+            if (videoDuration && time >= videoDuration - 0.5) {
+                if (!hasEnded) {
+                    setHasEnded(true);
+                    setIsPlaying(false);
+                }
+            } else if (hasEnded && time < videoDuration - 1) {
+                // Reset ended state if video is rewound
+                setHasEnded(false);
+            }
+            
             // Track heartbeat every 10 seconds
-            if (Math.floor(time) % 10 === 0 && isPlaying) {
+            if (Math.floor(time) % 10 === 0 && isPlaying && !hasEnded) {
                 trackEvent('heartbeat', time);
             }
         };
 
         const updateDuration = () => {
-            setDuration(video.duration);
+            const videoDuration = video.duration;
+            if (videoDuration && !isNaN(videoDuration)) {
+                setDuration(videoDuration);
+            }
         };
 
         const handlePlay = () => {
@@ -306,34 +330,47 @@ export default function EnhancedVideoPlayer({
 
         const handleEnded = () => {
             setIsPlaying(false);
+            setHasEnded(true);
+            setCurrentTime(video.duration || 0);
             trackEvent('complete', video.duration);
             updateWatchHistory(video.duration, true);
-            // Auto-play next episode after 3 seconds
+            // Auto-play next episode after 5 seconds (give user time to see replay button)
             setTimeout(() => {
-                onNextEpisode();
-            }, 3000);
+                if (hasNextEpisode) {
+                    onNextEpisode();
+                }
+            }, 5000);
         };
 
         const handleSeeked = () => {
             trackEvent('seek', video.currentTime);
         };
 
+        // Add all event listeners
         video.addEventListener('timeupdate', updateTime);
         video.addEventListener('loadedmetadata', updateDuration);
+        video.addEventListener('durationchange', updateDuration);
         video.addEventListener('play', handlePlay);
         video.addEventListener('pause', handlePause);
         video.addEventListener('ended', handleEnded);
         video.addEventListener('seeked', handleSeeked);
+        video.addEventListener('progress', () => {
+            // Force update when video is buffering
+            if (video.buffered.length > 0) {
+                updateTime();
+            }
+        });
 
         return () => {
             video.removeEventListener('timeupdate', updateTime);
             video.removeEventListener('loadedmetadata', updateDuration);
+            video.removeEventListener('durationchange', updateDuration);
             video.removeEventListener('play', handlePlay);
             video.removeEventListener('pause', handlePause);
             video.removeEventListener('ended', handleEnded);
             video.removeEventListener('seeked', handleSeeked);
         };
-    }, [onNextEpisode, trackEvent]);
+    }, [onNextEpisode, trackEvent, hasEnded, duration, isPlaying, hasNextEpisode]);
 
     const updateWatchHistory = async (position: number, completed: boolean = false) => {
         if (!isAuthenticated) return;
@@ -376,6 +413,13 @@ export default function EnhancedVideoPlayer({
             return;
         }
 
+        // If video has ended, restart from beginning
+        if (hasEnded) {
+            video.currentTime = 0;
+            setHasEnded(false);
+            setCurrentTime(0);
+        }
+
         if (!video.src) {
             console.warn('Video source not set');
             // Try to set source from episode data
@@ -406,6 +450,7 @@ export default function EnhancedVideoPlayer({
                 }
                 await video.play();
                 setIsPlaying(true);
+                setHasEnded(false);
             }
         } catch (error: any) {
             console.error('Error toggling play:', error);
@@ -421,6 +466,11 @@ export default function EnhancedVideoPlayer({
         const newTime = parseFloat(e.target.value);
         video.currentTime = newTime;
         setCurrentTime(newTime);
+        
+        // Reset ended state if user seeks away from end
+        if (hasEnded && newTime < (duration - 1)) {
+            setHasEnded(false);
+        }
     };
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -448,6 +498,7 @@ export default function EnhancedVideoPlayer({
     };
 
     const formatTime = (seconds: number) => {
+        if (!seconds || isNaN(seconds) || seconds < 0) return '0:00';
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -621,14 +672,19 @@ export default function EnhancedVideoPlayer({
                 </div>
             </div>
 
-            {/* Center Play Button */}
-            {!isPlaying && resumePosition === 0 && (
+            {/* Center Play/Replay Button */}
+            {!isPlaying && (resumePosition === 0 || hasEnded) && (
                 <div className="absolute inset-0 flex items-center justify-center">
                     <button
                         onClick={togglePlay}
-                        className="w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center transition-all shadow-lg"
+                        className={`w-20 h-20 ${hasEnded ? 'bg-orange-600 hover:bg-orange-700' : 'bg-red-600 hover:bg-red-700'} rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110`}
+                        title={hasEnded ? 'Replay' : 'Play'}
                     >
-                        <Play className="w-10 h-10 text-white ml-1" />
+                        {hasEnded ? (
+                            <RotateCw className="w-10 h-10 text-white" />
+                        ) : (
+                            <Play className="w-10 h-10 text-white ml-1" />
+                        )}
                     </button>
                 </div>
             )}
@@ -646,12 +702,16 @@ export default function EnhancedVideoPlayer({
                             type="range"
                             min="0"
                             max={duration || 0}
+                            step="0.1"
                             value={currentTime}
                             onChange={handleSeek}
                             className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600"
+                            style={{
+                                background: duration ? `linear-gradient(to right, #dc2626 0%, #dc2626 ${(currentTime / duration) * 100}%, #374151 ${(currentTime / duration) * 100}%, #374151 100%)` : undefined
+                            }}
                         />
                         <span className="text-white text-sm font-mono min-w-[80px] text-right">
-                            {formatTime(currentTime)} / {formatTime(duration)}
+                            {formatTime(currentTime)} / {formatTime(duration || 0)}
                         </span>
                     </div>
 
@@ -670,8 +730,18 @@ export default function EnhancedVideoPlayer({
                             >
                                 <SkipBack className="w-5 h-5 text-white" />
                             </button>
-                            <button onClick={togglePlay} className="p-2 hover:bg-white/10 rounded transition-colors">
-                                {isPlaying ? <Pause className="w-6 h-6 text-white" /> : <Play className="w-6 h-6 text-white" />}
+                            <button 
+                                onClick={togglePlay} 
+                                className="p-2 hover:bg-white/10 rounded transition-colors"
+                                title={hasEnded ? 'Replay' : isPlaying ? 'Pause' : 'Play'}
+                            >
+                                {hasEnded ? (
+                                    <RotateCw className="w-6 h-6 text-white" />
+                                ) : isPlaying ? (
+                                    <Pause className="w-6 h-6 text-white" />
+                                ) : (
+                                    <Play className="w-6 h-6 text-white" />
+                                )}
                             </button>
                             <button 
                                 onClick={onNextEpisode} 
