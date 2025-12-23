@@ -24,14 +24,45 @@ export default function AnimeUploadPage() {
         episodeDescription: "",
         episodeVideo: null as File | null,
         episodeDuration: "",
+        existingSeriesId: "", // For selecting existing series
     });
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [coverImageDragActive, setCoverImageDragActive] = useState(false);
     const [episodeDragActive, setEpisodeDragActive] = useState(false);
+    const [existingSeries, setExistingSeries] = useState<Array<{_id: string, title: string}>>([]);
+    const [isNewSeries, setIsNewSeries] = useState(true);
     const coverImageRef = useRef<HTMLInputElement | null>(null);
     const episodeVideoRef = useRef<HTMLInputElement | null>(null);
     const router = useRouter();
+
+    // Fetch existing series and creator name on mount
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            fetchExistingSeries();
+            // Pre-fill creator name from user profile
+            if (user.creatorProfile?.displayName) {
+                setForm(prev => ({ ...prev, creatorName: user.creatorProfile.displayName }));
+            } else if (user.username) {
+                setForm(prev => ({ ...prev, creatorName: user.username }));
+            }
+        }
+    }, [isAuthenticated, user]);
+
+    const fetchExistingSeries = async () => {
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch('/api/anime/creator/my-series', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setExistingSeries(data.series || []);
+            }
+        } catch (error) {
+            console.error('Error fetching existing series:', error);
+        }
+    };
 
     async function uploadToCloudinary(file: File, folder: string, resourceType: 'auto' | 'video' = 'auto') {
         const signRes = await fetch('/api/cloudinary/sign', {
@@ -79,15 +110,23 @@ export default function AnimeUploadPage() {
             return;
         }
 
-        if (!form.title || !form.creatorName || !form.description || !form.genre) {
+        // Validation: cover image only required for new series
+        if (isNewSeries && (!form.title || !form.creatorName || !form.description || !form.genre)) {
             setMessage("Please fill in all required fields");
             return;
         }
-        if (!form.coverImage) {
+        if (isNewSeries && !form.coverImage) {
             setMessage("Please select a cover image");
             return;
         }
-
+        if (!form.existingSeriesId && !form.title) {
+            setMessage("Please select an existing series or enter a new title");
+            return;
+        }
+        if (!form.creatorName) {
+            setMessage("Please enter creator name");
+            return;
+        }
         if (!form.episodeVideo) {
             setMessage("Please attach at least one episode video");
             return;
@@ -98,37 +137,45 @@ export default function AnimeUploadPage() {
 
         try {
             const token = localStorage.getItem('authToken');
-            
-            const coverInfo = form.coverImage 
-                ? await uploadToCloudinary(form.coverImage, 'anime/series')
-                : null;
+            let seriesId: string;
 
-            if (!coverInfo) {
-                throw new Error('Failed to upload cover image');
-            }
+            // If existing series is selected, use it; otherwise create new series
+            if (form.existingSeriesId && !isNewSeries) {
+                seriesId = form.existingSeriesId;
+            } else {
+                // Create new series
+                const coverInfo = form.coverImage 
+                    ? await uploadToCloudinary(form.coverImage, 'anime/series')
+                    : null;
 
-            const saveRes = await fetch('/api/anime/upload', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    type: 'series',
-                    title: form.title,
-                    creatorName: form.creatorName,
-                    description: form.description,
-                    genres: form.genre.split(',').map((g: string) => g.trim()),
-                    status: form.status || 'ongoing',
-                    coverImage: coverInfo.secure_url,
-                    tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()) : [],
-                    year: new Date().getFullYear(),
-                })
-            });
+                if (!coverInfo) {
+                    throw new Error('Failed to upload cover image');
+                }
 
-            const saveData = await saveRes.json();
-            if (!saveRes.ok) {
-                throw new Error(saveData?.error || 'Failed to save anime series');
+                const saveRes = await fetch('/api/anime/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'series',
+                        title: form.title,
+                        creatorName: form.creatorName,
+                        description: form.description,
+                        genres: form.genre.split(',').map((g: string) => g.trim()),
+                        status: form.status || 'ongoing',
+                        coverImage: coverInfo.secure_url,
+                        tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()) : [],
+                        year: new Date().getFullYear(),
+                    })
+                });
+
+                const saveData = await saveRes.json();
+                if (!saveRes.ok) {
+                    throw new Error(saveData?.error || 'Failed to save anime series');
+                }
+                seriesId = saveData.seriesId;
             }
 
             // Upload first episode video
@@ -140,6 +187,21 @@ export default function AnimeUploadPage() {
                 throw new Error('Failed to upload episode video');
             }
 
+            // Get thumbnail - use series cover if new series, or fetch from existing series
+            let thumbnail: string | null = null;
+            if (form.existingSeriesId && !isNewSeries) {
+                // Fetch existing series cover
+                const seriesRes = await fetch(`/api/anime/${form.existingSeriesId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (seriesRes.ok) {
+                    const seriesData = await seriesRes.json();
+                    thumbnail = seriesData.coverImage || null;
+                }
+            } else if (coverInfo) {
+                thumbnail = coverInfo.secure_url;
+            }
+
             const episodeRes = await fetch('/api/anime/episodes', {
                 method: 'POST',
                 headers: {
@@ -147,13 +209,13 @@ export default function AnimeUploadPage() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    seriesId: saveData.seriesId,
+                    seriesId: seriesId,
                     title: form.episodeTitle || `${form.title} Episode ${form.episodeNumber || 1}`,
                     description: form.episodeDescription || form.description,
                     episodeNumber: form.episodeNumber || 1,
                     seasonNumber: 1,
                     videoUrl: episodeInfo.secure_url,
-                    thumbnail: coverInfo.secure_url,
+                    thumbnail: thumbnail,
                     duration: form.episodeDuration ? Number(form.episodeDuration) : undefined,
                 })
             });
@@ -243,6 +305,42 @@ export default function AnimeUploadPage() {
 
                 <div className="bg-gray-900/50 rounded-2xl p-8 border border-orange-500/20">
                     <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
+                        {/* Existing Series Selector */}
+                        {existingSeries.length > 0 && (
+                            <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+                                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">📚</span>
+                                        Upload to Existing Series (Optional)
+                                    </span>
+                                </label>
+                                <div className="flex items-center space-x-4">
+                                    <select
+                                        name="existingSeriesId"
+                                        value={form.existingSeriesId}
+                                        onChange={(e) => {
+                                            const selectedId = e.target.value;
+                                            setIsNewSeries(!selectedId);
+                                            if (selectedId) {
+                                                const selected = existingSeries.find(s => s._id === selectedId);
+                                                if (selected) {
+                                                    setForm(prev => ({ ...prev, title: selected.title, existingSeriesId: selectedId }));
+                                                }
+                                            } else {
+                                                setForm(prev => ({ ...prev, title: "", existingSeriesId: "" }));
+                                            }
+                                        }}
+                                        className="flex-1 px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+                                    >
+                                        <option value="">Create New Series</option>
+                                        {existingSeries.map(s => (
+                                            <option key={s._id} value={s._id}>{s.title}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="block text-sm font-semibold text-gray-300">
@@ -256,7 +354,8 @@ export default function AnimeUploadPage() {
                                     name="title"
                                     value={form.title}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
+                                    disabled={!isNewSeries && form.existingSeriesId}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                                     placeholder="Enter anime series title"
                                     required
                                 />

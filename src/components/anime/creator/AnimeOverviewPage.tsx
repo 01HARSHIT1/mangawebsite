@@ -157,7 +157,20 @@ export default function AnimeOverviewPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
-                        <p className="text-orange-400">Welcome back! Here's your anime performance summary.</p>
+                        <p className="text-orange-400">
+                            Welcome back{typeof window !== 'undefined' && localStorage.getItem('authToken') ? 
+                                (() => {
+                                    try {
+                                        const userStr = localStorage.getItem('user');
+                                        if (userStr) {
+                                            const user = JSON.parse(userStr);
+                                            const creatorName = user?.creatorProfile?.displayName || user?.username || '';
+                                            return creatorName ? `, ${creatorName}!` : '!';
+                                        }
+                                    } catch {}
+                                    return '!';
+                                })() : '!'} Here's your anime performance summary.
+                        </p>
                     </div>
                     <div className="mt-4 md:mt-0 flex items-center space-x-2">
                         {(['7d', '30d', '90d'] as const).map((range) => (

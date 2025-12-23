@@ -29,21 +29,45 @@ export async function GET(
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        // Get current episode
-        const episode = await db.collection('anime_episodes').findOne({
-            seriesId: new ObjectId(seriesId),
+        // Try to convert seriesId to ObjectId, handle both ObjectId and string formats
+        let seriesObjectId: ObjectId;
+        try {
+            seriesObjectId = new ObjectId(seriesId);
+        } catch (error) {
+            return NextResponse.json({ error: 'Invalid series ID format' }, { status: 400 });
+        }
+
+        // Get current episode - try both ObjectId and string formats
+        let episode = await db.collection('anime_episodes').findOne({
+            seriesId: seriesObjectId,
             episodeNumber: epNum,
         });
+
+        // If not found, try with string format
+        if (!episode) {
+            episode = await db.collection('anime_episodes').findOne({
+                seriesId: seriesId,
+                episodeNumber: epNum,
+            });
+        }
 
         if (!episode) {
             return NextResponse.json({ error: 'Episode not found' }, { status: 404 });
         }
 
         // Get all episodes in the series sorted by episode number
-        const allEpisodes = await db.collection('anime_episodes')
-            .find({ seriesId: new ObjectId(seriesId) })
+        let allEpisodes = await db.collection('anime_episodes')
+            .find({ seriesId: seriesObjectId })
             .sort({ seasonNumber: 1, episodeNumber: 1 })
             .toArray();
+
+        // If no episodes found, try with string format
+        if (allEpisodes.length === 0) {
+            allEpisodes = await db.collection('anime_episodes')
+                .find({ seriesId: seriesId })
+                .sort({ seasonNumber: 1, episodeNumber: 1 })
+                .toArray();
+        }
 
         // Find current episode index
         const currentIndex = allEpisodes.findIndex(

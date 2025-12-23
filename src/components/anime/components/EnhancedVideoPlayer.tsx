@@ -27,17 +27,24 @@ interface QualityLevel {
 }
 
 interface Episode {
-    _id: string;
+    _id?: string;
+    id?: string;
     episodeNumber: number;
+    seasonNumber?: number;
     title: string;
     description?: string;
     videoUrl?: string;
     hlsManifestUrl?: string;
+    dashManifestUrl?: string;
     thumbnail?: string;
     duration?: number;
     subtitles?: Subtitle[];
     audioTracks?: AudioTrack[];
     qualityLevels?: QualityLevel[];
+    availableTracks?: {
+        audio?: AudioTrack[];
+        subtitles?: Subtitle[];
+    };
 }
 
 interface Series {
@@ -91,7 +98,7 @@ export default function EnhancedVideoPlayer({
     // Load playback data and resume position
     useEffect(() => {
         loadPlaybackData();
-    }, [episode._id]);
+    }, [episode._id || episode.id]);
 
     const loadPlaybackData = async () => {
         try {
@@ -153,12 +160,13 @@ export default function EnhancedVideoPlayer({
     // Set video source and resume position
     useEffect(() => {
         const video = videoRef.current;
-        if (!video || !playbackData) return;
+        if (!video) return;
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
-        const videoSrc = playbackData.manifestUrl || playbackData.hlsManifestUrl || episode.videoUrl;
+        const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode.videoUrl || episode.hlsManifestUrl;
         if (videoSrc) {
             video.src = videoSrc;
+            video.load(); // Reload video with new source
         }
 
         // Resume from last position
@@ -173,10 +181,10 @@ export default function EnhancedVideoPlayer({
             trackRef.current.srclang = selectedSubtitle.languageCode;
             trackRef.current.label = selectedSubtitle.language;
         }
-    }, [playbackData, resumePosition, selectedSubtitle, episode.videoUrl]);
+    }, [playbackData, resumePosition, selectedSubtitle, episode.videoUrl, episode.hlsManifestUrl]);
 
     // Track playback events
-    const episodeId = episode._id || episode.id;
+    const episodeId = episode._id || episode.id || '';
     const trackEvent = useCallback(async (eventType: string, position?: number) => {
         if (!isAuthenticated || !episodeId) return;
         

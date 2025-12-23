@@ -6,14 +6,20 @@ import { useAppMode } from '@/contexts/AppModeContext';
 import EnhancedVideoPlayer from '@/components/anime/components/EnhancedVideoPlayer';
 
 interface Episode {
-    _id: string;
+    _id?: string;
+    id?: string;
     episodeNumber: number;
+    seasonNumber?: number;
     title: string;
     description?: string;
-    videoUrl: string;
+    videoUrl?: string;
+    hlsManifestUrl?: string;
+    dashManifestUrl?: string;
     thumbnail?: string;
     duration?: number;
     airDate?: string;
+    availableTracks?: any;
+    qualityLevels?: any[];
 }
 
 interface Series {
@@ -64,7 +70,7 @@ export default function EpisodePage() {
                     id: episodeData.id,
                     episodeNumber: episodeData.episodeNumber,
                     seasonNumber: episodeData.seasonNumber,
-                    title: episodeData.title,
+                    title: episodeData.title || `Episode ${episodeData.episodeNumber}`,
                     description: episodeData.description,
                     videoUrl: episodeData.videoUrl,
                     hlsManifestUrl: episodeData.hlsManifestUrl,
@@ -79,6 +85,9 @@ export default function EpisodePage() {
                 setSeries(episodeData.series || { _id: seriesId, title: 'Loading...', coverImage: '' });
                 setPrevEpisode(episodeData.prevEpisode);
                 setNextEpisode(episodeData.nextEpisode);
+            } else {
+                const errorData = await episodeRes.json().catch(() => ({}));
+                console.error('Failed to fetch episode:', errorData);
             }
         } catch (error) {
             console.error('Error fetching episode data:', error);
