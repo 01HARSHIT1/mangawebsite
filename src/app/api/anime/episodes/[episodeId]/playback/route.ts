@@ -44,19 +44,42 @@ export async function GET(
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        // Get episode data
-        const episode = await db.collection('anime_episodes').findOne({ 
-            _id: new ObjectId(episodeId) 
-        });
+        // Get episode data - handle both ObjectId and string formats
+        let episode: any = null;
+        try {
+            episode = await db.collection('anime_episodes').findOne({ 
+                _id: new ObjectId(episodeId) 
+            });
+        } catch (error) {
+            // Try with string format
+            episode = await db.collection('anime_episodes').findOne({ 
+                _id: episodeId 
+            });
+        }
         
         if (!episode) {
             return NextResponse.json({ error: 'Episode not found' }, { status: 404 });
         }
 
-        // Get series for geo-restrictions check
-        const series = await db.collection('anime_series').findOne({ 
-            _id: new ObjectId(episode.seriesId) 
-        });
+        // Get series for geo-restrictions check - handle both ObjectId and string formats
+        let series: any = null;
+        try {
+            const seriesId = episode.seriesId?.toString ? episode.seriesId.toString() : episode.seriesId;
+            if (ObjectId.isValid(seriesId)) {
+                series = await db.collection('anime_series').findOne({ 
+                    _id: new ObjectId(seriesId) 
+                });
+            } else {
+                series = await db.collection('anime_series').findOne({ 
+                    _id: seriesId 
+                });
+            }
+        } catch (error) {
+            // Fallback
+            series = await db.collection('anime_series').findOne({ 
+                _id: episode.seriesId 
+            });
+        }
         
         if (!series) {
             return NextResponse.json({ error: 'Series not found' }, { status: 404 });

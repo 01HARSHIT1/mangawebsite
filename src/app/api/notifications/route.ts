@@ -26,16 +26,25 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
         const limit = parseInt(searchParams.get('limit') || '50', 10);
         const skip = parseInt(searchParams.get('skip') || '0', 10);
+        const unreadOnly = searchParams.get('unread') === 'true';
 
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
+        // Build query
+        const query: any = { userId: payload.userId };
+        if (unreadOnly) {
+            query.read = { $ne: true };
+        }
+
         const notifications = await db.collection('notifications')
-            .find({ userId: payload.userId })
+            .find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .toArray();
+
+        const total = await db.collection('notifications').countDocuments(query);
 
         return NextResponse.json({
             notifications: notifications.map((n: any) => ({
@@ -46,7 +55,12 @@ export async function GET(request: NextRequest) {
                 read: n.read || false,
                 createdAt: n.createdAt,
             })),
-            total: notifications.length,
+            pagination: {
+                total,
+                limit,
+                skip,
+                hasMore: skip + limit < total,
+            },
         });
     } catch (error: any) {
         console.error('Error fetching notifications:', error);

@@ -160,28 +160,36 @@ export default function EnhancedVideoPlayer({
     // Set video source and resume position
     useEffect(() => {
         const video = videoRef.current;
-        if (!video) return;
+        if (!video || !episode) return;
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
         const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode.videoUrl || episode.hlsManifestUrl;
-        if (videoSrc) {
-            video.src = videoSrc;
-            video.load(); // Reload video with new source
+        if (videoSrc && videoSrc !== video.src) {
+            try {
+                video.src = videoSrc;
+                video.load(); // Reload video with new source
+            } catch (error) {
+                console.error('Error setting video source:', error);
+            }
         }
 
         // Resume from last position
-        if (resumePosition > 0) {
+        if (resumePosition > 0 && video.readyState >= 2) {
             video.currentTime = resumePosition;
         }
 
         // Load subtitles
         if (selectedSubtitle && trackRef.current) {
-            trackRef.current.src = selectedSubtitle.url;
-            trackRef.current.kind = 'subtitles';
-            trackRef.current.srclang = selectedSubtitle.languageCode;
-            trackRef.current.label = selectedSubtitle.language;
+            try {
+                trackRef.current.src = selectedSubtitle.url;
+                trackRef.current.kind = 'subtitles';
+                trackRef.current.srclang = selectedSubtitle.languageCode;
+                trackRef.current.label = selectedSubtitle.language;
+            } catch (error) {
+                console.error('Error loading subtitles:', error);
+            }
         }
-    }, [playbackData, resumePosition, selectedSubtitle, episode.videoUrl, episode.hlsManifestUrl]);
+    }, [playbackData, resumePosition, selectedSubtitle, episode?.videoUrl, episode?.hlsManifestUrl]);
 
     // Track playback events
     const episodeId = episode._id || episode.id || '';
@@ -486,8 +494,8 @@ export default function EnhancedVideoPlayer({
                     >
                         <ChevronLeft className="w-6 h-6" />
                         <div className="hidden md:block">
-                            <p className="text-sm font-semibold">{series.title}</p>
-                            <p className="text-xs text-gray-400">Episode {episode.episodeNumber}: {episode.title}</p>
+                            <p className="text-sm font-semibold">{series?.title || 'Loading...'}</p>
+                            <p className="text-xs text-gray-400">Episode {episode?.episodeNumber || 1}: {episode?.title || 'Untitled'}</p>
                         </div>
                     </button>
                     <AppModeSwitcher />

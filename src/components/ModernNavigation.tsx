@@ -37,13 +37,20 @@ export default function ModernNavigation() {
         if (isAuthenticated) {
             const fetchUnreadCount = async () => {
                 try {
-                    const response = await fetch('/api/notifications?unread=true&limit=1');
+                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                    const response = await fetch('/api/notifications?unread=true&limit=1', {
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
                     if (response.ok) {
                         const data = await response.json();
-                        setUnreadCount(data.pagination?.total || 0);
+                        setUnreadCount(data.pagination?.total || data.notifications?.length || 0);
+                    } else if (response.status === 401) {
+                        // Not authenticated, silently fail
+                        setUnreadCount(0);
                     }
                 } catch (error) {
                     console.error('Failed to fetch unread notifications:', error);
+                    setUnreadCount(0);
                 }
             };
 
