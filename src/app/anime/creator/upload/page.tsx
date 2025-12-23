@@ -19,14 +19,21 @@ export default function AnimeUploadPage() {
         tags: "",
         status: "",
         coverImage: null as File | null,
+        episodeTitle: "",
+        episodeNumber: 1,
+        episodeDescription: "",
+        episodeVideo: null as File | null,
+        episodeDuration: "",
     });
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [coverImageDragActive, setCoverImageDragActive] = useState(false);
+    const [episodeDragActive, setEpisodeDragActive] = useState(false);
     const coverImageRef = useRef<HTMLInputElement | null>(null);
+    const episodeVideoRef = useRef<HTMLInputElement | null>(null);
     const router = useRouter();
 
-    async function uploadToCloudinary(file: File, folder: string) {
+    async function uploadToCloudinary(file: File, folder: string, resourceType: 'auto' | 'video' = 'auto') {
         const signRes = await fetch('/api/cloudinary/sign', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -45,7 +52,7 @@ export default function AnimeUploadPage() {
         fd.append('signature', signature);
         if (signedFolder) fd.append('folder', signedFolder);
 
-        const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+        const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
         const upRes = await fetch(uploadUrl, { method: 'POST', body: fd });
         const ct = upRes.headers.get('content-type') || '';
         const upData: any = ct.includes('application/json') ? await upRes.json() : { error: await upRes.text() };
@@ -57,7 +64,11 @@ export default function AnimeUploadPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
+        if (name === 'episodeNumber') {
+            setForm(prev => ({ ...prev, [name]: Number(value) }));
+        } else {
+            setForm(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -74,6 +85,11 @@ export default function AnimeUploadPage() {
         }
         if (!form.coverImage) {
             setMessage("Please select a cover image");
+            return;
+        }
+
+        if (!form.episodeVideo) {
+            setMessage("Please attach at least one episode video");
             return;
         }
 
@@ -106,6 +122,7 @@ export default function AnimeUploadPage() {
                     status: form.status || 'ongoing',
                     coverImage: coverInfo.secure_url,
                     tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()) : [],
+                    year: new Date().getFullYear(),
                 })
             });
 
@@ -114,7 +131,39 @@ export default function AnimeUploadPage() {
                 throw new Error(saveData?.error || 'Failed to save anime series');
             }
 
-            setMessage("Anime series uploaded successfully! You can now access the creator dashboard.");
+            // Upload first episode video
+            const episodeInfo = form.episodeVideo 
+                ? await uploadToCloudinary(form.episodeVideo, 'anime/episodes', 'video')
+                : null;
+
+            if (!episodeInfo) {
+                throw new Error('Failed to upload episode video');
+            }
+
+            const episodeRes = await fetch('/api/anime/episodes', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    seriesId: saveData.seriesId,
+                    title: form.episodeTitle || `${form.title} Episode ${form.episodeNumber || 1}`,
+                    description: form.episodeDescription || form.description,
+                    episodeNumber: form.episodeNumber || 1,
+                    seasonNumber: 1,
+                    videoUrl: episodeInfo.secure_url,
+                    thumbnail: coverInfo.secure_url,
+                    duration: form.episodeDuration ? Number(form.episodeDuration) : undefined,
+                })
+            });
+
+            const episodeData = await episodeRes.json();
+            if (!episodeRes.ok) {
+                throw new Error(episodeData?.error || 'Failed to create episode');
+            }
+
+            setMessage("Anime series and first episode uploaded successfully! You can now access the creator dashboard.");
 
             setForm({
                 title: "",
@@ -124,6 +173,11 @@ export default function AnimeUploadPage() {
                 tags: "",
                 status: "",
                 coverImage: null,
+                episodeTitle: "",
+                episodeNumber: 1,
+                episodeDescription: "",
+                episodeVideo: null,
+                episodeDuration: "",
             });
 
             // After successful upload, user is upgraded to creator
@@ -348,6 +402,149 @@ export default function AnimeUploadPage() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+
+                            <div className="md:col-span-2 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-sm font-semibold text-gray-300">
+                                        <span className="flex items-center">
+                                            <span className="mr-2">🎞️</span>
+                                            First Episode Video
+                                            <span className="text-red-400 ml-1">*</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div
+                                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${episodeDragActive
+                                        ? 'border-orange-500 bg-orange-500/10'
+                                        : 'border-orange-500/30 bg-gray-950/50 hover:border-orange-500/50'
+                                        }`}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setEpisodeDragActive(true);
+                                    }}
+                                    onDragLeave={() => setEpisodeDragActive(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setEpisodeDragActive(false);
+                                        const file = e.dataTransfer.files[0];
+                                        if (file) {
+                                            setForm({ ...form, episodeVideo: file });
+                                        }
+                                    }}
+                                >
+                                    {form.episodeVideo ? (
+                                        <div className="space-y-3">
+                                            <p className="text-gray-300 font-semibold">{form.episodeVideo.name}</p>
+                                            <p className="text-gray-400 text-sm">{(form.episodeVideo.size / (1024 * 1024)).toFixed(1)} MB</p>
+                                            <div className="flex items-center justify-center space-x-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => episodeVideoRef.current?.click()}
+                                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-orange-500/40"
+                                                >
+                                                    Replace File
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setForm({ ...form, episodeVideo: null })}
+                                                    className="px-4 py-2 text-red-400 hover:text-red-300"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-gray-400 mb-4">Drag & drop or click to select a video file</p>
+                                            <input
+                                                ref={episodeVideoRef}
+                                                type="file"
+                                                accept="video/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) setForm({ ...form, episodeVideo: file });
+                                                }}
+                                                className="hidden"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => episodeVideoRef.current?.click()}
+                                                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors"
+                                            >
+                                                Select Episode Video
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-300">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">🎧</span>
+                                        Episode Title
+                                    </span>
+                                </label>
+                                <input
+                                    name="episodeTitle"
+                                    value={form.episodeTitle}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
+                                    placeholder="Episode 1 title (optional)"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-300">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">#️⃣</span>
+                                        Episode Number
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    name="episodeNumber"
+                                    min={1}
+                                    value={form.episodeNumber}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
+                                />
+                            </div>
+
+                            <div className="md:col-span-2 space-y-2">
+                                <label className="block text-sm font-semibold text-gray-300">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">📝</span>
+                                        Episode Description
+                                    </span>
+                                </label>
+                                <textarea
+                                    name="episodeDescription"
+                                    value={form.episodeDescription}
+                                    onChange={handleChange}
+                                    rows={3}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400 resize-none"
+                                    placeholder="Episode synopsis (optional)"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-300">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">⏱️</span>
+                                        Episode Duration (minutes)
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    name="episodeDuration"
+                                    min={0}
+                                    value={form.episodeDuration}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
+                                    placeholder="e.g., 24"
+                                />
                             </div>
                         </div>
 

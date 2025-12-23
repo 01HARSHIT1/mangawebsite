@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         if (contentType.includes('application/json')) {
             // Handle anime series creation (like manga upload)
             const body = await request.json();
-            const { type, title, creatorName, description, genres, status, coverImage, tags } = body;
+            const { type, title, creatorName, description, genres, status, coverImage, tags, year } = body;
 
             if (type !== 'series') {
                 return NextResponse.json({ error: 'Invalid type. Expected "series"' }, { status: 400 });
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
                 creatorId: user._id,
                 uploaderId: user._id.toString(),
                 description,
+                year: year ? parseInt(year, 10) : new Date().getFullYear(),
                 genres: Array.isArray(genres) ? genres : genres.split(',').map((g: string) => g.trim()),
                 tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map((t: string) => t.trim())) : [],
                 status: status || 'ongoing',
