@@ -92,6 +92,7 @@ export default function EnhancedVideoPlayer({
     const [playbackData, setPlaybackData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [resumePosition, setResumePosition] = useState(0);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const trackRef = useRef<HTMLTrackElement>(null);
 
@@ -133,6 +134,9 @@ export default function EnhancedVideoPlayer({
                 if (defaultAudio) {
                     setSelectedAudio(defaultAudio);
                 }
+            } else {
+                console.warn('Playback API failed, using direct video URL');
+                // Continue with episode.videoUrl as fallback
             }
 
             // Get resume position if authenticated
@@ -157,25 +161,78 @@ export default function EnhancedVideoPlayer({
         }
     };
 
-    // Set video source and resume position
+    // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
         const video = videoRef.current;
         if (!video || !episode) return;
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
+        // Prioritize playbackData, but use episode data as immediate fallback
         const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode.videoUrl || episode.hlsManifestUrl;
-        if (videoSrc && videoSrc !== video.src) {
-            try {
-                video.src = videoSrc;
-                video.load(); // Reload video with new source
-            } catch (error) {
-                console.error('Error setting video source:', error);
-            }
+        
+        if (!videoSrc) {
+            console.warn('No video source available for episode:', episode);
+            setErrorMessage('Video source not available');
+            setLoading(false);
+            return;
         }
 
-        // Resume from last position
-        if (resumePosition > 0 && video.readyState >= 2) {
-            video.currentTime = resumePosition;
+        // Set source if it's different or not set
+        if (!video.src || videoSrc !== video.src) {
+            try {
+                console.log('Setting video source:', videoSrc);
+                video.src = videoSrc;
+                video.load(); // Reload video with new source
+                
+                // Wait for metadata to load
+                const handleLoadedMetadata = () => {
+                    console.log('Video metadata loaded, duration:', video.duration);
+                    if (video.duration && !isNaN(video.duration)) {
+                        setDuration(video.duration);
+                    }
+                    setLoading(false);
+                    
+                    // Resume from last position after metadata loads
+                    if (resumePosition > 0) {
+                        video.currentTime = resumePosition;
+                    }
+                };
+                
+                const handleCanPlay = () => {
+                    console.log('Video can play');
+                    setLoading(false);
+                };
+                
+                // Handle errors
+                const handleError = (e: any) => {
+                    console.error('Video error:', e, video.error);
+                    let errorMsg = 'Failed to load video.';
+                    if (video.error) {
+                        switch (video.error.code) {
+                            case 1: errorMsg = 'Video loading aborted.'; break;
+                            case 2: errorMsg = 'Network error while loading video.'; break;
+                            case 3: errorMsg = 'Video decoding error.'; break;
+                            case 4: errorMsg = 'Video format not supported.'; break;
+                        }
+                    }
+                    setErrorMessage(errorMsg);
+                    setLoading(false);
+                };
+                
+                video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+                video.addEventListener('canplay', handleCanPlay, { once: true });
+                video.addEventListener('error', handleError, { once: true });
+                
+                return () => {
+                    video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+                    video.removeEventListener('canplay', handleCanPlay);
+                    video.removeEventListener('error', handleError);
+                };
+            } catch (error) {
+                console.error('Error setting video source:', error);
+                setErrorMessage('Failed to set video source');
+                setLoading(false);
+            }
         }
 
         // Load subtitles
@@ -189,7 +246,7 @@ export default function EnhancedVideoPlayer({
                 console.error('Error loading subtitles:', error);
             }
         }
-    }, [playbackData, resumePosition, selectedSubtitle, episode?.videoUrl, episode?.hlsManifestUrl]);
+    }, [playbackData, resumePosition, selectedSubtitle, episode?.videoUrl, episode?.hlsManifestUrl, episode]);
 
     // Track playback events
     const episodeId = episode._id || episode.id || '';
@@ -312,14 +369,49 @@ export default function EnhancedVideoPlayer({
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
-    const togglePlay = () => {
+    const togglePlay = async () => {
         const video = videoRef.current;
-        if (!video) return;
+        if (!video) {
+            console.warn('Video element not found');
+            return;
+        }
 
-        if (isPlaying) {
-            video.pause();
-        } else {
-            video.play();
+        if (!video.src) {
+            console.warn('Video source not set');
+            // Try to set source from episode data
+            const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode.videoUrl || episode.hlsManifestUrl;
+            if (videoSrc) {
+                video.src = videoSrc;
+                video.load();
+            } else {
+                console.error('No video source available');
+                return;
+            }
+        }
+
+        try {
+            if (isPlaying) {
+                video.pause();
+            } else {
+                // Ensure video is ready before playing
+                if (video.readyState < 2) {
+                    await new Promise((resolve) => {
+                        const handleCanPlay = () => {
+                            video.removeEventListener('canplay', handleCanPlay);
+                            resolve(null);
+                        };
+                        video.addEventListener('canplay', handleCanPlay);
+                        video.load();
+                    });
+                }
+                await video.play();
+                setIsPlaying(true);
+            }
+        } catch (error: any) {
+            console.error('Error toggling play:', error);
+            if (error.name === 'NotAllowedError') {
+                console.warn('Playback was prevented. User interaction may be required.');
+            }
         }
     };
 
@@ -433,8 +525,11 @@ export default function EnhancedVideoPlayer({
                 ref={videoRef}
                 className="w-full h-full object-contain"
                 onClick={togglePlay}
-                poster={episode.thumbnail}
+                poster={episode?.thumbnail}
                 crossOrigin="anonymous"
+                preload="metadata"
+                playsInline
+                webkit-playsinline="true"
             >
                 {selectedSubtitle && (
                     <track
@@ -447,8 +542,32 @@ export default function EnhancedVideoPlayer({
                 )}
             </video>
 
+            {/* Error Message */}
+            {errorMessage && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
+                    <div className="bg-red-900/90 rounded-lg p-6 text-center max-w-md">
+                        <p className="text-white mb-4">{errorMessage}</p>
+                        <button
+                            onClick={() => {
+                                setErrorMessage(null);
+                                if (videoRef.current) {
+                                    const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode.videoUrl || episode.hlsManifestUrl;
+                                    if (videoSrc) {
+                                        videoRef.current.src = videoSrc;
+                                        videoRef.current.load();
+                                    }
+                                }
+                            }}
+                            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Resume Prompt */}
-            {resumePosition > 10 && !isPlaying && (
+            {resumePosition > 10 && !isPlaying && !errorMessage && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
                     <div className="bg-gray-900 rounded-lg p-6 text-center">
                         <p className="text-white mb-4">Resume from {formatTime(resumePosition)}?</p>
