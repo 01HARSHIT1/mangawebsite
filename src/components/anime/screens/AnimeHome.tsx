@@ -249,9 +249,165 @@ export default function AnimeHome() {
         );
     }
 
+    const genres = [
+        'Action', 'Adventure', 'Cars', 'Comedy', 'Dementia', 'Demons', 'Drama', 'Ecchi',
+        'Fantasy', 'Game', 'Harem', 'Hentai', 'Historical', 'Horror', 'Josei', 'Kids',
+        'Magic', 'Martial Arts', 'Mecha', 'Military', 'Music', 'Mystery', 'Psychological',
+        'Police', 'Romance', 'Samurai', 'School', 'Sci-Fi', 'Seinen', 'Shoujo', 'Shoujo Ai',
+        'Shounen', 'Shounen Ai', 'Slice of Life', 'Sports', 'Space', 'Supernatural', 'Thriller',
+        'Vampire', 'Yaoi', 'Yuri', 'Isekai'
+    ];
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-orange-950 via-red-950 to-black text-white overflow-hidden">
             {/* Navigation is now handled by AnimeAppNavigator */}
+
+            {/* Hamburger Menu Sidebar */}
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <>
+                        {/* Overlay */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="fixed inset-0 bg-black/70 z-40 lg:hidden"
+                        />
+                        {/* Sidebar */}
+                        <motion.div
+                            initial={{ x: -320 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -320 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed left-0 top-0 bottom-0 w-80 bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-50 overflow-y-auto"
+                        >
+                            <div className="p-4">
+                                {/* Close Button */}
+                                <button
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6 transition-colors"
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                    <span className="font-semibold">Close menu</span>
+                                </button>
+
+                                {/* Community Button */}
+                                <Link
+                                    href="/anime/browse"
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 rounded-lg mb-6 transition-all"
+                                >
+                                    <MessageCircle className="w-5 h-5 text-pink-400" />
+                                    <span className="font-semibold">Community</span>
+                                </Link>
+
+                                {/* Navigation Links */}
+                                <div className="space-y-2 mb-8">
+                                    <Link
+                                        href="/anime"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Home
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Subbed Anime
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Dubbed Anime
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Movies
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        TV Series
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        OVAs
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg bg-pink-500/30 hover:bg-pink-500/40 transition-colors"
+                                    >
+                                        ONAs
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Specials
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Events
+                                    </Link>
+                                </div>
+
+                                {/* Genre Section */}
+                                <div className="mb-6">
+                                    <h3 className="px-4 py-2 text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                        Genre
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {genres.slice(0, 18).map((genre) => (
+                                            <Link
+                                                key={genre}
+                                                href={`/anime/genres?genre=${genre.toLowerCase().replace(/\s+/g, '-')}`}
+                                                onClick={() => setIsSidebarOpen(false)}
+                                                className="px-3 py-2 text-sm rounded-lg hover:bg-orange-500/20 transition-colors text-center"
+                                            >
+                                                {genre}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                    <Link
+                                        href="/anime/genres"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 mt-3 text-sm text-orange-400 hover:text-orange-300 font-semibold text-center"
+                                    >
+                                        + More
+                                    </Link>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Hamburger Menu Button - Fixed Position */}
+            <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="fixed left-4 top-20 z-30 p-3 bg-black/80 backdrop-blur-xl border border-orange-500/30 rounded-lg hover:bg-orange-500/20 transition-all lg:hidden"
+                aria-label="Open menu"
+            >
+                <Menu className="w-6 h-6 text-orange-400" />
+            </button>
 
             {/* Hero Section - Massive Crunchyroll Style Banner */}
             {currentHero && (
