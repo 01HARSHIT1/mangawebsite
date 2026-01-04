@@ -220,7 +220,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 </p>
 
                                 <div className="flex flex-wrap items-center gap-4 mb-6">
-                                    {series.genres.map((genre, index) => (
+                                    {(series.genres || []).map((genre, index) => (
                                         <span
                                             key={index}
                                             className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-sm"
@@ -320,7 +320,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     Select Season
                                 </label>
                                 <div className="flex flex-wrap gap-2">
-                                    {seasons.map((season) => (
+                                    {(seasons || []).map((season) => (
                                         <button
                                             key={season.seasonNumber}
                                             onClick={() => setSelectedSeason(season.seasonNumber)}
@@ -359,7 +359,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
                         {/* Episodes List */}
                         <div className="space-y-2">
-                            {episodes.map((episode) => (
+                            {(episodes || []).map((episode) => (
                                 <div
                                     key={episode._id}
                                     className="flex items-center space-x-4 p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"

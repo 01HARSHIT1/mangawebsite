@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Search, TrendingUp, Clock, Star, ChevronRight, Sparkles, Zap, Heart, Bookmark, Share2, MoreVertical, Filter, Calendar, Tv, Award, MessageCircle, Share } from 'lucide-react';
+import { Play, Search, TrendingUp, Clock, Star, ChevronRight, Sparkles, Zap, Heart, Bookmark, Share2, MoreVertical, Filter, Calendar, Tv, Award, MessageCircle, Share, Menu, X, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import AnimeCarousel from '@/components/anime/components/AnimeCarousel';
@@ -39,6 +39,7 @@ export default function AnimeHome() {
     const [top10Period, setTop10Period] = useState<'today' | 'week' | 'month'>('today');
     const [loading, setLoading] = useState(true);
     const [heroIndex, setHeroIndex] = useState(0);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         fetchAnimeData();
@@ -524,7 +525,7 @@ export default function AnimeHome() {
                                 </div>
                             </div>
                             <Link
-                                href="/anime/recent"
+                                href="/anime/browse"
                                 className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
                             >
                                 <span>VIEW ALL</span>
