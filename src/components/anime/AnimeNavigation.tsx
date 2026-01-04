@@ -457,6 +457,7 @@ export default function AnimeNavigation() {
                 )}
             </div>
         </nav>
+        </>
     );
 }
 
