@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Play, Search, TrendingUp, Clock, Star, ChevronRight, Sparkles, Zap, Heart, Bookmark, Share2, MoreVertical, Filter, Calendar, Tv, Award, MessageCircle, Share, Menu, X, ChevronLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import AnimeCarousel from '@/components/anime/components/AnimeCarousel';
 import EpisodeCard from '@/components/anime/components/EpisodeCard';
@@ -1051,3 +1051,4 @@ export default function AnimeHome() {
         </div>
     );
 }
+
