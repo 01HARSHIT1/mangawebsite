@@ -830,10 +830,7 @@ export default function AnimeHome() {
                                             {(['today', 'week', 'month'] as const).map((period) => (
                                                 <button
                                                     key={period}
-                                                    onClick={() => {
-                                                        setTop10Period(period);
-                                                        fetchAnimeData();
-                                                    }}
+                                                    onClick={() => setTop10Period(period)}
                                                     className={`px-2 py-1 text-xs font-semibold rounded transition-all ${
                                                         top10Period === period
                                                             ? 'bg-orange-500 text-white'
