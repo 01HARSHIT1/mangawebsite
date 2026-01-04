@@ -207,7 +207,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     <span className="text-gray-300">{series.year}</span>
                                     <div className="flex items-center space-x-1 text-yellow-400">
                                         <Star className="w-4 h-4 fill-current" />
-                                        <span className="font-semibold">{series.rating.toFixed(1)}</span>
+                                        <span className="font-semibold">{(series.rating || 0).toFixed(1)}</span>
                                     </div>
                                 </div>
 

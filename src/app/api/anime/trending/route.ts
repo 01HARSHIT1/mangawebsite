@@ -9,12 +9,57 @@ export async function GET() {
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        // Get trending anime (high rating, recent, or based on watch history)
-        const trendingAnime = await db.collection('anime_series')
-            .find({})
-            .sort({ rating: -1, year: -1 })
-            .limit(10)
+        // Get trending anime based on recent views (last 7 days) and rating
+        // Calculate trending score: (recent views * 0.6) + (rating * 0.4)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // Get all anime with recent views from watch_history
+        const recentViews = await db.collection('anime_watch_history')
+            .aggregate([
+                {
+                    $match: {
+                        watchedAt: { $gte: sevenDaysAgo }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$seriesId',
+                        recentViewCount: { $sum: 1 }
+                    }
+                }
+            ])
             .toArray();
+
+        const viewCountMap = new Map();
+        recentViews.forEach((item: any) => {
+            viewCountMap.set(item._id.toString(), item.recentViewCount);
+        });
+
+        // Get all anime and calculate trending score
+        const allAnime = await db.collection('anime_series')
+            .find({})
+            .toArray();
+
+        const animeWithScores = allAnime.map((series: any) => {
+            const recentViews = viewCountMap.get(series._id.toString()) || 0;
+            const rating = series.rating || 0;
+            // Normalize scores: views (0-100 scale), rating (0-10 scale)
+            const normalizedViews = Math.min(recentViews / 10, 100); // Max 100
+            const normalizedRating = rating * 10; // 0-10 scale
+            const trendingScore = (normalizedViews * 0.6) + (normalizedRating * 0.4);
+            
+            return {
+                ...series,
+                trendingScore,
+                recentViewCount: recentViews
+            };
+        });
+
+        // Sort by trending score and limit
+        const trendingAnime = animeWithScores
+            .sort((a: any, b: any) => b.trendingScore - a.trendingScore)
+            .slice(0, 20);
 
         if (trendingAnime.length === 0) {
             // Return mock data if no anime in database

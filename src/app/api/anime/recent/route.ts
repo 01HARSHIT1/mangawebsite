@@ -9,12 +9,25 @@ export async function GET() {
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        // Get recently added anime (by createdAt or releaseDate)
+        // Get recently added anime (by createdAt, updatedAt, or releaseDate)
+        // Prioritize: createdAt > updatedAt > releaseDate
         const recentAnime = await db.collection('anime_series')
             .find({})
-            .sort({ createdAt: -1, releaseDate: -1 })
+            .sort({ 
+                createdAt: -1,
+                updatedAt: -1,
+                releaseDate: -1
+            })
             .limit(20)
             .toArray();
+
+        // If createdAt doesn't exist, sort by _id (which includes timestamp in MongoDB ObjectId)
+        if (recentAnime.length > 0 && !recentAnime[0].createdAt) {
+            recentAnime.sort((a: any, b: any) => {
+                // Compare ObjectIds (they contain timestamp)
+                return b._id.toString().localeCompare(a._id.toString());
+            });
+        }
 
         if (recentAnime.length === 0) {
             // Return mock data if no anime in database

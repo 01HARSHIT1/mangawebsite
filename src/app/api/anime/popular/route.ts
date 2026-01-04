@@ -9,12 +9,49 @@ export async function GET() {
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        // Get popular anime (high rating, high view count, or manually curated)
-        const popularAnime = await db.collection('anime_series')
+        // Get popular anime based on rating and total view count
+        // Calculate popularity score: (rating * 40%) + (viewCount * 60%)
+        const allAnime = await db.collection('anime_series')
             .find({})
-            .sort({ rating: -1, year: -1 })
-            .limit(20)
             .toArray();
+
+        // Get view counts from watch_history
+        const viewCounts = await db.collection('anime_watch_history')
+            .aggregate([
+                {
+                    $group: {
+                        _id: '$seriesId',
+                        totalViewCount: { $sum: 1 }
+                    }
+                }
+            ])
+            .toArray();
+
+        const viewCountMap = new Map();
+        viewCounts.forEach((item: any) => {
+            viewCountMap.set(item._id.toString(), item.totalViewCount);
+        });
+
+        // Calculate popularity scores
+        const animeWithScores = allAnime.map((series: any) => {
+            const viewCount = viewCountMap.get(series._id.toString()) || series.viewCount || 0;
+            const rating = series.rating || 0;
+            // Normalize: rating (0-10) * 0.4, views (0-1000) * 0.6
+            const normalizedRating = rating * 10; // 0-10 scale
+            const normalizedViews = Math.min(viewCount / 10, 100); // Max 100
+            const popularityScore = (normalizedRating * 0.4) + (normalizedViews * 0.6);
+            
+            return {
+                ...series,
+                popularityScore,
+                viewCount: viewCount
+            };
+        });
+
+        // Sort by popularity score and limit
+        const popularAnime = animeWithScores
+            .sort((a: any, b: any) => b.popularityScore - a.popularityScore)
+            .slice(0, 20);
 
         if (popularAnime.length === 0) {
             // Return mock data if no anime in database

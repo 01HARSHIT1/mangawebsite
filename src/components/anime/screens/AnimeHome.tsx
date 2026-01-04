@@ -321,7 +321,7 @@ export default function AnimeHome() {
                                     </span>
                                     <div className="flex items-center space-x-1 px-3 py-1.5 bg-black/50 rounded-full border border-yellow-500/30">
                                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                        <span className="text-yellow-400 text-sm font-bold">{currentHero.rating.toFixed(1)}</span>
+                                        <span className="text-yellow-400 text-sm font-bold">{(currentHero.rating || 0).toFixed(1)}</span>
                                     </div>
                                 </motion.div>
 
@@ -455,7 +455,7 @@ export default function AnimeHome() {
                                 </div>
                             </div>
                             <Link
-                                href="/anime/trending"
+                                href="/anime/browse"
                                 className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
                             >
                                 <span>VIEW ALL</span>
@@ -868,7 +868,7 @@ export default function AnimeHome() {
                                                     <p className="text-white text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">{anime.title}</p>
                                                     <div className="flex items-center space-x-2 mt-1">
                                                         <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                                        <span className="text-gray-400 text-xs">{anime.rating.toFixed(1)}</span>
+                                                        <span className="text-gray-400 text-xs">{(anime.rating || 0).toFixed(1)}</span>
                                                     </div>
                                                 </div>
                                             </Link>
