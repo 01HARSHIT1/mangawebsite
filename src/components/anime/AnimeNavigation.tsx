@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Play, Search, Menu, X, Upload, LayoutDashboard } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 
@@ -15,8 +15,11 @@ import AppModeSwitcher from '@/components/AppModeSwitcher';
  */
 export default function AnimeNavigation() {
     const pathname = usePathname();
+    const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { isAuthenticated, isCreator } = useAuth();
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const profileMenuRef = useRef<HTMLDivElement>(null);
+    const { isAuthenticated, isCreator, user, logout } = useAuth();
     const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
 
     // Check if user has uploaded anime (only for creators)
@@ -40,6 +43,27 @@ export default function AnimeNavigation() {
             checkAnimeUpload();
         }
     }, [isCreator, isAuthenticated]);
+
+    // Close profile menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+                setIsProfileMenuOpen(false);
+            }
+        };
+        if (isProfileMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isProfileMenuOpen]);
+
+    const handleLogout = () => {
+        logout();
+        setIsProfileMenuOpen(false);
+        router.push('/anime');
+    };
 
     // Check if current path matches
     const isActive = (path: string) => {
@@ -150,6 +174,87 @@ export default function AnimeNavigation() {
                         <button className="hidden lg:block p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30">
                             <Search className="w-5 h-5 text-orange-400" />
                         </button>
+                        
+                        {/* Profile/Account Dropdown */}
+                        <div className="relative" ref={profileMenuRef}>
+                            {isAuthenticated ? (
+                                <>
+                                    <button
+                                        onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                                        className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/50 hover:scale-110 transition-transform border-2 border-orange-400/50"
+                                    >
+                                        {user?.creatorProfile?.displayName?.charAt(0)?.toUpperCase() || 
+                                         user?.username?.charAt(0)?.toUpperCase() || 
+                                         user?.email?.charAt(0)?.toUpperCase() || 
+                                         'U'}
+                                    </button>
+                                    <AnimatePresence>
+                                        {isProfileMenuOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="absolute right-0 mt-2 w-56 bg-black/95 backdrop-blur-xl border border-orange-500/30 rounded-xl shadow-2xl overflow-hidden z-50"
+                                            >
+                                                <div className="p-4 border-b border-orange-500/20">
+                                                    <p className="text-white font-semibold text-sm truncate">
+                                                        {user?.creatorProfile?.displayName || user?.username || 'User'}
+                                                    </p>
+                                                    <p className="text-gray-400 text-xs truncate">
+                                                        {user?.email}
+                                                    </p>
+                                                </div>
+                                                <div className="py-2">
+                                                    <Link
+                                                        href="/anime/library"
+                                                        onClick={() => setIsProfileMenuOpen(false)}
+                                                        className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-orange-500/20 hover:text-orange-400 transition-colors"
+                                                    >
+                                                        <BookOpen className="w-4 h-4" />
+                                                        <span className="text-sm">My Library</span>
+                                                    </Link>
+                                                    {isCreator && hasUploadedAnime && (
+                                                        <Link
+                                                            href="/anime/creator/dashboard"
+                                                            onClick={() => setIsProfileMenuOpen(false)}
+                                                            className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-orange-500/20 hover:text-orange-400 transition-colors"
+                                                        >
+                                                            <LayoutDashboard className="w-4 h-4" />
+                                                            <span className="text-sm">Dashboard</span>
+                                                        </Link>
+                                                    )}
+                                                    <Link
+                                                        href="/settings"
+                                                        onClick={() => setIsProfileMenuOpen(false)}
+                                                        className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-orange-500/20 hover:text-orange-400 transition-colors"
+                                                    >
+                                                        <Settings className="w-4 h-4" />
+                                                        <span className="text-sm">Settings</span>
+                                                    </Link>
+                                                    <button
+                                                        onClick={handleLogout}
+                                                        className="w-full flex items-center space-x-3 px-4 py-2 text-red-400 hover:bg-red-500/20 transition-colors"
+                                                    >
+                                                        <LogOut className="w-4 h-4" />
+                                                        <span className="text-sm">Sign Out</span>
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </>
+                            ) : (
+                                <Link
+                                    href="/login"
+                                    className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500/50 via-red-500/50 to-pink-500/50 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/30 hover:scale-110 transition-transform border-2 border-orange-400/30 hover:border-orange-400/50"
+                                    title="Sign In"
+                                >
+                                    <User className="w-5 h-5" />
+                                </Link>
+                            )}
+                        </div>
+                        
                         <AppModeSwitcher />
                     </div>
                 </div>

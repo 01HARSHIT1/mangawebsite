@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Search, TrendingUp, Clock, Star, ChevronRight, Sparkles, Zap, Heart, Bookmark, Share2, MoreVertical, Filter } from 'lucide-react';
+import { Play, Search, TrendingUp, Clock, Star, ChevronRight, Sparkles, Zap, Heart, Bookmark, Share2, MoreVertical, Filter, Calendar, Tv, Award, MessageCircle, Share } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import AnimeCarousel from '@/components/anime/components/AnimeCarousel';
@@ -29,12 +29,38 @@ export default function AnimeHome() {
     const [trendingAnime, setTrendingAnime] = useState<AnimeSeries[]>([]);
     const [recentAnime, setRecentAnime] = useState<AnimeSeries[]>([]);
     const [popularAnime, setPopularAnime] = useState<AnimeSeries[]>([]);
+    const [topAiring, setTopAiring] = useState<AnimeSeries[]>([]);
+    const [mostFavourite, setMostFavourite] = useState<AnimeSeries[]>([]);
+    const [latestCompleted, setLatestCompleted] = useState<AnimeSeries[]>([]);
+    const [latestEpisodes, setLatestEpisodes] = useState<any[]>([]);
+    const [top10, setTop10] = useState<AnimeSeries[]>([]);
+    const [schedule, setSchedule] = useState<Record<string, any[]>>({});
+    const [selectedScheduleDay, setSelectedScheduleDay] = useState<string>('');
+    const [top10Period, setTop10Period] = useState<'today' | 'week' | 'month'>('today');
     const [loading, setLoading] = useState(true);
     const [heroIndex, setHeroIndex] = useState(0);
 
     useEffect(() => {
         fetchAnimeData();
     }, []);
+
+    // Refetch top 10 when period changes
+    useEffect(() => {
+        if (!loading) {
+            const fetchTop10 = async () => {
+                try {
+                    const top10Res = await fetch(`/api/anime/top-10?period=${top10Period}`);
+                    if (top10Res.ok) {
+                        const data = await top10Res.json();
+                        setTop10(data.anime || []);
+                    }
+                } catch (error) {
+                    console.error('Error fetching top 10:', error);
+                }
+            };
+            fetchTop10();
+        }
+    }, [top10Period]);
 
     // Auto-rotate featured anime
     useEffect(() => {
@@ -156,6 +182,46 @@ export default function AnimeHome() {
             if (popularRes.ok) {
                 const popular = await popularRes.json();
                 setPopularAnime(popular.anime || []);
+            }
+
+            // Fetch additional sections
+            const [topAiringRes, mostFavouriteRes, latestCompletedRes, latestEpisodesRes, top10Res, scheduleRes] = await Promise.all([
+                fetch('/api/anime/top-airing'),
+                fetch('/api/anime/most-favourite'),
+                fetch('/api/anime/latest-completed'),
+                fetch('/api/anime/latest-episodes'),
+                fetch('/api/anime/top-10?period=today'),
+                fetch('/api/anime/schedule'),
+            ]);
+
+            if (topAiringRes.ok) {
+                const data = await topAiringRes.json();
+                setTopAiring(data.anime || []);
+            }
+            if (mostFavouriteRes.ok) {
+                const data = await mostFavouriteRes.json();
+                setMostFavourite(data.anime || []);
+            }
+            if (latestCompletedRes.ok) {
+                const data = await latestCompletedRes.json();
+                setLatestCompleted(data.anime || []);
+            }
+            if (latestEpisodesRes.ok) {
+                const data = await latestEpisodesRes.json();
+                setLatestEpisodes(data.episodes || []);
+            }
+            if (top10Res.ok) {
+                const data = await top10Res.json();
+                setTop10(data.anime || []);
+            }
+            if (scheduleRes.ok) {
+                const data = await scheduleRes.json();
+                setSchedule(data.schedule || {});
+                // Set first available day as default
+                const days = Object.keys(data.schedule || {});
+                if (days.length > 0 && !selectedScheduleDay) {
+                    setSelectedScheduleDay(days[0]);
+                }
             }
         } catch (error) {
             console.error('Error fetching anime data:', error);
@@ -366,6 +432,9 @@ export default function AnimeHome() {
 
             {/* Content Sections */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* Main Content */}
+                    <div className="lg:col-span-3 space-y-16">
                 {/* Trending Now - Crunchyroll Style */}
                 {trendingAnime.length > 0 && (
                     <motion.section
@@ -465,6 +534,354 @@ export default function AnimeHome() {
                         <AnimeCarousel anime={recentAnime} />
                     </motion.section>
                 )}
+
+                {/* Latest Episodes */}
+                {latestEpisodes.length > 0 && (
+                    <motion.section
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mb-16"
+                    >
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                <div>
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <Clock className="w-6 h-6 text-orange-400" />
+                                        <h2 className="text-3xl font-black text-white">LATEST EPISODES</h2>
+                                    </div>
+                                    <p className="text-sm text-gray-400">Newly released episodes</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                            {latestEpisodes.slice(0, 12).map((episode) => (
+                                <Link
+                                    key={episode._id}
+                                    href={`/anime/${episode.seriesId}/episode/${episode.episodeNumber}`}
+                                    className="group relative aspect-video rounded-lg overflow-hidden bg-gray-900 border border-orange-500/20 hover:border-orange-500/50 transition-all"
+                                >
+                                    <Image
+                                        src={episode.thumbnail || episode.seriesCoverImage || '/placeholder.jpg'}
+                                        alt={episode.title}
+                                        fill
+                                        className="object-cover group-hover:scale-110 transition-transform"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                                        <p className="text-white text-sm font-semibold line-clamp-1">{episode.seriesTitle}</p>
+                                        <p className="text-orange-400 text-xs">Ep {episode.episodeNumber}</p>
+                                    </div>
+                                    <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white">
+                                        {Math.floor(episode.duration / 60)} min
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </motion.section>
+                )}
+
+                {/* Estimated Schedule */}
+                {Object.keys(schedule).length > 0 && (
+                    <motion.section
+                        initial={{ opacity: 0, y: 40 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mb-16"
+                    >
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                <div>
+                                    <div className="flex items-center space-x-2 mb-1">
+                                        <Calendar className="w-6 h-6 text-orange-400" />
+                                        <h2 className="text-3xl font-black text-white">ESTIMATED SCHEDULE</h2>
+                                    </div>
+                                    <p className="text-sm text-gray-400">Anime airing times</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-black/40 backdrop-blur-sm border border-orange-500/20 rounded-xl p-6">
+                            {/* Day Selector */}
+                            <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
+                                {Object.keys(schedule).map((day) => (
+                                    <button
+                                        key={day}
+                                        onClick={() => setSelectedScheduleDay(day)}
+                                        className={`px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition-all ${
+                                            selectedScheduleDay === day
+                                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                                                : 'bg-gray-800 text-gray-400 hover:text-orange-400'
+                                        }`}
+                                    >
+                                        {day}
+                                    </button>
+                                ))}
+                            </div>
+                            {/* Schedule List */}
+                            <div className="space-y-3">
+                                {schedule[selectedScheduleDay]?.slice(0, 10).map((anime: any, index: number) => (
+                                    <Link
+                                        key={anime._id || index}
+                                        href={`/anime/${anime._id}`}
+                                        className="flex items-center space-x-4 p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                    >
+                                        <span className="text-orange-400 font-mono text-sm min-w-[60px]">{anime.airTime || 'TBA'}</span>
+                                        <div className="flex-1">
+                                            <p className="text-white font-semibold group-hover:text-orange-400 transition-colors">{anime.title}</p>
+                                            <p className="text-gray-400 text-xs">► {anime.status || 'Ongoing'}</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                                {(!schedule[selectedScheduleDay] || schedule[selectedScheduleDay].length === 0) && (
+                                    <p className="text-gray-400 text-center py-8">No scheduled anime for this day</p>
+                                )}
+                            </div>
+                        </div>
+                    </motion.section>
+                )}
+
+                {/* Top Airing, Most Favourite, Latest Completed - Grid Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                    {/* Top Airing */}
+                    {topAiring.length > 0 && (
+                        <motion.section
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            <div className="flex items-center space-x-2 mb-6">
+                                <Tv className="w-5 h-5 text-orange-400" />
+                                <h3 className="text-xl font-black text-white">TOP AIRING</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {topAiring.slice(0, 5).map((anime, index) => (
+                                    <Link
+                                        key={anime._id}
+                                        href={`/anime/${anime._id}`}
+                                        className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                    >
+                                        <span className="text-orange-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
+                                        <Image
+                                            src={anime.coverImage}
+                                            alt={anime.title}
+                                            width={60}
+                                            height={80}
+                                            className="rounded object-cover"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-white text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">{anime.title}</p>
+                                            <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </motion.section>
+                    )}
+
+                    {/* Most Favourite */}
+                    {mostFavourite.length > 0 && (
+                        <motion.section
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            <div className="flex items-center space-x-2 mb-6">
+                                <Heart className="w-5 h-5 text-pink-400 fill-pink-400" />
+                                <h3 className="text-xl font-black text-white">MOST FAVOURITE</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {mostFavourite.slice(0, 5).map((anime, index) => (
+                                    <Link
+                                        key={anime._id}
+                                        href={`/anime/${anime._id}`}
+                                        className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                    >
+                                        <span className="text-pink-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
+                                        <Image
+                                            src={anime.coverImage}
+                                            alt={anime.title}
+                                            width={60}
+                                            height={80}
+                                            className="rounded object-cover"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-white text-sm font-semibold truncate group-hover:text-pink-400 transition-colors">{anime.title}</p>
+                                            <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </motion.section>
+                    )}
+
+                    {/* Latest Completed */}
+                    {latestCompleted.length > 0 && (
+                        <motion.section
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            <div className="flex items-center space-x-2 mb-6">
+                                <Award className="w-5 h-5 text-yellow-400" />
+                                <h3 className="text-xl font-black text-white">LATEST COMPLETED</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {latestCompleted.slice(0, 5).map((anime, index) => (
+                                    <Link
+                                        key={anime._id}
+                                        href={`/anime/${anime._id}`}
+                                        className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                    >
+                                        <span className="text-yellow-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
+                                        <Image
+                                            src={anime.coverImage}
+                                            alt={anime.title}
+                                            width={60}
+                                            height={80}
+                                            className="rounded object-cover"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-white text-sm font-semibold truncate group-hover:text-yellow-400 transition-colors">{anime.title}</p>
+                                            <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </motion.section>
+                    )}
+                </div>
+
+                {/* Genres Quick Access */}
+                <motion.section
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mb-16"
+                >
+                    <div className="flex items-center space-x-3 mb-6">
+                        <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                        <h2 className="text-2xl font-black text-white">BROWSE BY GENRE</h2>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        {['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Mystery', 'Thriller', 'Isekai'].map((genre) => (
+                            <Link
+                                key={genre}
+                                href={`/anime/genres?genre=${genre.toLowerCase()}`}
+                                className="px-4 py-2 bg-gray-900/50 hover:bg-gradient-to-r hover:from-orange-500 hover:to-red-500 text-gray-300 hover:text-white rounded-lg font-semibold text-sm transition-all border border-orange-500/20 hover:border-orange-500"
+                            >
+                                {genre}
+                            </Link>
+                        ))}
+                    </div>
+                </motion.section>
+
+                {/* Share Section */}
+                <motion.section
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mb-16"
+                >
+                    <div className="bg-gradient-to-r from-orange-900/30 via-red-900/30 to-pink-900/30 border border-orange-500/30 rounded-xl p-8 text-center">
+                        <Share className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                        <h3 className="text-2xl font-black text-white mb-2">Share ANIMESTREAM</h3>
+                        <p className="text-gray-400 mb-6">Help us grow by sharing with your friends!</p>
+                        <div className="flex items-center justify-center space-x-4">
+                            <button
+                                onClick={() => {
+                                    if (navigator.share) {
+                                        navigator.share({
+                                            title: 'ANIMESTREAM - Premium Anime Hub',
+                                            text: 'Check out this amazing anime streaming platform!',
+                                            url: window.location.origin + '/anime',
+                                        });
+                                    } else {
+                                        navigator.clipboard.writeText(window.location.origin + '/anime');
+                                        alert('Link copied to clipboard!');
+                                    }
+                                }}
+                                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-bold transition-all shadow-lg shadow-orange-500/50"
+                            >
+                                Share Now
+                            </button>
+                        </div>
+                    </div>
+                </motion.section>
+                    </div>
+
+                    {/* Sidebar - Top 10 */}
+                    <div className="lg:col-span-1">
+                        {top10.length > 0 && (
+                            <motion.div
+                                initial={{ opacity: 0, x: 40 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                className="sticky top-24"
+                            >
+                                <div className="bg-black/40 backdrop-blur-sm border border-orange-500/20 rounded-xl p-6">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center space-x-2">
+                                            <Award className="w-5 h-5 text-orange-400" />
+                                            <h3 className="text-xl font-black text-white">TOP 10</h3>
+                                        </div>
+                                        <div className="flex items-center space-x-1 bg-gray-900 rounded-lg p-1">
+                                            {(['today', 'week', 'month'] as const).map((period) => (
+                                                <button
+                                                    key={period}
+                                                    onClick={() => {
+                                                        setTop10Period(period);
+                                                        fetchAnimeData();
+                                                    }}
+                                                    className={`px-2 py-1 text-xs font-semibold rounded transition-all ${
+                                                        top10Period === period
+                                                            ? 'bg-orange-500 text-white'
+                                                            : 'text-gray-400 hover:text-orange-400'
+                                                    }`}
+                                                >
+                                                    {period.charAt(0).toUpperCase() + period.slice(1)}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {top10.map((anime, index) => (
+                                            <Link
+                                                key={anime._id}
+                                                href={`/anime/${anime._id}`}
+                                                className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                            >
+                                                <span className={`font-black text-lg min-w-[30px] ${
+                                                    index === 0 ? 'text-yellow-400' :
+                                                    index === 1 ? 'text-gray-300' :
+                                                    index === 2 ? 'text-orange-600' :
+                                                    'text-gray-500'
+                                                }`}>
+                                                    #{index + 1}
+                                                </span>
+                                                <Image
+                                                    src={anime.coverImage}
+                                                    alt={anime.title}
+                                                    width={50}
+                                                    height={70}
+                                                    className="rounded object-cover"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-white text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">{anime.title}</p>
+                                                    <div className="flex items-center space-x-2 mt-1">
+                                                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                                        <span className="text-gray-400 text-xs">{anime.rating.toFixed(1)}</span>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Floating Action Button - Mode Switcher */}
