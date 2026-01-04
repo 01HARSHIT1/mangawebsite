@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen } from 'lucide-react';
+import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen, MessageCircle, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 
@@ -18,7 +18,9 @@ export default function AnimeNavigation() {
     const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
+    const sidebarRef = useRef<HTMLDivElement>(null);
     const { isAuthenticated, isCreator, user, logout } = useAuth();
     const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
 
@@ -50,14 +52,21 @@ export default function AnimeNavigation() {
             if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
                 setIsProfileMenuOpen(false);
             }
+            if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+                // Don't close if clicking the hamburger button
+                const target = event.target as HTMLElement;
+                if (!target.closest('[data-hamburger-button]')) {
+                    setIsSidebarOpen(false);
+                }
+            }
         };
-        if (isProfileMenuOpen) {
+        if (isProfileMenuOpen || isSidebarOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         }
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isProfileMenuOpen]);
+    }, [isProfileMenuOpen, isSidebarOpen]);
 
     const handleLogout = () => {
         logout();
@@ -91,11 +100,163 @@ export default function AnimeNavigation() {
     ] : [];
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
-                    {/* Logo */}
-                    <Link href="/anime" className="flex items-center space-x-3 group">
+        <>
+            {/* Hamburger Menu Sidebar */}
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <>
+                        {/* Overlay */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="fixed inset-0 bg-black/70 z-[60]"
+                        />
+                        {/* Sidebar */}
+                        <motion.div
+                            ref={sidebarRef}
+                            initial={{ x: -320 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -320 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed left-0 top-0 bottom-0 w-80 bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-[70] overflow-y-auto"
+                        >
+                            <div className="p-4">
+                                {/* Close Button */}
+                                <button
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6 transition-colors"
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                    <span className="font-semibold">Close menu</span>
+                                </button>
+
+                                {/* Community Button */}
+                                <Link
+                                    href="/anime/browse"
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 rounded-lg mb-6 transition-all"
+                                >
+                                    <MessageCircle className="w-5 h-5 text-pink-400" />
+                                    <span className="font-semibold">Community</span>
+                                </Link>
+
+                                {/* Navigation Links */}
+                                <div className="space-y-2 mb-8">
+                                    <Link
+                                        href="/anime"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Home
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Subbed Anime
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Dubbed Anime
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Movies
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        TV Series
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        OVAs
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg bg-pink-500/30 hover:bg-pink-500/40 transition-colors"
+                                    >
+                                        ONAs
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Specials
+                                    </Link>
+                                    <Link
+                                        href="/anime/browse"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                    >
+                                        Events
+                                    </Link>
+                                </div>
+
+                                {/* Genre Section */}
+                                <div className="mb-6">
+                                    <h3 className="px-4 py-2 text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                        Genre
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {genres.slice(0, 18).map((genre) => (
+                                            <Link
+                                                key={genre}
+                                                href={`/anime/genres?genre=${genre.toLowerCase().replace(/\s+/g, '-')}`}
+                                                onClick={() => setIsSidebarOpen(false)}
+                                                className="px-3 py-2 text-sm rounded-lg hover:bg-orange-500/20 transition-colors text-center"
+                                            >
+                                                {genre}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                    <Link
+                                        href="/anime/genres"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="block px-4 py-2 mt-3 text-sm text-orange-400 hover:text-orange-300 font-semibold text-center"
+                                    >
+                                        + More
+                                    </Link>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                        {/* Left Side: Hamburger Menu Button + Logo */}
+                        <div className="flex items-center space-x-3">
+                            {/* Hamburger Menu Button */}
+                            <button
+                                data-hamburger-button
+                                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30"
+                                aria-label="Toggle sidebar menu"
+                            >
+                                <Menu className="w-6 h-6 text-orange-400" />
+                            </button>
+                            
+                            {/* Logo */}
+                            <Link href="/anime" className="flex items-center space-x-3 group">
                         <motion.div
                             whileHover={{ scale: 1.1, rotate: 5 }}
                             className="relative"
