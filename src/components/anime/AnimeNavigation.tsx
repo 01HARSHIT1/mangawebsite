@@ -99,8 +99,15 @@ export default function AnimeNavigation() {
         ...(hasUploadedAnime ? [{ href: '/anime/creator/dashboard', label: 'DASHBOARD', icon: LayoutDashboard }] : []),
     ] : [];
 
+    // Genres list for sidebar
+    const genres = [
+        'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 'Horror',
+        'Mahou Shoujo', 'Mecha', 'Music', 'Mystery', 'Psychological', 'Romance',
+        'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'
+    ];
+
     return (
-        <>
+        <div>
             {/* Hamburger Menu Sidebar */}
             <AnimatePresence>
                 {isSidebarOpen && (
@@ -418,6 +425,7 @@ export default function AnimeNavigation() {
                         
                         <AppModeSwitcher />
                     </div>
+                    </div>
                 </div>
 
                 {/* Mobile Navigation Menu */}
@@ -457,7 +465,7 @@ export default function AnimeNavigation() {
                 )}
             </div>
         </nav>
-        </>
+        </div>
     );
 }
 
