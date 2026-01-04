@@ -646,18 +646,14 @@ export default function AnimeHome() {
                                 </div>
                             </div>
                             <Link
-                                href="/anime/popular"
+                                href="/anime/browse"
                                 className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
                             >
                                 <span>VIEW ALL</span>
                                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                            {popularAnime.map((anime) => (
-                                <EpisodeCard key={anime._id} anime={anime} />
-                            ))}
-                        </div>
+                        <AnimeCarousel anime={popularAnime} />
                     </motion.section>
                 )}
 
