@@ -352,12 +352,12 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* Left: Large Video Player Box */}
                     <div className="flex-1">
-                        <div className="bg-gray-900/50 rounded-lg p-4 pb-0">
-                            {/* Video Player Area - Maximum Size */}
+                        <div className="bg-gray-900/50 rounded-lg overflow-hidden">
+                            {/* Video Player Area - Maximum Size - No padding to fill container */}
                             <div 
                                 ref={videoPlayerRef}
-                                className="relative w-full bg-black rounded-lg overflow-hidden -mx-4 -mt-4"
-                                style={{ height: 'calc(100vh - 250px)', minHeight: '650px', width: 'calc(100% + 2rem)' }}
+                                className="relative w-full bg-black overflow-hidden"
+                                style={{ height: 'calc(100vh - 250px)', minHeight: '650px' }}
                             >
                                 {isVideoPlaying && currentEpisodeData ? (
                                     <div className="w-full h-full overflow-hidden absolute inset-0" style={{ height: '100%', width: '100%', margin: 0, padding: 0 }}>
@@ -436,7 +436,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         <p className="text-gray-500">Select an episode to watch</p>
                     </div>
                                 )}
-                            </div>
+                                </div>
 
                             {/* Player Controls - Placed right after video player in the gap */}
                             <div className="mt-4 px-4">
