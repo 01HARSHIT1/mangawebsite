@@ -379,12 +379,20 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     </div>
                                 ) : selectedEpisode ? (
                                     <div className="relative w-full h-full">
-                                <Image
-                                            src={series.bannerImage || series.coverImage}
-                                    alt={series.title}
-                                    fill
-                                    className="object-cover"
-                                />
+                                        {(() => {
+                                            // Get the selected episode's thumbnail if available
+                                            const selectedEp = episodes.find(e => e.episodeNumber === selectedEpisode);
+                                            const thumbnailUrl = selectedEp?.thumbnail || series.bannerImage || series.coverImage;
+                                            
+                                            return (
+                                                <Image
+                                                    src={thumbnailUrl}
+                                                    alt={series.title}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            );
+                                        })()}
                                         <div className="absolute inset-0 bg-black/30"></div>
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <motion.button
@@ -395,7 +403,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                             >
                                                 <Play className="w-12 h-12 text-white fill-white ml-1" />
                                             </motion.button>
-                            </div>
+                                        </div>
                                         <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
                                             <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm font-bold">
                                                 {series.title.toUpperCase()}
