@@ -360,8 +360,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 style={{ height: 'calc(100vh - 250px)', minHeight: '650px' }}
                             >
                                 {isVideoPlaying && currentEpisodeData ? (
-                                    <div className="w-full h-full overflow-hidden" style={{ height: '100%' }}>
-                                        <div className="[&>div]:!h-full [&>div]:!min-h-0">
+                                    <div className="w-full h-full overflow-hidden absolute inset-0" style={{ height: '100%', width: '100%' }}>
+                                        <div className="w-full h-full [&>div]:!h-full [&>div]:!min-h-0 [&>div]:!max-h-full [&>div]:!relative [&>div>div]:!h-full [&>div>div]:!relative">
                                             <EnhancedVideoPlayer
                                                 episode={currentEpisodeData}
                                                 series={{
