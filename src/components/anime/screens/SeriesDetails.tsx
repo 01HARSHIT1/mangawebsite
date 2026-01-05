@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown, Maximize2 } from 'lucide-react';
@@ -57,12 +57,17 @@ interface SeriesDetailsProps {
 
 export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [series, setSeries] = useState<AnimeSeries | null>(null);
     const [episodes, setEpisodes] = useState<Episode[]>([]);
     const [recommendedAnime, setRecommendedAnime] = useState<AnimeSeries[]>([]);
     const [relatedContent, setRelatedContent] = useState<RelatedContent[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedEpisode, setSelectedEpisode] = useState<number>(1); // Always start with episode 1
+    // Get episode from URL query params, default to 1
+    const episodeFromUrl = searchParams?.get('episode');
+    const [selectedEpisode, setSelectedEpisode] = useState<number>(
+        episodeFromUrl ? parseInt(episodeFromUrl, 10) : 1
+    );
     const [episodeSearch, setEpisodeSearch] = useState('');
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [episodeRange, setEpisodeRange] = useState({ start: 1, end: 100 });
@@ -207,6 +212,19 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     useEffect(() => {
             fetchEpisodes();
     }, [fetchEpisodes, refreshKey]);
+
+    useEffect(() => {
+        // Check URL for episode parameter on mount and when it changes
+        const episodeParam = searchParams?.get('episode');
+        if (episodeParam) {
+            const episodeNum = parseInt(episodeParam, 10);
+            if (!isNaN(episodeNum) && episodeNum !== selectedEpisode) {
+                setSelectedEpisode(episodeNum);
+                // Auto-play if coming from a link (episode param in URL)
+                setIsVideoPlaying(true);
+            }
+        }
+    }, [searchParams, selectedEpisode]);
 
     useEffect(() => {
         if (selectedEpisode && episodes.length > 0) {

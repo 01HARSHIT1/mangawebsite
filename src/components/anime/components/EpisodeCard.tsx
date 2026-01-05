@@ -28,7 +28,7 @@ interface EpisodeCardProps {
 
 export default function EpisodeCard({ anime, episodeNumber, progress }: EpisodeCardProps) {
     const watchLink = episodeNumber 
-        ? `/anime/${anime._id}/episode/${episodeNumber}` 
+        ? `/anime/${anime._id}?episode=${episodeNumber}` 
         : `/anime/${anime._id}`;
 
     return (

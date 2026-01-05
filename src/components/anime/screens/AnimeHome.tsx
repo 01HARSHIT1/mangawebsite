@@ -372,7 +372,7 @@ export default function AnimeHome() {
                                     className="flex items-center space-x-4"
                                 >
                                     <Link
-                                        href={`/anime/${currentHero._id}/episode/1`}
+                                        href={`/anime/${currentHero._id}?episode=1`}
                                         className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-bold text-lg transition-all shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 hover:scale-105"
                                     >
                                         <Play className="w-6 h-6 fill-white group-hover:scale-110 transition-transform" />
@@ -555,7 +555,7 @@ export default function AnimeHome() {
                             {latestEpisodes.slice(0, 12).map((episode) => (
                                 <Link
                                     key={episode._id}
-                                    href={`/anime/${episode.seriesId}/episode/${episode.episodeNumber}`}
+                                    href={`/anime/${episode.seriesId}?episode=${episode.episodeNumber}`}
                                     className="group relative aspect-video rounded-lg overflow-hidden bg-gray-900 border border-orange-500/20 hover:border-orange-500/50 transition-all"
                                 >
                                     <Image

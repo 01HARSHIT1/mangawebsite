@@ -99,12 +99,12 @@ export default function SeasonEpisodesPage() {
     };
 
     const handlePlayEpisode = (episode: Episode) => {
-        router.push(`/anime/${seriesId}/episode/${episode.episodeNumber}`);
+        router.push(`/anime/${seriesId}?episode=${episode.episodeNumber}`);
     };
 
     const handleResumeEpisode = (episode: Episode) => {
         if (episode.lastPosition && episode.lastPosition > 0) {
-            router.push(`/anime/${seriesId}/episode/${episode.episodeNumber}?t=${Math.floor(episode.lastPosition)}`);
+            router.push(`/anime/${seriesId}?episode=${episode.episodeNumber}&t=${Math.floor(episode.lastPosition)}`);
         } else {
             handlePlayEpisode(episode);
         }

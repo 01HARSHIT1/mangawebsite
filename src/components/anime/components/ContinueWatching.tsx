@@ -138,7 +138,7 @@ export default function ContinueWatching({ limit = 12 }: ContinueWatchingProps) 
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
-                        <Link href={`/anime/watch/${item.seriesId}/episode/${item.episode?.episodeNumber || 1}`}>
+                        <Link href={`/anime/${item.seriesId}?episode=${item.episode?.episodeNumber || 1}`}>
                             <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
                                 {item.series?.coverImage && (
                                     <Image
