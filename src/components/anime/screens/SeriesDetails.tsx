@@ -381,7 +381,6 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <p className="text-gray-500 text-xs ml-4">If the current server is not working, please try switching to other servers.</p>
                             </div>
                         </div>
-                        </div>
                     </div>
 
                     {/* Right: Episode List Sidebar Box */}
