@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -68,6 +68,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [showComments, setShowComments] = useState(true);
     const [commentsSort, setCommentsSort] = useState<'best' | 'newest' | 'oldest'>('best');
     const [refreshKey, setRefreshKey] = useState(0);
+    const videoPlayerRef = useRef<HTMLDivElement>(null);
 
     // Auto-refresh episodes every 30 seconds to catch new uploads
     useEffect(() => {
