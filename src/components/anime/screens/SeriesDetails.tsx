@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, Facebook, Twitter, MessageSquare, Reddit, Send, ChevronRight } from 'lucide-react';
+import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight } from 'lucide-react';
+import { FaFacebook, FaTwitter, FaReddit, FaWhatsapp, FaTelegram } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import EpisodeCard from '@/components/anime/components/EpisodeCard';
 
 interface Episode {
     _id: string;
@@ -117,7 +117,15 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     }, [series, fetchRecommended]);
 
     const handlePlayEpisode = (episodeNumber: number) => {
-        router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
+        if (!seriesId || !episodeNumber) {
+            console.error('Missing seriesId or episodeNumber');
+            return;
+        }
+        try {
+            router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
+        } catch (error) {
+            console.error('Error navigating to episode:', error);
+        }
     };
 
     const filteredEpisodes = episodes.filter(ep => {
@@ -273,23 +281,23 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         </div>
                         <div className="flex items-center space-x-3">
                             <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                                <Facebook className="w-4 h-4" />
+                                <FaFacebook className="w-4 h-4" />
                                 <span className="text-sm">775</span>
                             </button>
                             <button className="flex items-center space-x-2 px-4 py-2 bg-black hover:bg-gray-800 rounded-lg transition-colors border border-gray-700">
-                                <Twitter className="w-4 h-4" />
+                                <FaTwitter className="w-4 h-4" />
                                 <span className="text-sm">286</span>
                             </button>
                             <button className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
-                                <MessageSquare className="w-4 h-4" />
+                                <MessageCircle className="w-4 h-4" />
                                 <span className="text-sm">117</span>
                             </button>
                             <button className="flex items-center space-x-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors">
-                                <Reddit className="w-4 h-4" />
+                                <FaReddit className="w-4 h-4" />
                                 <span className="text-sm">2.2k</span>
                             </button>
                             <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
-                                <Send className="w-4 h-4" />
+                                <FaWhatsapp className="w-4 h-4" />
                                 <span className="text-sm">88</span>
                             </button>
                         </div>
