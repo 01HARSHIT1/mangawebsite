@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown, Maximize2 } from 'lucide-react';
 import { FaFacebook, FaTwitter, FaReddit, FaWhatsapp, FaTelegram } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import EnhancedVideoPlayer from '@/components/anime/components/EnhancedVideoPlayer';
 
 interface Episode {
     _id: string;
@@ -69,6 +70,10 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [commentsSort, setCommentsSort] = useState<'best' | 'newest' | 'oldest'>('best');
     const [refreshKey, setRefreshKey] = useState(0);
     const videoPlayerRef = useRef<HTMLDivElement>(null);
+    const [currentEpisodeData, setCurrentEpisodeData] = useState<any>(null);
+    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+    const [prevEpisode, setPrevEpisode] = useState<any>(null);
+    const [nextEpisode, setNextEpisode] = useState<any>(null);
 
     // Auto-refresh episodes every 30 seconds to catch new uploads
     useEffect(() => {
@@ -126,6 +131,39 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         }
     }, [seriesId, selectedEpisode, episodeRange.end]);
 
+    const fetchEpisodeData = useCallback(async (episodeNumber: number) => {
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(`/api/anime/${seriesId}/episodes/${episodeNumber}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            if (response.ok) {
+                const episodeData = await response.json();
+                const mappedEpisode = {
+                    _id: episodeData.id || episodeData._id,
+                    id: episodeData.id || episodeData._id,
+                    episodeNumber: episodeData.episodeNumber,
+                    seasonNumber: episodeData.seasonNumber,
+                    title: episodeData.title || `Episode ${episodeData.episodeNumber}`,
+                    description: episodeData.description,
+                    videoUrl: episodeData.videoUrl,
+                    hlsManifestUrl: episodeData.hlsManifestUrl,
+                    dashManifestUrl: episodeData.dashManifestUrl,
+                    thumbnail: episodeData.thumbnail,
+                    duration: episodeData.duration,
+                    airDate: episodeData.airDate,
+                    availableTracks: episodeData.availableTracks,
+                    qualityLevels: episodeData.qualityLevels,
+                };
+                setCurrentEpisodeData(mappedEpisode);
+                setPrevEpisode(episodeData.prevEpisode);
+                setNextEpisode(episodeData.nextEpisode);
+            }
+        } catch (error) {
+            console.error('Error fetching episode data:', error);
+        }
+    }, [seriesId]);
+
     const fetchRecommended = useCallback(async () => {
         try {
             if (series?.genres && series.genres.length > 0) {
@@ -148,8 +186,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             if (series?.title) {
                 const titleWords = series.title.split(' ').slice(0, 2).join(' ');
                 const response = await fetch(`/api/anime/browse?search=${encodeURIComponent(titleWords)}&limit=10`);
-                if (response.ok) {
-                    const data = await response.json();
+            if (response.ok) {
+                const data = await response.json();
                     // Filter to get related content (different from main series)
                     const related = (data.anime || [])
                         .filter((a: any) => a._id !== seriesId && a.title.toLowerCase().includes(series.title.toLowerCase().split(' ')[0]))
@@ -167,8 +205,14 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     }, [fetchSeriesDetails, refreshKey]);
 
     useEffect(() => {
-        fetchEpisodes();
+            fetchEpisodes();
     }, [fetchEpisodes, refreshKey]);
+
+    useEffect(() => {
+        if (selectedEpisode && episodes.length > 0) {
+            fetchEpisodeData(selectedEpisode);
+        }
+    }, [selectedEpisode, episodes, fetchEpisodeData]);
 
     useEffect(() => {
         if (series) {
@@ -182,10 +226,22 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             console.error('Missing seriesId or episodeNumber');
             return;
         }
-        try {
-            router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
-        } catch (error) {
-            console.error('Error navigating to episode:', error);
+        // Set the selected episode and fetch its data - video will play in place
+        setSelectedEpisode(episodeNumber);
+        setIsVideoPlaying(true);
+    };
+
+    const handleNextEpisode = () => {
+        if (nextEpisode) {
+            setSelectedEpisode(nextEpisode.episodeNumber);
+            setIsVideoPlaying(true);
+        }
+    };
+
+    const handlePreviousEpisode = () => {
+        if (prevEpisode) {
+            setSelectedEpisode(prevEpisode.episodeNumber);
+            setIsVideoPlaying(true);
         }
     };
 
@@ -269,9 +325,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         <span className="text-white">TV</span>
                         <span>/</span>
                         <span className="text-white">{series.title}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             {/* Main Content Area - Large Video Player with Episode Sidebar */}
             <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -285,14 +341,32 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 className="relative w-full bg-gray-900 rounded-lg overflow-hidden mb-4"
                                 style={{ height: 'calc(100vh - 250px)', minHeight: '650px' }}
                             >
-                                {selectedEpisode ? (
+                                {isVideoPlaying && currentEpisodeData ? (
+                                    <div className="w-full h-full overflow-hidden" style={{ height: '100%' }}>
+                                        <div className="[&>div]:!h-full [&>div]:!min-h-0">
+                                            <EnhancedVideoPlayer
+                                                episode={currentEpisodeData}
+                                                series={{
+                                                    _id: series._id,
+                                                    title: series.title,
+                                                    coverImage: series.coverImage
+                                                }}
+                                                onNextEpisode={handleNextEpisode}
+                                                onPreviousEpisode={handlePreviousEpisode}
+                                                hasNextEpisode={!!nextEpisode}
+                                                hasPreviousEpisode={!!prevEpisode}
+                                                onBackToSeries={() => setIsVideoPlaying(false)}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : selectedEpisode ? (
                                     <div className="relative w-full h-full">
-                                        <Image
+                                <Image
                                             src={series.bannerImage || series.coverImage}
-                                            alt={series.title}
-                                            fill
-                                            className="object-cover"
-                                        />
+                                    alt={series.title}
+                                    fill
+                                    className="object-cover"
+                                />
                                         <div className="absolute inset-0 bg-black/30"></div>
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <motion.button
@@ -303,31 +377,31 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                             >
                                                 <Play className="w-12 h-12 text-white fill-white ml-1" />
                                             </motion.button>
-                                        </div>
+                            </div>
                                         <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
                                             <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm font-bold">
                                                 {series.title.toUpperCase()}
-                                            </span>
-                                            <button
+                                        </span>
+                                    <button
                                                 onClick={toggleFullscreen}
                                                 className="p-2 bg-black/70 backdrop-blur-sm hover:bg-black/90 rounded transition-colors"
                                                 title="Fullscreen"
                                             >
                                                 <Maximize2 className="w-5 h-5 text-white" />
-                                            </button>
-                                        </div>
+                                    </button>
+                                </div>
                                         <div className="absolute bottom-4 left-4 z-10">
                                             <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm">
                                                 Episode {selectedEpisode}
                                             </span>
-                                        </div>
-                                    </div>
+                            </div>
+                        </div>
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                                        <p className="text-gray-500">Loading episode...</p>
-                                    </div>
+                                        <p className="text-gray-500">Select an episode to watch</p>
+                    </div>
                                 )}
-                            </div>
+            </div>
 
                             {/* Player Controls */}
                             <div className="flex items-center space-x-2 mb-4 flex-wrap">
@@ -335,32 +409,24 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded text-sm">AutoNext</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">AutoPlay</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">AutoSkip</button>
-                                <button 
-                                    onClick={() => {
-                                        const currentIndex = episodes.findIndex(e => e.episodeNumber === selectedEpisode);
-                                        if (currentIndex > 0) {
-                                            handlePlayEpisode(episodes[currentIndex - 1].episodeNumber);
-                                        }
-                                    }}
-                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm"
+                    <button
+                                    onClick={handlePreviousEpisode}
+                                    disabled={!prevEpisode}
+                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Prev
-                                </button>
-                                <button 
-                                    onClick={() => {
-                                        const currentIndex = episodes.findIndex(e => e.episodeNumber === selectedEpisode);
-                                        if (currentIndex < episodes.length - 1) {
-                                            handlePlayEpisode(episodes[currentIndex + 1].episodeNumber);
-                                        }
-                                    }}
-                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm"
+                    </button>
+                    <button
+                                    onClick={handleNextEpisode}
+                                    disabled={!nextEpisode}
+                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Next
-                                </button>
+                    </button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">Bookmark</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">W2G</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">Report</button>
-                            </div>
+                </div>
 
                             {selectedEpisode && (
                                 <p className="text-gray-400 text-sm mb-4">
@@ -396,7 +462,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     </button>
                                     <button className="p-1 hover:bg-gray-800 rounded">
                                         <Filter className="w-4 h-4" />
-                                    </button>
+                                        </button>
                                 </div>
                             </div>
 
@@ -450,15 +516,15 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     >
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
-                                </div>
-                            )}
+                            </div>
+                        )}
 
                             {/* Episode Grid */}
                             <div className="grid grid-cols-6 gap-2 max-h-[calc(100vh-400px)] overflow-y-auto">
                                 {filteredEpisodes.length > 0 ? (
                                     filteredEpisodes.map((episode) => (
                                         <button
-                                            key={episode._id}
+                                    key={episode._id}
                                             onClick={() => {
                                                 setSelectedEpisode(episode.episodeNumber);
                                             }}
@@ -474,12 +540,12 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 ) : (
                                     <div className="col-span-6 text-center text-gray-500 text-sm py-4">
                                         No episodes found
-                                    </div>
-                                )}
-                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                </div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
     );
