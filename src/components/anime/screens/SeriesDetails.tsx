@@ -360,8 +360,17 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 style={{ height: 'calc(100vh - 250px)', minHeight: '650px' }}
                             >
                                 {isVideoPlaying && currentEpisodeData ? (
-                                    <div className="w-full h-full overflow-hidden absolute inset-0" style={{ height: '100%', width: '100%' }}>
-                                        <div className="w-full h-full [&>div]:!h-full [&>div]:!min-h-0 [&>div]:!max-h-full [&>div]:!relative [&>div>div]:!h-full [&>div>div]:!relative">
+                                    <div className="w-full h-full overflow-hidden absolute inset-0" style={{ height: '100%', width: '100%', margin: 0, padding: 0 }}>
+                                        <style jsx global>{`
+                                            .embedded-video-player [class*="h-screen"] {
+                                                height: 100% !important;
+                                                min-height: unset !important;
+                                            }
+                                            .embedded-video-player [class*="min-h-screen"] {
+                                                min-height: unset !important;
+                                            }
+                                        `}</style>
+                                        <div className="embedded-video-player w-full h-full">
                                             <EnhancedVideoPlayer
                                                 episode={currentEpisodeData}
                                                 series={{
@@ -376,7 +385,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                 onBackToSeries={() => setIsVideoPlaying(false)}
                                             />
                                         </div>
-                                    </div>
+                    </div>
                                 ) : selectedEpisode ? (
                                     <div className="relative w-full h-full">
                                         {(() => {
@@ -385,12 +394,12 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                             const thumbnailUrl = selectedEp?.thumbnail || series.bannerImage || series.coverImage;
                                             
                                             return (
-                                                <Image
+                                <Image
                                                     src={thumbnailUrl}
-                                                    alt={series.title}
-                                                    fill
-                                                    className="object-cover"
-                                                />
+                                    alt={series.title}
+                                    fill
+                                    className="object-cover"
+                                />
                                             );
                                         })()}
                                         <div className="absolute inset-0 bg-black/30"></div>
@@ -415,19 +424,19 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                             >
                                                 <Maximize2 className="w-5 h-5 text-white" />
                                     </button>
-                                </div>
+                            </div>
                                         <div className="absolute bottom-4 left-4 z-10">
                                             <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm">
                                                 Episode {selectedEpisode}
-                                            </span>
-                            </div>
-                        </div>
+                                    </span>
+                                    </div>
+                                </div>
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gray-900">
                                         <p className="text-gray-500">Select an episode to watch</p>
                     </div>
                                 )}
-                            </div>
+                                </div>
 
                             {/* Player Controls - Placed right after video player in the gap */}
                             <div className="mt-4">
@@ -470,11 +479,11 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <div className="flex items-center space-x-2 ml-4">
                                     <button className="px-4 py-1 bg-green-600 rounded text-sm">Server 1</button>
                                     <button className="px-4 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm">Server 2</button>
-                                </div>
-                                <p className="text-gray-500 text-xs ml-4">If the current server is not working, please try switching to other servers.</p>
-                            </div>
                         </div>
+                                <p className="text-gray-500 text-xs ml-4">If the current server is not working, please try switching to other servers.</p>
                     </div>
+                </div>
+            </div>
 
                     {/* Right: Episode List Sidebar Box */}
                     <div className="w-full lg:w-96 flex-shrink-0">
@@ -487,12 +496,12 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <div className="flex items-center space-x-2">
                                     <button className="p-1 hover:bg-gray-800 rounded">
                                         <Search className="w-4 h-4" />
-                                    </button>
+                    </button>
                                     <button className="p-1 hover:bg-gray-800 rounded">
                                         <Filter className="w-4 h-4" />
-                                        </button>
-                                </div>
-                            </div>
+                    </button>
+                </div>
+                        </div>
 
                             {/* Episode Search */}
                             <div className="mb-4">
@@ -503,12 +512,12 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     onChange={(e) => setEpisodeSearch(e.target.value)}
                                     className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500"
                                 />
-                            </div>
+                    </div>
 
                             {/* Episode Range Selector */}
                             {episodeRanges.length > 1 && (
                                 <div className="flex items-center justify-between mb-4">
-                                    <button
+                                        <button
                                         onClick={() => {
                                             const currentIndex = episodeRanges.findIndex(r => r.start === episodeRange.start);
                                             if (currentIndex > 0) {
@@ -518,7 +527,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         className="p-1 hover:bg-gray-800 rounded"
                                     >
                                         <ChevronLeft className="w-4 h-4" />
-                                    </button>
+                                        </button>
                                     <select
                                         value={`${episodeRange.start}-${episodeRange.end}`}
                                         onChange={(e) => {
