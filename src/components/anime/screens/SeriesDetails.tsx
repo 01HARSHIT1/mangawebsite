@@ -280,12 +280,11 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     <div className="flex-1">
                         <div className="bg-gray-900/50 rounded-lg p-4">
                             {/* Video Player Area - Maximum Size */}
-                            <div className="mb-4">
-                                <div 
-                                    ref={videoPlayerRef}
-                                    className="relative w-full bg-gray-900 rounded-lg overflow-hidden mb-4"
-                                    style={{ height: 'calc(100vh - 250px)', minHeight: '650px' }}
-                                >
+                            <div 
+                                ref={videoPlayerRef}
+                                className="relative w-full bg-gray-900 rounded-lg overflow-hidden mb-4"
+                                style={{ height: 'calc(100vh - 250px)', minHeight: '650px' }}
+                            >
                                 {selectedEpisode ? (
                                     <div className="relative w-full h-full">
                                         <Image
