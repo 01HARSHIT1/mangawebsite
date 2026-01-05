@@ -122,7 +122,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             return;
         }
         try {
-            router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
+        router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
         } catch (error) {
             console.error('Error navigating to episode:', error);
         }
@@ -204,7 +204,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     <div className="flex items-center space-x-1 text-yellow-400">
                                     <Star className="w-5 h-5 fill-yellow-400" />
                                     <span className="font-bold">{(series.rating || 0).toFixed(1)}</span>
-                                </div>
+                                    </div>
                                 </div>
 
                             {/* Title */}
@@ -237,9 +237,13 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                             {/* Action Buttons */}
                             <div className="flex items-center space-x-4 mb-6">
                                     <button
-                                        onClick={() => handlePlayEpisode(1)}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        const firstEpisode = episodes.length > 0 ? episodes[0].episodeNumber : 1;
+                                        handlePlayEpisode(firstEpisode);
+                                    }}
                                     className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-bold shadow-lg shadow-orange-500/50 transition-all"
-                                    >
+                                >
                                     <Play className="w-5 h-5 fill-white" />
                                     <span>WATCH NOW</span>
                                     </button>
