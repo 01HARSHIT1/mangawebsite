@@ -274,17 +274,18 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             </div>
 
             {/* Main Content Area - Large Video Player with Episode Sidebar */}
-            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex flex-col lg:flex-row gap-6">
-                    {/* Left: Large Video Player */}
+                    {/* Left: Large Video Player Box */}
                     <div className="flex-1">
-                        {/* Video Player Area - Maximum Size */}
-                        <div className="mb-6">
-                            <div 
-                                ref={videoPlayerRef}
-                                className="relative w-full bg-gray-900 rounded-lg overflow-hidden mb-4"
-                                style={{ height: 'calc(100vh - 200px)', minHeight: '600px' }}
-                            >
+                        <div className="bg-gray-900/50 rounded-lg p-4">
+                            {/* Video Player Area - Maximum Size */}
+                            <div className="mb-4">
+                                <div 
+                                    ref={videoPlayerRef}
+                                    className="relative w-full bg-gray-900 rounded-lg overflow-hidden mb-4"
+                                    style={{ height: 'calc(100vh - 250px)', minHeight: '650px' }}
+                                >
                                 {selectedEpisode ? (
                                     <div className="relative w-full h-full">
                                         <Image
@@ -380,11 +381,11 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <p className="text-gray-500 text-xs ml-4">If the current server is not working, please try switching to other servers.</p>
                             </div>
                         </div>
+                        </div>
                     </div>
 
-                    {/* Right: Episode List Sidebar */}
+                    {/* Right: Episode List Sidebar Box */}
                     <div className="w-full lg:w-96 flex-shrink-0">
-                        {/* Episode List Sidebar */}
                         <div className="bg-gray-900/50 rounded-lg p-4 sticky top-4">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
