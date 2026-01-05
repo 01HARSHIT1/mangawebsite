@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown } from 'lucide-react';
+import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown, Maximize2 } from 'lucide-react';
 import { FaFacebook, FaTwitter, FaReddit, FaWhatsapp, FaTelegram } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
@@ -61,8 +61,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [recommendedAnime, setRecommendedAnime] = useState<AnimeSeries[]>([]);
     const [relatedContent, setRelatedContent] = useState<RelatedContent[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
+    const [selectedEpisode, setSelectedEpisode] = useState<number>(1); // Always start with episode 1
     const [episodeSearch, setEpisodeSearch] = useState('');
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [episodeRange, setEpisodeRange] = useState({ start: 1, end: 100 });
     const [showComments, setShowComments] = useState(true);
     const [commentsSort, setCommentsSort] = useState<'best' | 'newest' | 'oldest'>('best');
@@ -83,8 +84,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             if (response.ok) {
                 const data = await response.json();
                 setSeries(data);
-                // Set first episode as default if episodes exist
-                if (data.episodeCount > 0 && episodes.length === 0) {
+                // Always set episode 1 as default
+                if (data.episodeCount > 0) {
                     setSelectedEpisode(1);
                 }
             }
@@ -104,9 +105,12 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     a.episodeNumber - b.episodeNumber
                 );
                 setEpisodes(sortedEpisodes);
-                // Auto-select first episode if none selected
-                if (sortedEpisodes.length > 0 && !selectedEpisode) {
-                    setSelectedEpisode(sortedEpisodes[0].episodeNumber);
+                // Ensure episode 1 is selected if available
+                if (sortedEpisodes.length > 0) {
+                    const episode1 = sortedEpisodes.find(e => e.episodeNumber === 1);
+                    if (episode1 && selectedEpisode !== 1) {
+                        setSelectedEpisode(1);
+                    }
                 }
                 // Update episode count range
                 if (sortedEpisodes.length > 0) {
@@ -143,8 +147,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             if (series?.title) {
                 const titleWords = series.title.split(' ').slice(0, 2).join(' ');
                 const response = await fetch(`/api/anime/browse?search=${encodeURIComponent(titleWords)}&limit=10`);
-                if (response.ok) {
-                    const data = await response.json();
+            if (response.ok) {
+                const data = await response.json();
                     // Filter to get related content (different from main series)
                     const related = (data.anime || [])
                         .filter((a: any) => a._id !== seriesId && a.title.toLowerCase().includes(series.title.toLowerCase().split(' ')[0]))
@@ -162,7 +166,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     }, [fetchSeriesDetails, refreshKey]);
 
     useEffect(() => {
-        fetchEpisodes();
+            fetchEpisodes();
     }, [fetchEpisodes, refreshKey]);
 
     useEffect(() => {
@@ -178,11 +182,40 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             return;
         }
         try {
-            router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
+        router.push(`/anime/${seriesId}/episode/${episodeNumber}`);
         } catch (error) {
             console.error('Error navigating to episode:', error);
         }
     };
+
+    const toggleFullscreen = () => {
+        if (!videoPlayerRef.current) return;
+        
+        if (!document.fullscreenElement) {
+            videoPlayerRef.current.requestFullscreen().then(() => {
+                setIsFullscreen(true);
+            }).catch(err => {
+                console.error('Error attempting to enable fullscreen:', err);
+            });
+        } else {
+            document.exitFullscreen().then(() => {
+                setIsFullscreen(false);
+            }).catch(err => {
+                console.error('Error attempting to exit fullscreen:', err);
+            });
+        }
+    };
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        };
+    }, []);
 
     const filteredEpisodes = episodes.filter(ep => {
         if (episodeSearch) {
@@ -235,9 +268,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         <span className="text-white">TV</span>
                         <span>/</span>
                         <span className="text-white">{series.title}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             {/* Hero Section - Image 1 */}
             <div className="relative bg-gradient-to-br from-orange-950/50 via-red-950/50 to-black">
@@ -253,30 +286,30 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     className="object-cover"
                                 />
                             </div>
-                        </div>
+                            </div>
 
                         {/* Right: Series Info */}
-                        <div className="flex-1">
+                            <div className="flex-1">
                             {/* Status, Year, Rating */}
-                            <div className="flex items-center space-x-3 mb-4">
+                                <div className="flex items-center space-x-3 mb-4">
                                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${
                                     series.status === 'ongoing' ? 'bg-green-500 text-white' :
                                     series.status === 'completed' ? 'bg-blue-500 text-white' :
                                     'bg-yellow-500 text-white'
                                 }`}>
                                     {series.status === 'ongoing' ? 'ONGOING' : series.status === 'completed' ? 'COMPLETED' : 'UPCOMING'}
-                                </span>
+                                    </span>
                                 <span className="text-gray-300 font-semibold">{series.year}</span>
-                                <div className="flex items-center space-x-1 text-yellow-400">
+                                    <div className="flex items-center space-x-1 text-yellow-400">
                                     <Star className="w-5 h-5 fill-yellow-400" />
                                     <span className="font-bold">{(series.rating || 0).toFixed(1)}</span>
+                                    </div>
                                 </div>
-                            </div>
 
                             {/* Title */}
                             <h1 className="text-4xl md:text-5xl font-black mb-2 text-white">
-                                {series.title}
-                            </h1>
+                                    {series.title}
+                                </h1>
 
                             {/* Alternative Titles */}
                             {series.alternativeTitles && series.alternativeTitles.length > 0 && (
@@ -290,10 +323,10 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <span className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-sm">TV</span>
                                 {series.genres && series.genres.slice(0, 3).map((genre, idx) => (
                                     <span key={idx} className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-sm">
-                                        {genre}
-                                    </span>
-                                ))}
-                            </div>
+                                            {genre}
+                                        </span>
+                                    ))}
+                                </div>
 
                             {/* Synopsis */}
                             <p className="text-gray-300 mb-6 leading-relaxed max-w-3xl">
@@ -302,7 +335,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
                             {/* Action Buttons */}
                             <div className="flex items-center space-x-4 mb-6">
-                                <button
+                                    <button
                                     onClick={(e) => {
                                         e.preventDefault();
                                         const firstEpisode = episodes.length > 0 ? episodes[0].episodeNumber : 1;
@@ -312,17 +345,17 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 >
                                     <Play className="w-5 h-5 fill-white" />
                                     <span>WATCH NOW</span>
-                                </button>
-                                <button className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                                    </button>
+                                    <button className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
                                     <Heart className="w-5 h-5 text-gray-400" />
-                                </button>
-                                <button className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                                    </button>
+                                    <button className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
                                     <Bookmark className="w-5 h-5 text-gray-400" />
-                                </button>
-                                <button className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                                    </button>
+                                    <button className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
                                     <Share2 className="w-5 h-5 text-gray-400" />
-                                </button>
-                            </div>
+                                    </button>
+                                </div>
 
                             {/* Episode Info */}
                             <div className="text-gray-400 text-sm">
@@ -382,34 +415,51 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     <div className="flex-1">
                         {/* Video Player Area - Image 2 */}
                         <div className="mb-8">
-                            <div className="relative w-full aspect-video bg-gray-900 rounded-lg overflow-hidden mb-4">
+                            <div 
+                                ref={videoPlayerRef}
+                                className="relative w-full bg-gray-900 rounded-lg overflow-hidden mb-4"
+                                style={{ height: 'calc(100vh - 400px)', minHeight: '500px', maxHeight: '800px' }}
+                            >
                                 {selectedEpisode ? (
                                     <div className="relative w-full h-full">
                                         <Image
                                             src={series.bannerImage || series.coverImage}
                                             alt={series.title}
                                             fill
-                                            className="object-cover opacity-50"
+                                            className="object-cover"
                                         />
+                                        <div className="absolute inset-0 bg-black/30"></div>
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <motion.button
                                                 whileHover={{ scale: 1.1 }}
                                                 whileTap={{ scale: 0.9 }}
                                                 onClick={() => handlePlayEpisode(selectedEpisode)}
-                                                className="w-20 h-20 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-2xl shadow-orange-500/50 z-10"
+                                                className="w-24 h-24 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center shadow-2xl shadow-orange-500/50 z-10 hover:shadow-orange-500/70 transition-shadow"
                                             >
-                                                <Play className="w-10 h-10 text-white fill-white ml-1" />
+                                                <Play className="w-12 h-12 text-white fill-white ml-1" />
                                             </motion.button>
                                         </div>
-                                        <div className="absolute top-4 right-4 z-10">
+                                        <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
                                             <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm font-bold">
                                                 {series.title.toUpperCase()}
+                                            </span>
+                                            <button
+                                                onClick={toggleFullscreen}
+                                                className="p-2 bg-black/70 backdrop-blur-sm hover:bg-black/90 rounded transition-colors"
+                                                title="Fullscreen"
+                                            >
+                                                <Maximize2 className="w-5 h-5 text-white" />
+                                            </button>
+                                        </div>
+                                        <div className="absolute bottom-4 left-4 z-10">
+                                            <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm">
+                                                Episode {selectedEpisode}
                                             </span>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                                        <p className="text-gray-500">Select an episode to watch</p>
+                                        <p className="text-gray-500">Loading episode...</p>
                                     </div>
                                 )}
                             </div>
@@ -420,7 +470,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded text-sm">AutoNext</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">AutoPlay</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">AutoSkip</button>
-                                <button 
+                    <button
                                     onClick={() => {
                                         const currentIndex = episodes.findIndex(e => e.episodeNumber === selectedEpisode);
                                         if (currentIndex > 0) {
@@ -430,8 +480,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm"
                                 >
                                     Prev
-                                </button>
-                                <button 
+                    </button>
+                    <button
                                     onClick={() => {
                                         const currentIndex = episodes.findIndex(e => e.episodeNumber === selectedEpisode);
                                         if (currentIndex < episodes.length - 1) {
@@ -441,11 +491,11 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm"
                                 >
                                     Next
-                                </button>
+                    </button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">Bookmark</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">W2G</button>
                                 <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">Report</button>
-                            </div>
+                </div>
 
                             {selectedEpisode && (
                                 <p className="text-gray-400 text-sm mb-4">
@@ -501,10 +551,10 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         <div className="flex">
                                             <span className="text-gray-400 w-32">Duration:</span>
                                             <span className="text-white">{series.duration ? `${series.duration} min` : '24 min'}</span>
-                                        </div>
-                                    </div>
                                 </div>
-                                <div>
+                                </div>
+                            </div>
+                            <div>
                                     <h3 className="text-lg font-bold mb-4">Details</h3>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex">
@@ -548,9 +598,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         ))}
                                     </div>
                                     <span className="text-gray-400 text-sm ml-2">9.66 by 50,697 reviews</span>
-                                </div>
                             </div>
                         </div>
+                    </div>
 
                         {/* Comments Section - Images 4 & 5 */}
                         <div className="bg-gray-900/50 rounded-lg p-6">
@@ -603,7 +653,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         >
                                             Newest
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => setCommentsSort('oldest')}
                                             className={`text-sm pb-1 ${
                                                 commentsSort === 'oldest' 
@@ -619,9 +669,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         <button className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg">
                                             Load More Comments
                                         </button>
-                                    </div>
                                 </div>
-                            )}
+                            </div>
+                        )}
                         </div>
 
                         {/* Relations Section */}
@@ -636,18 +686,18 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 </div>
                                 <div className="space-y-3">
                                     {relatedContent.map((item) => (
-                                        <Link
+                                <Link
                                             key={item._id}
                                             href={`/anime/${item._id}`}
                                             className="flex items-center space-x-3 p-3 rounded hover:bg-gray-800 transition-colors"
                                         >
                                             <div className="relative w-20 h-28 flex-shrink-0 rounded overflow-hidden">
-                                                <Image
+                                        <Image
                                                     src={item.coverImage}
                                                     alt={item.title}
-                                                    fill
-                                                    className="object-cover"
-                                                />
+                                            fill
+                                            className="object-cover"
+                                        />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h4 className="text-sm font-semibold text-white truncate">{item.title}</h4>
@@ -662,9 +712,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         </Link>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                                        </div>
+                                    )}
+                                </div>
 
                     {/* Right: Episode List + Recommended - Image 2 */}
                     <div className="w-full lg:w-80 space-y-6">
@@ -683,7 +733,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         <Filter className="w-4 h-4" />
                                     </button>
                                 </div>
-                            </div>
+                                    </div>
 
                             {/* Episode Search */}
                             <div className="mb-4">
@@ -694,7 +744,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     onChange={(e) => setEpisodeSearch(e.target.value)}
                                     className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500"
                                 />
-                            </div>
+                                </div>
 
                             {/* Episode Range Selector */}
                             {episodeRanges.length > 1 && (
@@ -759,10 +809,10 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 ) : (
                                     <div className="col-span-6 text-center text-gray-500 text-sm py-4">
                                         No episodes found
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                                        </div>
+                                    )}
+                                </div>
+                                </div>
 
                         {/* Recommended Anime */}
                         {recommendedAnime.length > 0 && (
@@ -790,10 +840,10 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                 </p>
                                             </div>
                                         </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                            ))}
+                        </div>
+                    </div>
+                )}
                     </div>
                 </div>
             </div>

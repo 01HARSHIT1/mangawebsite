@@ -48,8 +48,8 @@ export async function GET(
         let episode: any = null;
         try {
             episode = await db.collection('anime_episodes').findOne({ 
-                _id: new ObjectId(episodeId) 
-            });
+            _id: new ObjectId(episodeId) 
+        });
         } catch (error) {
             // Try with string format
             episode = await db.collection('anime_episodes').findOne({ 
@@ -78,7 +78,7 @@ export async function GET(
             // Fallback
             series = await db.collection('anime_series').findOne({ 
                 _id: episode.seriesId 
-            });
+        });
         }
         
         if (!series) {
