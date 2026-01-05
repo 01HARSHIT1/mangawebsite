@@ -1,29 +1,88 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import clientPromise from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
-// Mock data - Replace with actual database queries
+export const dynamic = 'force-dynamic';
+
 export async function GET(
-    request: Request,
+    request: NextRequest,
     { params }: { params: { seriesId: string } }
 ) {
     try {
         const { seriesId } = params;
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+        
+        let userId: string | null = null;
+        if (token) {
+            const { verifyToken } = await import('@/lib/auth');
+            const payload = verifyToken(token);
+            if (payload) {
+                userId = payload.userId;
+            }
+        }
 
-        // TODO: Replace with actual database query
-        const episodes = Array.from({ length: 44 }, (_, i) => ({
-            _id: `ep-${i + 1}`,
-            episodeNumber: i + 1,
-            title: `Episode ${i + 1}`,
-            description: `This is episode ${i + 1} of the series.`,
-            thumbnail: `https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400`,
-            duration: 1440, // 24 minutes in seconds
-            airDate: new Date(2019, 3, i + 1).toISOString(),
-            watched: i < 12, // First 12 episodes watched
-        }));
+        const client = await clientPromise;
+        const db = client.db('mangawebsite');
 
-        return NextResponse.json({ episodes });
-    } catch (error) {
+        // Try to convert seriesId to ObjectId
+        let seriesObjectId: ObjectId;
+        try {
+            seriesObjectId = new ObjectId(seriesId);
+        } catch (error) {
+            return NextResponse.json({ error: 'Invalid series ID format' }, { status: 400 });
+        }
+
+        // Get all episodes for this series
+        let episodes = await db.collection('anime_episodes')
+            .find({ seriesId: seriesObjectId })
+            .sort({ seasonNumber: 1, episodeNumber: 1 })
+            .toArray();
+
+        // If no episodes found, try with string format
+        if (episodes.length === 0) {
+            episodes = await db.collection('anime_episodes')
+                .find({ seriesId: seriesId })
+                .sort({ seasonNumber: 1, episodeNumber: 1 })
+                .toArray();
+        }
+
+        // Get watch history for user if authenticated
+        let watchHistory: any[] = [];
+        if (userId) {
+            watchHistory = await db.collection('anime_watch_history')
+                .find({ userId, seriesId: seriesObjectId })
+                .toArray();
+        }
+
+        // Enrich episodes with watch progress
+        const enrichedEpisodes = episodes.map((episode: any) => {
+            const history = watchHistory.find(wh => wh.episodeId === episode._id.toString());
+            return {
+                _id: episode._id.toString(),
+                episodeNumber: episode.episodeNumber,
+                title: episode.title || `Episode ${episode.episodeNumber}`,
+                description: episode.description,
+                thumbnail: episode.thumbnail || episode.coverImage,
+                duration: episode.duration,
+                airDate: episode.airDate,
+                releaseDate: episode.releaseDate,
+                watched: history ? history.completed : false,
+                watchedPercentage: history && episode.duration 
+                    ? Math.round((history.lastPosition / episode.duration) * 100) 
+                    : 0,
+                lastPosition: history?.lastPosition || 0,
+            };
+        });
+
+        return NextResponse.json({ 
+            episodes: enrichedEpisodes,
+            totalEpisodes: enrichedEpisodes.length,
+        });
+    } catch (error: any) {
         console.error('Error fetching episodes:', error);
-        return NextResponse.json({ error: 'Failed to fetch episodes' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Failed to fetch episodes', details: error.message },
+            { status: 500 }
+        );
     }
 }
-
