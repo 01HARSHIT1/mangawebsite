@@ -429,30 +429,32 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 )}
             </div>
 
-                            {/* Player Controls */}
-                            <div className="flex items-center space-x-2 mb-4 flex-wrap">
-                                <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">Focus</button>
-                                <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded text-sm">AutoNext</button>
-                                <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">AutoPlay</button>
-                                <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">AutoSkip</button>
-                    <button
-                                    onClick={handlePreviousEpisode}
-                                    disabled={!prevEpisode}
-                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Prev
-                    </button>
-                    <button
-                                    onClick={handleNextEpisode}
-                                    disabled={!nextEpisode}
-                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Next
-                    </button>
-                                <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">Bookmark</button>
-                                <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">W2G</button>
-                                <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm">Report</button>
-                </div>
+                            {/* Player Controls - In Container Box */}
+                            <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">Focus</button>
+                                    <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded text-sm transition-colors">AutoNext</button>
+                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">AutoPlay</button>
+                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">AutoSkip</button>
+                                    <button
+                                        onClick={handlePreviousEpisode}
+                                        disabled={!prevEpisode}
+                                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Prev
+                                    </button>
+                                    <button
+                                        onClick={handleNextEpisode}
+                                        disabled={!nextEpisode}
+                                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">Bookmark</button>
+                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">W2G</button>
+                                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">Report</button>
+                                </div>
+                            </div>
 
                             {selectedEpisode && (
                                 <p className="text-gray-400 text-sm mb-4">

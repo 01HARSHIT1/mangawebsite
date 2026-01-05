@@ -23,6 +23,7 @@ export default function AnimeUploadPage() {
         episodeNumber: 1,
         episodeDescription: "",
         episodeVideo: null as File | null,
+        episodePoster: null as File | null, // Episode poster/thumbnail image
         episodeDuration: "",
         existingSeriesId: "", // For selecting existing series
     });
@@ -187,19 +188,31 @@ export default function AnimeUploadPage() {
                 throw new Error('Failed to upload episode video');
             }
 
-            // Get thumbnail - use series cover if new series, or fetch from existing series
+            // Get thumbnail - prioritize episode poster if uploaded, otherwise use series cover
             let thumbnail: string | null = null;
-            if (form.existingSeriesId && !isNewSeries) {
-                // Fetch existing series cover
-                const seriesRes = await fetch(`/api/anime/${form.existingSeriesId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (seriesRes.ok) {
-                    const seriesData = await seriesRes.json();
-                    thumbnail = seriesData.coverImage || null;
+            
+            // First, try to upload episode poster if provided
+            let episodePosterUrl: string | null = null;
+            if (form.episodePoster) {
+                const posterInfo = await uploadToCloudinary(form.episodePoster, 'anime/episodes/posters');
+                episodePosterUrl = posterInfo.secure_url;
+                thumbnail = episodePosterUrl;
+            }
+            
+            // If no episode poster, use series cover
+            if (!thumbnail) {
+                if (form.existingSeriesId && !isNewSeries) {
+                    // Fetch existing series cover
+                    const seriesRes = await fetch(`/api/anime/${form.existingSeriesId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (seriesRes.ok) {
+                        const seriesData = await seriesRes.json();
+                        thumbnail = seriesData.coverImage || null;
+                    }
+                } else if (coverInfo) {
+                    thumbnail = coverInfo.secure_url;
                 }
-            } else if (coverInfo) {
-                thumbnail = coverInfo.secure_url;
             }
 
             const episodeRes = await fetch('/api/anime/episodes', {
@@ -215,7 +228,7 @@ export default function AnimeUploadPage() {
                     episodeNumber: form.episodeNumber || 1,
                     seasonNumber: 1,
                     videoUrl: episodeInfo.secure_url,
-                    thumbnail: thumbnail,
+                    thumbnail: thumbnail || episodePosterUrl,
                     duration: form.episodeDuration ? Number(form.episodeDuration) : undefined,
                 })
             });
@@ -239,6 +252,7 @@ export default function AnimeUploadPage() {
                 episodeNumber: 1,
                 episodeDescription: "",
                 episodeVideo: null,
+                episodePoster: null,
                 episodeDuration: "",
             });
 
@@ -572,6 +586,87 @@ export default function AnimeUploadPage() {
                                                 className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors"
                                             >
                                                 Select Episode Video
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Episode Poster Upload */}
+                            <div className="md:col-span-2 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-sm font-semibold text-gray-300">
+                                        <span className="flex items-center">
+                                            <span className="mr-2">🖼️</span>
+                                            Episode Poster/Thumbnail
+                                            <span className="text-gray-500 text-xs ml-2">(Optional - shown before play)</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div
+                                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${episodePosterDragActive
+                                        ? 'border-orange-500 bg-orange-500/10'
+                                        : 'border-orange-500/30 bg-gray-950/50 hover:border-orange-500/50'
+                                        }`}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setEpisodePosterDragActive(true);
+                                    }}
+                                    onDragLeave={() => setEpisodePosterDragActive(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setEpisodePosterDragActive(false);
+                                        const file = e.dataTransfer.files[0];
+                                        if (file && file.type.startsWith('image/')) {
+                                            setForm({ ...form, episodePoster: file });
+                                        }
+                                    }}
+                                >
+                                    {form.episodePoster ? (
+                                        <div className="space-y-3">
+                                            <img
+                                                src={URL.createObjectURL(form.episodePoster)}
+                                                alt="Episode poster preview"
+                                                className="max-w-full max-h-48 mx-auto rounded-lg object-cover"
+                                            />
+                                            <p className="text-gray-300">{form.episodePoster.name}</p>
+                                            <div className="flex items-center justify-center space-x-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => episodePosterRef.current?.click()}
+                                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-orange-500/40"
+                                                >
+                                                    Replace Image
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setForm({ ...form, episodePoster: null })}
+                                                    className="px-4 py-2 text-red-400 hover:text-red-300"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-gray-400 mb-4">Drag & drop or click to select an episode poster image</p>
+                                            <p className="text-gray-500 text-xs mb-4">This image will be shown before the user clicks play</p>
+                                            <input
+                                                ref={episodePosterRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) setForm({ ...form, episodePoster: file });
+                                                }}
+                                                className="hidden"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => episodePosterRef.current?.click()}
+                                                className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors"
+                                            >
+                                                Select Episode Poster
                                             </button>
                                         </div>
                                     )}
