@@ -124,20 +124,38 @@ export default function EnhancedVideoPlayer({
                 setPlaybackData(data);
                 setSelectedQuality(data.qualityLevels?.[0] || null);
                 
+                // Use playback data tracks, fallback to episode props if not available
+                const availableSubtitles = data.subtitles || episode.subtitles || episode.availableTracks?.subtitles || [];
+                const availableAudioTracks = data.audioTracks || episode.audioTracks || episode.availableTracks?.audio || [];
+                
                 // Set default subtitle
-                const defaultSubtitle = data.subtitles?.find((s: Subtitle) => s.isDefault) || data.subtitles?.[0];
+                const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
                 if (defaultSubtitle) {
                     setSelectedSubtitle(defaultSubtitle);
                 }
 
                 // Set default audio track
-                const defaultAudio = data.audioTracks?.find((a: AudioTrack) => a.isDefault) || data.audioTracks?.[0];
+                const defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
                 if (defaultAudio) {
                     setSelectedAudio(defaultAudio);
                 }
             } else {
                 console.warn('Playback API failed, using direct video URL');
-                // Continue with episode.videoUrl as fallback
+                // Use episode props for tracks if playback API fails
+                const availableSubtitles = episode.subtitles || episode.availableTracks?.subtitles || [];
+                const availableAudioTracks = episode.audioTracks || episode.availableTracks?.audio || [];
+                
+                // Set default subtitle from episode props
+                const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
+                if (defaultSubtitle) {
+                    setSelectedSubtitle(defaultSubtitle);
+                }
+
+                // Set default audio track from episode props
+                const defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
+                if (defaultAudio) {
+                    setSelectedAudio(defaultAudio);
+                }
             }
 
             // Get resume position if authenticated
@@ -773,7 +791,7 @@ export default function EnhancedVideoPlayer({
                             </div>
 
                             {/* Subtitles */}
-                            {playbackData?.subtitles && playbackData.subtitles.length > 0 && (
+                            {((playbackData?.subtitles && playbackData.subtitles.length > 0) || (episode.subtitles && episode.subtitles.length > 0) || (episode.availableTracks?.subtitles && episode.availableTracks.subtitles.length > 0)) && (
                                 <div className="relative">
                                     <button
                                         onClick={() => {
@@ -797,7 +815,7 @@ export default function EnhancedVideoPlayer({
                                             >
                                                 Off
                                             </button>
-                                            {playbackData.subtitles.map((sub: Subtitle) => (
+                                            {(playbackData?.subtitles || episode.subtitles || episode.availableTracks?.subtitles || []).map((sub: Subtitle) => (
                                                 <button
                                                     key={sub.languageCode}
                                                     onClick={() => handleSubtitleChange(sub)}
@@ -814,7 +832,7 @@ export default function EnhancedVideoPlayer({
                             )}
 
                             {/* Audio Tracks */}
-                            {playbackData?.audioTracks && playbackData.audioTracks.length > 1 && (
+                            {((playbackData?.audioTracks && playbackData.audioTracks.length > 1) || ((episode.audioTracks || episode.availableTracks?.audio || []).length > 1)) && (
                                 <div className="relative">
                                     <button
                                         onClick={() => {
@@ -830,7 +848,7 @@ export default function EnhancedVideoPlayer({
                                     </button>
                                     {showAudioMenu && (
                                         <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[200px] z-50">
-                                            {playbackData.audioTracks.map((audio: AudioTrack) => (
+                                            {(playbackData?.audioTracks || episode.audioTracks || episode.availableTracks?.audio || []).map((audio: AudioTrack) => (
                                                 <button
                                                     key={audio.languageCode}
                                                     onClick={() => handleAudioChange(audio)}

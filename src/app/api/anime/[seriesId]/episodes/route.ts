@@ -71,6 +71,13 @@ export async function GET(
                     ? Math.round((history.lastPosition / episode.duration) * 100) 
                     : 0,
                 lastPosition: history?.lastPosition || 0,
+                // Include audio tracks and subtitles for episode list
+                audioTracks: episode.audioTracks || [],
+                subtitles: episode.subtitles || [],
+                availableTracks: {
+                    audio: episode.audioTracks || [],
+                    subtitles: episode.subtitles || [],
+                },
             };
         });
 
