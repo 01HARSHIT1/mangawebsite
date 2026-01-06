@@ -222,6 +222,42 @@ export default function W2GRoomPage() {
                     console.log(`${data.username} reacted with ${data.emoji}`);
                 });
 
+                newSocket.on('host_transferred', (data: { newHostUserId: string; newHostUsername: string }) => {
+                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                    let currentUserId = null;
+                    if (token) {
+                        try {
+                            const payload = JSON.parse(atob(token.split('.')[1]));
+                            currentUserId = payload.userId || payload._id;
+                        } catch (e) {
+                            console.error('Error parsing token:', e);
+                        }
+                    }
+                    setRoomState(prev => prev ? { ...prev, isHost: data.newHostUserId === currentUserId } : null);
+                    setRoom(prev => prev ? {
+                        ...prev,
+                        hostUserId: data.newHostUserId,
+                        hostUsername: data.newHostUsername,
+                    } : null);
+                });
+
+                newSocket.on('user_kicked', (data: { userId: string }) => {
+                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                    let currentUserId = null;
+                    if (token) {
+                        try {
+                            const payload = JSON.parse(atob(token.split('.')[1]));
+                            currentUserId = payload.userId || payload._id;
+                        } catch (e) {
+                            console.error('Error parsing token:', e);
+                        }
+                    }
+                    if (data.userId === currentUserId) {
+                        alert('You have been kicked from the room');
+                        router.push(`/anime/${series?._id}`);
+                    }
+                });
+
                 newSocket.on('error', (data: { message: string }) => {
                     console.error('Socket error:', data.message);
                     setError(data.message);
