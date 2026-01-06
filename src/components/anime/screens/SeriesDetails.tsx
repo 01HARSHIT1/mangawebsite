@@ -85,7 +85,6 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
-    const [userRating, setUserRating] = useState<number>(0);
     const [availableAudioTracks, setAvailableAudioTracks] = useState<any[]>([]);
     const [availableSubtitles, setAvailableSubtitles] = useState<any[]>([]);
     const [selectedAudioTrack, setSelectedAudioTrack] = useState<any>(null);
@@ -95,6 +94,28 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [subtitleType, setSubtitleType] = useState<'hard' | 'soft' | null>(null);
     const audioMenuRef = useRef<HTMLDivElement>(null);
     const subtitleMenuRef = useRef<HTMLDivElement>(null);
+    const [showTimestampModal, setShowTimestampModal] = useState(false);
+    const [timestampData, setTimestampData] = useState({
+        introStartTime: 0,
+        introEndTime: 0,
+        outroStartTime: 0,
+        outroEndTime: 0,
+    });
+    const [isSavingTimestamps, setIsSavingTimestamps] = useState(false);
+    
+    // User preferences state
+    const [userPreferences, setUserPreferences] = useState({
+        autoPlay: false,
+        autoNext: false,
+        autoSkip: false,
+        introStartTime: 0,
+        introEndTime: 0,
+        outroStartTime: 0,
+        outroEndTime: 0,
+        keyboardShortcutsEnabled: true,
+    });
+    const [userRating, setUserRating] = useState<number>(0);
+    const [hasRated, setHasRated] = useState(false);
 
     // Auto-refresh episodes every 30 seconds to catch new uploads
     useEffect(() => {
@@ -278,7 +299,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         }
     }, [series, fetchRecommended, fetchRelatedContent]);
 
-    // Check authentication status
+    // Check authentication status and load preferences
     useEffect(() => {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (token) {
@@ -294,10 +315,46 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     }
                 })
                 .catch(() => setIsAuthenticated(false));
+            
+            // Load user preferences
+            fetch('/api/anime/user-preferences', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.preferences) {
+                        setUserPreferences(data.preferences);
+                    }
+                })
+                .catch(err => console.error('Error loading preferences:', err));
+            
+            // Load user rating for this series
+            if (seriesId) {
+                fetch(`/api/anime/${seriesId}/ratings`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.rating) {
+                            setUserRating(data.rating);
+                            setHasRated(true);
+                        }
+                    })
+                    .catch(err => console.error('Error loading rating:', err));
+            }
         } else {
             setIsAuthenticated(false);
+            // Load default preferences from localStorage for non-authenticated users
+            const savedPrefs = localStorage.getItem('animePreferences');
+            if (savedPrefs) {
+                try {
+                    setUserPreferences(JSON.parse(savedPrefs));
+                } catch (e) {
+                    console.error('Error parsing saved preferences:', e);
+                }
+            }
         }
-    }, []);
+    }, [seriesId]);
 
     // Fetch comments
     const fetchComments = useCallback(async () => {
@@ -524,6 +581,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                 hasNextEpisode={!!nextEpisode}
                                                 hasPreviousEpisode={!!prevEpisode}
                                                 onBackToSeries={() => setIsVideoPlaying(false)}
+                                                userPreferences={userPreferences}
                                             />
                         </div>
                     </div>
@@ -582,10 +640,99 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                             {/* Player Controls - Placed right after video player in the gap */}
                             <div className="mt-4 px-4">
                                 <div className="flex items-center gap-3 flex-wrap">
-                                    <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">Focus</button>
-                                    <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded text-sm transition-colors">AutoNext</button>
-                                    <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">AutoPlay</button>
-                                    <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">AutoSkip</button>
+                                    <button 
+                                        onClick={() => {
+                                            // Focus mode - hide UI distractions (placeholder for now)
+                                            alert('Focus mode: Hides UI distractions for immersive viewing');
+                                        }}
+                                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                                    >
+                                        Focus
+                                    </button>
+                                    <button 
+                                        onClick={async () => {
+                                            const newValue = !userPreferences.autoNext;
+                                            const updatedPrefs = { ...userPreferences, autoNext: newValue };
+                                            setUserPreferences(updatedPrefs);
+                                            
+                                            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                            if (token) {
+                                                await fetch('/api/anime/user-preferences', {
+                                                    method: 'PUT',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${token}`,
+                                                    },
+                                                    body: JSON.stringify({ autoNext: newValue }),
+                                                });
+                                            } else {
+                                                localStorage.setItem('animePreferences', JSON.stringify(updatedPrefs));
+                                            }
+                                        }}
+                                        className={`px-4 py-2 rounded text-sm transition-colors ${
+                                            userPreferences.autoNext 
+                                                ? 'bg-orange-600 hover:bg-orange-700' 
+                                                : 'bg-gray-800 hover:bg-gray-700'
+                                        }`}
+                                    >
+                                        AutoNext {userPreferences.autoNext ? '✓' : ''}
+                                    </button>
+                                    <button 
+                                        onClick={async () => {
+                                            const newValue = !userPreferences.autoPlay;
+                                            const updatedPrefs = { ...userPreferences, autoPlay: newValue };
+                                            setUserPreferences(updatedPrefs);
+                                            
+                                            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                            if (token) {
+                                                await fetch('/api/anime/user-preferences', {
+                                                    method: 'PUT',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${token}`,
+                                                    },
+                                                    body: JSON.stringify({ autoPlay: newValue }),
+                                                });
+                                            } else {
+                                                localStorage.setItem('animePreferences', JSON.stringify(updatedPrefs));
+                                            }
+                                        }}
+                                        className={`px-4 py-2 rounded text-sm transition-colors ${
+                                            userPreferences.autoPlay 
+                                                ? 'bg-orange-600 hover:bg-orange-700' 
+                                                : 'bg-gray-800 hover:bg-gray-700'
+                                        }`}
+                                    >
+                                        AutoPlay {userPreferences.autoPlay ? '✓' : ''}
+                                    </button>
+                                    <button 
+                                        onClick={async () => {
+                                            const newValue = !userPreferences.autoSkip;
+                                            const updatedPrefs = { ...userPreferences, autoSkip: newValue };
+                                            setUserPreferences(updatedPrefs);
+                                            
+                                            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                            if (token) {
+                                                await fetch('/api/anime/user-preferences', {
+                                                    method: 'PUT',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${token}`,
+                                                    },
+                                                    body: JSON.stringify({ autoSkip: newValue }),
+                                                });
+                                            } else {
+                                                localStorage.setItem('animePreferences', JSON.stringify(updatedPrefs));
+                                            }
+                                        }}
+                                        className={`px-4 py-2 rounded text-sm transition-colors ${
+                                            userPreferences.autoSkip 
+                                                ? 'bg-orange-600 hover:bg-orange-700' 
+                                                : 'bg-gray-800 hover:bg-gray-700'
+                                        }`}
+                                    >
+                                        AutoSkip {userPreferences.autoSkip ? '✓' : ''}
+                                    </button>
                                     <button
                                         onClick={handlePreviousEpisode}
                                         disabled={!prevEpisode}
@@ -600,9 +747,68 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     >
                                         Next
                                     </button>
-                                    <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">Bookmark</button>
-                                    <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">W2G</button>
-                                    <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">Report</button>
+                                    <button 
+                                        onClick={async () => {
+                                            if (!isAuthenticated) {
+                                                setShowSignUpModal(true);
+                                                return;
+                                            }
+                                            
+                                            if (!currentEpisodeData?._id) {
+                                                alert('Please select an episode first');
+                                                return;
+                                            }
+                                            
+                                            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                            const video = document.querySelector('video');
+                                            const currentPosition = video?.currentTime || 0;
+                                            
+                                            try {
+                                                const response = await fetch('/api/anime/bookmarks', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${token}`,
+                                                    },
+                                                    body: JSON.stringify({
+                                                        seriesId: seriesId,
+                                                        episodeId: currentEpisodeData._id,
+                                                        episodeNumber: selectedEpisode,
+                                                        position: currentPosition,
+                                                    }),
+                                                });
+                                                
+                                                if (response.ok) {
+                                                    alert('Bookmark saved successfully!');
+                                                } else {
+                                                    const error = await response.json();
+                                                    alert(error.error || 'Failed to save bookmark');
+                                                }
+                                            } catch (error) {
+                                                console.error('Error saving bookmark:', error);
+                                                alert('Failed to save bookmark');
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                                    >
+                                        Bookmark
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            alert('W2G (Watch2Gether) feature coming soon!\n\nThis will allow you to watch anime with friends in real-time. Please provide details on how you want this feature to work:\n- Should it create watch rooms?\n- Do you need chat functionality?\n- Should playback be synchronized?');
+                                        }}
+                                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                                    >
+                                        W2G
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            alert('Report feature coming soon!\n\nPlease provide details on what users should be able to report:\n- Video quality issues?\n- Copyright violations?\n- Inappropriate content?\n- Other issues?');
+                                        }}
+                                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                                    >
+                                        Report
+                                    </button>
                         </div>
                     </div>
 
@@ -822,17 +1028,57 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                 {[1, 2, 3, 4, 5].map((star) => (
                                                     <Star
                                                         key={star}
-                                                        className={`w-5 h-5 ${
-                                                            star <= (userRating || series.rating || 0)
+                                                        className={`w-5 h-5 cursor-pointer transition-colors ${
+                                                            star <= userRating
                                                                 ? 'fill-orange-500 text-orange-500'
-                                                                : 'text-gray-600'
+                                                                : 'text-gray-600 hover:text-orange-400'
                                                         }`}
-                                                        onClick={() => isAuthenticated && setUserRating(star)}
+                                                        onClick={async () => {
+                                                            if (!isAuthenticated) {
+                                                                setShowSignUpModal(true);
+                                                                return;
+                                                            }
+                                                            setUserRating(star);
+                                                            setHasRated(true);
+                                                            
+                                                            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                                            if (token) {
+                                                                try {
+                                                                    const response = await fetch(`/api/anime/${seriesId}/ratings`, {
+                                                                        method: 'POST',
+                                                                        headers: {
+                                                                            'Content-Type': 'application/json',
+                                                                            Authorization: `Bearer ${token}`,
+                                                                        },
+                                                                        body: JSON.stringify({ rating: star }),
+                                                                    });
+                                                                    if (response.ok) {
+                                                                        const data = await response.json();
+                                                                        // Update series rating display
+                                                                        if (series) {
+                                                                            setSeries({ ...series, rating: data.rating });
+                                                                        }
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error('Error submitting rating:', error);
+                                                                }
+                                                            }
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            if (isAuthenticated) {
+                                                                const hoverStar = parseInt(e.currentTarget.getAttribute('data-star') || '0');
+                                                                // Visual feedback on hover
+                                                            }
+                                                        }}
+                                                        data-star={star}
                                                     />
                                                 ))}
                                             </div>
                                             <p className="text-xs text-gray-400">
-                                                {series.rating ? `${series.rating.toFixed(2)} by reviews` : 'No ratings yet'}
+                                                {series.rating ? `${series.rating.toFixed(1)} by reviews` : 'No ratings yet'}
+                                                {hasRated && userRating > 0 && (
+                                                    <span className="block mt-1 text-orange-400">You rated: {userRating}/5</span>
+                                                )}
                                             </p>
                                         </div>
                                     </div>
@@ -1146,6 +1392,232 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 </div>
                                 </div>
             </footer>
+
+            {/* Intro/Outro Timestamp Modal */}
+            {showTimestampModal && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                    <div className="bg-gray-900 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold">Set Intro/Outro Timestamps</h3>
+                            <button
+                                onClick={() => setShowTimestampModal(false)}
+                                className="text-gray-400 hover:text-white"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <p className="text-gray-400 text-sm mb-4">
+                            Set timestamps to automatically skip intro and outro. You can set these while watching the video.
+                        </p>
+                        
+                        <div className="space-y-4">
+                            {/* Intro Section */}
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <h4 className="font-semibold mb-3">Intro</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">Start Time (seconds)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={timestampData.introStartTime}
+                                            onChange={(e) => setTimestampData({
+                                                ...timestampData,
+                                                introStartTime: parseFloat(e.target.value) || 0,
+                                            })}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const video = document.querySelector('video');
+                                                if (video) {
+                                                    setTimestampData({
+                                                        ...timestampData,
+                                                        introStartTime: Math.floor(video.currentTime),
+                                                    });
+                                                }
+                                            }}
+                                            className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
+                                        >
+                                            Use Current Time
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">End Time (seconds)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={timestampData.introEndTime}
+                                            onChange={(e) => setTimestampData({
+                                                ...timestampData,
+                                                introEndTime: parseFloat(e.target.value) || 0,
+                                            })}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const video = document.querySelector('video');
+                                                if (video) {
+                                                    setTimestampData({
+                                                        ...timestampData,
+                                                        introEndTime: Math.floor(video.currentTime),
+                                                    });
+                                                }
+                                            }}
+                                            className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
+                                        >
+                                            Use Current Time
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Outro Section */}
+                            <div className="bg-gray-800 rounded-lg p-4">
+                                <h4 className="font-semibold mb-3">Outro</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">Start Time (seconds)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={timestampData.outroStartTime}
+                                            onChange={(e) => setTimestampData({
+                                                ...timestampData,
+                                                outroStartTime: parseFloat(e.target.value) || 0,
+                                            })}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const video = document.querySelector('video');
+                                                if (video) {
+                                                    setTimestampData({
+                                                        ...timestampData,
+                                                        outroStartTime: Math.floor(video.currentTime),
+                                                    });
+                                                }
+                                            }}
+                                            className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
+                                        >
+                                            Use Current Time
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm text-gray-400 mb-1">End Time (seconds)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={timestampData.outroEndTime}
+                                            onChange={(e) => setTimestampData({
+                                                ...timestampData,
+                                                outroEndTime: parseFloat(e.target.value) || 0,
+                                            })}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const video = document.querySelector('video');
+                                                if (video) {
+                                                    setTimestampData({
+                                                        ...timestampData,
+                                                        outroEndTime: Math.floor(video.currentTime),
+                                                    });
+                                                }
+                                            }}
+                                            className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs"
+                                        >
+                                            Use Current Time
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={async () => {
+                                    if (!currentEpisodeData?._id) {
+                                        alert('Please select an episode first');
+                                        return;
+                                    }
+                                    
+                                    setIsSavingTimestamps(true);
+                                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                    
+                                    try {
+                                        const response = await fetch(`/api/anime/episodes/${currentEpisodeData._id}/intro-outro`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                Authorization: `Bearer ${token}`,
+                                            },
+                                            body: JSON.stringify({
+                                                introStartTime: timestampData.introStartTime,
+                                                introEndTime: timestampData.introEndTime,
+                                                outroStartTime: timestampData.outroStartTime,
+                                                outroEndTime: timestampData.outroEndTime,
+                                                isUserOverride: true,
+                                            }),
+                                        });
+                                        
+                                        if (response.ok) {
+                                            const prefsResponse = await fetch('/api/anime/user-preferences', {
+                                                method: 'PUT',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    Authorization: `Bearer ${token}`,
+                                                },
+                                                body: JSON.stringify({
+                                                    introStartTime: timestampData.introStartTime,
+                                                    introEndTime: timestampData.introEndTime,
+                                                    outroStartTime: timestampData.outroStartTime,
+                                                    outroEndTime: timestampData.outroEndTime,
+                                                }),
+                                            });
+                                            
+                                            if (prefsResponse.ok) {
+                                                setUserPreferences(prev => ({
+                                                    ...prev,
+                                                    introStartTime: timestampData.introStartTime,
+                                                    introEndTime: timestampData.introEndTime,
+                                                    outroStartTime: timestampData.outroStartTime,
+                                                    outroEndTime: timestampData.outroEndTime,
+                                                }));
+                                                alert('Timestamps saved successfully!');
+                                                setShowTimestampModal(false);
+                                            }
+                                        } else {
+                                            const error = await response.json();
+                                            alert(error.error || 'Failed to save timestamps');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error saving timestamps:', error);
+                                        alert('Failed to save timestamps');
+                                    } finally {
+                                        setIsSavingTimestamps(false);
+                                    }
+                                }}
+                                disabled={isSavingTimestamps}
+                                className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+                            >
+                                {isSavingTimestamps ? 'Saving...' : 'Save Timestamps'}
+                            </button>
+                            <button
+                                onClick={() => setShowTimestampModal(false)}
+                                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Sign Up Modal */}
             {showSignUpModal && (

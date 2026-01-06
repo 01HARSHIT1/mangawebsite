@@ -53,6 +53,17 @@ interface Series {
     coverImage: string;
 }
 
+interface UserPreferences {
+    autoPlay?: boolean;
+    autoNext?: boolean;
+    autoSkip?: boolean;
+    introStartTime?: number;
+    introEndTime?: number;
+    outroStartTime?: number;
+    outroEndTime?: number;
+    keyboardShortcutsEnabled?: boolean;
+}
+
 interface VideoPlayerProps {
     episode: Episode;
     series: Series;
@@ -61,6 +72,7 @@ interface VideoPlayerProps {
     onBackToSeries: () => void;
     hasNextEpisode?: boolean;
     hasPreviousEpisode?: boolean;
+    userPreferences?: UserPreferences;
 }
 
 export default function EnhancedVideoPlayer({
@@ -71,6 +83,12 @@ export default function EnhancedVideoPlayer({
     onBackToSeries,
     hasNextEpisode = true,
     hasPreviousEpisode = true,
+    userPreferences = {
+        autoPlay: false,
+        autoNext: false,
+        autoSkip: false,
+        keyboardShortcutsEnabled: true,
+    },
 }: VideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const { user, isAuthenticated } = useAuth();
@@ -310,6 +328,26 @@ export default function EnhancedVideoPlayer({
                 setDuration(videoDuration);
             }
             
+            // Auto-skip intro/outro if enabled
+            if (userPreferences.autoSkip && videoDuration) {
+                const introStart = userPreferences.introStartTime || 0;
+                const introEnd = userPreferences.introEndTime || 0;
+                const outroStart = userPreferences.outroStartTime || 0;
+                const outroEnd = userPreferences.outroEndTime || 0;
+                
+                // Skip intro (only if we're in the intro range and not already past it)
+                if (introStart > 0 && introEnd > introStart && time >= introStart && time < introEnd) {
+                    video.currentTime = introEnd;
+                    return; // Return early to prevent other checks
+                }
+                
+                // Skip outro (only if we're in the outro range)
+                if (outroStart > 0 && outroEnd > outroStart && time >= outroStart && time < outroEnd) {
+                    video.currentTime = outroEnd;
+                    return; // Return early to prevent other checks
+                }
+            }
+            
             // Check if video has ended (within 0.5 seconds of end)
             if (videoDuration && time >= videoDuration - 0.5) {
                 if (!hasEnded) {
@@ -352,12 +390,16 @@ export default function EnhancedVideoPlayer({
             setCurrentTime(video.duration || 0);
             trackEvent('complete', video.duration);
             updateWatchHistory(video.duration, true);
-            // Auto-play next episode after 5 seconds (give user time to see replay button)
-            setTimeout(() => {
-                if (hasNextEpisode) {
-                    onNextEpisode();
-                }
-            }, 5000);
+            
+            // Auto-play next episode based on user preferences
+            if (userPreferences.autoNext || userPreferences.autoPlay) {
+                const delay = userPreferences.autoPlay ? 0 : 5000; // AutoPlay = immediate, AutoNext = 5s delay
+                setTimeout(() => {
+                    if (hasNextEpisode) {
+                        onNextEpisode();
+                    }
+                }, delay);
+            }
         };
 
         const handleSeeked = () => {
@@ -388,7 +430,7 @@ export default function EnhancedVideoPlayer({
             video.removeEventListener('ended', handleEnded);
             video.removeEventListener('seeked', handleSeeked);
         };
-    }, [onNextEpisode, trackEvent, hasEnded, duration, isPlaying, hasNextEpisode]);
+    }, [onNextEpisode, trackEvent, hasEnded, duration, isPlaying, hasNextEpisode, userPreferences]);
 
     const updateWatchHistory = async (position: number, completed: boolean = false) => {
         if (!isAuthenticated) return;
@@ -423,6 +465,78 @@ export default function EnhancedVideoPlayer({
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        if (!userPreferences.keyboardShortcutsEnabled) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const video = videoRef.current;
+            if (!video) return;
+
+            // Don't trigger shortcuts when typing in inputs
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+                return;
+            }
+
+            switch (e.key) {
+                case ' ': // Space - Play/Pause
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowLeft': // Left Arrow - Rewind 10 seconds
+                    e.preventDefault();
+                    video.currentTime = Math.max(0, video.currentTime - 10);
+                    break;
+                case 'ArrowRight': // Right Arrow - Forward 10 seconds
+                    e.preventDefault();
+                    video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                    break;
+                case 'ArrowUp': // Up Arrow - Increase volume
+                    e.preventDefault();
+                    const newVolumeUp = Math.min(1, volume + 0.1);
+                    video.volume = newVolumeUp;
+                    setVolume(newVolumeUp);
+                    setIsMuted(false);
+                    break;
+                case 'ArrowDown': // Down Arrow - Decrease volume
+                    e.preventDefault();
+                    const newVolumeDown = Math.max(0, volume - 0.1);
+                    video.volume = newVolumeDown;
+                    setVolume(newVolumeDown);
+                    setIsMuted(newVolumeDown === 0);
+                    break;
+                case 'm': // M - Mute/Unmute
+                case 'M':
+                    e.preventDefault();
+                    toggleMute();
+                    break;
+                case 'f': // F - Fullscreen
+                case 'F':
+                    e.preventDefault();
+                    toggleFullscreen();
+                    break;
+                case 'n': // N - Next episode
+                case 'N':
+                    if (hasNextEpisode) {
+                        e.preventDefault();
+                        onNextEpisode();
+                    }
+                    break;
+                case 'p': // P - Previous episode
+                case 'P':
+                    if (hasPreviousEpisode) {
+                        e.preventDefault();
+                        onPreviousEpisode();
+                    }
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [userPreferences.keyboardShortcutsEnabled, volume, isMuted, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, togglePlay, toggleMute, toggleFullscreen]);
 
     const togglePlay = async () => {
         const video = videoRef.current;
