@@ -425,20 +425,106 @@ export default function W2GRoomPage() {
                             Participants ({participants.length})
                         </h3>
                         <div className="space-y-2 max-h-32 overflow-y-auto">
-                            {participants.map((participant) => (
-                                <div
-                                    key={participant.userId}
-                                    className="flex items-center justify-between text-sm"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        {participant.isHost && <Crown className="w-3 h-3 text-orange-500" />}
-                                        <span>{participant.username}</span>
+                            {participants.map((participant) => {
+                                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                const currentUserId = token ? (JSON.parse(atob(token.split('.')[1]))).userId || (JSON.parse(atob(token.split('.')[1])))._id : null;
+                                const isCurrentUser = participant.userId === currentUserId;
+                                
+                                return (
+                                    <div
+                                        key={participant.userId}
+                                        className="flex items-center justify-between text-sm"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {participant.isHost && <Crown className="w-3 h-3 text-orange-500" />}
+                                            <span>{participant.username} {isCurrentUser && '(You)'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {participant.isMuted && (
+                                                <VolumeX className="w-3 h-3 text-gray-500" />
+                                            )}
+                                            {roomState?.isHost && !participant.isHost && (
+                                                <div className="flex gap-1">
+                                                    <button
+                                                        onClick={async () => {
+                                                            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                                            const response = await fetch(`/api/w2g/rooms/${roomId}/host`, {
+                                                                method: 'POST',
+                                                                headers: {
+                                                                    'Content-Type': 'application/json',
+                                                                    Authorization: `Bearer ${token}`,
+                                                                },
+                                                                body: JSON.stringify({
+                                                                    action: participant.isMuted ? 'unmute' : 'mute',
+                                                                    targetUserId: participant.userId,
+                                                                }),
+                                                            });
+                                                            if (response.ok) {
+                                                                // Participants will be updated via socket
+                                                            }
+                                                        }}
+                                                        className="text-xs text-gray-400 hover:text-white p-1"
+                                                        title={participant.isMuted ? 'Unmute' : 'Mute'}
+                                                    >
+                                                        {participant.isMuted ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (confirm(`Kick ${participant.username} from the room?`)) {
+                                                                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                                                const response = await fetch(`/api/w2g/rooms/${roomId}/host`, {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Content-Type': 'application/json',
+                                                                        Authorization: `Bearer ${token}`,
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        action: 'kick',
+                                                                        targetUserId: participant.userId,
+                                                                    }),
+                                                                });
+                                                                if (response.ok) {
+                                                                    // Participant will be removed via socket
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="text-xs text-red-400 hover:text-red-500 p-1"
+                                                        title="Kick"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (confirm(`Transfer host to ${participant.username}?`)) {
+                                                                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                                                const response = await fetch(`/api/w2g/rooms/${roomId}/host`, {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Content-Type': 'application/json',
+                                                                        Authorization: `Bearer ${token}`,
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        action: 'transfer_host',
+                                                                        targetUserId: participant.userId,
+                                                                    }),
+                                                                });
+                                                                if (response.ok) {
+                                                                    alert('Host transferred successfully!');
+                                                                    // Room state will update via socket
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="text-xs text-orange-400 hover:text-orange-500 p-1"
+                                                        title="Transfer Host"
+                                                    >
+                                                        <Crown className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    {participant.isMuted && (
-                                        <VolumeX className="w-3 h-3 text-gray-500" />
-                                    )}
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
