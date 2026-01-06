@@ -9,7 +9,7 @@ import {
     FaMoneyBillWave, FaComments, FaBell, FaSearch, FaShieldAlt, FaSignOutAlt,
     FaHome, FaEdit, FaTrash, FaCheck, FaTimes, FaBan, FaUserCheck, FaCrown,
     FaFileAlt, FaTags, FaImage, FaVideo, FaGlobe, FaDatabase, FaRobot,
-    FaSlidersH, FaBars, FaTimes as FaTimesIcon
+    FaSlidersH, FaBars, FaTimes as FaTimesIcon, FaVolumeUp
 } from 'react-icons/fa';
 
 export default function AdminDashboard() {
@@ -63,6 +63,7 @@ export default function AdminDashboard() {
         { id: 'moderation', label: 'Content Moderation', icon: FaExclamationTriangle, href: '/admin/moderation' },
         { id: 'anime', label: 'Anime Management', icon: FaVideo, href: '/admin/anime' },
         { id: 'anime-review', label: 'Anime Review', icon: FaExclamationTriangle, href: '/admin/anime/review' },
+        { id: 'anime-audio-subtitle', label: 'Audio/Subtitle Validation', icon: FaVolumeUp, href: '/admin/anime/audio-subtitle' },
         { id: 'homepage', label: 'Homepage Control', icon: FaHome, href: '/admin/homepage' },
         { id: 'analytics', label: 'Analytics', icon: FaChartLine, href: '/admin/analytics' },
         { id: 'creators', label: 'Creator Management', icon: FaCrown, href: '/admin/creators' },
