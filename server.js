@@ -9,7 +9,24 @@ function initializeW2GServer(httpServer) {
     const { Server } = require('socket.io');
     const jwt = require('jsonwebtoken');
     const { ObjectId } = require('mongodb');
-    const clientPromise = require('./src/lib/mongodb').default || require('./src/lib/mongodb');
+    
+    // Handle ES module default export in CommonJS
+    let clientPromise;
+    try {
+        const mongoModule = require('./src/lib/mongodb');
+        clientPromise = mongoModule.default || mongoModule;
+    } catch (error) {
+        console.error('Error loading MongoDB client:', error);
+        // Fallback: create a new client
+        const { MongoClient } = require('mongodb');
+        const uri = process.env.MONGODB_URI;
+        if (!uri) {
+            console.error('MONGODB_URI not set');
+            return null;
+        }
+        const client = new MongoClient(uri);
+        clientPromise = client.connect();
+    }
 
     io = new Server(httpServer, {
         cors: {
