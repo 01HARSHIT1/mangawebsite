@@ -26,16 +26,47 @@ export default function AnimeUploadPage() {
         episodePoster: null as File | null, // Episode poster/thumbnail image
         episodeDuration: "",
         existingSeriesId: "", // For selecting existing series
+        // Audio Configuration
+        audioType: "single" as "single" | "multiple",
+        audioLanguages: [] as string[],
+        defaultAudioLanguage: "",
+        // Subtitle Configuration
+        subtitleType: "soft" as "hard" | "soft",
+        subtitleFiles: [] as File[],
+        subtitleLanguages: [] as string[],
+        defaultSubtitleLanguage: "",
+        // Episode Metadata
+        ageRating: "" as "" | "G" | "PG" | "PG-13" | "R" | "NC-17",
+        contentType: "Anime" as "Anime" | "ONA" | "Short" | "Movie",
+        seasonNumber: 1,
     });
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [coverImageDragActive, setCoverImageDragActive] = useState(false);
     const [episodeDragActive, setEpisodeDragActive] = useState(false);
+    const [episodePosterDragActive, setEpisodePosterDragActive] = useState(false);
+    const [subtitleDragActive, setSubtitleDragActive] = useState(false);
     const [existingSeries, setExistingSeries] = useState<Array<{_id: string, title: string}>>([]);
     const [isNewSeries, setIsNewSeries] = useState(true);
     const coverImageRef = useRef<HTMLInputElement | null>(null);
     const episodeVideoRef = useRef<HTMLInputElement | null>(null);
+    const episodePosterRef = useRef<HTMLInputElement | null>(null);
+    const subtitleFilesRef = useRef<HTMLInputElement | null>(null);
     const router = useRouter();
+
+    // Available language options
+    const availableLanguages = [
+        { code: 'ja', name: 'Japanese' },
+        { code: 'en', name: 'English' },
+        { code: 'hi', name: 'Hindi' },
+        { code: 'ta', name: 'Tamil' },
+        { code: 'te', name: 'Telugu' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'zh', name: 'Chinese' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+    ];
 
     // Fetch existing series and creator name on mount
     useEffect(() => {
@@ -215,6 +246,61 @@ export default function AnimeUploadPage() {
                 }
             }
 
+            // Upload subtitle files if provided (soft subtitles)
+            const subtitleTracks: any[] = [];
+            if (form.subtitleType === 'soft' && form.subtitleFiles.length > 0) {
+                for (const subtitleFile of form.subtitleFiles) {
+                    try {
+                        const subtitleInfo = await uploadToCloudinary(subtitleFile, 'anime/episodes/subtitles');
+                        const languageCode = subtitleFile.name.match(/\.([a-z]{2})\./)?.[1] || 'en';
+                        const languageName = availableLanguages.find(l => l.code === languageCode)?.name || 'English';
+                        
+                        subtitleTracks.push({
+                            language: languageName,
+                            languageCode: languageCode,
+                            url: subtitleInfo.secure_url,
+                            format: subtitleFile.name.endsWith('.vtt') ? 'vtt' : subtitleFile.name.endsWith('.srt') ? 'srt' : 'vtt',
+                            isDefault: form.defaultSubtitleLanguage === languageCode,
+                        });
+                    } catch (error) {
+                        console.error('Error uploading subtitle file:', error);
+                    }
+                }
+            }
+
+            // Build audio tracks array
+            const audioTracks: any[] = [];
+            if (form.audioType === 'multiple' && form.audioLanguages.length > 0) {
+                // For multiple audio, we'll use the same video URL but mark different languages
+                // In a real implementation, you'd have separate audio files or HLS streams
+                form.audioLanguages.forEach((langCode) => {
+                    const languageName = availableLanguages.find(l => l.code === langCode)?.name || langCode;
+                    audioTracks.push({
+                        language: languageName,
+                        languageCode: langCode,
+                        url: episodeInfo.secure_url, // Same video URL for now (would be separate audio stream in production)
+                        isDefault: form.defaultAudioLanguage === langCode || (form.defaultAudioLanguage === '' && langCode === form.audioLanguages[0]),
+                    });
+                });
+            } else if (form.audioType === 'single' && form.defaultAudioLanguage) {
+                // Single audio track
+                const languageName = availableLanguages.find(l => l.code === form.defaultAudioLanguage)?.name || form.defaultAudioLanguage;
+                audioTracks.push({
+                    language: languageName,
+                    languageCode: form.defaultAudioLanguage,
+                    url: episodeInfo.secure_url,
+                    isDefault: true,
+                });
+            } else {
+                // Default to Japanese if nothing specified
+                audioTracks.push({
+                    language: 'Japanese',
+                    languageCode: 'ja',
+                    url: episodeInfo.secure_url,
+                    isDefault: true,
+                });
+            }
+
             const episodeRes = await fetch('/api/anime/episodes', {
                 method: 'POST',
                 headers: {
@@ -226,10 +312,12 @@ export default function AnimeUploadPage() {
                     title: form.episodeTitle || `${form.title} Episode ${form.episodeNumber || 1}`,
                     description: form.episodeDescription || form.description,
                     episodeNumber: form.episodeNumber || 1,
-                    seasonNumber: 1,
+                    seasonNumber: form.seasonNumber || 1,
                     videoUrl: episodeInfo.secure_url,
                     thumbnail: thumbnail || episodePosterUrl,
-                    duration: form.episodeDuration ? Number(form.episodeDuration) : undefined,
+                    duration: form.episodeDuration ? Number(form.episodeDuration) * 60 : undefined, // Convert minutes to seconds
+                    audioTracks: audioTracks,
+                    subtitles: subtitleTracks,
                 })
             });
 
@@ -254,6 +342,17 @@ export default function AnimeUploadPage() {
                 episodeVideo: null,
                 episodePoster: null,
                 episodeDuration: "",
+                existingSeriesId: "",
+                audioType: "single",
+                audioLanguages: [],
+                defaultAudioLanguage: "",
+                subtitleType: "soft",
+                subtitleFiles: [],
+                subtitleLanguages: [],
+                defaultSubtitleLanguage: "",
+                ageRating: "",
+                contentType: "Anime",
+                seasonNumber: 1,
             });
 
             // After successful upload, user is upgraded to creator
@@ -739,6 +838,347 @@ export default function AnimeUploadPage() {
                                     className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
                                     placeholder="e.g., 24"
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-300">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">🎬</span>
+                                        Content Type
+                                    </span>
+                                </label>
+                                <select
+                                    name="contentType"
+                                    value={form.contentType}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+                                >
+                                    <option value="Anime">Anime</option>
+                                    <option value="ONA">ONA</option>
+                                    <option value="Short">Short</option>
+                                    <option value="Movie">Movie</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-300">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">🔞</span>
+                                        Age Rating
+                                    </span>
+                                </label>
+                                <select
+                                    name="ageRating"
+                                    value={form.ageRating}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+                                >
+                                    <option value="">Not Rated</option>
+                                    <option value="G">G - General Audiences</option>
+                                    <option value="PG">PG - Parental Guidance</option>
+                                    <option value="PG-13">PG-13 - Parents Strongly Cautioned</option>
+                                    <option value="R">R - Restricted</option>
+                                    <option value="NC-17">NC-17 - Adults Only</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-gray-300">
+                                    <span className="flex items-center">
+                                        <span className="mr-2">📺</span>
+                                        Season Number
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    name="seasonNumber"
+                                    min={1}
+                                    value={form.seasonNumber}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-gray-950 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white placeholder-gray-400"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Audio Configuration Section */}
+                        <div className="space-y-4 p-6 bg-gray-950/50 rounded-xl border border-orange-500/20">
+                            <h3 className="text-lg font-bold text-white flex items-center">
+                                <span className="mr-2">🎧</span>
+                                Audio Configuration
+                            </h3>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-300 mb-3">
+                                        Audio Type
+                                    </label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="audioType"
+                                                value="single"
+                                                checked={form.audioType === 'single'}
+                                                onChange={(e) => {
+                                                    setForm(prev => ({
+                                                        ...prev,
+                                                        audioType: e.target.value as 'single' | 'multiple',
+                                                        audioLanguages: [],
+                                                        defaultAudioLanguage: '',
+                                                    }));
+                                                }}
+                                                className="w-4 h-4 text-orange-600 bg-gray-800 border-gray-600 focus:ring-orange-500"
+                                            />
+                                            <span className="text-gray-300">Single Audio</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="audioType"
+                                                value="multiple"
+                                                checked={form.audioType === 'multiple'}
+                                                onChange={(e) => {
+                                                    setForm(prev => ({
+                                                        ...prev,
+                                                        audioType: e.target.value as 'single' | 'multiple',
+                                                    }));
+                                                }}
+                                                className="w-4 h-4 text-orange-600 bg-gray-800 border-gray-600 focus:ring-orange-500"
+                                            />
+                                            <span className="text-gray-300">Multiple Audio (Dual/Multi)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {form.audioType === 'single' ? (
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                            Language
+                                        </label>
+                                        <select
+                                            value={form.defaultAudioLanguage}
+                                            onChange={(e) => {
+                                                setForm(prev => ({
+                                                    ...prev,
+                                                    defaultAudioLanguage: e.target.value,
+                                                    audioLanguages: [e.target.value],
+                                                }));
+                                            }}
+                                            className="w-full px-4 py-3 bg-gray-900 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+                                        >
+                                            <option value="">Select Language</option>
+                                            {availableLanguages.map((lang) => (
+                                                <option key={lang.code} value={lang.code}>
+                                                    {lang.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <label className="block text-sm font-semibold text-gray-300">
+                                            Languages Included
+                                        </label>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                            {availableLanguages.map((lang) => (
+                                                <label key={lang.code} className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-gray-800">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={form.audioLanguages.includes(lang.code)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setForm(prev => ({
+                                                                    ...prev,
+                                                                    audioLanguages: [...prev.audioLanguages, lang.code],
+                                                                    defaultAudioLanguage: prev.defaultAudioLanguage || lang.code,
+                                                                }));
+                                                            } else {
+                                                                setForm(prev => ({
+                                                                    ...prev,
+                                                                    audioLanguages: prev.audioLanguages.filter(l => l !== lang.code),
+                                                                    defaultAudioLanguage: prev.defaultAudioLanguage === lang.code ? '' : prev.defaultAudioLanguage,
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="w-4 h-4 text-orange-600 bg-gray-800 border-gray-600 rounded focus:ring-orange-500"
+                                                    />
+                                                    <span className="text-gray-300 text-sm">{lang.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        {form.audioLanguages.length > 0 && (
+                                            <div>
+                                                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                                    Default Audio Language
+                                                </label>
+                                                <select
+                                                    value={form.defaultAudioLanguage}
+                                                    onChange={(e) => setForm(prev => ({ ...prev, defaultAudioLanguage: e.target.value }))}
+                                                    className="w-full px-4 py-3 bg-gray-900 border border-orange-500/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-white"
+                                                >
+                                                    <option value="">Select Default</option>
+                                                    {form.audioLanguages.map((langCode) => {
+                                                        const lang = availableLanguages.find(l => l.code === langCode);
+                                                        return lang ? (
+                                                            <option key={lang.code} value={lang.code}>
+                                                                {lang.name}
+                                                            </option>
+                                                        ) : null;
+                                                    })}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Subtitle Configuration Section */}
+                        <div className="space-y-4 p-6 bg-gray-950/50 rounded-xl border border-orange-500/20">
+                            <h3 className="text-lg font-bold text-white flex items-center">
+                                <span className="mr-2">📝</span>
+                                Subtitle Configuration
+                            </h3>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-300 mb-3">
+                                        Subtitle Type
+                                    </label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="subtitleType"
+                                                value="hard"
+                                                checked={form.subtitleType === 'hard'}
+                                                onChange={(e) => {
+                                                    setForm(prev => ({
+                                                        ...prev,
+                                                        subtitleType: e.target.value as 'hard' | 'soft',
+                                                        subtitleFiles: [],
+                                                        subtitleLanguages: [],
+                                                    }));
+                                                }}
+                                                className="w-4 h-4 text-orange-600 bg-gray-800 border-gray-600 focus:ring-orange-500"
+                                            />
+                                            <span className="text-gray-300">Hard Sub (Burned-in)</span>
+                                        </label>
+                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="subtitleType"
+                                                value="soft"
+                                                checked={form.subtitleType === 'soft'}
+                                                onChange={(e) => {
+                                                    setForm(prev => ({
+                                                        ...prev,
+                                                        subtitleType: e.target.value as 'hard' | 'soft',
+                                                    }));
+                                                }}
+                                                className="w-4 h-4 text-orange-600 bg-gray-800 border-gray-600 focus:ring-orange-500"
+                                            />
+                                            <span className="text-gray-300">Soft Sub (Separate Files)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {form.subtitleType === 'soft' && (
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                            Subtitle Files (VTT/SRT)
+                                        </label>
+                                        <div
+                                            className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors ${subtitleDragActive
+                                                ? 'border-orange-500 bg-orange-500/10'
+                                                : 'border-orange-500/30 bg-gray-900/50 hover:border-orange-500/50'
+                                                }`}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                setSubtitleDragActive(true);
+                                            }}
+                                            onDragLeave={() => setSubtitleDragActive(false)}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                setSubtitleDragActive(false);
+                                                const files = Array.from(e.dataTransfer.files).filter(f => 
+                                                    f.name.endsWith('.vtt') || f.name.endsWith('.srt')
+                                                );
+                                                if (files.length > 0) {
+                                                    setForm(prev => ({
+                                                        ...prev,
+                                                        subtitleFiles: [...prev.subtitleFiles, ...files],
+                                                    }));
+                                                }
+                                            }}
+                                        >
+                                            {form.subtitleFiles.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {form.subtitleFiles.map((file, index) => (
+                                                        <div key={index} className="flex items-center justify-between p-2 bg-gray-800 rounded">
+                                                            <span className="text-gray-300 text-sm">{file.name}</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setForm(prev => ({
+                                                                        ...prev,
+                                                                        subtitleFiles: prev.subtitleFiles.filter((_, i) => i !== index),
+                                                                    }));
+                                                                }}
+                                                                className="text-red-400 hover:text-red-300 text-sm"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => subtitleFilesRef.current?.click()}
+                                                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-orange-500/40 text-sm"
+                                                    >
+                                                        Add More Files
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <p className="text-gray-400 mb-4">Drag & drop or click to select subtitle files</p>
+                                                    <p className="text-gray-500 text-xs mb-4">Supported: .vtt, .srt files</p>
+                                                    <input
+                                                        ref={subtitleFilesRef}
+                                                        type="file"
+                                                        accept=".vtt,.srt"
+                                                        multiple
+                                                        onChange={(e) => {
+                                                            const files = Array.from(e.target.files || []);
+                                                            if (files.length > 0) {
+                                                                setForm(prev => ({
+                                                                    ...prev,
+                                                                    subtitleFiles: [...prev.subtitleFiles, ...files],
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="hidden"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => subtitleFilesRef.current?.click()}
+                                                        className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-colors"
+                                                    >
+                                                        Select Subtitle Files
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {form.subtitleType === 'hard' && (
+                                    <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                                        <p className="text-blue-300 text-sm">
+                                            Hard subtitles are burned into the video. Make sure your video file already contains subtitles.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
