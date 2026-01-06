@@ -93,6 +93,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [showAudioMenu, setShowAudioMenu] = useState(false);
     const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
     const [subtitleType, setSubtitleType] = useState<'hard' | 'soft' | null>(null);
+    const audioMenuRef = useRef<HTMLDivElement>(null);
+    const subtitleMenuRef = useRef<HTMLDivElement>(null);
 
     // Auto-refresh episodes every 30 seconds to catch new uploads
     useEffect(() => {
@@ -614,7 +616,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                             <div className="flex items-center space-x-2 mb-4 flex-wrap gap-2">
                                 {/* Audio Tracks - Show only if multiple tracks exist */}
                                 {availableAudioTracks.length > 1 ? (
-                                    <div className="relative">
+                                    <div className="relative" ref={audioMenuRef}>
                                         <button
                                             onClick={() => {
                                                 setShowAudioMenu(!showAudioMenu);
@@ -661,7 +663,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
                                 {/* Subtitles - Show only if subtitles exist */}
                                 {availableSubtitles.length > 0 && (
-                                    <div className="relative">
+                                    <div className="relative" ref={subtitleMenuRef}>
                                         <button
                                             onClick={() => {
                                                 setShowSubtitleMenu(!showSubtitleMenu);
