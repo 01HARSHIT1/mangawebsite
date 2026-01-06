@@ -246,6 +246,100 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         }
     }, [series, fetchRecommended, fetchRelatedContent]);
 
+    // Check authentication status
+    useEffect(() => {
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (token) {
+            setIsAuthenticated(true);
+            // Fetch user info
+            fetch('/api/auth/me', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.user) {
+                        setCurrentUser(data.user);
+                    }
+                })
+                .catch(() => setIsAuthenticated(false));
+        } else {
+            setIsAuthenticated(false);
+        }
+    }, []);
+
+    // Fetch comments
+    const fetchComments = useCallback(async () => {
+        try {
+            const response = await fetch(`/api/anime/${seriesId}/comments?sort=${commentsSort}`);
+            if (response.ok) {
+                const data = await response.json();
+                setComments(data.comments || []);
+            }
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+        }
+    }, [seriesId, commentsSort]);
+
+    useEffect(() => {
+        if (seriesId) {
+            fetchComments();
+        }
+    }, [seriesId, commentsSort, fetchComments]);
+
+    // Submit comment
+    const handleSubmitComment = async () => {
+        if (!isAuthenticated) {
+            setShowSignUpModal(true);
+            return;
+        }
+
+        if (!commentText.trim()) return;
+
+        setIsSubmittingComment(true);
+        try {
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            const response = await fetch(`/api/anime/${seriesId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ text: commentText }),
+            });
+
+            if (response.ok) {
+                setCommentText('');
+                fetchComments();
+            } else {
+                const error = await response.json();
+                if (response.status === 401) {
+                    setShowSignUpModal(true);
+                } else {
+                    alert(error.error || 'Failed to post comment');
+                }
+            }
+        } catch (error) {
+            console.error('Error submitting comment:', error);
+            alert('Failed to post comment');
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
+
+    // Format time ago
+    const formatTimeAgo = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+        if (diffInSeconds < 60) return 'just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+        if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+        if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+        return `${Math.floor(diffInSeconds / 31536000)} years ago`;
+    };
+
     const handlePlayEpisode = (episodeNumber: number) => {
         if (!seriesId || !episodeNumber) {
             console.error('Missing seriesId or episodeNumber');
