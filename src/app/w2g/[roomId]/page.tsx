@@ -575,9 +575,26 @@ export default function W2GRoomPage() {
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-2">
                             {chatMessages.map((msg, idx) => (
-                                <div key={idx} className="text-sm">
-                                    <span className="font-semibold text-orange-400">{msg.username}:</span>
-                                    <span className="ml-2">{msg.message}</span>
+                                <div key={idx} className="text-sm group">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <span className="font-semibold text-orange-400">{msg.username}:</span>
+                                            <span className="ml-2">{msg.message}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setReportTarget({
+                                                    type: 'chat_message',
+                                                    id: msg.userId,
+                                                    name: `Chat message by ${msg.username}`,
+                                                });
+                                                setShowReportModal(true);
+                                            }}
+                                            className="opacity-0 group-hover:opacity-100 text-xs text-red-400 hover:text-red-500 ml-2 transition-opacity"
+                                        >
+                                            Report
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                             <div ref={chatEndRef} />
