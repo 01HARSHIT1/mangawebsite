@@ -70,6 +70,9 @@ export async function POST(request: NextRequest) {
             audioTracks: audioTracks || [],
             isPreview: !!isPreview,
             creatorId: user._id?.toString(),
+            // Validation metadata
+            validation: body.validation || null,
+            videoAnalysis: body.videoAnalysis || null,
             createdAt: now,
             updatedAt: now,
             views: 0,

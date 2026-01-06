@@ -219,6 +219,65 @@ export default function AnimeUploadPage() {
                 throw new Error('Failed to upload episode video');
             }
 
+            // Validate video and creator's audio/subtitle declaration
+            let validationResult: any = null;
+            try {
+                const validationResponse = await fetch('/api/anime/validate-video', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        videoUrl: episodeInfo.secure_url,
+                        declaredAudioTracks: form.audioType === 'multiple' 
+                            ? form.audioLanguages.map(langCode => {
+                                const lang = availableLanguages.find(l => l.code === langCode);
+                                return {
+                                    language: lang?.name || langCode,
+                                    languageCode: langCode
+                                };
+                            })
+                            : form.defaultAudioLanguage 
+                                ? [{
+                                    language: availableLanguages.find(l => l.code === form.defaultAudioLanguage)?.name || form.defaultAudioLanguage,
+                                    languageCode: form.defaultAudioLanguage
+                                }]
+                                : [],
+                        declaredSubtitleType: form.subtitleType,
+                        declaredSubtitles: form.subtitleType === 'soft' && form.subtitleFiles.length > 0
+                            ? form.subtitleFiles.map(file => {
+                                const languageCode = file.name.match(/\.([a-z]{2})\./)?.[1] || 'en';
+                                const lang = availableLanguages.find(l => l.code === languageCode);
+                                return {
+                                    language: lang?.name || 'English',
+                                    languageCode: languageCode
+                                };
+                            })
+                            : undefined,
+                    })
+                });
+
+                if (validationResponse.ok) {
+                    validationResult = await validationResponse.json();
+                    console.log('Video validation result:', validationResult);
+                    
+                    // Show warnings/errors to user
+                    if (validationResult.validation?.warnings?.length > 0) {
+                        console.warn('Validation warnings:', validationResult.validation.warnings);
+                    }
+                    if (validationResult.validation?.errors?.length > 0) {
+                        console.error('Validation errors:', validationResult.validation.errors);
+                        // Don't block upload, but log errors
+                    }
+                } else {
+                    console.warn('Video validation failed, continuing with upload');
+                }
+            } catch (validationError) {
+                console.error('Video validation error (non-blocking):', validationError);
+                // Don't block upload if validation fails
+            }
+
             // Get thumbnail - prioritize episode poster if uploaded, otherwise use series cover
             let thumbnail: string | null = null;
             
@@ -318,6 +377,9 @@ export default function AnimeUploadPage() {
                     duration: form.episodeDuration ? Number(form.episodeDuration) * 60 : undefined, // Convert minutes to seconds
                     audioTracks: audioTracks,
                     subtitles: subtitleTracks,
+                    // Include validation results if available
+                    validation: validationResult?.validation || null,
+                    videoAnalysis: validationResult?.analysis || null,
                 })
             });
 
