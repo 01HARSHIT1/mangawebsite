@@ -79,6 +79,13 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
     const [prevEpisode, setPrevEpisode] = useState<any>(null);
     const [nextEpisode, setNextEpisode] = useState<any>(null);
+    const [comments, setComments] = useState<any[]>([]);
+    const [commentText, setCommentText] = useState('');
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [showSignUpModal, setShowSignUpModal] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [userRating, setUserRating] = useState<number>(0);
 
     // Auto-refresh episodes every 30 seconds to catch new uploads
     useEffect(() => {
@@ -483,6 +490,266 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <p className="text-gray-500 text-xs ml-4">If the current server is not working, please try switching to other servers.</p>
                     </div>
                 </div>
+
+                            {/* Anime Information Section */}
+                            <div className="bg-gray-900/50 rounded-lg p-6 mt-6">
+                                <div className="flex flex-col lg:flex-row gap-6">
+                                    {/* Left: Character Image/Poster */}
+                                    <div className="w-full lg:w-1/3 flex-shrink-0">
+                                        <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden">
+                                            <Image
+                                                src={series.coverImage}
+                                                alt={series.title}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Anime Details */}
+                                    <div className="flex-1">
+                                        <h1 className="text-3xl font-bold mb-2">{series.title}</h1>
+                                        {series.alternativeTitles && series.alternativeTitles.length > 0 && (
+                                            <p className="text-gray-400 text-sm mb-4">
+                                                {series.alternativeTitles.join('; ')}
+                                            </p>
+                                        )}
+
+                                        {/* Tags */}
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            <span className="px-3 py-1 bg-orange-500/20 text-orange-400 rounded text-sm">PG 13</span>
+                                            <span className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm">cc {series.episodeCount || 0}</span>
+                                            <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded text-sm">{series.episodeCount || 0}</span>
+                                            <span className="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm">{series.type || 'TV'}</span>
+                                        </div>
+
+                                        {/* Synopsis */}
+                                        <p className="text-gray-300 mb-6 leading-relaxed">{series.description}</p>
+
+                                        {/* Metadata */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            {series.country && (
+                                                <div>
+                                                    <span className="text-gray-500">Country:</span> <span className="text-white">{series.country}</span>
+                                                </div>
+                                            )}
+                                            {series.genres && series.genres.length > 0 && (
+                                                <div>
+                                                    <span className="text-gray-500">Genres:</span> <span className="text-white">{series.genres.join(', ')}</span>
+                                                </div>
+                                            )}
+                                            {series.premiered && (
+                                                <div>
+                                                    <span className="text-gray-500">Premiered:</span> <span className="text-white">{series.premiered}</span>
+                                                </div>
+                                            )}
+                                            {series.releaseDate && (
+                                                <div>
+                                                    <span className="text-gray-500">Date aired:</span> <span className="text-white">{series.releaseDate}</span>
+                                                </div>
+                                            )}
+                                            {series.broadcast && (
+                                                <div>
+                                                    <span className="text-gray-500">Broadcast:</span> <span className="text-white">{series.broadcast}</span>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <span className="text-gray-500">Episodes:</span> <span className="text-white">{series.episodeCount || '?'}</span>
+                                            </div>
+                                            {series.duration && (
+                                                <div>
+                                                    <span className="text-gray-500">Duration:</span> <span className="text-white">{series.duration} min</span>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <span className="text-gray-500">Status:</span> <span className="text-white capitalize">{series.status}</span>
+                                            </div>
+                                            {series.rating && (
+                                                <div>
+                                                    <span className="text-gray-500">MAL:</span> <span className="text-white">{series.rating.toFixed(2)}</span>
+                                                </div>
+                                            )}
+                                            {series.studio && (
+                                                <div>
+                                                    <span className="text-gray-500">Studios:</span> <span className="text-white">{series.studio}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* User Rating Section */}
+                                    <div className="w-full lg:w-64 flex-shrink-0">
+                                        <div className="bg-gray-800/50 rounded-lg p-4">
+                                            <h3 className="text-sm font-semibold mb-2">How'd you rate this anime?</h3>
+                                            <div className="flex items-center gap-1 mb-2">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <Star
+                                                        key={star}
+                                                        className={`w-5 h-5 ${
+                                                            star <= (userRating || series.rating || 0)
+                                                                ? 'fill-orange-500 text-orange-500'
+                                                                : 'text-gray-600'
+                                                        }`}
+                                                        onClick={() => isAuthenticated && setUserRating(star)}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-gray-400">
+                                                {series.rating ? `${series.rating.toFixed(2)} by reviews` : 'No ratings yet'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Social Sharing Section */}
+                            <div className="bg-gray-900/50 rounded-lg p-6 mt-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <MessageCircle className="w-6 h-6 text-orange-500" />
+                                        <div>
+                                            <p className="text-sm font-semibold">Love this site? Share it and let others know!</p>
+                                            <p className="text-xs text-gray-400">4.6k Shares</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button className="p-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors">
+                                            <FaFacebook className="w-5 h-5" />
+                                        </button>
+                                        <button className="p-2 bg-black hover:bg-gray-800 rounded transition-colors">
+                                            <FaTwitter className="w-5 h-5" />
+                                        </button>
+                                        <button className="p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors">
+                                            <MessageCircle className="w-5 h-5" />
+                                        </button>
+                                        <button className="p-2 bg-orange-600 hover:bg-orange-700 rounded transition-colors">
+                                            <FaReddit className="w-5 h-5" />
+                                        </button>
+                                        <button className="p-2 bg-green-600 hover:bg-green-700 rounded transition-colors">
+                                            <FaWhatsapp className="w-5 h-5" />
+                                        </button>
+                                        <button className="p-2 bg-blue-500 hover:bg-blue-600 rounded transition-colors">
+                                            <FaTelegram className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Comments Section */}
+                            <div className="bg-gray-900/50 rounded-lg p-6 mt-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <h2 className="text-2xl font-bold">COMMENTS</h2>
+                                    <span className="px-2 py-1 bg-red-600 text-white text-xs rounded">ON</span>
+                                </div>
+
+                                <div className="bg-blue-500/20 border border-blue-500/50 rounded p-3 mb-4">
+                                    <p className="text-sm text-blue-300">
+                                        Note: Please take a moment to read the comment rules before posting.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-gray-400">{comments.length} comments</p>
+                                    <div className="flex items-center gap-4">
+                                        <button
+                                            onClick={() => setCommentsSort('best')}
+                                            className={`text-sm ${commentsSort === 'best' ? 'text-red-500 underline' : 'text-gray-400 hover:text-white'}`}
+                                        >
+                                            Best
+                                        </button>
+                                        <button
+                                            onClick={() => setCommentsSort('newest')}
+                                            className={`text-sm ${commentsSort === 'newest' ? 'text-red-500 underline' : 'text-gray-400 hover:text-white'}`}
+                                        >
+                                            Newest
+                                        </button>
+                                        <button
+                                            onClick={() => setCommentsSort('oldest')}
+                                            className={`text-sm ${commentsSort === 'oldest' ? 'text-red-500 underline' : 'text-gray-400 hover:text-white'}`}
+                                        >
+                                            Oldest
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Comment Input */}
+                                <div className="mb-6">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                            {isAuthenticated && currentUser ? (
+                                                <span className="text-white font-semibold">
+                                                    {currentUser.username?.[0]?.toUpperCase() || currentUser.email?.[0]?.toUpperCase() || 'U'}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400">?</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <textarea
+                                                value={commentText}
+                                                onChange={(e) => setCommentText(e.target.value)}
+                                                onFocus={() => {
+                                                    if (!isAuthenticated) {
+                                                        setShowSignUpModal(true);
+                                                    }
+                                                }}
+                                                placeholder="Write your comment..."
+                                                className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white placeholder-gray-500 resize-none"
+                                                rows={3}
+                                            />
+                                            <button
+                                                onClick={handleSubmitComment}
+                                                disabled={isSubmittingComment || !commentText.trim()}
+                                                className="mt-2 px-6 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm transition-colors"
+                                            >
+                                                {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Comments List */}
+                                <div className="space-y-4">
+                                    {comments.length > 0 ? (
+                                        comments.map((comment) => (
+                                            <div key={comment._id} className="flex items-start gap-3 pb-4 border-b border-gray-800">
+                                                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                                    <span className="text-white font-semibold text-sm">
+                                                        {comment.username?.[0]?.toUpperCase() || 'U'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="font-semibold text-sm">{comment.username || 'Anonymous'}</span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {formatTimeAgo(comment.createdAt)}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-gray-300 text-sm mb-2">{comment.text}</p>
+                                                    <div className="flex items-center gap-4">
+                                                        <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
+                                                            <span>↑</span> {comment.upvotes?.length || 0}
+                                                        </button>
+                                                        <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
+                                                            <span>↓</span> {comment.downvotes?.length || 0}
+                                                        </button>
+                                                        <button className="text-xs text-gray-400 hover:text-white">Reply</button>
+                                                        <button className="text-xs text-gray-400 hover:text-white">More</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-500 text-center py-8">No comments yet. Be the first to comment!</p>
+                                    )}
+                                </div>
+
+                                {comments.length > 10 && (
+                                    <button className="mt-4 w-full py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">
+                                        Load More Comments
+                                    </button>
+                                )}
+                            </div>
             </div>
 
                     {/* Right: Episode List Sidebar Box */}
@@ -584,6 +851,98 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         </div>
                     </div>
             </div>
+
+            {/* A-Z List Section */}
+            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div className="bg-gray-900/50 rounded-lg p-6">
+                    <h2 className="text-xl font-bold mb-2">A-Z List</h2>
+                    <p className="text-gray-400 text-sm mb-4">Searching anime order by alphabet name A to Z.</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">All</button>
+                        <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">0-9</button>
+                        {Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map((letter) => (
+                            <button
+                                key={letter}
+                                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                            >
+                                {letter}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <button className="px-6 py-2 bg-orange-600 hover:bg-orange-700 rounded text-sm transition-colors">
+                            REQUEST
+                        </button>
+                        <button className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">
+                            CONTACT US
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <footer className="bg-black/80 border-t border-gray-800 mt-12">
+                <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div className="text-center mb-4">
+                        <p className="text-gray-400 text-sm mb-2">
+                            Copyright © AnimeStream. All Rights Reserved
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                            All content is provided by non-affiliated third parties.
+                        </p>
+                    </div>
+                    <div className="flex items-center justify-center gap-4 mb-4">
+                        <button className="p-2 hover:bg-gray-800 rounded transition-colors">
+                            <FaTwitter className="w-5 h-5 text-gray-400" />
+                        </button>
+                        <button className="p-2 hover:bg-gray-800 rounded transition-colors">
+                            <FaReddit className="w-5 h-5 text-gray-400" />
+                        </button>
+                        <button className="p-2 hover:bg-gray-800 rounded transition-colors">
+                            <FaTelegram className="w-5 h-5 text-gray-400" />
+                        </button>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-gray-500 text-xs">
+                            animestream, watch anime, anime streaming
+                        </p>
+                    </div>
+                </div>
+            </footer>
+
+            {/* Sign Up Modal */}
+            {showSignUpModal && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                    <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold">Sign Up Required</h3>
+                            <button
+                                onClick={() => setShowSignUpModal(false)}
+                                className="text-gray-400 hover:text-white"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <p className="text-gray-300 mb-6">
+                            You need to sign up or sign in to post comments. Please create an account or sign in to continue.
+                        </p>
+                        <div className="flex gap-3">
+                            <Link
+                                href="/auth/signup"
+                                className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded text-center transition-colors"
+                            >
+                                Sign Up
+                            </Link>
+                            <Link
+                                href="/auth/signin"
+                                className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-center transition-colors"
+                            >
+                                Sign In
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
