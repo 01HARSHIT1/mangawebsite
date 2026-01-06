@@ -8,6 +8,7 @@ import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, Mess
 import { FaFacebook, FaTwitter, FaReddit, FaWhatsapp, FaTelegram } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import EnhancedVideoPlayer from '@/components/anime/components/EnhancedVideoPlayer';
+import ReportModal from '@/components/anime/components/ReportModal';
 
 interface Episode {
     _id: string;
@@ -841,9 +842,13 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     </button>
                                     <button 
                                         onClick={() => {
-                                            alert('Report feature coming soon!\n\nPlease provide details on what users should be able to report:\n- Video quality issues?\n- Copyright violations?\n- Inappropriate content?\n- Other issues?');
+                                            if (!isAuthenticated) {
+                                                setShowSignUpModal(true);
+                                                return;
+                                            }
+                                            setShowReportModal(true);
                                         }}
-                                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
                                     >
                                         Report
                                     </button>
@@ -1255,7 +1260,23 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                             <span>↓</span> {comment.downvotes?.length || 0}
                                                         </button>
                                                         <button className="text-xs text-gray-400 hover:text-white">Reply</button>
-                                                        <button className="text-xs text-gray-400 hover:text-white">More</button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                if (!isAuthenticated) {
+                                                                    setShowSignUpModal(true);
+                                                                    return;
+                                                                }
+                                                                setReportTarget({
+                                                                    type: 'comment',
+                                                                    id: comment._id,
+                                                                    name: `Comment by ${comment.username}`,
+                                                                });
+                                                                setShowReportModal(true);
+                                                            }}
+                                                            className="text-xs text-red-400 hover:text-red-500"
+                                                        >
+                                                            Report
+                                                        </button>
                             </div>
                         </div>
                     </div>

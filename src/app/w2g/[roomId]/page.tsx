@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Users, MessageCircle, Send, Smile, X, Copy, Share2, Crown, Volume2, VolumeX } from 'lucide-react';
 import W2GVideoPlayer from '@/components/anime/components/W2GVideoPlayer';
+import ReportModal from '@/components/anime/components/ReportModal';
 
 interface Participant {
     userId: string;
