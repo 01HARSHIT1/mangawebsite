@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { requireAuth } from '@/lib/auth';
 import clientPromise from '@/lib/mongodb';
@@ -7,10 +6,23 @@ import clientPromise from '@/lib/mongodb';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+// Lazy initialization function - only creates Razorpay instance when needed
+// Using dynamic import to prevent build-time evaluation
+async function getRazorpayInstance() {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!keyId || !keySecret) {
+        throw new Error('Razorpay credentials not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.');
+    }
+
+    // Dynamic import to prevent build-time initialization
+    const Razorpay = (await import('razorpay')).default;
+    return new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+    });
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,9 +36,17 @@ export async function POST(request: NextRequest) {
         });
 
         // Verify payment signature
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        if (!keySecret) {
+            return NextResponse.json(
+                { error: 'Razorpay credentials not configured' },
+                { status: 500 }
+            );
+        }
+
         const body = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+            .createHmac('sha256', keySecret)
             .update(body)
             .digest('hex');
 
@@ -42,6 +62,9 @@ export async function POST(request: NextRequest) {
             console.error('❌ Invalid signature');
             return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
         }
+
+        // Initialize Razorpay (lazy initialization)
+        const razorpay = await getRazorpayInstance();
 
         // Get payment details from Razorpay
         const payment = await razorpay.payments.fetch(razorpay_payment_id);

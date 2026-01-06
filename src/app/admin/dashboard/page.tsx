@@ -61,6 +61,8 @@ export default function AdminDashboard() {
         { id: 'users', label: 'User Management', icon: FaUsers, href: '/admin/users' },
         { id: 'content', label: 'Content Management', icon: FaBook, href: '/admin/content' },
         { id: 'moderation', label: 'Content Moderation', icon: FaExclamationTriangle, href: '/admin/moderation' },
+        { id: 'anime', label: 'Anime Management', icon: FaVideo, href: '/admin/anime' },
+        { id: 'anime-review', label: 'Anime Review', icon: FaExclamationTriangle, href: '/admin/anime/review' },
         { id: 'homepage', label: 'Homepage Control', icon: FaHome, href: '/admin/homepage' },
         { id: 'analytics', label: 'Analytics', icon: FaChartLine, href: '/admin/analytics' },
         { id: 'creators', label: 'Creator Management', icon: FaCrown, href: '/admin/creators' },

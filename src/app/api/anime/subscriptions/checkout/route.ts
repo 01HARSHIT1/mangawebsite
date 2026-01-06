@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { verifyToken } from '@/lib/auth';
-import Razorpay from 'razorpay';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // Create Razorpay order for subscription
 export async function POST(request: NextRequest) {
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
         }
 
-        // Initialize Razorpay
+        // Initialize Razorpay (dynamic import to prevent build-time evaluation)
         const keyId = process.env.RAZORPAY_KEY_ID;
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
@@ -47,6 +49,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Payment service not configured' }, { status: 500 });
         }
 
+        // Dynamic import to prevent build-time initialization
+        const Razorpay = (await import('razorpay')).default;
         const razorpay = new Razorpay({
             key_id: keyId,
             key_secret: keySecret,

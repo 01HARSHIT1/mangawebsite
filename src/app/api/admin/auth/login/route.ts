@@ -6,14 +6,17 @@ import { ObjectId } from 'mongodb';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Admin credentials - these should be set in environment variables
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+// Super admin bootstrap credentials (for first-time setup only)
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'admin@mangawebsite.com';
+const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || 'Admin123!Secure';
+const SUPER_ADMIN_BOOTSTRAP = process.env.SUPER_ADMIN_BOOTSTRAP === 'true';
 
 /**
  * Secure admin-only login endpoint
- * Only allows login with specific admin credentials
+ * Supports:
+ * 1. Bootstrap super admin (first run only, via ENV)
+ * 2. Database-based admin users (normal operation)
+ * 3. Password hashing with bcrypt
  */
 export async function POST(request: NextRequest) {
     try {
@@ -27,83 +30,107 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if this is the admin email
-        if (!ADMIN_EMAIL || email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-            return NextResponse.json(
-                { error: 'Invalid admin credentials' },
-                { status: 401 }
-            );
-        }
-
-        // Verify admin password
-        if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
-            return NextResponse.json(
-                { error: 'Invalid admin credentials' },
-                { status: 401 }
-            );
-        }
-
         const client = await clientPromise;
-        const db = client.db();
+        const db = client.db('mangawebsite');
 
-        // Find or create admin user
+        // Try to find admin user in database
         let adminUser = await db.collection('users').findOne({ 
-            email: ADMIN_EMAIL.toLowerCase(),
+            email: email.toLowerCase(),
             role: 'admin'
         });
 
-        if (!adminUser) {
-            // Create admin user if it doesn't exist
-            const bcrypt = require('bcryptjs');
-            const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 12);
-            
-            const now = new Date();
-            const result = await db.collection('users').insertOne({
-                email: ADMIN_EMAIL.toLowerCase(),
-                username: ADMIN_USERNAME,
-                password: hashedPassword,
-                role: 'admin',
-                isCreator: true, // Admin can also act as creator
-                isVerified: true,
-                createdAt: now,
-                updatedAt: now,
-                lastLogin: now,
-                failedLoginAttempts: 0,
-                accountLocked: false,
-                coins: 0
-            });
+        // If no admin user found and bootstrap is enabled, create super admin
+        if (!adminUser && SUPER_ADMIN_BOOTSTRAP) {
+            // Verify bootstrap credentials
+            if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && 
+                password === SUPER_ADMIN_PASSWORD) {
+                
+                const { hashPassword } = await import('@/lib/auth');
+                const hashedPassword = await hashPassword(SUPER_ADMIN_PASSWORD);
+                
+                const now = new Date();
+                const result = await db.collection('users').insertOne({
+                    email: SUPER_ADMIN_EMAIL.toLowerCase(),
+                    username: process.env.SUPER_ADMIN_USERNAME || 'admin',
+                    password: hashedPassword,
+                    role: 'admin',
+                    isCreator: true,
+                    isVerified: true,
+                    isSuperAdmin: true, // Mark as super admin
+                    createdAt: now,
+                    updatedAt: now,
+                    lastLogin: now,
+                    failedLoginAttempts: 0,
+                    accountLocked: false,
+                    coins: 0
+                });
 
-            adminUser = await db.collection('users').findOne({ 
-                _id: result.insertedId 
-            });
+                adminUser = await db.collection('users').findOne({ 
+                    _id: result.insertedId 
+                });
+
+                console.log('✅ Super admin created via bootstrap');
+            } else {
+                return NextResponse.json(
+                    { error: 'Invalid admin credentials' },
+                    { status: 401 }
+                );
+            }
+        } else if (!adminUser) {
+            // No admin user found and bootstrap disabled
+            return NextResponse.json(
+                { error: 'Invalid admin credentials' },
+                { status: 401 }
+            );
         } else {
-            // Verify password for existing admin account
-            const bcrypt = require('bcryptjs');
-            const isValidPassword = await bcrypt.compare(ADMIN_PASSWORD, adminUser.password);
+            // Admin user exists - verify password
+            const { verifyPassword } = await import('@/lib/auth');
+            const isValidPassword = await verifyPassword(password, adminUser.password);
             
             if (!isValidPassword) {
-                // If password doesn't match, update it (in case env var changed)
-                const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 12);
-                await db.collection('users').updateOne(
-                    { _id: adminUser._id },
-                    { 
-                        $set: { 
-                            password: hashedPassword,
-                            lastLogin: new Date(),
-                            failedLoginAttempts: 0,
-                            accountLocked: false
-                        } 
-                    }
-                );
+                // Check if this is bootstrap attempt (only if bootstrap enabled)
+                if (SUPER_ADMIN_BOOTSTRAP && 
+                    email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && 
+                    password === SUPER_ADMIN_PASSWORD) {
+                    // Update password from bootstrap credentials
+                    const { hashPassword } = await import('@/lib/auth');
+                    const hashedPassword = await hashPassword(SUPER_ADMIN_PASSWORD);
+                    await db.collection('users').updateOne(
+                        { _id: adminUser._id },
+                        { 
+                            $set: { 
+                                password: hashedPassword,
+                                lastLogin: new Date(),
+                                failedLoginAttempts: 0,
+                                accountLocked: false
+                            } 
+                        }
+                    );
+                } else {
+                    // Increment failed login attempts
+                    await db.collection('users').updateOne(
+                        { _id: adminUser._id },
+                        { 
+                            $inc: { failedLoginAttempts: 1 },
+                            $set: { updatedAt: new Date() }
+                        }
+                    );
+                    
+                    return NextResponse.json(
+                        { error: 'Invalid admin credentials' },
+                        { status: 401 }
+                    );
+                }
             } else {
-                // Update last login
+                // Valid password - update last login
                 await db.collection('users').updateOne(
                     { _id: adminUser._id },
                     { 
                         $set: { 
                             lastLogin: new Date(),
                             failedLoginAttempts: 0,
-                            accountLocked: false
+                            accountLocked: false,
+                            updatedAt: new Date()
                         } 
                     }
                 );
@@ -112,7 +139,7 @@ export async function POST(request: NextRequest) {
 
         if (!adminUser) {
             return NextResponse.json(
-                { error: 'Failed to create admin account' },
+                { error: 'Failed to authenticate admin account' },
                 { status: 500 }
             );
         }
@@ -125,14 +152,15 @@ export async function POST(request: NextRequest) {
             isCreator: true,
         });
 
-        // Log admin login
-        await db.collection('admin_logs').insertOne({
-            adminId: adminUser._id,
+        // Log admin login (audit trail)
+        await db.collection('admin_audit_logs').insertOne({
+            adminId: adminUser._id.toString(),
             adminEmail: adminUser.email,
             action: 'admin_login',
             timestamp: new Date(),
             ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-            userAgent: request.headers.get('user-agent') || 'unknown'
+            userAgent: request.headers.get('user-agent') || 'unknown',
+            success: true
         });
 
         return NextResponse.json({

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Razorpay from 'razorpay';
 import { requireAuth } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +18,8 @@ export async function POST(request: NextRequest) {
             }, { status: 500 });
         }
 
-        // Initialize Razorpay
+        // Initialize Razorpay (dynamic import to prevent build-time evaluation)
+        const Razorpay = (await import('razorpay')).default;
         const razorpay = new Razorpay({
             key_id: keyId,
             key_secret: keySecret,
