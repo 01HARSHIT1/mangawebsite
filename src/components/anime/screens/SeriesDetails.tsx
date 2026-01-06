@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown, Maximize2 } from 'lucide-react';
+import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown, Maximize2, X } from 'lucide-react';
 import { FaFacebook, FaTwitter, FaReddit, FaWhatsapp, FaTelegram } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import EnhancedVideoPlayer from '@/components/anime/components/EnhancedVideoPlayer';
@@ -86,6 +86,13 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [userRating, setUserRating] = useState<number>(0);
+    const [availableAudioTracks, setAvailableAudioTracks] = useState<any[]>([]);
+    const [availableSubtitles, setAvailableSubtitles] = useState<any[]>([]);
+    const [selectedAudioTrack, setSelectedAudioTrack] = useState<any>(null);
+    const [selectedSubtitle, setSelectedSubtitle] = useState<any>(null);
+    const [showAudioMenu, setShowAudioMenu] = useState(false);
+    const [showSubtitleMenu, setShowSubtitleMenu] = useState(false);
+    const [subtitleType, setSubtitleType] = useState<'hard' | 'soft' | null>(null);
 
     // Auto-refresh episodes every 30 seconds to catch new uploads
     useEffect(() => {
@@ -165,11 +172,34 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     duration: episodeData.duration,
                     airDate: episodeData.airDate,
                     availableTracks: episodeData.availableTracks,
+                    audioTracks: episodeData.availableTracks?.audio || episodeData.audioTracks || [],
+                    subtitles: episodeData.availableTracks?.subtitles || episodeData.subtitles || [],
                     qualityLevels: episodeData.qualityLevels,
                 };
                 setCurrentEpisodeData(mappedEpisode);
                 setPrevEpisode(episodeData.prevEpisode);
                 setNextEpisode(episodeData.nextEpisode);
+                
+                // Set available tracks
+                const audioTracks = episodeData.availableTracks?.audio || episodeData.audioTracks || [];
+                const subtitles = episodeData.availableTracks?.subtitles || episodeData.subtitles || [];
+                setAvailableAudioTracks(audioTracks);
+                setAvailableSubtitles(subtitles);
+                
+                // Set default selections
+                if (audioTracks.length > 0) {
+                    const defaultAudio = audioTracks.find((a: any) => a.isDefault) || audioTracks[0];
+                    setSelectedAudioTrack(defaultAudio);
+                }
+                if (subtitles.length > 0) {
+                    const defaultSub = subtitles.find((s: any) => s.isDefault) || subtitles[0];
+                    setSelectedSubtitle(defaultSub);
+                    // Determine subtitle type (hard sub = burned in, soft sub = separate file)
+                    setSubtitleType(defaultSub.format ? 'soft' : 'hard');
+                } else {
+                    setSelectedSubtitle(null);
+                    setSubtitleType(null);
+                }
             }
         } catch (error) {
             console.error('Error fetching episode data:', error);
@@ -444,9 +474,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         <span className="text-white">TV</span>
                         <span>/</span>
                         <span className="text-white">{series.title}</span>
+                                </div>
+                                </div>
                         </div>
-                    </div>
-                </div>
 
             {/* Main Content Area - Large Video Player with Episode Sidebar */}
             <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -473,7 +503,15 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         `}</style>
                                         <div className="embedded-video-player w-full h-full">
                                             <EnhancedVideoPlayer
-                                                episode={currentEpisodeData}
+                                                episode={{
+                                                    ...currentEpisodeData,
+                                                    audioTracks: availableAudioTracks,
+                                                    subtitles: availableSubtitles,
+                                                    availableTracks: {
+                                                        audio: availableAudioTracks,
+                                                        subtitles: availableSubtitles,
+                                                    },
+                                                }}
                                                 series={{
                                                     _id: series._id,
                                                     title: series.title,
@@ -485,7 +523,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                 hasPreviousEpisode={!!prevEpisode}
                                                 onBackToSeries={() => setIsVideoPlaying(false)}
                                             />
-                                        </div>
+                        </div>
                     </div>
                                 ) : selectedEpisode ? (
                                     <div className="relative w-full h-full">
@@ -513,18 +551,18 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                             >
                                                 <Play className="w-12 h-12 text-white fill-white ml-1" />
                                             </motion.button>
-                                        </div>
+                </div>
                                         <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
                                             <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm font-bold">
                                                 {series.title.toUpperCase()}
                                         </span>
-                                    <button
+                            <button
                                                 onClick={toggleFullscreen}
                                                 className="p-2 bg-black/70 backdrop-blur-sm hover:bg-black/90 rounded transition-colors"
                                                 title="Fullscreen"
-                                            >
+                            >
                                                 <Maximize2 className="w-5 h-5 text-white" />
-                                    </button>
+                            </button>
                             </div>
                                         <div className="absolute bottom-4 left-4 z-10">
                                             <span className="px-3 py-1 bg-black/70 backdrop-blur-sm text-white rounded text-sm">
@@ -535,9 +573,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gray-900">
                                         <p className="text-gray-500">Select an episode to watch</p>
-                    </div>
-                                )}
                                 </div>
+                )}
+                        </div>
 
                             {/* Player Controls - Placed right after video player in the gap */}
                             <div className="mt-4 px-4">
@@ -563,8 +601,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">Bookmark</button>
                                     <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">W2G</button>
                                     <button className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors">Report</button>
-                                </div>
-                            </div>
+                        </div>
+                    </div>
 
                             {selectedEpisode && (
                                 <p className="text-gray-400 text-sm mb-4">
@@ -572,17 +610,120 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 </p>
                             )}
 
-                            {/* Server Options */}
-                            <div className="flex items-center space-x-2 mb-4 flex-wrap">
-                                <span className="text-gray-400 text-sm">Hard Sub</span>
-                                <span className="text-gray-400 text-sm">Soft Sub</span>
-                                <span className="text-gray-400 text-sm">Dub</span>
+                            {/* Audio & Subtitle Options - Dynamic */}
+                            <div className="flex items-center space-x-2 mb-4 flex-wrap gap-2">
+                                {/* Audio Tracks - Show only if multiple tracks exist */}
+                                {availableAudioTracks.length > 1 ? (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => {
+                                                setShowAudioMenu(!showAudioMenu);
+                                                setShowSubtitleMenu(false);
+                                            }}
+                                            className="px-4 py-1 bg-orange-600 hover:bg-orange-700 rounded text-sm transition-colors flex items-center gap-2"
+                                        >
+                                            <span>🎧 {selectedAudioTrack?.language || 'Audio'}</span>
+                                            <ChevronDown className="w-4 h-4" />
+                                        </button>
+                                        {showAudioMenu && (
+                                            <div className="absolute top-full left-0 mt-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[150px] z-50 border border-gray-700">
+                                                {availableAudioTracks.map((audio: any) => (
+                                                    <button
+                                                        key={audio.languageCode || audio.language}
+                                                        onClick={() => {
+                                                            setSelectedAudioTrack(audio);
+                                                            setShowAudioMenu(false);
+                                                            // Update video player audio track
+                                                            if (currentEpisodeData) {
+                                                                setCurrentEpisodeData({
+                                                                    ...currentEpisodeData,
+                                                                    audioTracks: availableAudioTracks,
+                                                                });
+                                                            }
+                                                        }}
+                                                        className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-800 transition-colors ${
+                                                            selectedAudioTrack?.languageCode === audio.languageCode
+                                                                ? 'bg-orange-600/20 text-orange-400 font-semibold'
+                                                                : 'text-white'
+                                                        }`}
+                                                    >
+                                                        {audio.language}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                </div>
+                                ) : availableAudioTracks.length === 1 ? (
+                                    <span className="px-4 py-1 bg-gray-800 rounded text-sm text-gray-300">
+                                        {availableAudioTracks[0].language}
+                                    </span>
+                                ) : null}
+
+                                {/* Subtitles - Show only if subtitles exist */}
+                                {availableSubtitles.length > 0 && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => {
+                                                setShowSubtitleMenu(!showSubtitleMenu);
+                                                setShowAudioMenu(false);
+                                            }}
+                                            className="px-4 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors flex items-center gap-2"
+                                        >
+                                            <span>
+                                                {subtitleType === 'hard' ? '📺 Hard Sub' : '📝 Soft Sub'}
+                                                {selectedSubtitle && ` (${selectedSubtitle.language})`}
+                                            </span>
+                                            <ChevronDown className="w-4 h-4" />
+                                        </button>
+                                        {showSubtitleMenu && (
+                                            <div className="absolute top-full left-0 mt-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[150px] z-50 border border-gray-700">
+                                                <div className="px-2 py-1 text-xs text-gray-400 mb-1 border-b border-gray-700">
+                                                    {subtitleType === 'hard' ? 'Hard Sub' : 'Soft Sub'}
+                                                </div>
+                                                {availableSubtitles.map((sub: any) => (
+                                                    <button
+                                                        key={sub.languageCode || sub.language}
+                                                        onClick={() => {
+                                                            setSelectedSubtitle(sub);
+                                                            setShowSubtitleMenu(false);
+                                                            // Update video player subtitle
+                                                            if (currentEpisodeData) {
+                                                                setCurrentEpisodeData({
+                                                                    ...currentEpisodeData,
+                                                                    subtitles: availableSubtitles,
+                                                                });
+                                                            }
+                                                        }}
+                                                        className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-800 transition-colors ${
+                                                            selectedSubtitle?.languageCode === sub.languageCode
+                                                                ? 'bg-orange-600/20 text-orange-400 font-semibold'
+                                                                : 'text-white'
+                                                        }`}
+                                                    >
+                                                        {sub.language}
+                                                    </button>
+                                                ))}
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedSubtitle(null);
+                                                        setShowSubtitleMenu(false);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-800 transition-colors text-gray-400 mt-1 border-t border-gray-700 pt-2"
+                                                >
+                                                    Off
+                                                </button>
+                                            </div>
+                                        )}
+                    </div>
+                )}
+
+                                {/* Server Options */}
                                 <div className="flex items-center space-x-2 ml-4">
                                     <button className="px-4 py-1 bg-green-600 rounded text-sm">Server 1</button>
                                     <button className="px-4 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm">Server 2</button>
-                        </div>
+                                </div>
                                 <p className="text-gray-500 text-xs ml-4">If the current server is not working, please try switching to other servers.</p>
-                    </div>
+                            </div>
                 </div>
 
                             {/* Anime Information Section */}
@@ -591,17 +732,17 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                     {/* Left: Character Image/Poster */}
                                     <div className="w-full lg:w-1/3 flex-shrink-0">
                                         <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden">
-                                            <Image
-                                                src={series.coverImage}
-                                                alt={series.title}
-                                                fill
-                                                className="object-cover"
-                                            />
+                                <Image
+                                    src={series.coverImage}
+                                    alt={series.title}
+                                    fill
+                                    className="object-cover"
+                                />
                                         </div>
-                                    </div>
+                            </div>
 
                                     {/* Right: Anime Details */}
-                                    <div className="flex-1">
+                            <div className="flex-1">
                                         <h1 className="text-3xl font-bold mb-2">{series.title}</h1>
                                         {series.alternativeTitles && series.alternativeTitles.length > 0 && (
                                             <p className="text-gray-400 text-sm mb-4">
@@ -668,8 +809,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                     <span className="text-gray-500">Studios:</span> <span className="text-white">{series.studio}</span>
                                                 </div>
                                             )}
-                                        </div>
                                     </div>
+                                </div>
 
                                     {/* User Rating Section */}
                                     <div className="w-full lg:w-64 flex-shrink-0">
@@ -694,7 +835,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                                </div>
 
                             {/* Social Sharing Section */}
                             <div className="bg-gray-900/50 rounded-lg p-6 mt-6">
@@ -715,32 +856,32 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         </button>
                                         <button className="p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors">
                                             <MessageCircle className="w-5 h-5" />
-                                        </button>
+                                    </button>
                                         <button className="p-2 bg-orange-600 hover:bg-orange-700 rounded transition-colors">
                                             <FaReddit className="w-5 h-5" />
-                                        </button>
+                                    </button>
                                         <button className="p-2 bg-green-600 hover:bg-green-700 rounded transition-colors">
                                             <FaWhatsapp className="w-5 h-5" />
-                                        </button>
+                                    </button>
                                         <button className="p-2 bg-blue-500 hover:bg-blue-600 rounded transition-colors">
                                             <FaTelegram className="w-5 h-5" />
-                                        </button>
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
+                        </div>
 
                             {/* Comments Section */}
                             <div className="bg-gray-900/50 rounded-lg p-6 mt-6">
                                 <div className="flex items-center gap-2 mb-4">
                                     <h2 className="text-2xl font-bold">COMMENTS</h2>
                                     <span className="px-2 py-1 bg-red-600 text-white text-xs rounded">ON</span>
-                                </div>
+                    </div>
 
                                 <div className="bg-blue-500/20 border border-blue-500/50 rounded p-3 mb-4">
                                     <p className="text-sm text-blue-300">
                                         Note: Please take a moment to read the comment rules before posting.
                                     </p>
-                                </div>
+            </div>
 
                                 <div className="flex items-center justify-between mb-4">
                                     <p className="text-gray-400">{comments.length} comments</p>
@@ -751,20 +892,20 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         >
                                             Best
                                         </button>
-                                        <button
+                    <button
                                             onClick={() => setCommentsSort('newest')}
                                             className={`text-sm ${commentsSort === 'newest' ? 'text-red-500 underline' : 'text-gray-400 hover:text-white'}`}
                                         >
                                             Newest
-                                        </button>
-                                        <button
+                    </button>
+                    <button
                                             onClick={() => setCommentsSort('oldest')}
                                             className={`text-sm ${commentsSort === 'oldest' ? 'text-red-500 underline' : 'text-gray-400 hover:text-white'}`}
                                         >
                                             Oldest
-                                        </button>
+                    </button>
                                     </div>
-                                </div>
+                </div>
 
                                 {/* Comment Input */}
                                 <div className="mb-6">
@@ -800,7 +941,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                             </button>
                                         </div>
                                     </div>
-                                </div>
+                        </div>
 
                                 {/* Comments List */}
                                 <div className="space-y-4">
@@ -811,14 +952,14 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                     <span className="text-white font-semibold text-sm">
                                                         {comment.username?.[0]?.toUpperCase() || 'U'}
                                                     </span>
-                                                </div>
+                                </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="font-semibold text-sm">{comment.username || 'Anonymous'}</span>
                                                         <span className="text-xs text-gray-500">
                                                             {formatTimeAgo(comment.createdAt)}
                                                         </span>
-                                                    </div>
+                                </div>
                                                     <p className="text-gray-300 text-sm mb-2">{comment.text}</p>
                                                     <div className="flex items-center gap-4">
                                                         <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
@@ -829,9 +970,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                         </button>
                                                         <button className="text-xs text-gray-400 hover:text-white">Reply</button>
                                                         <button className="text-xs text-gray-400 hover:text-white">More</button>
-                                                    </div>
-                                                </div>
-                                            </div>
+                            </div>
+                        </div>
+                    </div>
                                         ))
                                     ) : (
                                         <p className="text-gray-500 text-center py-8">No comments yet. Be the first to comment!</p>
@@ -860,9 +1001,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     </button>
                                     <button className="p-1 hover:bg-gray-800 rounded">
                                         <Filter className="w-4 h-4" />
-                    </button>
-                </div>
-                        </div>
+                                        </button>
+                                </div>
+                            </div>
 
                             {/* Episode Search */}
                             <div className="mb-4">
@@ -944,7 +1085,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 </div>
                         </div>
                     </div>
-            </div>
+                                </div>
 
             {/* A-Z List Section */}
             <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -971,8 +1112,8 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                             CONTACT US
                         </button>
                     </div>
-                </div>
-            </div>
+                                    </div>
+                                </div>
 
             {/* Footer */}
             <footer className="bg-black/80 border-t border-gray-800 mt-12">
@@ -995,13 +1136,13 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         <button className="p-2 hover:bg-gray-800 rounded transition-colors">
                             <FaTelegram className="w-5 h-5 text-gray-400" />
                         </button>
-                    </div>
+                                        </div>
                     <div className="text-center">
                         <p className="text-gray-500 text-xs">
                             animestream, watch anime, anime streaming
                         </p>
-                    </div>
-                </div>
+                                </div>
+                                </div>
             </footer>
 
             {/* Sign Up Modal */}
@@ -1034,9 +1175,9 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 Sign In
                             </Link>
                         </div>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
         </div>
     );
 }
