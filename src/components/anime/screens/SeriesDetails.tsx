@@ -794,12 +794,50 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         Bookmark
                                     </button>
                                     <button 
-                                        onClick={() => {
-                                            alert('W2G (Watch2Gether) feature coming soon!\n\nThis will allow you to watch anime with friends in real-time. Please provide details on how you want this feature to work:\n- Should it create watch rooms?\n- Do you need chat functionality?\n- Should playback be synchronized?');
+                                        onClick={async () => {
+                                            if (!isAuthenticated) {
+                                                setShowSignUpModal(true);
+                                                return;
+                                            }
+                                            
+                                            if (!currentEpisodeData?._id) {
+                                                alert('Please select an episode first');
+                                                return;
+                                            }
+                                            
+                                            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                            
+                                            try {
+                                                const response = await fetch('/api/w2g/create', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${token}`,
+                                                    },
+                                                    body: JSON.stringify({
+                                                        seriesId: seriesId,
+                                                        episodeId: currentEpisodeData._id,
+                                                        episodeNumber: selectedEpisode,
+                                                        isPublic: false,
+                                                    }),
+                                                });
+                                                
+                                                if (response.ok) {
+                                                    const data = await response.json();
+                                                    // Navigate to W2G room
+                                                    router.push(`/w2g/${data.room.roomId}`);
+                                                } else {
+                                                    const error = await response.json();
+                                                    alert(error.error || 'Failed to create watch room');
+                                                }
+                                            } catch (error) {
+                                                console.error('Error creating W2G room:', error);
+                                                alert('Failed to create watch room');
+                                            }
                                         }}
-                                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
+                                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm transition-colors"
                                     >
-                                        W2G
+                                        🎥 W2G
                                     </button>
                                     <button 
                                         onClick={() => {
