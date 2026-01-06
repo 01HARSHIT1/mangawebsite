@@ -43,6 +43,8 @@ export default function W2GRoomPage() {
     const [participants, setParticipants] = useState<Participant[]>([]);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [chatInput, setChatInput] = useState('');
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportTarget, setReportTarget] = useState<{ type: string; id: string; name?: string } | null>(null);
     const [episode, setEpisode] = useState<any>(null);
     const [series, setSeries] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -635,6 +637,24 @@ export default function W2GRoomPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Report Modal */}
+            {showReportModal && reportTarget && (
+                <ReportModal
+                    isOpen={showReportModal}
+                    onClose={() => {
+                        setShowReportModal(false);
+                        setReportTarget(null);
+                    }}
+                    targetType={reportTarget.type}
+                    targetId={reportTarget.id}
+                    targetName={reportTarget.name}
+                    onSuccess={() => {
+                        setShowReportModal(false);
+                        setReportTarget(null);
+                    }}
+                />
+            )}
         </div>
     );
 }
