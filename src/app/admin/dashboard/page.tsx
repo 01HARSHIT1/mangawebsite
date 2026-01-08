@@ -70,6 +70,7 @@ export default function AdminDashboard() {
         { id: 'monetization', label: 'Monetization', icon: FaMoneyBillWave, href: '/admin/monetization' },
         { id: 'audit-logs', label: 'Audit Logs', icon: FaFileAlt, href: '/admin/audit-logs' },
         { id: 'visibility', label: 'Visibility Controls', icon: FaStar, href: '/admin/anime/visibility' },
+        { id: 'platform-config', label: 'Platform Config', icon: FaCog, href: '/admin/platform-config' },
         { id: 'homepage', label: 'Homepage Control', icon: FaHome, href: '/admin/homepage' },
         { id: 'analytics', label: 'Analytics', icon: FaChartLine, href: '/admin/analytics' },
         { id: 'creators', label: 'Creator Management', icon: FaCrown, href: '/admin/creators' },
