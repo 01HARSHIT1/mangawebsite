@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Maximize2, SkipBack, SkipForward, ChevronLeft, Settings, Subtitles, Languages, RotateCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
@@ -118,18 +118,18 @@ export default function EnhancedVideoPlayer({
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const trackRef = useRef<HTMLTrackElement>(null);
 
-    // Load playback data and resume position
-    useEffect(() => {
-        loadPlaybackData();
-    }, [episode._id || episode.id]);
+    // Extract stable values from props to avoid dependency issues
+    const episodeId = useMemo(() => episode._id || episode.id, [episode._id, episode.id]);
+    const defaultAudioTrack = useMemo(() => userPreferences?.defaultAudioTrack, [userPreferences?.defaultAudioTrack]);
+    const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed, [userPreferences?.defaultPlaybackSpeed]);
 
-    const loadPlaybackData = async () => {
+    // Load playback data and resume position
+    const loadPlaybackData = useCallback(async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
             
             // Get playback URL with entitlement
-            const episodeId = episode._id || episode.id;
             if (!episodeId) {
                 console.error('Episode ID not found');
                 setLoading(false);
@@ -157,8 +157,8 @@ export default function EnhancedVideoPlayer({
 
                 // Set default audio track (prefer user preference, then episode default, then first available)
                 let defaultAudio = null;
-                if (userPreferences.defaultAudioTrack) {
-                    defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === userPreferences.defaultAudioTrack);
+                if (defaultAudioTrack) {
+                    defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === defaultAudioTrack);
                 }
                 if (!defaultAudio) {
                     defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
@@ -168,11 +168,11 @@ export default function EnhancedVideoPlayer({
                 }
 
                 // Set default playback speed from user preferences
-                if (userPreferences.defaultPlaybackSpeed) {
+                if (defaultPlaybackSpeed) {
                     const video = videoRef.current;
                     if (video) {
-                        video.playbackRate = userPreferences.defaultPlaybackSpeed;
-                        setPlaybackRate(userPreferences.defaultPlaybackSpeed);
+                        video.playbackRate = defaultPlaybackSpeed;
+                        setPlaybackRate(defaultPlaybackSpeed);
                     }
                 }
             } else {
@@ -214,7 +214,12 @@ export default function EnhancedVideoPlayer({
         } finally {
             setLoading(false);
         }
-    };
+    }, [episodeId, isAuthenticated, defaultAudioTrack, defaultPlaybackSpeed, episode]);
+
+    // Load playback data and resume position
+    useEffect(() => {
+        loadPlaybackData();
+    }, [loadPlaybackData]);
 
     // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
