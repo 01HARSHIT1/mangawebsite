@@ -42,12 +42,34 @@ export async function GET() {
             .toArray();
 
         const animeWithScores = allAnime.map((series: any) => {
+            // Skip hidden or suppressed content
+            if (series.isHidden || series.isSuppressed) {
+                return { ...series, trendingScore: -1, recentViewCount: 0 };
+            }
+            
             const recentViews = viewCountMap.get(series._id.toString()) || 0;
             const rating = series.rating || 0;
             // Normalize scores: views (0-100 scale), rating (0-10 scale)
             const normalizedViews = Math.min(recentViews / 10, 100); // Max 100
             const normalizedRating = rating * 10; // 0-10 scale
-            const trendingScore = (normalizedViews * 0.6) + (normalizedRating * 0.4);
+            
+            // Base trending score
+            let trendingScore = (normalizedViews * 0.6) + (normalizedRating * 0.4);
+            
+            // Apply manual visibility boost
+            if (series.visibilityBoost) {
+                trendingScore += series.visibilityBoost;
+            }
+            
+            // Featured content gets extra boost
+            if (series.isFeatured) {
+                trendingScore += 30;
+            }
+            
+            // Manual rank override (lower rank = higher priority)
+            if (series.manualRank !== null && series.manualRank !== undefined) {
+                trendingScore = 1000 - series.manualRank; // Invert so rank 1 = highest score
+            }
             
             return {
                 ...series,
@@ -56,8 +78,9 @@ export async function GET() {
             };
         });
 
-        // Sort by trending score and limit
+        // Sort by trending score and limit (exclude hidden/suppressed)
         const trendingAnime = animeWithScores
+            .filter((a: any) => a.trendingScore >= 0) // Exclude hidden/suppressed
             .sort((a: any, b: any) => b.trendingScore - a.trendingScore)
             .slice(0, 20);
 

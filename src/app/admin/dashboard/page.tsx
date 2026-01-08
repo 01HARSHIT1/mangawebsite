@@ -68,6 +68,8 @@ export default function AdminDashboard() {
         { id: 'anime-reports', label: 'Reports', icon: FaExclamationTriangle, href: '/admin/anime/reports' },
         { id: 'admin-roles', label: 'Admin Roles', icon: FaShieldAlt, href: '/admin/roles' },
         { id: 'monetization', label: 'Monetization', icon: FaMoneyBillWave, href: '/admin/monetization' },
+        { id: 'audit-logs', label: 'Audit Logs', icon: FaFileAlt, href: '/admin/audit-logs' },
+        { id: 'visibility', label: 'Visibility Controls', icon: FaStar, href: '/admin/anime/visibility' },
         { id: 'homepage', label: 'Homepage Control', icon: FaHome, href: '/admin/homepage' },
         { id: 'analytics', label: 'Analytics', icon: FaChartLine, href: '/admin/analytics' },
         { id: 'creators', label: 'Creator Management', icon: FaCrown, href: '/admin/creators' },

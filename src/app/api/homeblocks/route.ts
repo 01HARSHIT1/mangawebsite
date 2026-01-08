@@ -30,9 +30,19 @@ export async function GET(request: NextRequest) {
         const blocks: any[] = [];
 
         // 1. Hero Carousel (Featured/Promoted)
+        const now = new Date();
         const featured = await db.collection('anime_series')
-            .find({ isFeatured: true })
-            .sort({ rating: -1, createdAt: -1 })
+            .find({
+                isFeatured: true,
+                $or: [
+                    { featuredUntil: { $exists: false } },
+                    { featuredUntil: null },
+                    { featuredUntil: { $gte: now } }
+                ],
+                isHidden: { $ne: true },
+                isSuppressed: { $ne: true }
+            })
+            .sort({ manualRank: 1, rating: -1, createdAt: -1 })
             .limit(5)
             .toArray();
 
@@ -52,9 +62,12 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // 2. Trending Now
+        // 2. Trending Now (exclude hidden/suppressed)
         const trending = await db.collection('anime_series')
-            .find({})
+            .find({
+                isHidden: { $ne: true },
+                isSuppressed: { $ne: true }
+            })
             .sort({ rating: -1, episodeCount: -1 })
             .limit(20)
             .toArray();

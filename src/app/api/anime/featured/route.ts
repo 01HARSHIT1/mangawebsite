@@ -9,16 +9,25 @@ export async function GET() {
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
-        // Get featured anime (highest rated, recent, or manually curated)
+        // Get featured anime (manually curated or highest rated)
+        // Check for featured anime that hasn't expired
+        const now = new Date();
         const featuredAnime = await db.collection('anime_series')
-            .findOne(
-                { isFeatured: true },
-                { sort: { rating: -1, year: -1 } }
-            ) || await db.collection('anime_series')
-                .findOne(
-                    {},
-                    { sort: { rating: -1, year: -1 } }
-                );
+            .findOne({
+                isFeatured: true,
+                $or: [
+                    { featuredUntil: { $exists: false } },
+                    { featuredUntil: null },
+                    { featuredUntil: { $gte: now } }
+                ],
+                isHidden: { $ne: true },
+                isSuppressed: { $ne: true }
+            }, { sort: { manualRank: 1, rating: -1, year: -1 } }) 
+            || await db.collection('anime_series')
+                .findOne({
+                    isHidden: { $ne: true },
+                    isSuppressed: { $ne: true }
+                }, { sort: { rating: -1, year: -1 } });
 
         if (!featuredAnime) {
             // Return mock data if no anime in database yet
