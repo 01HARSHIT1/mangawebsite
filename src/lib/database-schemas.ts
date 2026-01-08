@@ -158,6 +158,9 @@ export interface Episode {
     airDate?: Date;
     releaseDate?: Date;
     isPreview?: boolean; // Free preview episode
+    previewClipUrl?: string; // URL to preview clip video (30-60 seconds)
+    previewClipDuration?: number; // Preview clip duration in seconds
+    previewClipThumbnail?: string; // Preview clip thumbnail
     metadata?: Record<string, any>;
     createdAt: Date;
     updatedAt: Date;

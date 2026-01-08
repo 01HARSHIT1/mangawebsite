@@ -24,6 +24,7 @@ export default function AnimeUploadPage() {
         episodeDescription: "",
         episodeVideo: null as File | null,
         episodePoster: null as File | null, // Episode poster/thumbnail image
+        episodePreviewClip: null as File | null, // Episode preview clip (30-60 seconds)
         episodeDuration: "",
         existingSeriesId: "", // For selecting existing series
         // Audio Configuration
