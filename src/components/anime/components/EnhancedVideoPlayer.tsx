@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward, ChevronLeft, Settings, Subtitles, Languages, RotateCw } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Maximize2, SkipBack, SkipForward, ChevronLeft, Settings, Subtitles, Languages, RotateCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 
@@ -62,6 +62,8 @@ interface UserPreferences {
     outroStartTime?: number;
     outroEndTime?: number;
     keyboardShortcutsEnabled?: boolean;
+    defaultPlaybackSpeed?: number;
+    defaultAudioTrack?: string;
 }
 
 interface VideoPlayerProps {
@@ -98,6 +100,7 @@ export default function EnhancedVideoPlayer({
     const [volume, setVolume] = useState(1);
     const [isMuted, setIsMuted] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isPictureInPicture, setIsPictureInPicture] = useState(false);
     const [showControls, setShowControls] = useState(true);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [showSettings, setShowSettings] = useState(false);
@@ -152,10 +155,25 @@ export default function EnhancedVideoPlayer({
                     setSelectedSubtitle(defaultSubtitle);
                 }
 
-                // Set default audio track
-                const defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
+                // Set default audio track (prefer user preference, then episode default, then first available)
+                let defaultAudio = null;
+                if (userPreferences.defaultAudioTrack) {
+                    defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === userPreferences.defaultAudioTrack);
+                }
+                if (!defaultAudio) {
+                    defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
+                }
                 if (defaultAudio) {
                     setSelectedAudio(defaultAudio);
+                }
+
+                // Set default playback speed from user preferences
+                if (userPreferences.defaultPlaybackSpeed) {
+                    const video = videoRef.current;
+                    if (video) {
+                        video.playbackRate = userPreferences.defaultPlaybackSpeed;
+                        setPlaybackRate(userPreferences.defaultPlaybackSpeed);
+                    }
                 }
             } else {
                 console.warn('Playback API failed, using direct video URL');
@@ -675,11 +693,31 @@ export default function EnhancedVideoPlayer({
         trackEvent('subtitle_change', currentTime);
     };
 
-    const handleAudioChange = (audio: AudioTrack) => {
+    const handleAudioChange = async (audio: AudioTrack) => {
         setSelectedAudio(audio);
         setShowAudioMenu(false);
         // In production, would switch audio track here
         trackEvent('audio_change', currentTime);
+        
+        // Save audio track preference
+        if (isAuthenticated && audio) {
+            try {
+                const token = localStorage.getItem('token');
+                await fetch('/api/anime/user-preferences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        defaultAudioTrack: audio.languageCode,
+                        defaultAudioLanguage: audio.language,
+                    }),
+                });
+            } catch (error) {
+                console.error('Error saving audio preference:', error);
+            }
+        }
     };
 
     if (loading) {
@@ -1032,10 +1070,29 @@ export default function EnhancedVideoPlayer({
                                         {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
                                             <button
                                                 key={rate}
-                                                onClick={() => {
+                                                onClick={async () => {
                                                     if (videoRef.current) {
                                                         videoRef.current.playbackRate = rate;
                                                         setPlaybackRate(rate);
+                                                        
+                                                        // Save playback speed preference
+                                                        if (isAuthenticated) {
+                                                            try {
+                                                                const token = localStorage.getItem('token');
+                                                                await fetch('/api/anime/user-preferences', {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Content-Type': 'application/json',
+                                                                        Authorization: `Bearer ${token}`,
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        defaultPlaybackSpeed: rate,
+                                                                    }),
+                                                                });
+                                                            } catch (error) {
+                                                                console.error('Error saving playback speed preference:', error);
+                                                            }
+                                                        }
                                                     }
                                                     setShowSettings(false);
                                                 }}
@@ -1053,6 +1110,15 @@ export default function EnhancedVideoPlayer({
 
                         <div className="flex items-center space-x-4">
                             <span className="text-white text-sm">Episode {episode.episodeNumber}</span>
+                            {document.pictureInPictureEnabled && (
+                                <button 
+                                    onClick={togglePictureInPicture} 
+                                    className="p-2 hover:bg-white/10 rounded transition-colors"
+                                    title={isPictureInPicture ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
+                                >
+                                    <Maximize2 className={`w-5 h-5 ${isPictureInPicture ? 'text-orange-500' : 'text-white'}`} />
+                                </button>
+                            )}
                             <button onClick={toggleFullscreen} className="p-2 hover:bg-white/10 rounded transition-colors">
                                 {isFullscreen ? <Minimize className="w-5 h-5 text-white" /> : <Maximize className="w-5 h-5 text-white" />}
                             </button>

@@ -15,8 +15,10 @@ const DEFAULT_PREFERENCES = {
     outroStartTime: 0,
     outroEndTime: 0,
     defaultAudioLanguage: null as string | null,
+    defaultAudioTrack: null as string | null, // languageCode for preferred audio track
     defaultSubtitleLanguage: null as string | null,
     playbackSpeed: 1,
+    defaultPlaybackSpeed: 1, // Preferred playback speed (0.5, 0.75, 1, 1.25, 1.5, 2)
     volume: 1,
     keyboardShortcutsEnabled: true,
     updatedAt: new Date(),
