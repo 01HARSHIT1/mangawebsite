@@ -309,7 +309,6 @@ export default function EnhancedVideoPlayer({
     }, [playbackData, resumePosition, selectedSubtitle, episode?.videoUrl, episode?.hlsManifestUrl, episode]);
 
     // Track playback events
-    const episodeId = episode._id || episode.id || '';
     const trackEvent = useCallback(async (eventType: string, position?: number) => {
         if (!isAuthenticated || !episodeId) return;
         
