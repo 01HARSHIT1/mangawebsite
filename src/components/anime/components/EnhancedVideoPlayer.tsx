@@ -484,6 +484,45 @@ export default function EnhancedVideoPlayer({
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
+    // Picture-in-Picture support
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const handleEnterPictureInPicture = () => {
+            setIsPictureInPicture(true);
+        };
+
+        const handleLeavePictureInPicture = () => {
+            setIsPictureInPicture(false);
+        };
+
+        video.addEventListener('enterpictureinpicture', handleEnterPictureInPicture);
+        video.addEventListener('leavepictureinpicture', handleLeavePictureInPicture);
+
+        return () => {
+            video.removeEventListener('enterpictureinpicture', handleEnterPictureInPicture);
+            video.removeEventListener('leavepictureinpicture', handleLeavePictureInPicture);
+        };
+    }, []);
+
+    const togglePictureInPicture = async () => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        try {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else if (document.pictureInPictureEnabled) {
+                await video.requestPictureInPicture();
+            } else {
+                alert('Picture-in-Picture is not supported in this browser');
+            }
+        } catch (error) {
+            console.error('Error toggling Picture-in-Picture:', error);
+        }
+    };
+
     // Keyboard shortcuts
     useEffect(() => {
         if (!userPreferences.keyboardShortcutsEnabled) return;
