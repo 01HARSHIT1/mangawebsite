@@ -55,6 +55,7 @@ export async function GET(
                     userId: 1,
                     username: 1,
                     text: 1,
+                    isSpoiler: 1,
                     upvotes: 1,
                     downvotes: 1,
                     likesCount: 1,
@@ -128,7 +129,7 @@ export async function POST(
 
         // Get request body
         const body = await request.json();
-        const { text } = body;
+        const { text, isSpoiler = false } = body;
 
         if (!text || typeof text !== 'string' || text.trim().length === 0) {
             return NextResponse.json({ error: 'Comment text is required' }, { status: 400 });
@@ -153,6 +154,7 @@ export async function POST(
             userId: new ObjectId(userId),
             username: username,
             text: text.trim(),
+            isSpoiler: !!isSpoiler, // Mark comment as spoiler if requested
             upvotes: [],
             downvotes: [],
             createdAt: new Date(),

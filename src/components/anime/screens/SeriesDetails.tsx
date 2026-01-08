@@ -4,11 +4,131 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown, Maximize2, X } from 'lucide-react';
+import { Play, Star, Calendar, Clock, ChevronLeft, Share2, Heart, Bookmark, MessageCircle, Search, Filter, ChevronRight, ChevronDown, Maximize2, X, Bell, BellOff } from 'lucide-react';
 import { FaFacebook, FaTwitter, FaReddit, FaWhatsapp, FaTelegram } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import EnhancedVideoPlayer from '@/components/anime/components/EnhancedVideoPlayer';
 import ReportModal from '@/components/anime/components/ReportModal';
+
+// Spoiler Content Component
+function SpoilerContent({ text }: { text: string }) {
+    const [isRevealed, setIsRevealed] = useState(false);
+    
+    return (
+        <div className="mb-2">
+            {!isRevealed ? (
+                <button
+                    onClick={() => setIsRevealed(true)}
+                    className="bg-yellow-900/50 border border-yellow-700 rounded px-4 py-2 text-yellow-400 text-sm hover:bg-yellow-900/70 transition-colors w-full text-left"
+                >
+                    ⚠️ Spoiler - Click to reveal
+                </button>
+            ) : (
+                <p className="text-gray-300 text-sm bg-black/30 rounded p-2 border border-yellow-700/50">{text}</p>
+            )}
+        </div>
+    );
+}
+
+// Comment Component with Spoiler Support
+function SpoilerComment({ comment }: { comment: any }) {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [showSignUpModal, setShowSignUpModal] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportTarget, setReportTarget] = useState<{ type: string; id: string; name?: string } | null>(null);
+    
+    useEffect(() => {
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        setIsAuthenticated(!!token);
+    }, []);
+
+    const formatTimeAgo = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 7) return `${days}d ago`;
+        return date.toLocaleDateString();
+    };
+
+    return (
+        <>
+            <div className="flex items-start gap-3 pb-4 border-b border-gray-800">
+                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-semibold text-sm">
+                        {comment.username?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                </div>
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm">{comment.username || 'Anonymous'}</span>
+                        {comment.isSpoiler && (
+                            <span className="px-2 py-0.5 bg-yellow-900/50 border border-yellow-700 text-yellow-400 text-xs rounded">
+                                ⚠️ Spoiler
+                            </span>
+                        )}
+                        <span className="text-xs text-gray-500">
+                            {formatTimeAgo(comment.createdAt)}
+                        </span>
+                    </div>
+                    {comment.isSpoiler ? (
+                        <SpoilerContent text={comment.text} />
+                    ) : (
+                        <p className="text-gray-300 text-sm mb-2">{comment.text}</p>
+                    )}
+                    <div className="flex items-center gap-4">
+                        <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
+                            <span>↑</span> {comment.upvotes?.length || 0}
+                        </button>
+                        <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
+                            <span>↓</span> {comment.downvotes?.length || 0}
+                        </button>
+                        <button className="text-xs text-gray-400 hover:text-white">Reply</button>
+                        <button 
+                            onClick={() => {
+                                if (!isAuthenticated) {
+                                    setShowSignUpModal(true);
+                                    return;
+                                }
+                                setReportTarget({
+                                    type: 'comment',
+                                    id: comment._id,
+                                    name: `Comment by ${comment.username}`,
+                                });
+                                setShowReportModal(true);
+                            }}
+                            className="text-xs text-red-400 hover:text-red-500"
+                        >
+                            Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {showReportModal && reportTarget && (
+                <ReportModal
+                    isOpen={showReportModal}
+                    onClose={() => {
+                        setShowReportModal(false);
+                        setReportTarget(null);
+                    }}
+                    targetType={reportTarget.type}
+                    targetId={reportTarget.id}
+                    targetName={reportTarget.name}
+                    onSuccess={() => {
+                        setShowReportModal(false);
+                        setReportTarget(null);
+                    }}
+                />
+            )}
+        </>
+    );
+}
 
 interface Episode {
     _id: string;
@@ -83,6 +203,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [comments, setComments] = useState<any[]>([]);
     const [commentText, setCommentText] = useState('');
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [commentIsSpoiler, setCommentIsSpoiler] = useState(false);
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -429,11 +550,15 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ text: commentText }),
+                body: JSON.stringify({ 
+                    text: commentText,
+                    isSpoiler: commentIsSpoiler,
+                }),
             });
 
             if (response.ok) {
                 setCommentText('');
+                setCommentIsSpoiler(false);
                 fetchComments();
             } else {
                 const error = await response.json();
@@ -876,11 +1001,62 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                         🎥 W2G
                                     </button>
                                     <button 
+                                        onClick={async () => {
+                                            if (!isAuthenticated) {
+                                                setShowSignUpModal(true);
+                                                return;
+                                            }
+                                            
+                                            try {
+                                                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                                const response = await fetch('/api/anime/notifications/subscribe', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                        Authorization: `Bearer ${token}`,
+                                                    },
+                                                    body: JSON.stringify({
+                                                        seriesId: seriesId,
+                                                        enabled: !isNotificationSubscribed,
+                                                    }),
+                                                });
+                                                
+                                                if (response.ok) {
+                                                    setIsNotificationSubscribed(!isNotificationSubscribed);
+                                                    alert(isNotificationSubscribed ? 'Unsubscribed from notifications' : 'Subscribed to notifications');
+                                                } else {
+                                                    alert('Failed to update notification subscription');
+                                                }
+                                            } catch (error) {
+                                                console.error('Error updating notification subscription:', error);
+                                                alert('Failed to update notification subscription');
+                                            }
+                                        }}
+                                        className={`px-4 py-2 rounded text-sm transition-colors flex items-center gap-2 ${
+                                            isNotificationSubscribed 
+                                                ? 'bg-blue-600 hover:bg-blue-700' 
+                                                : 'bg-gray-800 hover:bg-gray-700'
+                                        }`}
+                                        title={isNotificationSubscribed ? 'Unsubscribe from notifications' : 'Subscribe to new episode notifications'}
+                                    >
+                                        {isNotificationSubscribed ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                                        {isNotificationSubscribed ? 'Notifications ON' : 'Notify Me'}
+                                    </button>
+                                    <button 
                                         onClick={() => {
                                             if (!isAuthenticated) {
                                                 setShowSignUpModal(true);
                                                 return;
                                             }
+                                            if (!currentEpisodeData?._id) {
+                                                alert('Please select an episode first');
+                                                return;
+                                            }
+                                            setReportTarget({
+                                                type: 'episode',
+                                                id: currentEpisodeData._id,
+                                                name: currentEpisodeData.title || `Episode ${selectedEpisode}`,
+                                            });
                                             setShowReportModal(true);
                                         }}
                                         className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
@@ -1234,7 +1410,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                 </div>
 
                                 {/* Comment Input */}
-                                <div className="mb-6">
+                            <div className="mb-6">
                                     <div className="flex items-start gap-3">
                                         <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
                                             {isAuthenticated && currentUser ? (
@@ -1258,13 +1434,24 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                                 className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white placeholder-gray-500 resize-none"
                                                 rows={3}
                                             />
-                                            <button
-                                                onClick={handleSubmitComment}
-                                                disabled={isSubmittingComment || !commentText.trim()}
-                                                className="mt-2 px-6 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm transition-colors"
-                                            >
-                                                {isSubmittingComment ? 'Posting...' : 'Post Comment'}
-                                        </button>
+                                            <div className="flex items-center justify-between mt-2">
+                                                <label className="flex items-center gap-2 text-sm text-gray-400 hover:text-white cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={commentIsSpoiler}
+                                                        onChange={(e) => setCommentIsSpoiler(e.target.checked)}
+                                                        className="w-4 h-4 text-orange-600 bg-gray-800 border-gray-700 rounded focus:ring-orange-500"
+                                                    />
+                                                    <span>⚠️ Contains Spoilers</span>
+                                                </label>
+                                                <button
+                                                    onClick={handleSubmitComment}
+                                                    disabled={isSubmittingComment || !commentText.trim()}
+                                                    className="px-6 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm transition-colors"
+                                                >
+                                                    {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+                                                </button>
+                                            </div>
                                 </div>
                             </div>
                         </div>
@@ -1273,48 +1460,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                                 <div className="space-y-4">
                                     {comments.length > 0 ? (
                                         comments.map((comment) => (
-                                            <div key={comment._id} className="flex items-start gap-3 pb-4 border-b border-gray-800">
-                                                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                                    <span className="text-white font-semibold text-sm">
-                                                        {comment.username?.[0]?.toUpperCase() || 'U'}
-                                                    </span>
-                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-semibold text-sm">{comment.username || 'Anonymous'}</span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {formatTimeAgo(comment.createdAt)}
-                                                        </span>
-                                </div>
-                                                    <p className="text-gray-300 text-sm mb-2">{comment.text}</p>
-                                                    <div className="flex items-center gap-4">
-                                                        <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
-                                                            <span>↑</span> {comment.upvotes?.length || 0}
-                                                        </button>
-                                                        <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-white">
-                                                            <span>↓</span> {comment.downvotes?.length || 0}
-                                                        </button>
-                                                        <button className="text-xs text-gray-400 hover:text-white">Reply</button>
-                                                        <button 
-                                                            onClick={() => {
-                                                                if (!isAuthenticated) {
-                                                                    setShowSignUpModal(true);
-                                                                    return;
-                                                                }
-                                                                setReportTarget({
-                                                                    type: 'comment',
-                                                                    id: comment._id,
-                                                                    name: `Comment by ${comment.username}`,
-                                                                });
-                                                                setShowReportModal(true);
-                                                            }}
-                                                            className="text-xs text-red-400 hover:text-red-500"
-                                                        >
-                                                            Report
-                                                        </button>
-                            </div>
-                        </div>
-                    </div>
+                                            <SpoilerComment key={comment._id} comment={comment} />
                                         ))
                                     ) : (
                                         <p className="text-gray-500 text-center py-8">No comments yet. Be the first to comment!</p>
