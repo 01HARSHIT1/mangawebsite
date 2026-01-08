@@ -46,6 +46,7 @@ export default function AnimeUploadPage() {
     const [coverImageDragActive, setCoverImageDragActive] = useState(false);
     const [episodeDragActive, setEpisodeDragActive] = useState(false);
     const [episodePosterDragActive, setEpisodePosterDragActive] = useState(false);
+    const [episodePreviewClipDragActive, setEpisodePreviewClipDragActive] = useState(false);
     const [subtitleDragActive, setSubtitleDragActive] = useState(false);
     const [existingSeries, setExistingSeries] = useState<Array<{_id: string, title: string}>>([]);
     const [isNewSeries, setIsNewSeries] = useState(true);

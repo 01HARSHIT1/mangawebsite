@@ -106,6 +106,9 @@ export async function GET(
                     audio: episode.audioTracks || [],
                     subtitles: episode.subtitles || [],
                 },
+                previewClipUrl: episode.previewClipUrl || null,
+                previewClipDuration: episode.previewClipDuration || null,
+                previewClipThumbnail: episode.previewClipThumbnail || null,
             };
         });
 
