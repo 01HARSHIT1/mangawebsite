@@ -111,7 +111,7 @@ export async function GET(
             videoUrl: episode.videoUrl,
             previewClipUrl: episode.previewClipUrl || null,
             previewClipDuration: episode.previewClipDuration || null,
-            previewClipThumbnail: episode.previewClipThumbnail || null,,
+            previewClipThumbnail: episode.previewClipThumbnail || null,
             hlsManifestUrl: episode.hlsManifestUrl,
             dashManifestUrl: episode.dashManifestUrl,
             isPreview: episode.isPreview || false,

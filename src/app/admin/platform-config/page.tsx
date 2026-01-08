@@ -519,8 +519,7 @@ export default function PlatformConfigPage() {
                                                     onChange={(e) => {
                                                         const current = editedConfig.allowedSubtitleFormats || [];
                                                         if (e.target.checked) {
-                                                            updateConfig('allowe
-```dSubtitleFormats', [...current, format]);
+                                                            updateConfig('allowedSubtitleFormats', [...current, format]);
                                                         } else {
                                                             updateConfig('allowedSubtitleFormats', current.filter((f: string) => f !== format));
                                                         }
@@ -591,7 +590,7 @@ export default function PlatformConfigPage() {
                                         <input
                                             type="number"
                                             min="1"
-                                            max="1000}
+                                            max="1000"
                                             value={editedConfig.maxEpisodesPerSeries || 200}
                                             onChange={(e) => updateConfig('maxEpisodesPerSeries', parseInt(e.target.value) || 200)}
                                             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white"
