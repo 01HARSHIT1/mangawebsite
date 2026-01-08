@@ -109,6 +109,37 @@ export async function POST(request: NextRequest) {
             }
         );
 
+        // Send notifications for new episode (if not scheduled)
+        if (!isScheduled) {
+            try {
+                // Get subscribers for this series
+                const subscribers = await db.collection('anime_notification_subscriptions')
+                    .find({ seriesId: seriesObjectId.toString(), enabled: true })
+                    .toArray();
+
+                // Create notifications for each subscriber
+                if (subscribers.length > 0) {
+                    const notifications = subscribers.map((sub: any) => ({
+                        userId: sub.userId,
+                        type: 'new_episode',
+                        seriesId: seriesObjectId.toString(),
+                        seriesTitle: series.title,
+                        episodeId: insertResult.insertedId.toString(),
+                        episodeNumber: resolvedEpisodeNumber,
+                        episodeTitle: title,
+                        message: `New episode available: ${series.title} - Episode ${resolvedEpisodeNumber}`,
+                        read: false,
+                        createdAt: now,
+                    }));
+
+                    await db.collection('anime_notifications').insertMany(notifications);
+                }
+            } catch (notifError) {
+                console.error('Error sending episode notifications:', notifError);
+                // Don't fail episode creation if notifications fail
+            }
+        }
+
         return NextResponse.json({
             success: true,
             episodeId: insertResult.insertedId.toString(),
