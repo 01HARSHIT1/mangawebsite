@@ -236,6 +236,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     });
     const [isSavingTimestamps, setIsSavingTimestamps] = useState(false);
     const [isNotificationSubscribed, setIsNotificationSubscribed] = useState(false);
+    const [selectedPreviewClip, setSelectedPreviewClip] = useState<{ url: string; thumbnail?: string; duration?: number } | null>(null);
     
     // User preferences state
     const [userPreferences, setUserPreferences] = useState({
@@ -1978,16 +1979,12 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
             {/* Preview Clip Modal */}
             {selectedPreviewClip && (
-                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-                    <div className="max-w-4xl w-full">
-                        <PreviewClipPlayer
-                            previewClipUrl={selectedPreviewClip.url}
-                            previewClipThumbnail={selectedPreviewClip.thumbnail}
-                            previewClipDuration={selectedPreviewClip.duration}
-                            onClose={() => setSelectedPreviewClip(null)}
-                        />
-                    </div>
-                </div>
+                <PreviewClipPlayer
+                    previewClipUrl={selectedPreviewClip.url}
+                    previewClipThumbnail={selectedPreviewClip.thumbnail}
+                    previewClipDuration={selectedPreviewClip.duration}
+                    onClose={() => setSelectedPreviewClip(null)}
+                />
             )}
 
             {/* Sign Up Modal */}
