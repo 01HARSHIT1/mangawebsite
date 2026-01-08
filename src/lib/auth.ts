@@ -221,3 +221,23 @@ export async function requireAdmin(request: Request): Promise<User> {
     }
     return user;
 }
+
+/**
+ * Require admin with specific permission
+ */
+export async function requireAdminPermission(
+    request: Request,
+    permission: string
+): Promise<User> {
+    const user = await requireAdmin(request);
+    
+    // Import RBAC functions
+    const { hasPermission, getRolePermissions } = await import('./admin-rbac');
+    
+    // Check if user has the required permission
+    if (!hasPermission(user as any, permission as any)) {
+        throw new Error(`Permission denied: ${permission} required`);
+    }
+    
+    return user;
+}

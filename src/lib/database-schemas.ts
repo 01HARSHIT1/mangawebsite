@@ -11,6 +11,10 @@ export interface User {
     password?: string; // Hashed
     role: 'user' | 'creator' | 'admin';
     isCreator: boolean;
+    // Admin RBAC
+    isSuperAdmin?: boolean; // Legacy flag
+    adminRole?: 'super_admin' | 'content_moderator' | 'legal_admin' | 'finance_admin' | 'analyst'; // RBAC role
+    adminPermissions?: string[]; // Explicit permission overrides (optional)
     coins?: number;
     subscription?: {
         planId: string;
