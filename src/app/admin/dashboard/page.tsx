@@ -67,6 +67,7 @@ export default function AdminDashboard() {
         { id: 'anime-copyright', label: 'Copyright & Legal', icon: FaGavel, href: '/admin/anime/copyright' },
         { id: 'anime-reports', label: 'Reports', icon: FaExclamationTriangle, href: '/admin/anime/reports' },
         { id: 'admin-roles', label: 'Admin Roles', icon: FaShieldAlt, href: '/admin/roles' },
+        { id: 'monetization', label: 'Monetization', icon: FaMoneyBillWave, href: '/admin/monetization' },
         { id: 'homepage', label: 'Homepage Control', icon: FaHome, href: '/admin/homepage' },
         { id: 'analytics', label: 'Analytics', icon: FaChartLine, href: '/admin/analytics' },
         { id: 'creators', label: 'Creator Management', icon: FaCrown, href: '/admin/creators' },
