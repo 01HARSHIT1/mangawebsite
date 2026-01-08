@@ -54,9 +54,34 @@ export async function GET(
                 .toArray();
         }
 
+        // Check if user is creator/admin (can see scheduled episodes)
+        let canViewScheduled = false;
+        if (userId) {
+            const series = await db.collection('anime_series').findOne({ _id: seriesObjectId });
+            const isCreator = series && (series.creatorId?.toString() === userId || series.uploaderId === userId);
+            const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+            canViewScheduled = user?.role === 'admin' || isCreator || false;
+        }
+
+        // Filter episodes: hide scheduled episodes from non-creators/admin
+        const now = new Date();
+        let visibleEpisodes = episodes;
+        if (!canViewScheduled) {
+            visibleEpisodes = episodes.filter((ep: any) => {
+                if (ep.isScheduled && ep.scheduledAt) {
+                    const scheduledDate = new Date(ep.scheduledAt);
+                    return scheduledDate <= now; // Only show if scheduled time has passed
+                }
+                return true;
+            });
+        }
+
         // Enrich episodes with watch progress
-        const enrichedEpisodes = episodes.map((episode: any) => {
+        const enrichedEpisodes = visibleEpisodes.map((episode: any) => {
             const history = watchHistory.find(wh => wh.episodeId === episode._id.toString());
+            const scheduledDate = episode.scheduledAt ? new Date(episode.scheduledAt) : null;
+            const isScheduled = episode.isScheduled && scheduledDate && scheduledDate > now;
+            
             return {
                 _id: episode._id.toString(),
                 episodeNumber: episode.episodeNumber,
@@ -66,6 +91,9 @@ export async function GET(
                 duration: episode.duration,
                 airDate: episode.airDate,
                 releaseDate: episode.releaseDate,
+                scheduledAt: episode.scheduledAt,
+                isScheduled: isScheduled,
+                status: episode.status || (isScheduled ? 'scheduled' : 'published'),
                 watched: history ? history.completed : false,
                 watchedPercentage: history && episode.duration 
                     ? Math.round((history.lastPosition / episode.duration) * 100) 

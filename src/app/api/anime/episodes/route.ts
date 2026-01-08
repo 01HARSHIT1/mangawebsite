@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
             qualityLevels,
             subtitles,
             audioTracks,
-            isPreview
+            isPreview,
+            scheduledAt, // ISO date string for scheduled release
+            releaseDate, // ISO date string for release date
+            airDate, // ISO date string for air date
         } = body;
 
         if (!seriesId || !title || !videoUrl) {
@@ -54,15 +57,23 @@ export async function POST(request: NextRequest) {
         const resolvedEpisodeNumber = episodeNumber ? parseInt(episodeNumber, 10) : existingCount + 1;
         const resolvedSeasonNumber = seasonNumber ? parseInt(seasonNumber, 10) : 1;
 
+        // Parse scheduled dates if provided
+        const scheduledDate = scheduledAt ? new Date(scheduledAt) : null;
+        const releaseDateObj = releaseDate ? new Date(releaseDate) : null;
+        const airDateObj = airDate ? new Date(airDate) : null;
+
+        // If scheduledAt is in the future, mark as scheduled
+        const isScheduled = scheduledDate && scheduledDate > now;
+
         const episodeDoc = {
             seriesId: seriesObjectId,
             title,
             description: description || series.description || '',
             episodeNumber: resolvedEpisodeNumber,
             seasonNumber: resolvedSeasonNumber,
-            videoUrl,
-            hlsManifestUrl: hlsManifestUrl || videoUrl,
-            dashManifestUrl: dashManifestUrl || null,
+            videoUrl: isScheduled ? null : videoUrl, // Hide video URL until scheduled time
+            hlsManifestUrl: isScheduled ? null : (hlsManifestUrl || videoUrl),
+            dashManifestUrl: isScheduled ? null : dashManifestUrl,
             thumbnail: thumbnail || series.coverImage,
             duration: duration ? Number(duration) : null,
             qualityLevels: qualityLevels || [],
@@ -70,6 +81,12 @@ export async function POST(request: NextRequest) {
             audioTracks: audioTracks || [],
             isPreview: !!isPreview,
             creatorId: user._id?.toString(),
+            // Scheduling fields
+            scheduledAt: scheduledDate,
+            releaseDate: releaseDateObj,
+            airDate: airDateObj,
+            isScheduled: isScheduled, // Flag to indicate scheduled episode
+            status: isScheduled ? 'scheduled' : 'published', // scheduled, published, draft
             // Validation metadata
             validation: body.validation || null,
             videoAnalysis: body.videoAnalysis || null,
