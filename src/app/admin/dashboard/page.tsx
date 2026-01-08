@@ -9,7 +9,7 @@ import {
     FaMoneyBillWave, FaComments, FaBell, FaSearch, FaShieldAlt, FaSignOutAlt,
     FaHome, FaEdit, FaTrash, FaCheck, FaTimes, FaBan, FaUserCheck, FaCrown,
     FaFileAlt, FaTags, FaImage, FaVideo, FaGlobe, FaDatabase, FaRobot,
-    FaSlidersH, FaBars, FaTimes as FaTimesIcon, FaVolumeUp, FaGavel
+    FaSlidersH, FaBars, FaTimes as FaTimesIcon, FaVolumeUp, FaGavel, FaStar
 } from 'react-icons/fa';
 
 export default function AdminDashboard() {

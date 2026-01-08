@@ -4,6 +4,9 @@ import { verifyToken } from '@/lib/auth';
 import { animeRecommendationEngine } from '@/lib/ai-anime-recommendations';
 import { ObjectId } from 'mongodb';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Get personalized recommendations using AI engine
 export async function GET(request: NextRequest) {
     try {
