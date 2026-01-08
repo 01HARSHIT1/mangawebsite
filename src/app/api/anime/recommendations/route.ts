@@ -17,6 +17,21 @@ export async function GET(request: NextRequest) {
         const client = await clientPromise;
         const db = client.db('mangawebsite');
 
+        // Get user preferences for language-based filtering
+        let userPreferences: any = null;
+        if (userId) {
+            const prefsDoc = await db.collection('anime_user_preferences').findOne({ userId });
+            if (prefsDoc) {
+                userPreferences = prefsDoc.preferences || {};
+            } else {
+                // Try getting from user document
+                const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+                if (user?.animePreferences) {
+                    userPreferences = user.animePreferences;
+                }
+            }
+        }
+
         let recommendations = [];
 
         if (userId) {
