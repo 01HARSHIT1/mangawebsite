@@ -57,7 +57,7 @@ export default function AnimeLibraryPage() {
                 return;
             }
 
-            const response = await fetch('/api/anime/my-list', {
+            const response = await fetch(`/api/anime/my-list?type=${activeTab}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -65,7 +65,25 @@ export default function AnimeLibraryPage() {
 
             if (response.ok) {
                 const data = await response.json();
-                setMyList(data.myList || []);
+                const listEntries = data.myList || [];
+                
+                // Fetch series details for each entry
+                const seriesPromises = listEntries.map(async (entry: MyListEntry) => {
+                    try {
+                        const seriesRes = await fetch(`/api/anime/${entry.seriesId}`);
+                        if (seriesRes.ok) {
+                            const seriesData = await seriesRes.json();
+                            return { ...entry, series: seriesData };
+                        }
+                        return entry;
+                    } catch (error) {
+                        console.error(`Error fetching series ${entry.seriesId}:`, error);
+                        return entry;
+                    }
+                });
+                
+                const entriesWithSeries = await Promise.all(seriesPromises);
+                setMyList(entriesWithSeries);
             }
         } catch (error) {
             console.error('Error fetching my list:', error);
@@ -171,16 +189,40 @@ export default function AnimeLibraryPage() {
                 ) : filteredList.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                         {filteredList.map((item) => (
-                            <EpisodeCard key={item._id} anime={item.series || {
-                                _id: item.seriesId,
-                                title: 'Loading...',
-                                coverImage: '',
-                                genres: [],
-                                rating: 0,
-                                year: 0,
-                                status: 'ongoing',
-                                episodeCount: 0,
-                            }} />
+                            <div key={item._id} className="relative group">
+                                <EpisodeCard anime={item.series || {
+                                    _id: item.seriesId,
+                                    title: 'Loading...',
+                                    coverImage: '',
+                                    genres: [],
+                                    rating: 0,
+                                    year: 0,
+                                    status: 'ongoing',
+                                    episodeCount: 0,
+                                }} />
+                                <button
+                                    onClick={async () => {
+                                        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                                        if (!token) return;
+                                        
+                                        try {
+                                            const response = await fetch(`/api/anime/my-list?seriesId=${item.seriesId}&listType=${item.listType}`, {
+                                                method: 'DELETE',
+                                                headers: { Authorization: `Bearer ${token}` },
+                                            });
+                                            if (response.ok) {
+                                                fetchMyList();
+                                            }
+                                        } catch (error) {
+                                            console.error('Error removing from list:', error);
+                                        }
+                                    }}
+                                    className="absolute top-2 right-2 p-2 bg-black/70 hover:bg-black/90 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                    title="Remove from list"
+                                >
+                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                </button>
+                            </div>
                         ))}
                     </div>
                 ) : (
