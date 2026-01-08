@@ -235,6 +235,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         outroEndTime: 0,
     });
     const [isSavingTimestamps, setIsSavingTimestamps] = useState(false);
+    const [isNotificationSubscribed, setIsNotificationSubscribed] = useState(false);
     
     // User preferences state
     const [userPreferences, setUserPreferences] = useState({
@@ -466,6 +467,44 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         
         loadUserPreferences();
     }, [isAuthenticated]);
+
+    // Fetch notification subscription status
+    useEffect(() => {
+        const fetchNotificationStatus = async () => {
+            if (!isAuthenticated || !seriesId) {
+                setIsNotificationSubscribed(false);
+                return;
+            }
+            
+            const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+            if (!token) {
+                setIsNotificationSubscribed(false);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/anime/notifications/subscribe', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    // Check if the current series is in the subscriptions list
+                    const subscriptions = data.subscriptions || [];
+                    const isSubscribed = subscriptions.some((sub: any) => 
+                        sub.seriesId === seriesId.toString() && sub.enabled === true
+                    );
+                    setIsNotificationSubscribed(isSubscribed);
+                } else {
+                    setIsNotificationSubscribed(false);
+                }
+            } catch (error) {
+                console.error('Error fetching notification subscription status:', error);
+                setIsNotificationSubscribed(false);
+            }
+        };
+        
+        fetchNotificationStatus();
+    }, [isAuthenticated, seriesId]);
 
     // Check authentication status and load preferences
     useEffect(() => {
