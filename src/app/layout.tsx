@@ -4,6 +4,7 @@ import "./globals.css";
 import ClientLayoutShell from "@/components/ClientLayoutShell";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppModeProvider } from "@/contexts/AppModeContext";
+import { ThemeProvider } from "@/components/AdvancedThemeSystem";
 
 export const metadata: Metadata = {
   title: {
@@ -418,11 +419,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-gray-950 dark:bg-gray-950 text-white dark:text-white min-h-screen font-sans">
-        <AuthProvider>
-          <AppModeProvider>
-            <ClientLayoutShell>{children}</ClientLayoutShell>
-          </AppModeProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppModeProvider>
+              <ClientLayoutShell>{children}</ClientLayoutShell>
+            </AppModeProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

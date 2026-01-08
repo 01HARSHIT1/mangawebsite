@@ -34,6 +34,24 @@ export async function GET(
         // Get view count (if available)
         const viewCount = series.viewCount || 0;
 
+        // Get creator info and verification status
+        let creatorInfo = null;
+        if (series.creatorId || series.uploaderId) {
+            const creatorUserId = series.creatorId || new ObjectId(series.uploaderId);
+            const creator = await db.collection('users').findOne({ _id: creatorUserId });
+            if (creator) {
+                creatorInfo = {
+                    name: series.creator || creator.username || 'Unknown',
+                    isVerified: creator.isVerified || false,
+                };
+            } else {
+                creatorInfo = {
+                    name: series.creator || 'Unknown',
+                    isVerified: false,
+                };
+            }
+        }
+
         return NextResponse.json({
             _id: series._id.toString(),
             title: series.title,
@@ -52,6 +70,10 @@ export async function GET(
             director: series.director,
             releaseDate: series.releaseDate,
             completedAt: series.completedAt,
+            ageRating: series.ageRating || null,
+            contentWarnings: series.contentWarnings || [],
+            creator: creatorInfo?.name || series.creator || null,
+            creatorInfo: creatorInfo,
             createdAt: series.createdAt,
             updatedAt: series.updatedAt,
         });

@@ -200,6 +200,8 @@ export default function AnimeUploadPage() {
                         coverImage: coverInfo.secure_url,
                         tags: form.tags ? form.tags.split(',').map((t: string) => t.trim()) : [],
                         year: new Date().getFullYear(),
+                        ageRating: form.ageRating || 'PG-13',
+                        contentWarnings: [], // Can be extended later
                     })
                 });
 

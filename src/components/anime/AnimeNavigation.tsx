@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen, MessageCircle, ChevronLeft } from 'lucide-react';
+import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen, MessageCircle, ChevronLeft, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
+import { useTheme } from '@/components/AdvancedThemeSystem';
 
 /**
  * Anime Navigation Component
@@ -23,6 +24,7 @@ export default function AnimeNavigation() {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const { isAuthenticated, isCreator, user, logout } = useAuth();
     const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
+    const { theme, setTheme } = useTheme();
 
     // Check if user has uploaded anime (only for creators)
     useEffect(() => {
@@ -392,6 +394,16 @@ export default function AnimeNavigation() {
                                                             <span className="text-sm">Dashboard</span>
                                                         </Link>
                                                     )}
+                                                    <button
+                                                        onClick={() => {
+                                                            setTheme(theme === 'dark' ? 'light' : 'dark');
+                                                            setIsProfileMenuOpen(false);
+                                                        }}
+                                                        className="w-full flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-orange-500/20 hover:text-orange-400 transition-colors"
+                                                    >
+                                                        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                                                        <span className="text-sm">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                                                    </button>
                                                     <Link
                                                         href="/settings"
                                                         onClick={() => setIsProfileMenuOpen(false)}

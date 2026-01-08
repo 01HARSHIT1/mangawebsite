@@ -162,6 +162,13 @@ interface AnimeSeries {
     releaseDate?: string;
     alternativeTitles?: string[];
     type?: string;
+    ageRating?: 'G' | 'PG' | 'PG-13' | 'R' | 'NC-17';
+    contentWarnings?: string[];
+    creator?: string;
+    creatorInfo?: {
+        name: string;
+        isVerified: boolean;
+    };
 }
 
 interface RelatedContent {
@@ -1205,7 +1212,23 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
                                     {/* Right: Anime Details */}
                             <div className="flex-1">
-                                        <h1 className="text-3xl font-bold mb-2">{series.title}</h1>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h1 className="text-3xl font-bold">{series.title}</h1>
+                                            {series.creatorInfo?.isVerified && (
+                                                <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded-full font-semibold flex items-center gap-1" title="Verified Creator">
+                                                    ✓ Verified
+                                                </span>
+                                            )}
+                                        </div>
+                                        {series.creator && (
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-gray-400 text-sm">Creator:</span>
+                                                <span className="text-orange-400 text-sm font-semibold">{series.creator}</span>
+                                                {series.creatorInfo?.isVerified && (
+                                                    <span className="text-blue-400" title="Verified">✓</span>
+                                                )}
+                                            </div>
+                                        )}
                                         {series.alternativeTitles && series.alternativeTitles.length > 0 && (
                                             <p className="text-gray-400 text-sm mb-4">
                                                 {series.alternativeTitles.join('; ')}
@@ -1222,6 +1245,30 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
                                         {/* Synopsis */}
                                         <p className="text-gray-300 mb-6 leading-relaxed">{series.description}</p>
+
+                                        {/* Age Rating Badge */}
+                                        {series.ageRating && (
+                                            <div className="mb-4 flex items-center gap-3">
+                                                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                                    series.ageRating === 'G' ? 'bg-green-900/50 text-green-300 border border-green-500/30' :
+                                                    series.ageRating === 'PG' ? 'bg-blue-900/50 text-blue-300 border border-blue-500/30' :
+                                                    series.ageRating === 'PG-13' ? 'bg-yellow-900/50 text-yellow-300 border border-yellow-500/30' :
+                                                    series.ageRating === 'R' ? 'bg-orange-900/50 text-orange-300 border border-orange-500/30' :
+                                                    'bg-red-900/50 text-red-300 border border-red-500/30'
+                                                }`}>
+                                                    {series.ageRating}
+                                                </span>
+                                                {series.contentWarnings && series.contentWarnings.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {series.contentWarnings.map((warning: string, idx: number) => (
+                                                            <span key={idx} className="px-2 py-1 bg-red-900/30 text-red-300 text-xs rounded border border-red-500/30">
+                                                                ⚠️ {warning}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Metadata */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         if (contentType.includes('application/json')) {
             // Handle anime series creation (like manga upload)
             const body = await request.json();
-            const { type, title, creatorName, description, genres, status, coverImage, tags, year } = body;
+            const { type, title, creatorName, description, genres, status, coverImage, tags, year, ageRating, contentWarnings } = body;
 
             if (type !== 'series') {
                 return NextResponse.json({ error: 'Invalid type. Expected "series"' }, { status: 400 });
@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
                 tags: tags ? (Array.isArray(tags) ? tags : tags.split(',').map((t: string) => t.trim())) : [],
                 status: status || 'ongoing',
                 coverImage,
+                ageRating: ageRating || 'PG-13', // Default to PG-13 if not specified
+                contentWarnings: contentWarnings ? (Array.isArray(contentWarnings) ? contentWarnings : contentWarnings.split(',').map((w: string) => w.trim())) : [],
                 views: 0,
                 likes: 0,
                 rating: 0,
