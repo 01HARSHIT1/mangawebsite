@@ -61,19 +61,59 @@ export async function GET(request: NextRequest) {
             }
         } else {
             // Non-personalized recommendations for anonymous users
+            // Still filter by default languages from platform config if available
+            const platformConfig = await db.collection('platform_config').findOne({});
+            const defaultAudio = platformConfig?.defaultAudioLanguage || 'Japanese';
+            const defaultSubtitle = platformConfig?.defaultSubtitleLanguage || 'English';
+
             const popularSeries = await db.collection('anime_series')
-                .find({ rating: { $gte: 8.0 } })
+                .find({ 
+                    rating: { $gte: 8.0 },
+                    isHidden: { $ne: true },
+                    isSuppressed: { $ne: true }
+                })
                 .sort({ rating: -1, year: -1 })
-                .limit(limit)
+                .limit(limit * 2) // Get more to filter
                 .toArray();
 
-            recommendations = popularSeries.map((series: any) => ({
-                seriesId: series._id.toString(),
-                score: series.rating || 0,
-                reason: 'Popular and highly rated',
-                confidence: 0.8,
-                category: 'trending'
-            }));
+            // Check language availability and prioritize matching languages
+            const seriesWithLanguages = await Promise.all(
+                popularSeries.map(async (series: any) => {
+                    const episodes = await db.collection('anime_episodes')
+                        .find({ seriesId: series._id })
+                        .limit(1)
+                        .toArray();
+                    
+                    let languageScore = 0;
+                    if (episodes.length > 0) {
+                        const ep = episodes[0];
+                        if (ep.audioTracks?.some((t: any) => 
+                            t.languageCode === defaultAudio.toLowerCase().substring(0, 2) ||
+                            t.language?.toLowerCase().includes(defaultAudio.toLowerCase())
+                        )) {
+                            languageScore += 0.2;
+                        }
+                        if (ep.subtitles?.some((s: any) => 
+                            s.languageCode === defaultSubtitle.toLowerCase().substring(0, 2) ||
+                            s.language?.toLowerCase().includes(defaultSubtitle.toLowerCase())
+                        )) {
+                            languageScore += 0.1;
+                        }
+                    }
+
+                    return {
+                        seriesId: series._id.toString(),
+                        score: (series.rating || 0) + languageScore,
+                        reason: 'Popular and highly rated',
+                        confidence: 0.8,
+                        category: 'trending'
+                    };
+                })
+            );
+
+            recommendations = seriesWithLanguages
+                .sort((a: any, b: any) => b.score - a.score)
+                .slice(0, limit);
         }
 
         // Fetch full series data
@@ -85,8 +125,17 @@ export async function GET(request: NextRequest) {
             }
         }).filter(Boolean) as ObjectId[];
 
+        // Build filter for language-based recommendations
+        const seriesFilter: any = { _id: { $in: seriesIds } };
+        
+        // Filter by preferred audio language if specified
+        if (userPreferences?.defaultAudioLanguage) {
+            // We'll filter episodes later, but for now just get all series
+            // The scoring will prioritize series with matching audio tracks
+        }
+
         const series = await db.collection('anime_series')
-            .find({ _id: { $in: seriesIds } })
+            .find(seriesFilter)
             .toArray();
 
         const seriesMap = new Map(series.map((s: any) => [s._id.toString(), s]));

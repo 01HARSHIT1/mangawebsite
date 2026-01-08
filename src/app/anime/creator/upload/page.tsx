@@ -52,6 +52,7 @@ export default function AnimeUploadPage() {
     const coverImageRef = useRef<HTMLInputElement | null>(null);
     const episodeVideoRef = useRef<HTMLInputElement | null>(null);
     const episodePosterRef = useRef<HTMLInputElement | null>(null);
+    const episodePreviewClipRef = useRef<HTMLInputElement | null>(null);
     const subtitleFilesRef = useRef<HTMLInputElement | null>(null);
     const router = useRouter();
 
@@ -222,6 +223,28 @@ export default function AnimeUploadPage() {
                 throw new Error('Failed to upload episode video');
             }
 
+            // Upload preview clip if provided
+            let previewClipInfo: any = null;
+            let previewClipThumbnail: string | null = null;
+            if (form.episodePreviewClip) {
+                try {
+                    previewClipInfo = await uploadToCloudinary(form.episodePreviewClip, 'anime/episodes/preview-clips', 'video');
+                    
+                    // Generate thumbnail from preview clip (Cloudinary can extract frames)
+                    // For now, we'll use a placeholder or extract from video
+                    // In production, you'd use Cloudinary's video transformation to get a frame
+                    if (previewClipInfo?.secure_url) {
+                        // Extract thumbnail from video (use middle frame or specific time)
+                        // For now, use a generated thumbnail URL from Cloudinary
+                        const videoPublicId = previewClipInfo.public_id;
+                        previewClipThumbnail = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'your-cloud-name'}/video/upload/w_640,h_360,c_fill,q_auto,f_auto/${videoPublicId}.jpg`;
+                    }
+                } catch (error) {
+                    console.error('Error uploading preview clip:', error);
+                    // Don't fail the whole upload if preview clip fails
+                }
+            }
+
             // Validate video and creator's audio/subtitle declaration
             let validationResult: any = null;
             try {
@@ -380,6 +403,10 @@ export default function AnimeUploadPage() {
                     duration: form.episodeDuration ? Number(form.episodeDuration) * 60 : undefined, // Convert minutes to seconds
                     audioTracks: audioTracks,
                     subtitles: subtitleTracks,
+                    // Preview clip data
+                    previewClipUrl: previewClipInfo?.secure_url || null,
+                    previewClipDuration: previewClipInfo?.duration ? Math.round(previewClipInfo.duration) : null,
+                    previewClipThumbnail: previewClipThumbnail || null,
                     // Include validation results if available
                     validation: validationResult?.validation || null,
                     videoAnalysis: validationResult?.analysis || null,
@@ -406,6 +433,7 @@ export default function AnimeUploadPage() {
                 episodeDescription: "",
                 episodeVideo: null,
                 episodePoster: null,
+                episodePreviewClip: null,
                 episodeDuration: "",
                 existingSeriesId: "",
                 audioType: "single",

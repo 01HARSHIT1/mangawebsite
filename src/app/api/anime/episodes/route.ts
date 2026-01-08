@@ -28,6 +28,9 @@ export async function POST(request: NextRequest) {
             scheduledAt, // ISO date string for scheduled release
             releaseDate, // ISO date string for release date
             airDate, // ISO date string for air date
+            previewClipUrl,
+            previewClipDuration,
+            previewClipThumbnail,
         } = body;
 
         if (!seriesId || !title || !videoUrl) {
@@ -80,6 +83,9 @@ export async function POST(request: NextRequest) {
             subtitles: subtitles || [],
             audioTracks: audioTracks || [],
             isPreview: !!isPreview,
+            previewClipUrl: previewClipUrl || null,
+            previewClipDuration: previewClipDuration ? parseInt(previewClipDuration) : null,
+            previewClipThumbnail: previewClipThumbnail || null,
             creatorId: user._id?.toString(),
             // Scheduling fields
             scheduledAt: scheduledDate,

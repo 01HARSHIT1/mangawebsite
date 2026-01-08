@@ -9,6 +9,7 @@ import { FaFacebook, FaTwitter, FaReddit, FaWhatsapp, FaTelegram } from 'react-i
 import { motion } from 'framer-motion';
 import EnhancedVideoPlayer from '@/components/anime/components/EnhancedVideoPlayer';
 import ReportModal from '@/components/anime/components/ReportModal';
+import PreviewClipPlayer from '@/components/anime/components/PreviewClipPlayer';
 
 // Spoiler Content Component
 function SpoilerContent({ text }: { text: string }) {
@@ -139,6 +140,9 @@ interface Episode {
     duration?: number;
     airDate?: string;
     watched?: boolean;
+    previewClipUrl?: string;
+    previewClipThumbnail?: string;
+    previewClipDuration?: number;
 }
 
 interface AnimeSeries {
@@ -1597,19 +1601,46 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                             <div className="grid grid-cols-6 gap-2 max-h-[calc(100vh-400px)] overflow-y-auto">
                                 {filteredEpisodes.length > 0 ? (
                                     filteredEpisodes.map((episode) => (
-                                        <button
-                                    key={episode._id}
-                                            onClick={() => {
-                                                setSelectedEpisode(episode.episodeNumber);
-                                            }}
-                                            className={`aspect-square rounded text-sm font-semibold transition-all ${
-                                                selectedEpisode === episode.episodeNumber
-                                                    ? 'bg-orange-500 text-white'
-                                                    : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-                                            }`}
-                                        >
-                                            {episode.episodeNumber}
-                                        </button>
+                                        <div key={episode._id} className="relative group">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedEpisode(episode.episodeNumber);
+                                                }}
+                                                className={`w-full aspect-square rounded text-sm font-semibold transition-all relative overflow-hidden ${
+                                                    selectedEpisode === episode.episodeNumber
+                                                        ? 'bg-orange-500 text-white'
+                                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                                                }`}
+                                            >
+                                                {episode.thumbnail && (
+                                                    <img
+                                                        src={episode.thumbnail}
+                                                        alt={`Episode ${episode.episodeNumber}`}
+                                                        className="absolute inset-0 w-full h-full object-cover opacity-50"
+                                                    />
+                                                )}
+                                                <span className="relative z-10">{episode.episodeNumber}</span>
+                                                {episode.previewClipUrl && (
+                                                    <div className="absolute top-1 right-1 w-3 h-3 bg-orange-500 rounded-full" title="Preview available" />
+                                                )}
+                                            </button>
+                                            {episode.previewClipUrl && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedPreviewClip({
+                                                            url: episode.previewClipUrl!,
+                                                            thumbnail: episode.previewClipThumbnail,
+                                                            duration: episode.previewClipDuration,
+                                                        });
+                                                    }}
+                                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/60 flex items-center justify-center transition-opacity rounded"
+                                                    title="Watch Preview"
+                                                >
+                                                    <Play className="w-6 h-6 text-white fill-white" />
+                                                </button>
+                                            )}
+                                        </div>
                                     ))
                                 ) : (
                                     <div className="col-span-6 text-center text-gray-500 text-sm py-4">
@@ -1905,6 +1936,20 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                         </div>
                     </div>
                 )}
+
+            {/* Preview Clip Modal */}
+            {selectedPreviewClip && (
+                <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+                    <div className="max-w-4xl w-full">
+                        <PreviewClipPlayer
+                            previewClipUrl={selectedPreviewClip.url}
+                            previewClipThumbnail={selectedPreviewClip.thumbnail}
+                            previewClipDuration={selectedPreviewClip.duration}
+                            onClose={() => setSelectedPreviewClip(null)}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Sign Up Modal */}
             {showSignUpModal && (
