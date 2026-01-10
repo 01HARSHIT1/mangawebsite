@@ -227,6 +227,7 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     const [subtitleType, setSubtitleType] = useState<'hard' | 'soft' | null>(null);
     const audioMenuRef = useRef<HTMLDivElement>(null);
     const subtitleMenuRef = useRef<HTMLDivElement>(null);
+    const episodesLoadedRef = useRef(false);
     const [showTimestampModal, setShowTimestampModal] = useState(false);
     const [timestampData, setTimestampData] = useState({
         introStartTime: 0,
@@ -288,25 +289,27 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                     a.episodeNumber - b.episodeNumber
                 );
                 setEpisodes(sortedEpisodes);
+                episodesLoadedRef.current = true;
                 // Ensure episode 1 is selected if available
                 if (sortedEpisodes.length > 0) {
                     const episode1 = sortedEpisodes.find(e => e.episodeNumber === 1);
-                    if (episode1 && selectedEpisode !== 1) {
-                        setSelectedEpisode(1);
+                    if (episode1) {
+                        setSelectedEpisode(prev => prev === 1 ? prev : 1);
                     }
                 }
-                // Update episode count range
+                // Update episode count range using functional update
                 if (sortedEpisodes.length > 0) {
                     const maxEpisode = Math.max(...sortedEpisodes.map((e: Episode) => e.episodeNumber));
-                    if (maxEpisode > episodeRange.end) {
-                        setEpisodeRange({ start: 1, end: Math.ceil(maxEpisode / 100) * 100 });
-                    }
+                    setEpisodeRange(prev => {
+                        const newEnd = Math.ceil(maxEpisode / 100) * 100;
+                        return newEnd > prev.end ? { start: 1, end: newEnd } : prev;
+                    });
                 }
             }
         } catch (error) {
             console.error('Error fetching episodes:', error);
         }
-    }, [seriesId, selectedEpisode, episodeRange.end]);
+    }, [seriesId]);
 
     const fetchEpisodeData = useCallback(async (episodeNumber: number) => {
         try {
@@ -413,19 +416,27 @@ export default function SeriesDetails({ seriesId }: SeriesDetailsProps) {
         const episodeParam = searchParams?.get('episode');
         if (episodeParam) {
             const episodeNum = parseInt(episodeParam, 10);
-            if (!isNaN(episodeNum) && episodeNum !== selectedEpisode) {
-                setSelectedEpisode(episodeNum);
-                // Auto-play if coming from a link (episode param in URL)
-                setIsVideoPlaying(true);
+            if (!isNaN(episodeNum)) {
+                setSelectedEpisode(prev => {
+                    if (prev !== episodeNum) {
+                        // Auto-play if coming from a link (episode param in URL)
+                        setIsVideoPlaying(true);
+                        return episodeNum;
+                    }
+                    return prev;
+                });
             }
         }
-    }, [searchParams, selectedEpisode]);
+    }, [searchParams]);
 
     useEffect(() => {
-        if (selectedEpisode && episodes.length > 0) {
-            fetchEpisodeData(selectedEpisode);
+        if (selectedEpisode && episodesLoadedRef.current && episodes.length > 0) {
+            const currentEpisode = episodes.find((e: Episode) => e.episodeNumber === selectedEpisode);
+            if (currentEpisode) {
+                fetchEpisodeData(selectedEpisode);
+            }
         }
-    }, [selectedEpisode, episodes, fetchEpisodeData]);
+    }, [selectedEpisode, episodes.length, fetchEpisodeData]);
 
     useEffect(() => {
         if (series) {
