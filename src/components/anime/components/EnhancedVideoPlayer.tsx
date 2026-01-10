@@ -122,27 +122,31 @@ export default function EnhancedVideoPlayer({
     const selectedQualityRef = useRef<QualityLevel | null>(null);
     const hasEndedRef = useRef(false);
     const isPlayingRef = useRef(false);
+    // Extract stable values from props - MUST be defined before any callbacks
+    // Use safe access with fallbacks to prevent initialization errors
+    const episodeId = useMemo(() => (episode?._id || episode?.id || '').toString(), [episode?._id, episode?.id]);
+    const seriesId = useMemo(() => (series?._id || series?.id || '').toString(), [series?._id, series?.id]);
+    const defaultAudioTrack = useMemo(() => userPreferences?.defaultAudioTrack || null, [userPreferences?.defaultAudioTrack]);
+    const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed || 1, [userPreferences?.defaultPlaybackSpeed]);
+    const episodeVideoUrl = useMemo(() => episode?.videoUrl || episode?.hlsManifestUrl || '', [episode?.videoUrl, episode?.hlsManifestUrl]);
+    
+    // Store episode tracks in ref - will be updated in useEffect below
+    const episodeTracksRef = useRef<{ subtitles: Subtitle[]; audioTracks: AudioTrack[] }>({
+        subtitles: [],
+        audioTracks: []
+    });
 
-    // Extract stable values from props to avoid dependency issues - MUST be defined before any callbacks
-    // Use refs for episode subtitles and audio tracks to avoid causing callback recreation
-    const episodeSubtitlesRef = useRef<Subtitle[]>(episode.subtitles || episode.availableTracks?.subtitles || []);
-    const episodeAudioTracksRef = useRef<AudioTrack[]>(episode.audioTracks || episode.availableTracks?.audio || []);
-    
-    const episodeId = useMemo(() => episode._id || episode.id, [episode._id, episode.id]);
-    const seriesId = useMemo(() => series._id || series.id, [series._id, series.id]);
-    const defaultAudioTrack = useMemo(() => userPreferences?.defaultAudioTrack, [userPreferences?.defaultAudioTrack]);
-    const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed, [userPreferences?.defaultPlaybackSpeed]);
-    const episodeVideoUrl = useMemo(() => episode.videoUrl || episode.hlsManifestUrl, [episode.videoUrl, episode.hlsManifestUrl]);
-    
-    // Update refs when episode ID changes (when switching episodes)
-    // We'll update the refs inside loadPlaybackData to ensure they're always current
+    // Update episode tracks ref when episodeId changes (episode switch)
+    // Access episode prop directly - props are always current when effect runs
+    // Only depend on episodeId to avoid unnecessary re-runs when episode object reference changes
     useEffect(() => {
-        if (episodeId) {
-            const subtitles = episode.subtitles || episode.availableTracks?.subtitles || [];
-            const audioTracks = episode.audioTracks || episode.availableTracks?.audio || [];
-            episodeSubtitlesRef.current = subtitles;
-            episodeAudioTracksRef.current = audioTracks;
-        }
+        if (!episodeId || !episode) return;
+        
+        episodeTracksRef.current = {
+            subtitles: episode.subtitles || episode.availableTracks?.subtitles || [],
+            audioTracks: episode.audioTracks || episode.availableTracks?.audio || []
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [episodeId]);
 
     // Keep refs in sync with state - Move these AFTER memoized values to ensure proper initialization order
@@ -162,18 +166,19 @@ export default function EnhancedVideoPlayer({
         isPlayingRef.current = isPlaying;
     }, [isPlaying]);
 
+
     // Load playback data and resume position
     const loadPlaybackData = useCallback(async () => {
+        if (!episodeId) {
+            console.error('Episode ID not found');
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            
-            // Get playback URL with entitlement
-            if (!episodeId) {
-                console.error('Episode ID not found');
-                setLoading(false);
-                return;
-            }
+            const tracks = episodeTracksRef.current;
             
             const playbackRes = await fetch(`/api/anime/episodes/${episodeId}/playback`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -185,30 +190,31 @@ export default function EnhancedVideoPlayer({
                 setSelectedQuality(data.qualityLevels?.[0] || null);
                 
                 // Use playback data tracks, fallback to episode props if not available
-                // Access episode directly (it's a prop, always current) as fallback
-                const availableSubtitles = data.subtitles || episode.subtitles || episode.availableTracks?.subtitles || [];
-                const availableAudioTracks = data.audioTracks || episode.audioTracks || episode.availableTracks?.audio || [];
+                const availableSubtitles = data.subtitles || tracks.subtitles;
+                const availableAudioTracks = data.audioTracks || tracks.audioTracks;
                 
                 // Set default subtitle
-                const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
-                if (defaultSubtitle) {
+                if (availableSubtitles.length > 0) {
+                    const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
                     setSelectedSubtitle(defaultSubtitle);
                 }
 
                 // Set default audio track (prefer user preference, then episode default, then first available)
-                let defaultAudio = null;
-                if (defaultAudioTrack) {
-                    defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === defaultAudioTrack);
-                }
-                if (!defaultAudio) {
-                    defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
-                }
-                if (defaultAudio) {
-                    setSelectedAudio(defaultAudio);
+                if (availableAudioTracks.length > 0) {
+                    let defaultAudio = null;
+                    if (defaultAudioTrack) {
+                        defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === defaultAudioTrack);
+                    }
+                    if (!defaultAudio) {
+                        defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
+                    }
+                    if (defaultAudio) {
+                        setSelectedAudio(defaultAudio);
+                    }
                 }
 
                 // Set default playback speed from user preferences
-                if (defaultPlaybackSpeed) {
+                if (defaultPlaybackSpeed && defaultPlaybackSpeed !== 1) {
                     const video = videoRef.current;
                     if (video) {
                         video.playbackRate = defaultPlaybackSpeed;
@@ -218,39 +224,46 @@ export default function EnhancedVideoPlayer({
             } else {
                 console.warn('Playback API failed, using direct video URL');
                 // Use episode props for tracks if playback API fails
-                const availableSubtitles = episode.subtitles || episode.availableTracks?.subtitles || [];
-                const availableAudioTracks = episode.audioTracks || episode.availableTracks?.audio || [];
+                const availableSubtitles = tracks.subtitles;
+                const availableAudioTracks = tracks.audioTracks;
                 
                 // Set default subtitle from episode props
-                const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
-                if (defaultSubtitle) {
+                if (availableSubtitles.length > 0) {
+                    const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
                     setSelectedSubtitle(defaultSubtitle);
                 }
 
                 // Set default audio track from episode props
-                const defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
-                if (defaultAudio) {
-                    setSelectedAudio(defaultAudio);
+                if (availableAudioTracks.length > 0) {
+                    const defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
+                    if (defaultAudio) {
+                        setSelectedAudio(defaultAudio);
+                    }
                 }
             }
 
             // Get resume position if authenticated
             if (isAuthenticated && token) {
-                const historyRes = await fetch('/api/anime/watch-history', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (historyRes.ok) {
-                    const historyData = await historyRes.json();
-                    const episodeHistory = historyData.watchHistory?.find((h: any) => 
-                        h.episodeId === episodeId
-                    );
-                    if (episodeHistory && !episodeHistory.completed) {
-                        setResumePosition(episodeHistory.lastPosition || 0);
+                try {
+                    const historyRes = await fetch('/api/anime/watch-history', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (historyRes.ok) {
+                        const historyData = await historyRes.json();
+                        const episodeHistory = historyData.watchHistory?.find((h: any) => 
+                            h.episodeId === episodeId
+                        );
+                        if (episodeHistory && !episodeHistory.completed) {
+                            setResumePosition(episodeHistory.lastPosition || 0);
+                        }
                     }
+                } catch (historyError) {
+                    console.error('Error fetching watch history:', historyError);
                 }
             }
         } catch (error) {
             console.error('Error loading playback data:', error);
+            setErrorMessage('Failed to load video');
         } finally {
             setLoading(false);
         }
