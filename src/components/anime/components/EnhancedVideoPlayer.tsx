@@ -123,7 +123,17 @@ export default function EnhancedVideoPlayer({
     const hasEndedRef = useRef(false);
     const isPlayingRef = useRef(false);
 
-    // Keep refs in sync with state
+    // Extract stable values from props to avoid dependency issues - MUST be defined before any callbacks
+    const episodeId = useMemo(() => episode._id || episode.id, [episode._id, episode.id]);
+    const seriesId = useMemo(() => series._id || series.id, [series._id, series.id]);
+    const defaultAudioTrack = useMemo(() => userPreferences?.defaultAudioTrack, [userPreferences?.defaultAudioTrack]);
+    const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed, [userPreferences?.defaultPlaybackSpeed]);
+    const episodeVideoUrl = useMemo(() => episode.videoUrl || episode.hlsManifestUrl, [episode.videoUrl, episode.hlsManifestUrl]);
+    // Extract episode properties for use in callbacks - avoid full object dependency
+    const episodeSubtitlesArray = useMemo(() => episode.subtitles || episode.availableTracks?.subtitles || [], [episode.subtitles, episode.availableTracks?.subtitles]);
+    const episodeAudioTracksArray = useMemo(() => episode.audioTracks || episode.availableTracks?.audio || [], [episode.audioTracks, episode.availableTracks?.audio]);
+
+    // Keep refs in sync with state - Move these AFTER memoized values to ensure proper initialization order
     useEffect(() => {
         currentTimeRef.current = currentTime;
     }, [currentTime]);
@@ -139,15 +149,6 @@ export default function EnhancedVideoPlayer({
     useEffect(() => {
         isPlayingRef.current = isPlaying;
     }, [isPlaying]);
-
-    // Extract stable values from props to avoid dependency issues
-    const episodeId = useMemo(() => episode._id || episode.id, [episode._id, episode.id]);
-    const seriesId = useMemo(() => series._id || series.id, [series._id, series.id]);
-    const defaultAudioTrack = useMemo(() => userPreferences?.defaultAudioTrack, [userPreferences?.defaultAudioTrack]);
-    const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed, [userPreferences?.defaultPlaybackSpeed]);
-    const episodeSubtitles = useMemo(() => episode.subtitles || episode.availableTracks?.subtitles || [], [episode.subtitles, episode.availableTracks?.subtitles]);
-    const episodeAudioTracks = useMemo(() => episode.audioTracks || episode.availableTracks?.audio || [], [episode.audioTracks, episode.availableTracks?.audio]);
-    const episodeVideoUrl = useMemo(() => episode.videoUrl || episode.hlsManifestUrl, [episode.videoUrl, episode.hlsManifestUrl]);
 
     // Load playback data and resume position
     const loadPlaybackData = useCallback(async () => {
@@ -172,8 +173,8 @@ export default function EnhancedVideoPlayer({
                 setSelectedQuality(data.qualityLevels?.[0] || null);
                 
                 // Use playback data tracks, fallback to episode props if not available
-                const availableSubtitles = data.subtitles || episodeSubtitles;
-                const availableAudioTracks = data.audioTracks || episodeAudioTracks;
+                const availableSubtitles = data.subtitles || episodeSubtitlesArray;
+                const availableAudioTracks = data.audioTracks || episodeAudioTracksArray;
                 
                 // Set default subtitle
                 const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -204,8 +205,8 @@ export default function EnhancedVideoPlayer({
             } else {
                 console.warn('Playback API failed, using direct video URL');
                 // Use episode props for tracks if playback API fails
-                const availableSubtitles = episodeSubtitles;
-                const availableAudioTracks = episodeAudioTracks;
+                const availableSubtitles = episodeSubtitlesArray;
+                const availableAudioTracks = episodeAudioTracksArray;
                 
                 // Set default subtitle from episode props
                 const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -240,7 +241,7 @@ export default function EnhancedVideoPlayer({
         } finally {
             setLoading(false);
         }
-    }, [episodeId, isAuthenticated, defaultAudioTrack, defaultPlaybackSpeed, episodeSubtitles, episodeAudioTracks]);
+    }, [episodeId, isAuthenticated, defaultAudioTrack, defaultPlaybackSpeed, episodeSubtitlesArray, episodeAudioTracksArray]);
 
     // Load playback data and resume position
     useEffect(() => {
