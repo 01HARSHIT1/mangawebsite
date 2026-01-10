@@ -125,8 +125,8 @@ export default function EnhancedVideoPlayer({
 
     // Extract stable values from props to avoid dependency issues - MUST be defined before any callbacks
     // Use refs for episode subtitles and audio tracks to avoid causing callback recreation
-    const episodeSubtitlesRef = useRef<Subtitle[]>([]);
-    const episodeAudioTracksRef = useRef<AudioTrack[]>([]);
+    const episodeSubtitlesRef = useRef<Subtitle[]>(episode.subtitles || episode.availableTracks?.subtitles || []);
+    const episodeAudioTracksRef = useRef<AudioTrack[]>(episode.audioTracks || episode.availableTracks?.audio || []);
     
     const episodeId = useMemo(() => episode._id || episode.id, [episode._id, episode.id]);
     const seriesId = useMemo(() => series._id || series.id, [series._id, series.id]);
