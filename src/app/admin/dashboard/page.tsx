@@ -227,7 +227,7 @@ export default function AdminDashboard() {
                                 <StatCard
                                     icon={<FaMoneyBillWave />}
                                     title="Revenue"
-                                    value={`₹${((stats?.totalRevenue || 0)).toLocaleString()}`}
+                                    value={`₹${(stats?.totalRevenue || 0).toLocaleString()}`}
                                     color="from-green-500 to-teal-500"
                                     href="/admin/monetization"
                                 />

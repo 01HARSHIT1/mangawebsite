@@ -134,9 +134,9 @@ export default function CopyrightPanelPage() {
     const filteredClaims = claims.filter(claim => {
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            const matchesTitle = claim.episode?.title.toLowerCase().includes(query) ||
-                                claim.series?.title.toLowerCase().includes(query);
-            const matchesClaimant = claim.claimantName.toLowerCase().includes(query);
+            const matchesTitle = (claim.episode?.title?.toLowerCase() || '').includes(query) ||
+                                (claim.series?.title?.toLowerCase() || '').includes(query);
+            const matchesClaimant = (claim.claimantName?.toLowerCase() || '').includes(query);
             if (!matchesTitle && !matchesClaimant) return false;
         }
         return true;
