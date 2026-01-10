@@ -134,11 +134,16 @@ export default function EnhancedVideoPlayer({
     const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed, [userPreferences?.defaultPlaybackSpeed]);
     const episodeVideoUrl = useMemo(() => episode.videoUrl || episode.hlsManifestUrl, [episode.videoUrl, episode.hlsManifestUrl]);
     
-    // Update refs when episode data changes
+    // Update refs when episode ID changes (when switching episodes)
+    // We'll update the refs inside loadPlaybackData to ensure they're always current
     useEffect(() => {
-        episodeSubtitlesRef.current = episode.subtitles || episode.availableTracks?.subtitles || [];
-        episodeAudioTracksRef.current = episode.audioTracks || episode.availableTracks?.audio || [];
-    }, [episode.subtitles, episode.availableTracks?.subtitles, episode.audioTracks, episode.availableTracks?.audio]);
+        if (episodeId) {
+            const subtitles = episode.subtitles || episode.availableTracks?.subtitles || [];
+            const audioTracks = episode.audioTracks || episode.availableTracks?.audio || [];
+            episodeSubtitlesRef.current = subtitles;
+            episodeAudioTracksRef.current = audioTracks;
+        }
+    }, [episodeId]);
 
     // Keep refs in sync with state - Move these AFTER memoized values to ensure proper initialization order
     useEffect(() => {
@@ -180,8 +185,9 @@ export default function EnhancedVideoPlayer({
                 setSelectedQuality(data.qualityLevels?.[0] || null);
                 
                 // Use playback data tracks, fallback to episode props if not available
-                const availableSubtitles = data.subtitles || episodeSubtitlesRef.current;
-                const availableAudioTracks = data.audioTracks || episodeAudioTracksRef.current;
+                // Access episode directly (it's a prop, always current) as fallback
+                const availableSubtitles = data.subtitles || episode.subtitles || episode.availableTracks?.subtitles || [];
+                const availableAudioTracks = data.audioTracks || episode.audioTracks || episode.availableTracks?.audio || [];
                 
                 // Set default subtitle
                 const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -212,8 +218,8 @@ export default function EnhancedVideoPlayer({
             } else {
                 console.warn('Playback API failed, using direct video URL');
                 // Use episode props for tracks if playback API fails
-                const availableSubtitles = episodeSubtitlesRef.current;
-                const availableAudioTracks = episodeAudioTracksRef.current;
+                const availableSubtitles = episode.subtitles || episode.availableTracks?.subtitles || [];
+                const availableAudioTracks = episode.audioTracks || episode.availableTracks?.audio || [];
                 
                 // Set default subtitle from episode props
                 const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
