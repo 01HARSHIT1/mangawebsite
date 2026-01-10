@@ -120,8 +120,12 @@ export default function EnhancedVideoPlayer({
 
     // Extract stable values from props to avoid dependency issues
     const episodeId = useMemo(() => episode._id || episode.id, [episode._id, episode.id]);
+    const seriesId = useMemo(() => series._id || series.id, [series._id, series.id]);
     const defaultAudioTrack = useMemo(() => userPreferences?.defaultAudioTrack, [userPreferences?.defaultAudioTrack]);
     const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed, [userPreferences?.defaultPlaybackSpeed]);
+    const episodeSubtitles = useMemo(() => episode.subtitles || episode.availableTracks?.subtitles || [], [episode.subtitles, episode.availableTracks?.subtitles]);
+    const episodeAudioTracks = useMemo(() => episode.audioTracks || episode.availableTracks?.audio || [], [episode.audioTracks, episode.availableTracks?.audio]);
+    const episodeVideoUrl = useMemo(() => episode.videoUrl || episode.hlsManifestUrl, [episode.videoUrl, episode.hlsManifestUrl]);
 
     // Load playback data and resume position
     const loadPlaybackData = useCallback(async () => {
@@ -146,8 +150,8 @@ export default function EnhancedVideoPlayer({
                 setSelectedQuality(data.qualityLevels?.[0] || null);
                 
                 // Use playback data tracks, fallback to episode props if not available
-                const availableSubtitles = data.subtitles || episode.subtitles || episode.availableTracks?.subtitles || [];
-                const availableAudioTracks = data.audioTracks || episode.audioTracks || episode.availableTracks?.audio || [];
+                const availableSubtitles = data.subtitles || episodeSubtitles;
+                const availableAudioTracks = data.audioTracks || episodeAudioTracks;
                 
                 // Set default subtitle
                 const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -178,8 +182,8 @@ export default function EnhancedVideoPlayer({
             } else {
                 console.warn('Playback API failed, using direct video URL');
                 // Use episode props for tracks if playback API fails
-                const availableSubtitles = episode.subtitles || episode.availableTracks?.subtitles || [];
-                const availableAudioTracks = episode.audioTracks || episode.availableTracks?.audio || [];
+                const availableSubtitles = episodeSubtitles;
+                const availableAudioTracks = episodeAudioTracks;
                 
                 // Set default subtitle from episode props
                 const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -202,7 +206,7 @@ export default function EnhancedVideoPlayer({
                 if (historyRes.ok) {
                     const historyData = await historyRes.json();
                     const episodeHistory = historyData.watchHistory?.find((h: any) => 
-                        h.episodeId === episodeId || h.episodeId === episode._id || h.episodeId === episode.id
+                        h.episodeId === episodeId
                     );
                     if (episodeHistory && !episodeHistory.completed) {
                         setResumePosition(episodeHistory.lastPosition || 0);
@@ -214,24 +218,26 @@ export default function EnhancedVideoPlayer({
         } finally {
             setLoading(false);
         }
-    }, [episodeId, isAuthenticated, defaultAudioTrack, defaultPlaybackSpeed, episode]);
+    }, [episodeId, isAuthenticated, defaultAudioTrack, defaultPlaybackSpeed, episodeSubtitles, episodeAudioTracks]);
 
     // Load playback data and resume position
     useEffect(() => {
-        loadPlaybackData();
-    }, [loadPlaybackData]);
+        if (episodeId) {
+            loadPlaybackData();
+        }
+    }, [loadPlaybackData, episodeId]);
 
     // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
         const video = videoRef.current;
-        if (!video || !episode) return;
+        if (!video || !episodeId) return;
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
         // Prioritize playbackData, but use episode data as immediate fallback
-        const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode.videoUrl || episode.hlsManifestUrl;
+        const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episodeVideoUrl;
         
         if (!videoSrc) {
-            console.warn('No video source available for episode:', episode);
+            console.warn('No video source available for episode:', episodeId);
             setErrorMessage('Video source not available');
             setLoading(false);
             return;
@@ -306,11 +312,11 @@ export default function EnhancedVideoPlayer({
                 console.error('Error loading subtitles:', error);
             }
         }
-    }, [playbackData, resumePosition, selectedSubtitle, episode?.videoUrl, episode?.hlsManifestUrl, episode]);
+    }, [playbackData, resumePosition, selectedSubtitle, episodeVideoUrl, episodeId]);
 
     // Track playback events
     const trackEvent = useCallback(async (eventType: string, position?: number) => {
-        if (!isAuthenticated || !episodeId) return;
+        if (!isAuthenticated || !episodeId || !seriesId) return;
         
         try {
             const token = localStorage.getItem('token');
@@ -322,7 +328,7 @@ export default function EnhancedVideoPlayer({
                 },
                 body: JSON.stringify({
                     episodeId: episodeId,
-                    seriesId: series._id,
+                    seriesId: seriesId,
                     eventType,
                     position: position || currentTime,
                     duration,
@@ -332,7 +338,34 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-    }, [isAuthenticated, episodeId, series._id, currentTime, duration, selectedQuality]);
+    }, [isAuthenticated, episodeId, seriesId, currentTime, duration, selectedQuality]);
+
+    // Update watch history
+    const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
+        if (!isAuthenticated || !episodeId || !seriesId) return;
+        
+        try {
+            const token = localStorage.getItem('token');
+            await fetch('/api/anime/watch-history', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    episodeId: episodeId,
+                    seriesId: seriesId,
+                    lastPosition: position,
+                    watchedDuration: position,
+                    completed,
+                    quality: selectedQuality?.quality || 'auto',
+                    device: 'web',
+                })
+            });
+        } catch (error) {
+            console.error('Error updating watch history:', error);
+        }
+    }, [isAuthenticated, episodeId, seriesId, selectedQuality]);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -452,33 +485,7 @@ export default function EnhancedVideoPlayer({
             video.removeEventListener('ended', handleEnded);
             video.removeEventListener('seeked', handleSeeked);
         };
-    }, [onNextEpisode, trackEvent, hasEnded, duration, isPlaying, hasNextEpisode, userPreferences]);
-
-    const updateWatchHistory = async (position: number, completed: boolean = false) => {
-        if (!isAuthenticated) return;
-        
-        try {
-            const token = localStorage.getItem('token');
-            await fetch('/api/anime/watch-history', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    episodeId: episode._id,
-                    seriesId: series._id,
-                    lastPosition: position,
-                    watchedDuration: position,
-                    completed,
-                    quality: selectedQuality?.quality || 'auto',
-                    device: 'web',
-                })
-            });
-        } catch (error) {
-            console.error('Error updating watch history:', error);
-        }
-    };
+    }, [onNextEpisode, trackEvent, updateWatchHistory, hasEnded, duration, isPlaying, hasNextEpisode, userPreferences]);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
