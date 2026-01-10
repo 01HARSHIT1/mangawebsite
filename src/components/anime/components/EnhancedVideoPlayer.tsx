@@ -124,16 +124,35 @@ export default function EnhancedVideoPlayer({
     const isPlayingRef = useRef(false);
     // Extract stable values from props - MUST be defined before any callbacks
     // Use safe access with fallbacks to prevent initialization errors
-    const episodeId = useMemo(() => (episode?._id || episode?.id || '').toString(), [episode?._id, episode?.id]);
-    const seriesId = useMemo(() => (series?._id || series?.id || '').toString(), [series?._id, series?.id]);
-    const defaultAudioTrack = useMemo(() => userPreferences?.defaultAudioTrack || null, [userPreferences?.defaultAudioTrack]);
-    const defaultPlaybackSpeed = useMemo(() => userPreferences?.defaultPlaybackSpeed || 1, [userPreferences?.defaultPlaybackSpeed]);
-    const episodeVideoUrl = useMemo(() => episode?.videoUrl || episode?.hlsManifestUrl || '', [episode?.videoUrl, episode?.hlsManifestUrl]);
+    const episodeId = useMemo(() => {
+        if (!episode) return '';
+        return (episode._id || episode.id || '').toString();
+    }, [episode?._id, episode?.id]);
+    
+    const seriesId = useMemo(() => {
+        if (!series) return '';
+        return (series._id || series.id || '').toString();
+    }, [series?._id, series?.id]);
+    
+    const episodeVideoUrl = useMemo(() => {
+        if (!episode) return '';
+        return episode.videoUrl || episode.hlsManifestUrl || '';
+    }, [episode?.videoUrl, episode?.hlsManifestUrl]);
+    
+    // Store user preferences in refs to avoid callback recreation
+    const defaultAudioTrackRef = useRef<string | null>(userPreferences?.defaultAudioTrack || null);
+    const defaultPlaybackSpeedRef = useRef<number>(userPreferences?.defaultPlaybackSpeed || 1);
+    
+    // Update refs when userPreferences change
+    useEffect(() => {
+        defaultAudioTrackRef.current = userPreferences?.defaultAudioTrack || null;
+        defaultPlaybackSpeedRef.current = userPreferences?.defaultPlaybackSpeed || 1;
+    }, [userPreferences?.defaultAudioTrack, userPreferences?.defaultPlaybackSpeed]);
     
     // Store episode tracks in ref - will be updated in useEffect below
     const episodeTracksRef = useRef<{ subtitles: Subtitle[]; audioTracks: AudioTrack[] }>({
-        subtitles: [],
-        audioTracks: []
+        subtitles: episode?.subtitles || episode?.availableTracks?.subtitles || [],
+        audioTracks: episode?.audioTracks || episode?.availableTracks?.audio || []
     });
 
     // Update episode tracks ref when episodeId changes (episode switch)
@@ -202,8 +221,9 @@ export default function EnhancedVideoPlayer({
                 // Set default audio track (prefer user preference, then episode default, then first available)
                 if (availableAudioTracks.length > 0) {
                     let defaultAudio = null;
-                    if (defaultAudioTrack) {
-                        defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === defaultAudioTrack);
+                    const audioTrackPref = defaultAudioTrackRef.current;
+                    if (audioTrackPref) {
+                        defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === audioTrackPref);
                     }
                     if (!defaultAudio) {
                         defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
@@ -214,11 +234,12 @@ export default function EnhancedVideoPlayer({
                 }
 
                 // Set default playback speed from user preferences
-                if (defaultPlaybackSpeed && defaultPlaybackSpeed !== 1) {
+                const playbackSpeedPref = defaultPlaybackSpeedRef.current;
+                if (playbackSpeedPref && playbackSpeedPref !== 1) {
                     const video = videoRef.current;
                     if (video) {
-                        video.playbackRate = defaultPlaybackSpeed;
-                        setPlaybackRate(defaultPlaybackSpeed);
+                        video.playbackRate = playbackSpeedPref;
+                        setPlaybackRate(playbackSpeedPref);
                     }
                 }
             } else {
@@ -267,7 +288,7 @@ export default function EnhancedVideoPlayer({
         } finally {
             setLoading(false);
         }
-    }, [episodeId, isAuthenticated, defaultAudioTrack, defaultPlaybackSpeed]);
+    }, [episodeId, isAuthenticated]);
 
     // Load playback data and resume position
     useEffect(() => {
