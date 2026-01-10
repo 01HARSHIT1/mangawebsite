@@ -117,6 +117,28 @@ export default function EnhancedVideoPlayer({
     const [hasEnded, setHasEnded] = useState(false);
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const trackRef = useRef<HTMLTrackElement>(null);
+    const currentTimeRef = useRef(0);
+    const durationRef = useRef(0);
+    const selectedQualityRef = useRef<QualityLevel | null>(null);
+    const hasEndedRef = useRef(false);
+    const isPlayingRef = useRef(false);
+
+    // Keep refs in sync with state
+    useEffect(() => {
+        currentTimeRef.current = currentTime;
+    }, [currentTime]);
+    useEffect(() => {
+        durationRef.current = duration;
+    }, [duration]);
+    useEffect(() => {
+        selectedQualityRef.current = selectedQuality;
+    }, [selectedQuality]);
+    useEffect(() => {
+        hasEndedRef.current = hasEnded;
+    }, [hasEnded]);
+    useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
 
     // Extract stable values from props to avoid dependency issues
     const episodeId = useMemo(() => episode._id || episode.id, [episode._id, episode.id]);
@@ -330,15 +352,15 @@ export default function EnhancedVideoPlayer({
                     episodeId: episodeId,
                     seriesId: seriesId,
                     eventType,
-                    position: position || currentTime,
-                    duration,
-                    quality: selectedQuality?.quality || 'auto',
+                    position: position ?? currentTimeRef.current,
+                    duration: durationRef.current,
+                    quality: selectedQualityRef.current?.quality || 'auto',
                 })
             });
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-    }, [isAuthenticated, episodeId, seriesId, currentTime, duration, selectedQuality]);
+    }, [isAuthenticated, episodeId, seriesId]);
 
     // Update watch history
     const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
@@ -358,14 +380,14 @@ export default function EnhancedVideoPlayer({
                     lastPosition: position,
                     watchedDuration: position,
                     completed,
-                    quality: selectedQuality?.quality || 'auto',
+                    quality: selectedQualityRef.current?.quality || 'auto',
                     device: 'web',
                 })
             });
         } catch (error) {
             console.error('Error updating watch history:', error);
         }
-    }, [isAuthenticated, episodeId, seriesId, selectedQuality]);
+    }, [isAuthenticated, episodeId, seriesId]);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -379,7 +401,8 @@ export default function EnhancedVideoPlayer({
             setCurrentTime(time);
             
             // Update duration if available and different
-            if (videoDuration && !isNaN(videoDuration) && videoDuration !== duration) {
+            if (videoDuration && !isNaN(videoDuration) && videoDuration !== durationRef.current) {
+                durationRef.current = videoDuration;
                 setDuration(videoDuration);
             }
             
@@ -405,17 +428,19 @@ export default function EnhancedVideoPlayer({
             
             // Check if video has ended (within 0.5 seconds of end)
             if (videoDuration && time >= videoDuration - 0.5) {
-                if (!hasEnded) {
+                if (!hasEndedRef.current) {
+                    hasEndedRef.current = true;
                     setHasEnded(true);
                     setIsPlaying(false);
                 }
-            } else if (hasEnded && time < videoDuration - 1) {
+            } else if (hasEndedRef.current && time < videoDuration - 1) {
                 // Reset ended state if video is rewound
+                hasEndedRef.current = false;
                 setHasEnded(false);
             }
             
             // Track heartbeat every 10 seconds
-            if (Math.floor(time) % 10 === 0 && isPlaying && !hasEnded) {
+            if (Math.floor(time) % 10 === 0 && isPlayingRef.current && !hasEndedRef.current) {
                 trackEvent('heartbeat', time);
             }
         };
@@ -428,11 +453,13 @@ export default function EnhancedVideoPlayer({
         };
 
         const handlePlay = () => {
+            isPlayingRef.current = true;
             setIsPlaying(true);
             trackEvent('play', video.currentTime);
         };
 
         const handlePause = () => {
+            isPlayingRef.current = false;
             setIsPlaying(false);
             trackEvent('pause', video.currentTime);
             // Update watch history
@@ -440,6 +467,8 @@ export default function EnhancedVideoPlayer({
         };
 
         const handleEnded = () => {
+            isPlayingRef.current = false;
+            hasEndedRef.current = true;
             setIsPlaying(false);
             setHasEnded(true);
             setCurrentTime(video.duration || 0);
@@ -485,7 +514,7 @@ export default function EnhancedVideoPlayer({
             video.removeEventListener('ended', handleEnded);
             video.removeEventListener('seeked', handleSeeked);
         };
-    }, [onNextEpisode, trackEvent, updateWatchHistory, hasEnded, duration, isPlaying, hasNextEpisode, userPreferences]);
+    }, [onNextEpisode, trackEvent, updateWatchHistory, hasNextEpisode, userPreferences]);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
