@@ -360,15 +360,30 @@ export default function EnhancedVideoPlayer({
         }
     }, [playbackData, resumePosition, selectedSubtitle, episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
 
-    // Track playback events - use useCallback with primitive dependencies
-    const trackEvent = useCallback(async (eventType: string, position?: number) => {
+    // Track playback events - regular function with direct prop access
+    const trackEvent = async (eventType: string, position?: number) => {
         try {
-            if (!isAuthenticated || !episodeId || !seriesId) {
-                console.log('trackEvent: Skipping - not authenticated or missing IDs', { isAuthenticated, episodeId, seriesId });
+            console.log('[EnhancedVideoPlayer] trackEvent: Called', { eventType, position });
+            const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+            const currentSeriesId = (series?._id || series?.id || '').toString();
+            
+            console.log('[EnhancedVideoPlayer] trackEvent: IDs extracted', { 
+                currentEpisodeId, 
+                currentSeriesId, 
+                isAuthenticated 
+            });
+            
+            if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) {
+                console.log('[EnhancedVideoPlayer] trackEvent: Skipping - not authenticated or missing IDs', { 
+                    isAuthenticated, 
+                    currentEpisodeId, 
+                    currentSeriesId 
+                });
                 return;
             }
             
             const token = localStorage.getItem('token');
+            console.log('[EnhancedVideoPlayer] trackEvent: Sending request', { eventType });
             await fetch('/api/anime/player/event', {
                 method: 'POST',
                 headers: {
@@ -376,28 +391,44 @@ export default function EnhancedVideoPlayer({
                     ...(token ? { Authorization: `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify({
-                    episodeId,
-                    seriesId,
+                    episodeId: currentEpisodeId,
+                    seriesId: currentSeriesId,
                     eventType,
                     position: position ?? currentTimeRef.current,
                     duration: durationRef.current,
                     quality: selectedQualityRef.current?.quality || 'auto',
                 })
             });
+            console.log('[EnhancedVideoPlayer] trackEvent: Request sent successfully');
         } catch (error) {
-            console.error('Error tracking event:', error);
+            console.error('[EnhancedVideoPlayer] trackEvent: Error', error);
         }
-    }, [isAuthenticated, episodeId, seriesId]);
+    };
 
-    // Update watch history - use useCallback with primitive dependencies
-    const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
+    // Update watch history - regular function with direct prop access
+    const updateWatchHistory = async (position: number, completed: boolean = false) => {
         try {
-            if (!isAuthenticated || !episodeId || !seriesId) {
-                console.log('updateWatchHistory: Skipping - not authenticated or missing IDs', { isAuthenticated, episodeId, seriesId });
+            console.log('[EnhancedVideoPlayer] updateWatchHistory: Called', { position, completed });
+            const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+            const currentSeriesId = (series?._id || series?.id || '').toString();
+            
+            console.log('[EnhancedVideoPlayer] updateWatchHistory: IDs extracted', { 
+                currentEpisodeId, 
+                currentSeriesId, 
+                isAuthenticated 
+            });
+            
+            if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) {
+                console.log('[EnhancedVideoPlayer] updateWatchHistory: Skipping - not authenticated or missing IDs', { 
+                    isAuthenticated, 
+                    currentEpisodeId, 
+                    currentSeriesId 
+                });
                 return;
             }
             
             const token = localStorage.getItem('token');
+            console.log('[EnhancedVideoPlayer] updateWatchHistory: Sending request');
             await fetch('/api/anime/watch-history', {
                 method: 'POST',
                 headers: {
@@ -405,8 +436,8 @@ export default function EnhancedVideoPlayer({
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    episodeId,
-                    seriesId,
+                    episodeId: currentEpisodeId,
+                    seriesId: currentSeriesId,
                     lastPosition: position,
                     watchedDuration: position,
                     completed,
@@ -414,10 +445,11 @@ export default function EnhancedVideoPlayer({
                     device: 'web',
                 })
             });
+            console.log('[EnhancedVideoPlayer] updateWatchHistory: Request sent successfully');
         } catch (error) {
-            console.error('Error updating watch history:', error);
+            console.error('[EnhancedVideoPlayer] updateWatchHistory: Error', error);
         }
-    }, [isAuthenticated, episodeId, seriesId]);
+    };
 
     useEffect(() => {
         const video = videoRef.current;
