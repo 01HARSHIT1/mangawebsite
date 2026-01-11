@@ -160,9 +160,7 @@ export default function EnhancedVideoPlayer({
         isPlayingRef.current = isPlaying;
     }, [isPlaying]);
 
-    // Extract episode and series IDs using useMemo to avoid initialization issues
-    const episodeId = useMemo(() => (episode?._id || episode?.id || '').toString(), [episode?._id, episode?.id]);
-    const seriesId = useMemo(() => (series?._id || series?.id || '').toString(), [series?._id, series?.id]);
+    // DO NOT use useMemo - causes initialization errors during bundling
 
     // Load playback data and resume position - trigger when episodeId changes
     useEffect(() => {
@@ -274,9 +272,23 @@ export default function EnhancedVideoPlayer({
 
     // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
+        console.log('[EnhancedVideoPlayer] useEffect: setVideoSource - episode/playbackData changed', {
+            hasEpisode: !!episode,
+            hasPlaybackData: !!playbackData,
+            episodeId: episode?._id || episode?.id
+        });
+        
         const video = videoRef.current;
+        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
         const currentVideoUrl = episode?.videoUrl || episode?.hlsManifestUrl || '';
-        if (!video || !episodeId) return;
+        
+        if (!video || !currentEpisodeId) {
+            console.log('[EnhancedVideoPlayer] setVideoSource: Skipping - no video or episodeId', { 
+                video: !!video, 
+                currentEpisodeId 
+            });
+            return;
+        }
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
         // Prioritize playbackData, but use episode data as immediate fallback
@@ -366,22 +378,22 @@ export default function EnhancedVideoPlayer({
             console.log('[EnhancedVideoPlayer] trackEvent: Called', { eventType, position });
             const currentEpisodeId = (episode?._id || episode?.id || '').toString();
             const currentSeriesId = (series?._id || series?.id || '').toString();
-            
-            console.log('[EnhancedVideoPlayer] trackEvent: IDs extracted', { 
-                currentEpisodeId, 
-                currentSeriesId, 
-                isAuthenticated 
+
+            console.log('[EnhancedVideoPlayer] trackEvent: IDs extracted', {
+                currentEpisodeId,
+                currentSeriesId,
+                isAuthenticated
             });
-            
+
             if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) {
-                console.log('[EnhancedVideoPlayer] trackEvent: Skipping - not authenticated or missing IDs', { 
-                    isAuthenticated, 
-                    currentEpisodeId, 
-                    currentSeriesId 
+                console.log('[EnhancedVideoPlayer] trackEvent: Skipping - not authenticated or missing IDs', {
+                    isAuthenticated,
+                    currentEpisodeId,
+                    currentSeriesId
                 });
                 return;
             }
-            
+
             const token = localStorage.getItem('token');
             console.log('[EnhancedVideoPlayer] trackEvent: Sending request', { eventType });
             await fetch('/api/anime/player/event', {
@@ -411,22 +423,22 @@ export default function EnhancedVideoPlayer({
             console.log('[EnhancedVideoPlayer] updateWatchHistory: Called', { position, completed });
             const currentEpisodeId = (episode?._id || episode?.id || '').toString();
             const currentSeriesId = (series?._id || series?.id || '').toString();
-            
-            console.log('[EnhancedVideoPlayer] updateWatchHistory: IDs extracted', { 
-                currentEpisodeId, 
-                currentSeriesId, 
-                isAuthenticated 
+
+            console.log('[EnhancedVideoPlayer] updateWatchHistory: IDs extracted', {
+                currentEpisodeId,
+                currentSeriesId,
+                isAuthenticated
             });
-            
+
             if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) {
-                console.log('[EnhancedVideoPlayer] updateWatchHistory: Skipping - not authenticated or missing IDs', { 
-                    isAuthenticated, 
-                    currentEpisodeId, 
-                    currentSeriesId 
+                console.log('[EnhancedVideoPlayer] updateWatchHistory: Skipping - not authenticated or missing IDs', {
+                    isAuthenticated,
+                    currentEpisodeId,
+                    currentSeriesId
                 });
                 return;
             }
-            
+
             const token = localStorage.getItem('token');
             console.log('[EnhancedVideoPlayer] updateWatchHistory: Sending request');
             await fetch('/api/anime/watch-history', {
