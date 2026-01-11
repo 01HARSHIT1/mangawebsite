@@ -129,7 +129,28 @@ export default function EnhancedVideoPlayer({
     const seriesIdRef = useRef<string>('');
     const episodeVideoUrlRef = useRef<string>('');
     
-    // Compute stable values from props for render/dependencies - use useMemo
+    // Update refs directly from props - NO circular dependencies
+    // This runs immediately and updates refs whenever props change
+    useEffect(() => {
+        if (episode) {
+            episodeIdRef.current = (episode._id || episode.id || '').toString();
+            episodeVideoUrlRef.current = episode.videoUrl || episode.hlsManifestUrl || '';
+        } else {
+            episodeIdRef.current = '';
+            episodeVideoUrlRef.current = '';
+        }
+    }, [episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
+    
+    useEffect(() => {
+        if (series) {
+            seriesIdRef.current = (series._id || series.id || '').toString();
+        } else {
+            seriesIdRef.current = '';
+        }
+    }, [series?._id, series?.id]);
+    
+    // Compute stable values from props for render/dependencies - ONLY for use in other hooks/JSX
+    // These are NOT used in callbacks - callbacks use refs instead
     const episodeId = useMemo(() => {
         if (!episode) return '';
         return (episode._id || episode.id || '').toString();
@@ -144,17 +165,6 @@ export default function EnhancedVideoPlayer({
         if (!episode) return '';
         return episode.videoUrl || episode.hlsManifestUrl || '';
     }, [episode?.videoUrl, episode?.hlsManifestUrl]);
-    
-    // Update refs when props change - this ensures callbacks have access to current values
-    // Do this AFTER computing memoized values to avoid initialization order issues
-    useEffect(() => {
-        episodeIdRef.current = episodeId;
-        episodeVideoUrlRef.current = episodeVideoUrl;
-    }, [episodeId, episodeVideoUrl]);
-    
-    useEffect(() => {
-        seriesIdRef.current = seriesId;
-    }, [seriesId]);
     
     // Store user preferences in refs to avoid callback recreation
     const defaultAudioTrackRef = useRef<string | null>(userPreferences?.defaultAudioTrack || null);
@@ -461,7 +471,7 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error updating watch history:', error);
         }
-    }, [isAuthenticated, episodeId, seriesId]);
+    }, [isAuthenticated]);
 
     useEffect(() => {
         const video = videoRef.current;
