@@ -122,7 +122,7 @@ export default function EnhancedVideoPlayer({
     const selectedQualityRef = useRef<QualityLevel | null>(null);
     const hasEndedRef = useRef(false);
     const isPlayingRef = useRef(false);
-    
+
     // Store episode tracks in ref - will be updated in useEffect below
     const episodeTracksRef = useRef<{ subtitles: Subtitle[]; audioTracks: AudioTrack[] }>({
         subtitles: episode?.subtitles || episode?.availableTracks?.subtitles || [],
@@ -132,7 +132,7 @@ export default function EnhancedVideoPlayer({
     // Update episode tracks ref when episode changes
     useEffect(() => {
         if (!episode) return;
-        
+
         episodeTracksRef.current = {
             subtitles: episode.subtitles || episode.availableTracks?.subtitles || [],
             audioTracks: episode.audioTracks || episode.availableTracks?.audio || []
@@ -171,7 +171,7 @@ export default function EnhancedVideoPlayer({
             setLoading(true);
             const token = localStorage.getItem('token');
             const tracks = episodeTracksRef.current;
-            
+
             const playbackRes = await fetch(`/api/anime/episodes/${currentEpisodeId}/playback`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
@@ -180,11 +180,11 @@ export default function EnhancedVideoPlayer({
                 const data = await playbackRes.json();
                 setPlaybackData(data);
                 setSelectedQuality(data.qualityLevels?.[0] || null);
-                
+
                 // Use playback data tracks, fallback to episode props if not available
                 const availableSubtitles = data.subtitles || tracks.subtitles;
                 const availableAudioTracks = data.audioTracks || tracks.audioTracks;
-                
+
                 // Set default subtitle
                 if (availableSubtitles.length > 0) {
                     const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -220,7 +220,7 @@ export default function EnhancedVideoPlayer({
                 // Use episode props for tracks if playback API fails
                 const availableSubtitles = tracks.subtitles;
                 const availableAudioTracks = tracks.audioTracks;
-                
+
                 // Set default subtitle from episode props
                 if (availableSubtitles.length > 0) {
                     const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -245,7 +245,7 @@ export default function EnhancedVideoPlayer({
                     if (historyRes.ok) {
                         const historyData = await historyRes.json();
                         const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-                        const episodeHistory = historyData.watchHistory?.find((h: any) => 
+                        const episodeHistory = historyData.watchHistory?.find((h: any) =>
                             h.episodeId === currentEpisodeId
                         );
                         if (episodeHistory && !episodeHistory.completed) {
@@ -262,7 +262,8 @@ export default function EnhancedVideoPlayer({
         } finally {
             setLoading(false);
         }
-    }, [isAuthenticated, episode]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]); // Access episode directly in callback - props are always current
 
     // Load playback data and resume position - trigger when episodeId changes
     useEffect(() => {
@@ -282,7 +283,7 @@ export default function EnhancedVideoPlayer({
         // Use HLS manifest if available, otherwise fallback to videoUrl
         // Prioritize playbackData, but use episode data as immediate fallback
         const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || currentVideoUrl;
-        
+
         if (!videoSrc) {
             console.warn('No video source available for episode:', currentEpisodeId);
             setErrorMessage('Video source not available');
@@ -296,7 +297,7 @@ export default function EnhancedVideoPlayer({
                 console.log('Setting video source:', videoSrc);
                 video.src = videoSrc;
                 video.load(); // Reload video with new source
-                
+
                 // Wait for metadata to load
                 const handleLoadedMetadata = () => {
                     console.log('Video metadata loaded, duration:', video.duration);
@@ -304,18 +305,18 @@ export default function EnhancedVideoPlayer({
                         setDuration(video.duration);
                     }
                     setLoading(false);
-                    
+
                     // Resume from last position after metadata loads
                     if (resumePosition > 0) {
                         video.currentTime = resumePosition;
                     }
                 };
-                
+
                 const handleCanPlay = () => {
                     console.log('Video can play');
                     setLoading(false);
                 };
-                
+
                 // Handle errors
                 const handleError = (e: any) => {
                     console.error('Video error:', e, video.error);
@@ -331,11 +332,11 @@ export default function EnhancedVideoPlayer({
                     setErrorMessage(errorMsg);
                     setLoading(false);
                 };
-                
+
                 video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
                 video.addEventListener('canplay', handleCanPlay, { once: true });
                 video.addEventListener('error', handleError, { once: true });
-                
+
                 return () => {
                     video.removeEventListener('loadedmetadata', handleLoadedMetadata);
                     video.removeEventListener('canplay', handleCanPlay);
@@ -367,7 +368,7 @@ export default function EnhancedVideoPlayer({
         const currentEpisodeId = (episode?._id || episode?.id || '').toString();
         const currentSeriesId = (series?._id || series?.id || '').toString();
         if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
-        
+
         try {
             const token = localStorage.getItem('token');
             await fetch('/api/anime/player/event', {
@@ -388,7 +389,8 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-    }, [isAuthenticated, episode, series]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]); // Access episode and series directly in callback - props are always current
 
     // Update watch history
     const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
@@ -396,7 +398,7 @@ export default function EnhancedVideoPlayer({
         const currentEpisodeId = (episode?._id || episode?.id || '').toString();
         const currentSeriesId = (series?._id || series?.id || '').toString();
         if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
-        
+
         try {
             const token = localStorage.getItem('token');
             await fetch('/api/anime/watch-history', {
@@ -418,7 +420,8 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error updating watch history:', error);
         }
-    }, [isAuthenticated, episode, series]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]); // Access episode and series directly in callback - props are always current
 
     useEffect(() => {
         const video = videoRef.current;
@@ -427,36 +430,36 @@ export default function EnhancedVideoPlayer({
         const updateTime = () => {
             const time = video.currentTime;
             const videoDuration = video.duration;
-            
+
             // Update current time
             setCurrentTime(time);
-            
+
             // Update duration if available and different
             if (videoDuration && !isNaN(videoDuration) && videoDuration !== durationRef.current) {
                 durationRef.current = videoDuration;
                 setDuration(videoDuration);
             }
-            
+
             // Auto-skip intro/outro if enabled
             if (userPreferences.autoSkip && videoDuration) {
                 const introStart = userPreferences.introStartTime || 0;
                 const introEnd = userPreferences.introEndTime || 0;
                 const outroStart = userPreferences.outroStartTime || 0;
                 const outroEnd = userPreferences.outroEndTime || 0;
-                
+
                 // Skip intro (only if we're in the intro range and not already past it)
                 if (introStart > 0 && introEnd > introStart && time >= introStart && time < introEnd) {
                     video.currentTime = introEnd;
                     return; // Return early to prevent other checks
                 }
-                
+
                 // Skip outro (only if we're in the outro range)
                 if (outroStart > 0 && outroEnd > outroStart && time >= outroStart && time < outroEnd) {
                     video.currentTime = outroEnd;
                     return; // Return early to prevent other checks
                 }
             }
-            
+
             // Check if video has ended (within 0.5 seconds of end)
             if (videoDuration && time >= videoDuration - 0.5) {
                 if (!hasEndedRef.current) {
@@ -469,7 +472,7 @@ export default function EnhancedVideoPlayer({
                 hasEndedRef.current = false;
                 setHasEnded(false);
             }
-            
+
             // Track heartbeat every 10 seconds
             if (Math.floor(time) % 10 === 0 && isPlayingRef.current && !hasEndedRef.current) {
                 trackEvent('heartbeat', time);
@@ -505,7 +508,7 @@ export default function EnhancedVideoPlayer({
             setCurrentTime(video.duration || 0);
             trackEvent('complete', video.duration);
             updateWatchHistory(video.duration, true);
-            
+
             // Auto-play next episode based on user preferences
             if (userPreferences.autoNext || userPreferences.autoPlay) {
                 const delay = userPreferences.autoPlay ? 0 : 5000; // AutoPlay = immediate, AutoNext = 5s delay
@@ -726,7 +729,7 @@ export default function EnhancedVideoPlayer({
         const newTime = parseFloat(e.target.value);
         video.currentTime = newTime;
         setCurrentTime(newTime);
-        
+
         // Reset ended state if user seeks away from end
         if (hasEnded && newTime < (duration - 1)) {
             setHasEnded(false);
@@ -808,7 +811,7 @@ export default function EnhancedVideoPlayer({
         setShowAudioMenu(false);
         // In production, would switch audio track here
         trackEvent('audio_change', currentTime);
-        
+
         // Save audio track preference
         if (isAuthenticated && audio) {
             try {
@@ -933,9 +936,8 @@ export default function EnhancedVideoPlayer({
 
             {/* Top Bar */}
             <div
-                className={`absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300 ${
-                    showControls ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'
+                    }`}
             >
                 <div className="flex items-center justify-between p-4">
                     <button
@@ -971,9 +973,8 @@ export default function EnhancedVideoPlayer({
 
             {/* Bottom Controls */}
             <div
-                className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${
-                    showControls ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'
+                    }`}
             >
                 <div className="p-4 space-y-4">
                     {/* Progress Bar */}
@@ -998,20 +999,19 @@ export default function EnhancedVideoPlayer({
                     {/* Control Buttons */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                            <button 
-                                onClick={onPreviousEpisode} 
+                            <button
+                                onClick={onPreviousEpisode}
                                 disabled={!hasPreviousEpisode}
-                                className={`p-2 rounded transition-colors ${
-                                    hasPreviousEpisode 
-                                        ? 'hover:bg-white/10' 
-                                        : 'opacity-50 cursor-not-allowed'
-                                }`}
+                                className={`p-2 rounded transition-colors ${hasPreviousEpisode
+                                    ? 'hover:bg-white/10'
+                                    : 'opacity-50 cursor-not-allowed'
+                                    }`}
                                 title={hasPreviousEpisode ? "Previous Episode" : "No previous episode"}
                             >
                                 <SkipBack className="w-5 h-5 text-white" />
                             </button>
-                            <button 
-                                onClick={togglePlay} 
+                            <button
+                                onClick={togglePlay}
                                 className="p-2 hover:bg-white/10 rounded transition-colors"
                                 title={hasEnded ? 'Replay' : isPlaying ? 'Pause' : 'Play'}
                             >
@@ -1023,14 +1023,13 @@ export default function EnhancedVideoPlayer({
                                     <Play className="w-6 h-6 text-white" />
                                 )}
                             </button>
-                            <button 
-                                onClick={onNextEpisode} 
+                            <button
+                                onClick={onNextEpisode}
                                 disabled={!hasNextEpisode}
-                                className={`p-2 rounded transition-colors ${
-                                    hasNextEpisode 
-                                        ? 'hover:bg-white/10' 
-                                        : 'opacity-50 cursor-not-allowed'
-                                }`}
+                                className={`p-2 rounded transition-colors ${hasNextEpisode
+                                    ? 'hover:bg-white/10'
+                                    : 'opacity-50 cursor-not-allowed'
+                                    }`}
                                 title={hasNextEpisode ? "Next Episode" : "No next episode"}
                             >
                                 <SkipForward className="w-5 h-5 text-white" />
@@ -1071,9 +1070,8 @@ export default function EnhancedVideoPlayer({
                                         <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[200px] z-50">
                                             <button
                                                 onClick={() => handleSubtitleChange(null)}
-                                                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${
-                                                    !selectedSubtitle ? 'text-red-400 font-semibold' : 'text-white'
-                                                }`}
+                                                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${!selectedSubtitle ? 'text-red-400 font-semibold' : 'text-white'
+                                                    }`}
                                             >
                                                 Off
                                             </button>
@@ -1081,9 +1079,8 @@ export default function EnhancedVideoPlayer({
                                                 <button
                                                     key={sub.languageCode}
                                                     onClick={() => handleSubtitleChange(sub)}
-                                                    className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${
-                                                        selectedSubtitle?.languageCode === sub.languageCode ? 'text-red-400 font-semibold' : 'text-white'
-                                                    }`}
+                                                    className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${selectedSubtitle?.languageCode === sub.languageCode ? 'text-red-400 font-semibold' : 'text-white'
+                                                        }`}
                                                 >
                                                     {sub.language}
                                                 </button>
@@ -1114,9 +1111,8 @@ export default function EnhancedVideoPlayer({
                                                 <button
                                                     key={audio.languageCode}
                                                     onClick={() => handleAudioChange(audio)}
-                                                    className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${
-                                                        selectedAudio?.languageCode === audio.languageCode ? 'text-red-400 font-semibold' : 'text-white'
-                                                    }`}
+                                                    className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${selectedAudio?.languageCode === audio.languageCode ? 'text-red-400 font-semibold' : 'text-white'
+                                                        }`}
                                                 >
                                                     {audio.language}
                                                 </button>
@@ -1149,9 +1145,8 @@ export default function EnhancedVideoPlayer({
                                                 <button
                                                     key={quality.quality}
                                                     onClick={() => handleQualityChange(quality)}
-                                                    className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${
-                                                        selectedQuality?.quality === quality.quality ? 'text-red-400 font-semibold' : 'text-white'
-                                                    }`}
+                                                    className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${selectedQuality?.quality === quality.quality ? 'text-red-400 font-semibold' : 'text-white'
+                                                        }`}
                                                 >
                                                     {quality.quality} ({quality.bitrate}Kbps)
                                                 </button>
@@ -1184,7 +1179,7 @@ export default function EnhancedVideoPlayer({
                                                     if (videoRef.current) {
                                                         videoRef.current.playbackRate = rate;
                                                         setPlaybackRate(rate);
-                                                        
+
                                                         // Save playback speed preference
                                                         if (isAuthenticated) {
                                                             try {
@@ -1206,9 +1201,8 @@ export default function EnhancedVideoPlayer({
                                                     }
                                                     setShowSettings(false);
                                                 }}
-                                                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${
-                                                    playbackRate === rate ? 'text-red-400 font-semibold' : 'text-white'
-                                                }`}
+                                                className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${playbackRate === rate ? 'text-red-400 font-semibold' : 'text-white'
+                                                    }`}
                                             >
                                                 {rate}x
                                             </button>
@@ -1221,8 +1215,8 @@ export default function EnhancedVideoPlayer({
                         <div className="flex items-center space-x-4">
                             <span className="text-white text-sm">Episode {episode.episodeNumber}</span>
                             {document.pictureInPictureEnabled && (
-                                <button 
-                                    onClick={togglePictureInPicture} 
+                                <button
+                                    onClick={togglePictureInPicture}
                                     className="p-2 hover:bg-white/10 rounded transition-colors"
                                     title={isPictureInPicture ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
                                 >
