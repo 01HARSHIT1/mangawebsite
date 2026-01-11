@@ -124,34 +124,37 @@ export default function EnhancedVideoPlayer({
     const isPlayingRef = useRef(false);
     
     // Store stable prop values in refs to avoid initialization order issues
-    // Initialize with safe fallbacks
+    // Initialize with empty strings to avoid any initialization errors
     const episodeIdRef = useRef<string>('');
     const seriesIdRef = useRef<string>('');
     const episodeVideoUrlRef = useRef<string>('');
     
-    // Update refs when props change - this ensures they're always current
-    useEffect(() => {
-        if (episode) {
-            episodeIdRef.current = (episode._id || episode.id || '').toString();
-            episodeVideoUrlRef.current = episode.videoUrl || episode.hlsManifestUrl || '';
-        } else {
-            episodeIdRef.current = '';
-            episodeVideoUrlRef.current = '';
-        }
-    }, [episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
+    // Compute stable values from props for render/dependencies - use useMemo
+    const episodeId = useMemo(() => {
+        if (!episode) return '';
+        return (episode._id || episode.id || '').toString();
+    }, [episode?._id, episode?.id]);
     
-    useEffect(() => {
-        if (series) {
-            seriesIdRef.current = (series._id || series.id || '').toString();
-        } else {
-            seriesIdRef.current = '';
-        }
+    const seriesId = useMemo(() => {
+        if (!series) return '';
+        return (series._id || series.id || '').toString();
     }, [series?._id, series?.id]);
     
-    // Computed values for use in render/dependencies - but use refs in callbacks
-    const episodeId = episodeIdRef.current || (episode ? (episode._id || episode.id || '').toString() : '');
-    const seriesId = seriesIdRef.current || (series ? (series._id || series.id || '').toString() : '');
-    const episodeVideoUrl = episodeVideoUrlRef.current || (episode ? (episode.videoUrl || episode.hlsManifestUrl || '') : '');
+    const episodeVideoUrl = useMemo(() => {
+        if (!episode) return '';
+        return episode.videoUrl || episode.hlsManifestUrl || '';
+    }, [episode?.videoUrl, episode?.hlsManifestUrl]);
+    
+    // Update refs when props change - this ensures callbacks have access to current values
+    // Do this AFTER computing memoized values to avoid initialization order issues
+    useEffect(() => {
+        episodeIdRef.current = episodeId;
+        episodeVideoUrlRef.current = episodeVideoUrl;
+    }, [episodeId, episodeVideoUrl]);
+    
+    useEffect(() => {
+        seriesIdRef.current = seriesId;
+    }, [seriesId]);
     
     // Store user preferences in refs to avoid callback recreation
     const defaultAudioTrackRef = useRef<string | null>(userPreferences?.defaultAudioTrack || null);
