@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Maximize2, SkipBack, SkipForward, ChevronLeft, Settings, Subtitles, Languages, RotateCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
@@ -123,63 +123,20 @@ export default function EnhancedVideoPlayer({
     const hasEndedRef = useRef(false);
     const isPlayingRef = useRef(false);
     
-    // Store stable prop values in refs to avoid initialization order issues
-    // Initialize with empty strings to avoid any initialization errors
-    const episodeIdRef = useRef<string>('');
-    const seriesIdRef = useRef<string>('');
-    const episodeVideoUrlRef = useRef<string>('');
-    
-    // Update refs directly from props - NO circular dependencies
-    // This runs immediately and updates refs whenever props change
-    useEffect(() => {
-        if (episode) {
-            episodeIdRef.current = (episode._id || episode.id || '').toString();
-            episodeVideoUrlRef.current = episode.videoUrl || episode.hlsManifestUrl || '';
-        } else {
-            episodeIdRef.current = '';
-            episodeVideoUrlRef.current = '';
-        }
-    }, [episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
-    
-    useEffect(() => {
-        if (series) {
-            seriesIdRef.current = (series._id || series.id || '').toString();
-        } else {
-            seriesIdRef.current = '';
-        }
-    }, [series?._id, series?.id]);
-    
-    // NO memoized values - they cause initialization order issues
-    // Use refs in callbacks, props directly in render/dependencies
-    
-    // Store user preferences in refs to avoid callback recreation
-    const defaultAudioTrackRef = useRef<string | null>(userPreferences?.defaultAudioTrack || null);
-    const defaultPlaybackSpeedRef = useRef<number>(userPreferences?.defaultPlaybackSpeed || 1);
-    
-    // Update refs when userPreferences change
-    useEffect(() => {
-        defaultAudioTrackRef.current = userPreferences?.defaultAudioTrack || null;
-        defaultPlaybackSpeedRef.current = userPreferences?.defaultPlaybackSpeed || 1;
-    }, [userPreferences?.defaultAudioTrack, userPreferences?.defaultPlaybackSpeed]);
-    
     // Store episode tracks in ref - will be updated in useEffect below
     const episodeTracksRef = useRef<{ subtitles: Subtitle[]; audioTracks: AudioTrack[] }>({
         subtitles: episode?.subtitles || episode?.availableTracks?.subtitles || [],
         audioTracks: episode?.audioTracks || episode?.availableTracks?.audio || []
     });
 
-    // Update episode tracks ref when episodeId changes (episode switch)
-    // Access episode prop directly - props are always current when effect runs
-    // Only depend on episodeId to avoid unnecessary re-runs when episode object reference changes
+    // Update episode tracks ref when episode changes
     useEffect(() => {
-        const currentEpisodeId = episodeIdRef.current;
-        if (!currentEpisodeId || !episode) return;
+        if (!episode) return;
         
         episodeTracksRef.current = {
             subtitles: episode.subtitles || episode.availableTracks?.subtitles || [],
             audioTracks: episode.audioTracks || episode.availableTracks?.audio || []
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [episode?._id, episode?.id]);
 
     // Keep refs in sync with state - Move these AFTER memoized values to ensure proper initialization order
@@ -202,7 +159,8 @@ export default function EnhancedVideoPlayer({
 
     // Load playback data and resume position
     const loadPlaybackData = useCallback(async () => {
-        const currentEpisodeId = episodeIdRef.current;
+        // Access props directly - they're always current
+        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
         if (!currentEpisodeId) {
             console.error('Episode ID not found');
             setLoading(false);
@@ -236,7 +194,7 @@ export default function EnhancedVideoPlayer({
                 // Set default audio track (prefer user preference, then episode default, then first available)
                 if (availableAudioTracks.length > 0) {
                     let defaultAudio = null;
-                    const audioTrackPref = defaultAudioTrackRef.current;
+                    const audioTrackPref = userPreferences?.defaultAudioTrack;
                     if (audioTrackPref) {
                         defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === audioTrackPref);
                     }
@@ -249,7 +207,7 @@ export default function EnhancedVideoPlayer({
                 }
 
                 // Set default playback speed from user preferences
-                const playbackSpeedPref = defaultPlaybackSpeedRef.current;
+                const playbackSpeedPref = userPreferences?.defaultPlaybackSpeed || 1;
                 if (playbackSpeedPref && playbackSpeedPref !== 1) {
                     const video = videoRef.current;
                     if (video) {
@@ -286,7 +244,7 @@ export default function EnhancedVideoPlayer({
                     });
                     if (historyRes.ok) {
                         const historyData = await historyRes.json();
-                        const currentEpisodeId = episodeIdRef.current;
+                        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
                         const episodeHistory = historyData.watchHistory?.find((h: any) => 
                             h.episodeId === currentEpisodeId
                         );
@@ -304,11 +262,12 @@ export default function EnhancedVideoPlayer({
         } finally {
             setLoading(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, episode]);
 
     // Load playback data and resume position - trigger when episodeId changes
     useEffect(() => {
-        if (episodeIdRef.current) {
+        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+        if (currentEpisodeId) {
             loadPlaybackData();
         }
     }, [loadPlaybackData, episode?._id, episode?.id]);
@@ -316,8 +275,8 @@ export default function EnhancedVideoPlayer({
     // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
         const video = videoRef.current;
-        const currentEpisodeId = episodeIdRef.current;
-        const currentVideoUrl = episodeVideoUrlRef.current;
+        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+        const currentVideoUrl = episode?.videoUrl || episode?.hlsManifestUrl || '';
         if (!video || !currentEpisodeId) return;
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
@@ -404,8 +363,9 @@ export default function EnhancedVideoPlayer({
 
     // Track playback events
     const trackEvent = useCallback(async (eventType: string, position?: number) => {
-        const currentEpisodeId = episodeIdRef.current;
-        const currentSeriesId = seriesIdRef.current;
+        // Access props directly - they're always current
+        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+        const currentSeriesId = (series?._id || series?.id || '').toString();
         if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
         
         try {
@@ -428,12 +388,13 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, episode, series]);
 
     // Update watch history
     const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
-        const currentEpisodeId = episodeIdRef.current;
-        const currentSeriesId = seriesIdRef.current;
+        // Access props directly - they're always current
+        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+        const currentSeriesId = (series?._id || series?.id || '').toString();
         if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
         
         try {
@@ -457,7 +418,7 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error updating watch history:', error);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, episode, series]);
 
     useEffect(() => {
         const video = videoRef.current;
