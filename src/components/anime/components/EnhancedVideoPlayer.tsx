@@ -149,22 +149,8 @@ export default function EnhancedVideoPlayer({
         }
     }, [series?._id, series?.id]);
     
-    // Compute stable values from props for render/dependencies - ONLY for use in other hooks/JSX
-    // These are NOT used in callbacks - callbacks use refs instead
-    const episodeId = useMemo(() => {
-        if (!episode) return '';
-        return (episode._id || episode.id || '').toString();
-    }, [episode?._id, episode?.id]);
-    
-    const seriesId = useMemo(() => {
-        if (!series) return '';
-        return (series._id || series.id || '').toString();
-    }, [series?._id, series?.id]);
-    
-    const episodeVideoUrl = useMemo(() => {
-        if (!episode) return '';
-        return episode.videoUrl || episode.hlsManifestUrl || '';
-    }, [episode?.videoUrl, episode?.hlsManifestUrl]);
+    // NO memoized values - they cause initialization order issues
+    // Use refs in callbacks, props directly in render/dependencies
     
     // Store user preferences in refs to avoid callback recreation
     const defaultAudioTrackRef = useRef<string | null>(userPreferences?.defaultAudioTrack || null);
