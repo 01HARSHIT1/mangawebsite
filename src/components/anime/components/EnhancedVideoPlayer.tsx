@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Maximize2, SkipBack, SkipForward, ChevronLeft, Settings, Subtitles, Languages, RotateCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
@@ -160,6 +160,9 @@ export default function EnhancedVideoPlayer({
         isPlayingRef.current = isPlaying;
     }, [isPlaying]);
 
+    // Extract episode and series IDs using useMemo to avoid initialization issues
+    const episodeId = useMemo(() => (episode?._id || episode?.id || '').toString(), [episode?._id, episode?.id]);
+    const seriesId = useMemo(() => (series?._id || series?.id || '').toString(), [series?._id, series?.id]);
 
     // Load playback data and resume position - trigger when episodeId changes
     useEffect(() => {
@@ -174,7 +177,7 @@ export default function EnhancedVideoPlayer({
                 setLoading(true);
                 const token = localStorage.getItem('token');
                 const tracks = episodeTracksRef.current;
-                
+
                 const playbackRes = await fetch(`/api/anime/episodes/${currentEpisodeId}/playback`, {
                     headers: token ? { Authorization: `Bearer ${token}` } : {}
                 });
@@ -183,11 +186,11 @@ export default function EnhancedVideoPlayer({
                     const data = await playbackRes.json();
                     setPlaybackData(data);
                     setSelectedQuality(data.qualityLevels?.[0] || null);
-                    
+
                     // Use playback data tracks, fallback to episode props if not available
                     const availableSubtitles = data.subtitles || tracks.subtitles;
                     const availableAudioTracks = data.audioTracks || tracks.audioTracks;
-                    
+
                     // Set default subtitle
                     if (availableSubtitles.length > 0) {
                         const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -223,7 +226,7 @@ export default function EnhancedVideoPlayer({
                     // Use episode props for tracks if playback API fails
                     const availableSubtitles = tracks.subtitles;
                     const availableAudioTracks = tracks.audioTracks;
-                    
+
                     // Set default subtitle from episode props
                     if (availableSubtitles.length > 0) {
                         const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
@@ -247,7 +250,7 @@ export default function EnhancedVideoPlayer({
                         });
                         if (historyRes.ok) {
                             const historyData = await historyRes.json();
-                            const episodeHistory = historyData.watchHistory?.find((h: any) => 
+                            const episodeHistory = historyData.watchHistory?.find((h: any) =>
                                 h.episodeId === currentEpisodeId
                             );
                             if (episodeHistory && !episodeHistory.completed) {
@@ -272,9 +275,8 @@ export default function EnhancedVideoPlayer({
     // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
         const video = videoRef.current;
-        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
         const currentVideoUrl = episode?.videoUrl || episode?.hlsManifestUrl || '';
-        if (!video || !currentEpisodeId) return;
+        if (!video || !episodeId) return;
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
         // Prioritize playbackData, but use episode data as immediate fallback
@@ -358,13 +360,13 @@ export default function EnhancedVideoPlayer({
         }
     }, [playbackData, resumePosition, selectedSubtitle, episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
 
-    // Track playback events - defined as regular function (not useCallback) to avoid closure issues
-    // Access props directly when called - props are always current
-    const trackEvent = async (eventType: string, position?: number) => {
+    // Track playback events - use useCallback with primitive dependencies
+    const trackEvent = useCallback(async (eventType: string, position?: number) => {
         try {
-            const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-            const currentSeriesId = (series?._id || series?.id || '').toString();
-            if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
+            if (!isAuthenticated || !episodeId || !seriesId) {
+                console.log('trackEvent: Skipping - not authenticated or missing IDs', { isAuthenticated, episodeId, seriesId });
+                return;
+            }
             
             const token = localStorage.getItem('token');
             await fetch('/api/anime/player/event', {
@@ -374,8 +376,8 @@ export default function EnhancedVideoPlayer({
                     ...(token ? { Authorization: `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify({
-                    episodeId: currentEpisodeId,
-                    seriesId: currentSeriesId,
+                    episodeId,
+                    seriesId,
                     eventType,
                     position: position ?? currentTimeRef.current,
                     duration: durationRef.current,
@@ -385,15 +387,15 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-    };
+    }, [isAuthenticated, episodeId, seriesId]);
 
-    // Update watch history - defined as regular function (not useCallback) to avoid closure issues
-    // Access props directly when called - props are always current
-    const updateWatchHistory = async (position: number, completed: boolean = false) => {
+    // Update watch history - use useCallback with primitive dependencies
+    const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
         try {
-            const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-            const currentSeriesId = (series?._id || series?.id || '').toString();
-            if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
+            if (!isAuthenticated || !episodeId || !seriesId) {
+                console.log('updateWatchHistory: Skipping - not authenticated or missing IDs', { isAuthenticated, episodeId, seriesId });
+                return;
+            }
             
             const token = localStorage.getItem('token');
             await fetch('/api/anime/watch-history', {
@@ -403,8 +405,8 @@ export default function EnhancedVideoPlayer({
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    episodeId: currentEpisodeId,
-                    seriesId: currentSeriesId,
+                    episodeId,
+                    seriesId,
                     lastPosition: position,
                     watchedDuration: position,
                     completed,
@@ -415,7 +417,7 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error updating watch history:', error);
         }
-    };
+    }, [isAuthenticated, episodeId, seriesId]);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -542,8 +544,7 @@ export default function EnhancedVideoPlayer({
             video.removeEventListener('ended', handleEnded);
             video.removeEventListener('seeked', handleSeeked);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [onNextEpisode, hasNextEpisode, userPreferences, isAuthenticated, episode?._id, episode?.id, series?._id, series?.id]); // trackEvent and updateWatchHistory are regular functions that access props directly
+    }, [onNextEpisode, hasNextEpisode, userPreferences, trackEvent, updateWatchHistory]);
 
     useEffect(() => {
         const handleFullscreenChange = () => {
