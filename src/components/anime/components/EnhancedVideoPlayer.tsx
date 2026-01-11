@@ -92,6 +92,10 @@ export default function EnhancedVideoPlayer({
         keyboardShortcutsEnabled: true,
     },
 }: VideoPlayerProps) {
+    // Early validation - log if props are missing
+    if (!episode || !series) {
+        console.error('EnhancedVideoPlayer: Missing episode or series props', { episode, series });
+    }
     const videoRef = useRef<HTMLVideoElement>(null);
     const { user, isAuthenticated } = useAuth();
     const [isPlaying, setIsPlaying] = useState(false);
@@ -157,121 +161,113 @@ export default function EnhancedVideoPlayer({
     }, [isPlaying]);
 
 
-    // Load playback data and resume position
-    const loadPlaybackData = useCallback(async () => {
-        // Access props directly - they're always current
+    // Load playback data and resume position - trigger when episodeId changes
+    useEffect(() => {
         const currentEpisodeId = (episode?._id || episode?.id || '').toString();
         if (!currentEpisodeId) {
-            console.error('Episode ID not found');
             setLoading(false);
             return;
         }
 
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-            const tracks = episodeTracksRef.current;
+        const loadPlaybackData = async () => {
+            try {
+                setLoading(true);
+                const token = localStorage.getItem('token');
+                const tracks = episodeTracksRef.current;
+                
+                const playbackRes = await fetch(`/api/anime/episodes/${currentEpisodeId}/playback`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : {}
+                });
 
-            const playbackRes = await fetch(`/api/anime/episodes/${currentEpisodeId}/playback`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {}
-            });
-
-            if (playbackRes.ok) {
-                const data = await playbackRes.json();
-                setPlaybackData(data);
-                setSelectedQuality(data.qualityLevels?.[0] || null);
-
-                // Use playback data tracks, fallback to episode props if not available
-                const availableSubtitles = data.subtitles || tracks.subtitles;
-                const availableAudioTracks = data.audioTracks || tracks.audioTracks;
-
-                // Set default subtitle
-                if (availableSubtitles.length > 0) {
-                    const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
-                    setSelectedSubtitle(defaultSubtitle);
-                }
-
-                // Set default audio track (prefer user preference, then episode default, then first available)
-                if (availableAudioTracks.length > 0) {
-                    let defaultAudio = null;
-                    const audioTrackPref = userPreferences?.defaultAudioTrack;
-                    if (audioTrackPref) {
-                        defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === audioTrackPref);
+                if (playbackRes.ok) {
+                    const data = await playbackRes.json();
+                    setPlaybackData(data);
+                    setSelectedQuality(data.qualityLevels?.[0] || null);
+                    
+                    // Use playback data tracks, fallback to episode props if not available
+                    const availableSubtitles = data.subtitles || tracks.subtitles;
+                    const availableAudioTracks = data.audioTracks || tracks.audioTracks;
+                    
+                    // Set default subtitle
+                    if (availableSubtitles.length > 0) {
+                        const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
+                        setSelectedSubtitle(defaultSubtitle);
                     }
-                    if (!defaultAudio) {
-                        defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
-                    }
-                    if (defaultAudio) {
-                        setSelectedAudio(defaultAudio);
-                    }
-                }
 
-                // Set default playback speed from user preferences
-                const playbackSpeedPref = userPreferences?.defaultPlaybackSpeed || 1;
-                if (playbackSpeedPref && playbackSpeedPref !== 1) {
-                    const video = videoRef.current;
-                    if (video) {
-                        video.playbackRate = playbackSpeedPref;
-                        setPlaybackRate(playbackSpeedPref);
-                    }
-                }
-            } else {
-                console.warn('Playback API failed, using direct video URL');
-                // Use episode props for tracks if playback API fails
-                const availableSubtitles = tracks.subtitles;
-                const availableAudioTracks = tracks.audioTracks;
-
-                // Set default subtitle from episode props
-                if (availableSubtitles.length > 0) {
-                    const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
-                    setSelectedSubtitle(defaultSubtitle);
-                }
-
-                // Set default audio track from episode props
-                if (availableAudioTracks.length > 0) {
-                    const defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
-                    if (defaultAudio) {
-                        setSelectedAudio(defaultAudio);
-                    }
-                }
-            }
-
-            // Get resume position if authenticated
-            if (isAuthenticated && token) {
-                try {
-                    const historyRes = await fetch('/api/anime/watch-history', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (historyRes.ok) {
-                        const historyData = await historyRes.json();
-                        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-                        const episodeHistory = historyData.watchHistory?.find((h: any) =>
-                            h.episodeId === currentEpisodeId
-                        );
-                        if (episodeHistory && !episodeHistory.completed) {
-                            setResumePosition(episodeHistory.lastPosition || 0);
+                    // Set default audio track (prefer user preference, then episode default, then first available)
+                    if (availableAudioTracks.length > 0) {
+                        let defaultAudio = null;
+                        const audioTrackPref = userPreferences?.defaultAudioTrack;
+                        if (audioTrackPref) {
+                            defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.languageCode === audioTrackPref);
+                        }
+                        if (!defaultAudio) {
+                            defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
+                        }
+                        if (defaultAudio) {
+                            setSelectedAudio(defaultAudio);
                         }
                     }
-                } catch (historyError) {
-                    console.error('Error fetching watch history:', historyError);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading playback data:', error);
-            setErrorMessage('Failed to load video');
-        } finally {
-            setLoading(false);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAuthenticated]); // Access episode directly in callback - props are always current
 
-    // Load playback data and resume position - trigger when episodeId changes
-    useEffect(() => {
-        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-        if (currentEpisodeId) {
-            loadPlaybackData();
-        }
-    }, [loadPlaybackData, episode?._id, episode?.id]);
+                    // Set default playback speed from user preferences
+                    const playbackSpeedPref = userPreferences?.defaultPlaybackSpeed || 1;
+                    if (playbackSpeedPref && playbackSpeedPref !== 1) {
+                        const video = videoRef.current;
+                        if (video) {
+                            video.playbackRate = playbackSpeedPref;
+                            setPlaybackRate(playbackSpeedPref);
+                        }
+                    }
+                } else {
+                    console.warn('Playback API failed, using direct video URL');
+                    // Use episode props for tracks if playback API fails
+                    const availableSubtitles = tracks.subtitles;
+                    const availableAudioTracks = tracks.audioTracks;
+                    
+                    // Set default subtitle from episode props
+                    if (availableSubtitles.length > 0) {
+                        const defaultSubtitle = availableSubtitles.find((s: Subtitle) => s.isDefault) || availableSubtitles[0];
+                        setSelectedSubtitle(defaultSubtitle);
+                    }
+
+                    // Set default audio track from episode props
+                    if (availableAudioTracks.length > 0) {
+                        const defaultAudio = availableAudioTracks.find((a: AudioTrack) => a.isDefault) || availableAudioTracks[0];
+                        if (defaultAudio) {
+                            setSelectedAudio(defaultAudio);
+                        }
+                    }
+                }
+
+                // Get resume position if authenticated
+                if (isAuthenticated && token) {
+                    try {
+                        const historyRes = await fetch('/api/anime/watch-history', {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (historyRes.ok) {
+                            const historyData = await historyRes.json();
+                            const episodeHistory = historyData.watchHistory?.find((h: any) => 
+                                h.episodeId === currentEpisodeId
+                            );
+                            if (episodeHistory && !episodeHistory.completed) {
+                                setResumePosition(episodeHistory.lastPosition || 0);
+                            }
+                        }
+                    } catch (historyError) {
+                        console.error('Error fetching watch history:', historyError);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading playback data:', error);
+                setErrorMessage('Failed to load video');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadPlaybackData();
+    }, [isAuthenticated, episode?._id, episode?.id]);
 
     // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
@@ -362,14 +358,14 @@ export default function EnhancedVideoPlayer({
         }
     }, [playbackData, resumePosition, selectedSubtitle, episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
 
-    // Track playback events
-    const trackEvent = useCallback(async (eventType: string, position?: number) => {
-        // Access props directly - they're always current
-        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-        const currentSeriesId = (series?._id || series?.id || '').toString();
-        if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
-
+    // Track playback events - defined as regular function (not useCallback) to avoid closure issues
+    // Access props directly when called - props are always current
+    const trackEvent = async (eventType: string, position?: number) => {
         try {
+            const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+            const currentSeriesId = (series?._id || series?.id || '').toString();
+            if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
+            
             const token = localStorage.getItem('token');
             await fetch('/api/anime/player/event', {
                 method: 'POST',
@@ -389,17 +385,16 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAuthenticated]); // Access episode and series directly in callback - props are always current
+    };
 
-    // Update watch history
-    const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
-        // Access props directly - they're always current
-        const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-        const currentSeriesId = (series?._id || series?.id || '').toString();
-        if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
-
+    // Update watch history - defined as regular function (not useCallback) to avoid closure issues
+    // Access props directly when called - props are always current
+    const updateWatchHistory = async (position: number, completed: boolean = false) => {
         try {
+            const currentEpisodeId = (episode?._id || episode?.id || '').toString();
+            const currentSeriesId = (series?._id || series?.id || '').toString();
+            if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
+            
             const token = localStorage.getItem('token');
             await fetch('/api/anime/watch-history', {
                 method: 'POST',
@@ -420,8 +415,7 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error updating watch history:', error);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAuthenticated]); // Access episode and series directly in callback - props are always current
+    };
 
     useEffect(() => {
         const video = videoRef.current;
@@ -548,7 +542,8 @@ export default function EnhancedVideoPlayer({
             video.removeEventListener('ended', handleEnded);
             video.removeEventListener('seeked', handleSeeked);
         };
-    }, [onNextEpisode, trackEvent, updateWatchHistory, hasNextEpisode, userPreferences]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onNextEpisode, hasNextEpisode, userPreferences, isAuthenticated, episode?._id, episode?.id, series?._id, series?.id]); // trackEvent and updateWatchHistory are regular functions that access props directly
 
     useEffect(() => {
         const handleFullscreenChange = () => {
