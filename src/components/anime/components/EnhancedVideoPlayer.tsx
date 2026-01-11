@@ -122,22 +122,36 @@ export default function EnhancedVideoPlayer({
     const selectedQualityRef = useRef<QualityLevel | null>(null);
     const hasEndedRef = useRef(false);
     const isPlayingRef = useRef(false);
-    // Extract stable values from props - MUST be defined before any callbacks
-    // Use safe access with fallbacks to prevent initialization errors
-    const episodeId = useMemo(() => {
-        if (!episode) return '';
-        return (episode._id || episode.id || '').toString();
-    }, [episode?._id, episode?.id]);
     
-    const seriesId = useMemo(() => {
-        if (!series) return '';
-        return (series._id || series.id || '').toString();
+    // Store stable prop values in refs to avoid initialization order issues
+    // Initialize with safe fallbacks
+    const episodeIdRef = useRef<string>('');
+    const seriesIdRef = useRef<string>('');
+    const episodeVideoUrlRef = useRef<string>('');
+    
+    // Update refs when props change - this ensures they're always current
+    useEffect(() => {
+        if (episode) {
+            episodeIdRef.current = (episode._id || episode.id || '').toString();
+            episodeVideoUrlRef.current = episode.videoUrl || episode.hlsManifestUrl || '';
+        } else {
+            episodeIdRef.current = '';
+            episodeVideoUrlRef.current = '';
+        }
+    }, [episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
+    
+    useEffect(() => {
+        if (series) {
+            seriesIdRef.current = (series._id || series.id || '').toString();
+        } else {
+            seriesIdRef.current = '';
+        }
     }, [series?._id, series?.id]);
     
-    const episodeVideoUrl = useMemo(() => {
-        if (!episode) return '';
-        return episode.videoUrl || episode.hlsManifestUrl || '';
-    }, [episode?.videoUrl, episode?.hlsManifestUrl]);
+    // Computed values for use in render/dependencies - but use refs in callbacks
+    const episodeId = episodeIdRef.current || (episode ? (episode._id || episode.id || '').toString() : '');
+    const seriesId = seriesIdRef.current || (series ? (series._id || series.id || '').toString() : '');
+    const episodeVideoUrl = episodeVideoUrlRef.current || (episode ? (episode.videoUrl || episode.hlsManifestUrl || '') : '');
     
     // Store user preferences in refs to avoid callback recreation
     const defaultAudioTrackRef = useRef<string | null>(userPreferences?.defaultAudioTrack || null);
@@ -159,14 +173,15 @@ export default function EnhancedVideoPlayer({
     // Access episode prop directly - props are always current when effect runs
     // Only depend on episodeId to avoid unnecessary re-runs when episode object reference changes
     useEffect(() => {
-        if (!episodeId || !episode) return;
+        const currentEpisodeId = episodeIdRef.current;
+        if (!currentEpisodeId || !episode) return;
         
         episodeTracksRef.current = {
             subtitles: episode.subtitles || episode.availableTracks?.subtitles || [],
             audioTracks: episode.audioTracks || episode.availableTracks?.audio || []
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [episodeId]);
+    }, [episode?._id, episode?.id]);
 
     // Keep refs in sync with state - Move these AFTER memoized values to ensure proper initialization order
     useEffect(() => {
@@ -188,7 +203,8 @@ export default function EnhancedVideoPlayer({
 
     // Load playback data and resume position
     const loadPlaybackData = useCallback(async () => {
-        if (!episodeId) {
+        const currentEpisodeId = episodeIdRef.current;
+        if (!currentEpisodeId) {
             console.error('Episode ID not found');
             setLoading(false);
             return;
@@ -199,7 +215,7 @@ export default function EnhancedVideoPlayer({
             const token = localStorage.getItem('token');
             const tracks = episodeTracksRef.current;
             
-            const playbackRes = await fetch(`/api/anime/episodes/${episodeId}/playback`, {
+            const playbackRes = await fetch(`/api/anime/episodes/${currentEpisodeId}/playback`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {}
             });
 
@@ -271,8 +287,9 @@ export default function EnhancedVideoPlayer({
                     });
                     if (historyRes.ok) {
                         const historyData = await historyRes.json();
+                        const currentEpisodeId = episodeIdRef.current;
                         const episodeHistory = historyData.watchHistory?.find((h: any) => 
-                            h.episodeId === episodeId
+                            h.episodeId === currentEpisodeId
                         );
                         if (episodeHistory && !episodeHistory.completed) {
                             setResumePosition(episodeHistory.lastPosition || 0);
@@ -288,26 +305,28 @@ export default function EnhancedVideoPlayer({
         } finally {
             setLoading(false);
         }
-    }, [episodeId, isAuthenticated]);
+    }, [isAuthenticated]);
 
-    // Load playback data and resume position
+    // Load playback data and resume position - trigger when episodeId changes
     useEffect(() => {
-        if (episodeId) {
+        if (episodeIdRef.current) {
             loadPlaybackData();
         }
-    }, [loadPlaybackData, episodeId]);
+    }, [loadPlaybackData, episode?._id, episode?.id]);
 
     // Set video source and resume position - set immediately from episode data, update when playbackData loads
     useEffect(() => {
         const video = videoRef.current;
-        if (!video || !episodeId) return;
+        const currentEpisodeId = episodeIdRef.current;
+        const currentVideoUrl = episodeVideoUrlRef.current;
+        if (!video || !currentEpisodeId) return;
 
         // Use HLS manifest if available, otherwise fallback to videoUrl
         // Prioritize playbackData, but use episode data as immediate fallback
-        const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episodeVideoUrl;
+        const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || currentVideoUrl;
         
         if (!videoSrc) {
-            console.warn('No video source available for episode:', episodeId);
+            console.warn('No video source available for episode:', currentEpisodeId);
             setErrorMessage('Video source not available');
             setLoading(false);
             return;
@@ -382,11 +401,13 @@ export default function EnhancedVideoPlayer({
                 console.error('Error loading subtitles:', error);
             }
         }
-    }, [playbackData, resumePosition, selectedSubtitle, episodeVideoUrl, episodeId]);
+    }, [playbackData, resumePosition, selectedSubtitle, episode?._id, episode?.id, episode?.videoUrl, episode?.hlsManifestUrl]);
 
     // Track playback events
     const trackEvent = useCallback(async (eventType: string, position?: number) => {
-        if (!isAuthenticated || !episodeId || !seriesId) return;
+        const currentEpisodeId = episodeIdRef.current;
+        const currentSeriesId = seriesIdRef.current;
+        if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
         
         try {
             const token = localStorage.getItem('token');
@@ -397,8 +418,8 @@ export default function EnhancedVideoPlayer({
                     ...(token ? { Authorization: `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify({
-                    episodeId: episodeId,
-                    seriesId: seriesId,
+                    episodeId: currentEpisodeId,
+                    seriesId: currentSeriesId,
                     eventType,
                     position: position ?? currentTimeRef.current,
                     duration: durationRef.current,
@@ -408,11 +429,13 @@ export default function EnhancedVideoPlayer({
         } catch (error) {
             console.error('Error tracking event:', error);
         }
-    }, [isAuthenticated, episodeId, seriesId]);
+    }, [isAuthenticated]);
 
     // Update watch history
     const updateWatchHistory = useCallback(async (position: number, completed: boolean = false) => {
-        if (!isAuthenticated || !episodeId || !seriesId) return;
+        const currentEpisodeId = episodeIdRef.current;
+        const currentSeriesId = seriesIdRef.current;
+        if (!isAuthenticated || !currentEpisodeId || !currentSeriesId) return;
         
         try {
             const token = localStorage.getItem('token');
@@ -423,8 +446,8 @@ export default function EnhancedVideoPlayer({
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    episodeId: episodeId,
-                    seriesId: seriesId,
+                    episodeId: currentEpisodeId,
+                    seriesId: currentSeriesId,
                     lastPosition: position,
                     watchedDuration: position,
                     completed,
