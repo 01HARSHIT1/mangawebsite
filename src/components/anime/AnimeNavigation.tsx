@@ -98,7 +98,7 @@ export default function AnimeNavigation() {
     const creatorNavItems = isCreator ? [
         { href: '/anime/creator/upload', label: 'UPLOAD', icon: Upload },
         // Only show dashboard if user has uploaded anime
-        ...(hasUploadedAnime ? [{ href: '/anime/creator/dashboard', label: 'DASHBOARD', icon: LayoutDashboard }] : []),
+        ...(hasUploadedAnime ? [{ href: '/anime/creator/dashboard', label: 'CREATOR DASHBOARD', icon: LayoutDashboard }] : []),
     ] : [];
 
     // Genres list for sidebar
