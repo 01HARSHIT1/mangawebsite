@@ -361,7 +361,7 @@ export default function AnimeNavigation() {
                     </div>
 
                     {/* Right Side Actions */}
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                         {/* Search Button (Desktop) */}
                         <button className="hidden lg:block p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30">
                             <Search className="w-5 h-5 text-orange-400" />
