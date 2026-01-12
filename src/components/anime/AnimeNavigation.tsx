@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen, MessageCircle, ChevronLeft, Moon, Sun } from 'lucide-react';
+import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen, MessageCircle, ChevronLeft, Moon, Sun, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import { useTheme } from '@/components/AdvancedThemeSystem';
@@ -25,6 +25,9 @@ export default function AnimeNavigation() {
     const { isAuthenticated, isCreator, user, logout } = useAuth();
     const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
     const { theme, setTheme } = useTheme();
+    
+    // Check if user is admin
+    const isAdmin = user?.role === 'admin';
 
     // Check if user has uploaded anime (only for creators)
     useEffect(() => {
@@ -95,10 +98,16 @@ export default function AnimeNavigation() {
 
     // Creator navigation items (shown when user is already a creator) - anime-specific routes
     // Only show dashboard if user has uploaded anime (like manga mode)
+    // Admins can also be creators, so show creator items if they're a creator (even if admin)
     const creatorNavItems = isCreator ? [
         { href: '/anime/creator/upload', label: 'UPLOAD', icon: Upload },
         // Only show dashboard if user has uploaded anime
         ...(hasUploadedAnime ? [{ href: '/anime/creator/dashboard', label: 'CREATOR DASHBOARD', icon: LayoutDashboard }] : []),
+    ] : [];
+
+    // Admin navigation items (shown when user is admin) - separate from creator dashboard
+    const adminNavItems = isAdmin ? [
+        { href: '/admin/dashboard', label: 'ADMIN DASHBOARD', icon: Shield },
     ] : [];
 
     // Genres list for sidebar
@@ -289,7 +298,7 @@ export default function AnimeNavigation() {
 
                     {/* Navigation Links */}
                     <div className="hidden lg:flex items-center space-x-8">
-                        {[...navItems, ...creatorNavItems].map((item) => {
+                        {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                             const active = isActive(item.href);
                             const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
                             const isDashboardButton = item.href === '/anime/creator/dashboard';
