@@ -92,10 +92,7 @@ export default function EnhancedVideoPlayer({
         keyboardShortcutsEnabled: true,
     },
 }: VideoPlayerProps) {
-    // Early validation - log if props are missing
-    if (!episode || !series) {
-        console.error('EnhancedVideoPlayer: Missing episode or series props', { episode, series });
-    }
+    // ALL HOOKS MUST BE CALLED FIRST - React Rules of Hooks
     const videoRef = useRef<HTMLVideoElement>(null);
     const { user, isAuthenticated } = useAuth();
     const [isPlaying, setIsPlaying] = useState(false);
@@ -161,6 +158,75 @@ export default function EnhancedVideoPlayer({
     }, [isPlaying]);
 
     // DO NOT use useMemo - causes initialization errors during bundling
+
+    // Validation AFTER all hooks - React Rules of Hooks (hooks must be called in same order)
+    if (!episode || !series) {
+        console.error('[EnhancedVideoPlayer] ERROR: Missing episode or series props', { episode, series });
+    }
+
+    // Define toggle functions BEFORE useEffect that uses them (to avoid "used before declaration" errors)
+    const togglePlay = async () => {
+        const video = videoRef.current;
+        if (!video) {
+            console.warn('[EnhancedVideoPlayer] Video element not found');
+            return;
+        }
+
+        // If video has ended, restart from beginning
+        if (hasEnded) {
+            video.currentTime = 0;
+            setHasEnded(false);
+            setCurrentTime(0);
+        }
+
+        if (!video.src) {
+            console.warn('[EnhancedVideoPlayer] Video source not set');
+            // Try to set source from episode data
+            const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode?.videoUrl || episode?.hlsManifestUrl;
+            if (videoSrc) {
+                video.src = videoSrc;
+                video.load();
+            } else {
+                console.error('[EnhancedVideoPlayer] No video source available');
+                return;
+            }
+        }
+
+        try {
+            if (isPlaying) {
+                video.pause();
+            } else {
+                // Ensure video is ready before playing
+                if (video.readyState < 2) {
+                    await new Promise((resolve) => {
+                        const handleCanPlay = () => {
+                            video.removeEventListener('canplay', handleCanPlay);
+                            resolve(undefined);
+                        };
+                        video.addEventListener('canplay', handleCanPlay);
+                    });
+                }
+                await video.play();
+            }
+        } catch (error) {
+            console.error('[EnhancedVideoPlayer] Error toggling play:', error);
+        }
+    };
+
+    const toggleMute = () => {
+        const video = videoRef.current;
+        if (!video) return;
+        setIsMuted(!isMuted);
+        video.muted = !isMuted;
+    };
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            videoRef.current?.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    };
 
     // Load playback data and resume position - trigger when episodeId changes
     useEffect(() => {
@@ -277,15 +343,15 @@ export default function EnhancedVideoPlayer({
             hasPlaybackData: !!playbackData,
             episodeId: episode?._id || episode?.id
         });
-        
+
         const video = videoRef.current;
         const currentEpisodeId = (episode?._id || episode?.id || '').toString();
         const currentVideoUrl = episode?.videoUrl || episode?.hlsManifestUrl || '';
-        
+
         if (!video || !currentEpisodeId) {
-            console.log('[EnhancedVideoPlayer] setVideoSource: Skipping - no video or episodeId', { 
-                video: !!video, 
-                currentEpisodeId 
+            console.log('[EnhancedVideoPlayer] setVideoSource: Skipping - no video or episodeId', {
+                video: !!video,
+                currentEpisodeId
             });
             return;
         }
@@ -377,7 +443,7 @@ export default function EnhancedVideoPlayer({
         try {
             console.log('[EnhancedVideoPlayer] trackEvent: Called', { eventType, position });
             const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-            const currentSeriesId = (series?._id || series?.id || '').toString();
+            const currentSeriesId = (series?._id || '').toString();
 
             console.log('[EnhancedVideoPlayer] trackEvent: IDs extracted', {
                 currentEpisodeId,
@@ -422,7 +488,7 @@ export default function EnhancedVideoPlayer({
         try {
             console.log('[EnhancedVideoPlayer] updateWatchHistory: Called', { position, completed });
             const currentEpisodeId = (episode?._id || episode?.id || '').toString();
-            const currentSeriesId = (series?._id || series?.id || '').toString();
+            const currentSeriesId = (series?._id || '').toString();
 
             console.log('[EnhancedVideoPlayer] updateWatchHistory: IDs extracted', {
                 currentEpisodeId,
@@ -707,8 +773,9 @@ export default function EnhancedVideoPlayer({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [userPreferences.keyboardShortcutsEnabled, volume, isMuted, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, togglePlay, toggleMute, toggleFullscreen]);
+    }, [userPreferences.keyboardShortcutsEnabled, volume, isMuted, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
 
+    // Define toggle functions BEFORE useEffect that uses them
     const togglePlay = async () => {
         const video = videoRef.current;
         if (!video) {
