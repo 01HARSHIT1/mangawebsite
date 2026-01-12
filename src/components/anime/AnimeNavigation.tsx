@@ -391,7 +391,7 @@ export default function AnimeNavigation() {
                                                             className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-orange-500/20 hover:text-orange-400 transition-colors"
                                                         >
                                                             <LayoutDashboard className="w-4 h-4" />
-                                                            <span className="text-sm">Dashboard</span>
+                                                            <span className="text-sm">Creator Dashboard</span>
                                                         </Link>
                                                     )}
                                                     <button
