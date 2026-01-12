@@ -272,22 +272,22 @@ export default function AnimeNavigation() {
             </AnimatePresence>
 
         <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center h-16 gap-6">
                         {/* Left Side: Hamburger Menu Button + Logo + Navigation Links */}
-                        <div className="flex items-center space-x-6">
+                        <div className="flex items-center gap-6 flex-1 min-w-0">
                             {/* Hamburger Menu Button */}
                             <button
                                 data-hamburger-button
                                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                                className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30"
+                                className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30 flex-shrink-0"
                                 aria-label="Toggle sidebar menu"
                             >
                                 <Menu className="w-6 h-6 text-orange-400" />
                             </button>
                             
                     {/* Logo */}
-                    <Link href="/anime" className="flex items-center space-x-3 group">
+                    <Link href="/anime" className="flex items-center space-x-3 group flex-shrink-0">
                         <motion.div
                             whileHover={{ scale: 1.1, rotate: 5 }}
                             className="relative"
@@ -309,8 +309,8 @@ export default function AnimeNavigation() {
                         </div>
                     </Link>
 
-                    {/* Navigation Links - Moved to left side with proper spacing */}
-                    <div className="hidden lg:flex items-center space-x-6 ml-4">
+                    {/* Navigation Links - Positioned right after logo with equal spacing */}
+                    <div className="hidden lg:flex items-center gap-6">
                         {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                             const active = isActive(item.href);
                             const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
