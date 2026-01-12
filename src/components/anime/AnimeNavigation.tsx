@@ -26,8 +26,20 @@ export default function AnimeNavigation() {
     const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
     const { theme, setTheme } = useTheme();
     
-    // Check if user is admin
-    const isAdmin = user?.role === 'admin';
+    // Check if user is admin - check both role property and isAdmin property
+    const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
+    
+    // Debug logging (remove in production)
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            console.log('[AnimeNavigation] User data:', {
+                role: user.role,
+                isAdmin: user.isAdmin,
+                isAdminCheck: isAdmin,
+                userObject: user
+            });
+        }
+    }, [user, isAuthenticated, isAdmin]);
 
     // Check if user has uploaded anime (only for creators)
     useEffect(() => {
@@ -106,7 +118,8 @@ export default function AnimeNavigation() {
     ] : [];
 
     // Admin navigation items (shown when user is admin) - separate from creator dashboard
-    const adminNavItems = isAdmin ? [
+    // Always show for admin users, regardless of creator status
+    const adminNavItems = (isAdmin && isAuthenticated) ? [
         { href: '/admin/dashboard', label: 'ADMIN DASHBOARD', icon: Shield },
     ] : [];
 
