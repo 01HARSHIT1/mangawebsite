@@ -773,62 +773,7 @@ export default function EnhancedVideoPlayer({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [userPreferences.keyboardShortcutsEnabled, volume, isMuted, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode]);
-
-    // Define toggle functions BEFORE useEffect that uses them
-    const togglePlay = async () => {
-        const video = videoRef.current;
-        if (!video) {
-            console.warn('Video element not found');
-            return;
-        }
-
-        // If video has ended, restart from beginning
-        if (hasEnded) {
-            video.currentTime = 0;
-            setHasEnded(false);
-            setCurrentTime(0);
-        }
-
-        if (!video.src) {
-            console.warn('Video source not set');
-            // Try to set source from episode data
-            const videoSrc = playbackData?.manifestUrl || playbackData?.hlsManifestUrl || playbackData?.videoUrl || episode.videoUrl || episode.hlsManifestUrl;
-            if (videoSrc) {
-                video.src = videoSrc;
-                video.load();
-            } else {
-                console.error('No video source available');
-                return;
-            }
-        }
-
-        try {
-            if (isPlaying) {
-                video.pause();
-            } else {
-                // Ensure video is ready before playing
-                if (video.readyState < 2) {
-                    await new Promise((resolve) => {
-                        const handleCanPlay = () => {
-                            video.removeEventListener('canplay', handleCanPlay);
-                            resolve(null);
-                        };
-                        video.addEventListener('canplay', handleCanPlay);
-                        video.load();
-                    });
-                }
-                await video.play();
-                setIsPlaying(true);
-                setHasEnded(false);
-            }
-        } catch (error: any) {
-            console.error('Error toggling play:', error);
-            if (error.name === 'NotAllowedError') {
-                console.warn('Playback was prevented. User interaction may be required.');
-            }
-        }
-    };
+    }, [userPreferences.keyboardShortcutsEnabled, volume, isMuted, hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode, togglePlay, toggleMute, toggleFullscreen]);
 
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
         const video = videoRef.current;
@@ -850,21 +795,6 @@ export default function EnhancedVideoPlayer({
         video.volume = newVolume;
         setVolume(newVolume);
         setIsMuted(newVolume === 0);
-    };
-
-    const toggleMute = () => {
-        const video = videoRef.current;
-        if (!video) return;
-        video.muted = !isMuted;
-        setIsMuted(!isMuted);
-    };
-
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            videoRef.current?.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
     };
 
     const formatTime = (seconds: number) => {
