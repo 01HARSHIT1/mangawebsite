@@ -274,8 +274,8 @@ export default function AnimeNavigation() {
         <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                        {/* Left Side: Hamburger Menu Button + Logo */}
-                        <div className="flex items-center space-x-3">
+                        {/* Left Side: Hamburger Menu Button + Logo + Navigation Links */}
+                        <div className="flex items-center space-x-6">
                             {/* Hamburger Menu Button */}
                             <button
                                 data-hamburger-button
@@ -309,8 +309,8 @@ export default function AnimeNavigation() {
                         </div>
                     </Link>
 
-                    {/* Navigation Links */}
-                    <div className="hidden lg:flex items-center space-x-8">
+                    {/* Navigation Links - Moved to left side with proper spacing */}
+                    <div className="hidden lg:flex items-center space-x-6 ml-4">
                         {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                             const active = isActive(item.href);
                             const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
