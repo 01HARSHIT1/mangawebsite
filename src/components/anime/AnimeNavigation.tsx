@@ -301,7 +301,7 @@ export default function AnimeNavigation() {
                         {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                             const active = isActive(item.href);
                             const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
-                            const isDashboardButton = item.href === '/anime/creator/dashboard';
+                            const isDashboardButton = item.href === '/anime/creator/dashboard' || item.href === '/admin/dashboard';
                             return (
                                 <Link
                                     key={item.href}
@@ -403,6 +403,16 @@ export default function AnimeNavigation() {
                                                             <span className="text-sm">Creator Dashboard</span>
                                                         </Link>
                                                     )}
+                                                    {isAdmin && (
+                                                        <Link
+                                                            href="/admin/dashboard"
+                                                            onClick={() => setIsProfileMenuOpen(false)}
+                                                            className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-orange-500/20 hover:text-orange-400 transition-colors"
+                                                        >
+                                                            <Shield className="w-4 h-4" />
+                                                            <span className="text-sm">Admin Dashboard</span>
+                                                        </Link>
+                                                    )}
                                                     <button
                                                         onClick={() => {
                                                             setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -458,7 +468,7 @@ export default function AnimeNavigation() {
                         className="lg:hidden border-t border-orange-500/20 py-4"
                     >
                         <div className="flex flex-col space-y-3">
-                            {[...navItems, ...creatorNavItems].map((item) => {
+                            {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                                 const active = isActive(item.href);
                                 const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
                                 return (
