@@ -134,37 +134,37 @@ export default function ModernNavigation() {
                 ? 'glass-strong shadow-xl border-b border-white/10'
                 : 'bg-transparent'
                 }`}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16 gap-4">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3 md:gap-4">
                         {/* App Mode Switcher - Desktop */}
-                        <div className="hidden lg:block mr-4">
+                        <div className="hidden lg:block mr-2 sm:mr-4">
                             <AppModeSwitcher />
                         </div>
 
-                        {/* Logo */}
+                        {/* Logo - Responsive */}
                         <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
                             <div className="relative">
-                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                    <span className="text-white font-bold text-lg">M</span>
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                    <span className="text-white font-bold text-base sm:text-lg">M</span>
                                 </div>
-                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
                             </div>
-                            <div className="hidden md:block min-w-0">
-                                <h1 className="text-lg sm:text-xl font-bold text-gradient truncate">MangaReader</h1>
-                                <p className="text-xs text-gray-400 -mt-1 truncate">Professional Platform</p>
+                            <div className="hidden sm:block min-w-0">
+                                <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">MangaReader</h1>
+                                <p className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:-mt-1 truncate hidden md:block">Professional Platform</p>
                             </div>
                         </Link>
 
-                        {/* Desktop Navigation */}
+                        {/* Desktop Navigation - Responsive */}
                         <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center max-w-2xl">
                             {navItems.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-2 px-4 py-2"
+                                    className="nav-link flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm"
                                 >
                                     <item.icon className="text-sm" />
-                                    <span>{item.label}</span>
+                                    <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -229,15 +229,16 @@ export default function ModernNavigation() {
                             )}
                         </div>
 
-                        {/* Search & Actions */}
-                        <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 flex-shrink-0">
-                            {/* Search */}
+                        {/* Search & Actions - Responsive */}
+                        <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 lg:space-x-4 flex-shrink-0">
+                            {/* Search - Responsive */}
                             <div className="relative">
                                 <button
                                     onClick={() => setIsSearchOpen(!isSearchOpen)}
-                                    className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200"
+                                    className="p-2 sm:p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
+                                    aria-label="Search"
                                 >
-                                    <FaSearch className="text-gray-400" />
+                                    <FaSearch className="text-gray-400 text-sm sm:text-base" />
                                 </button>
 
                                 <AnimatePresence>
@@ -246,14 +247,14 @@ export default function ModernNavigation() {
                                             initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                            className="absolute right-0 top-full mt-2 w-80 search-container"
+                                            className="absolute right-0 top-full mt-2 w-[90vw] sm:w-80 max-w-sm search-container"
                                         >
                                             <input
                                                 type="text"
                                                 placeholder="Search manga, creators, genres..."
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="input focus-ring"
+                                                className="input focus-ring text-sm sm:text-base"
                                                 autoFocus
                                             />
 
@@ -287,11 +288,11 @@ export default function ModernNavigation() {
                                 </AnimatePresence>
                             </div>
 
-                            {/* Notifications */}
+                            {/* Notifications - Responsive */}
                             {isAuthenticated && (
                                 <Link
                                     href="/notifications"
-                                    className="relative p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200"
+                                    className="relative p-2 sm:p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
                                     onClick={async () => {
                                         // Mark all as read when clicking the bell
                                         if (unreadCount > 0) {
@@ -319,19 +320,19 @@ export default function ModernNavigation() {
                                 </Link>
                             )}
 
-                            {/* User Menu */}
+                            {/* User Menu - Responsive */}
                             {isAuthenticated ? (
                                 <div className="relative dropdown">
                                     <button
                                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                        className="flex items-center space-x-2 p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200"
+                                        className="flex items-center space-x-1.5 sm:space-x-2 p-1.5 sm:p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
                                     >
-                                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-sm font-semibold">
+                                        <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                                            <span className="text-white text-xs sm:text-sm font-semibold">
                                                 {user?.username?.charAt(0).toUpperCase() || 'U'}
                                             </span>
                                         </div>
-                                        <span className="hidden md:block text-sm font-medium text-white">
+                                        <span className="hidden lg:block text-xs sm:text-sm font-medium text-white">
                                             {user?.username || 'User'}
                                         </span>
                                     </button>
@@ -342,7 +343,7 @@ export default function ModernNavigation() {
                                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                className="absolute right-0 top-full mt-2 w-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50"
+                                                className="absolute right-0 top-full mt-2 w-[90vw] sm:w-80 max-w-sm bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[80vh] overflow-y-auto"
                                             >
                                                 {/* User Info Header */}
                                                 <div className="p-4 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border-b border-slate-700">
@@ -503,28 +504,31 @@ export default function ModernNavigation() {
                                     </AnimatePresence>
                                 </div>
                             ) : (
-                                <div className="flex items-center space-x-2 sm:space-x-3">
+                                <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3">
                                     <Link 
                                         href="/login" 
-                                        className="px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 text-white text-sm font-medium transition-all duration-200 whitespace-nowrap"
+                                        className="px-3 sm:px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 text-white text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center"
                                     >
-                                        Sign In
+                                        <span className="hidden sm:inline">Sign In</span>
+                                        <span className="sm:hidden">Login</span>
                                     </Link>
                                     <Link 
                                         href="/signup" 
-                                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 whitespace-nowrap"
+                                        className="px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:from-indigo-800 active:to-purple-800 text-white text-xs sm:text-sm font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 whitespace-nowrap touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center"
                                     >
-                                        Sign Up
+                                        <span className="hidden sm:inline">Sign Up</span>
+                                        <span className="sm:hidden">Join</span>
                                     </Link>
                                 </div>
                             )}
 
-                            {/* Mobile Menu Button */}
+                            {/* Mobile Menu Button - Responsive */}
                             <button
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="lg:hidden p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200 text-white"
+                                className="lg:hidden p-2.5 sm:p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200 text-white touch-manipulation min-h-[44px] sm:min-h-0"
+                                aria-label="Toggle menu"
                             >
-                                {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+                                {isMobileMenuOpen ? <FaTimes className="text-base sm:text-lg" /> : <FaBars className="text-base sm:text-lg" />}
                             </button>
                         </div>
                     </div>
@@ -544,67 +548,68 @@ export default function ModernNavigation() {
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
 
-                        {/* Mobile Menu Panel */}
+                        {/* Mobile Menu Panel - Responsive */}
                         <motion.div
                             initial={{ opacity: 0, x: '100%' }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: '100%' }}
                             transition={{ type: 'tween', duration: 0.3 }}
-                            className="fixed top-0 right-0 h-full w-80 max-w-[80vw] glass-strong border-l border-white/10 z-50 lg:hidden"
+                            className="fixed top-0 right-0 h-full w-[85vw] sm:w-80 max-w-sm glass-strong border-l border-white/10 z-50 lg:hidden overflow-y-auto"
                         >
-                            <div className="p-6">
-                                <div className="flex items-center justify-between mb-8">
-                                    <h2 className="text-xl font-bold text-white">Menu</h2>
+                            <div className="p-4 sm:p-6">
+                                <div className="flex items-center justify-between mb-6 sm:mb-8">
+                                    <h2 className="text-lg sm:text-xl font-bold text-white">Menu</h2>
                                     <button
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50"
+                                        className="p-2.5 sm:p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 touch-manipulation min-h-[44px] sm:min-h-0"
+                                        aria-label="Close menu"
                                     >
-                                        <FaTimes />
+                                        <FaTimes className="text-base sm:text-lg" />
                                     </button>
                                 </div>
 
-                                <div className="space-y-4">
-                                    {/* Navigation Items */}
+                                <div className="space-y-2 sm:space-y-3">
+                                    {/* Navigation Items - Touch-friendly */}
                                     {[...navItems, ...userNavItems, ...creatorNavItems].map((item) => (
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors"
+                                            className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors touch-manipulation min-h-[44px]"
                                             onClick={() => setIsMobileMenuOpen(false)}
                                         >
-                                            <item.icon className="text-indigo-400" />
-                                            <span className="text-white font-medium">{item.label}</span>
+                                            <item.icon className="text-indigo-400 text-base sm:text-lg" />
+                                            <span className="text-white font-medium text-sm sm:text-base">{item.label}</span>
                                         </Link>
                                     ))}
 
-                                    {/* Policy Pages */}
-                                    <div className="border-t border-slate-700 my-4"></div>
-                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider px-3">Legal</h3>
+                                    {/* Policy Pages - Touch-friendly */}
+                                    <div className="border-t border-slate-700 my-3 sm:my-4"></div>
+                                    <h3 className="text-xs sm:text-sm font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Legal</h3>
                                     {policyItems.map((item) => (
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors"
+                                            className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors touch-manipulation min-h-[44px]"
                                             onClick={() => setIsMobileMenuOpen(false)}
                                         >
-                                            <item.icon className="text-slate-400" />
-                                            <span className="text-slate-300 font-medium">{item.label}</span>
+                                            <item.icon className="text-slate-400 text-base sm:text-lg" />
+                                            <span className="text-slate-300 font-medium text-sm sm:text-base">{item.label}</span>
                                         </Link>
                                     ))}
 
                                     {!isAuthenticated && (
                                         <>
-                                            <div className="border-t border-slate-700 my-4"></div>
+                                            <div className="border-t border-slate-700 my-3 sm:my-4"></div>
                                             <Link
                                                 href="/login"
-                                                className="block w-full px-4 py-3 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 text-white text-center font-medium transition-all duration-200 mb-2"
+                                                className="block w-full px-4 py-3.5 sm:py-3 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 text-white text-center font-medium transition-all duration-200 mb-2 touch-manipulation min-h-[44px] flex items-center justify-center"
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
                                                 Sign In
                                             </Link>
                                             <Link
                                                 href="/signup"
-                                                className="block w-full px-4 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-center font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20"
+                                                className="block w-full px-4 py-3.5 sm:py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:from-indigo-800 active:to-purple-800 text-white text-center font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20 touch-manipulation min-h-[44px] flex items-center justify-center"
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
                                                 Sign Up
@@ -614,32 +619,32 @@ export default function ModernNavigation() {
 
                                     {isAuthenticated && (
                                         <>
-                                            <div className="border-t border-slate-700 my-4"></div>
+                                            <div className="border-t border-slate-700 my-3 sm:my-4"></div>
                                             <Link
                                                 href="/profile"
-                                                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors"
+                                                className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors touch-manipulation min-h-[44px]"
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
-                                                <FaUser className="text-indigo-400" />
-                                                <span className="text-white font-medium">Profile</span>
+                                                <FaUser className="text-indigo-400 text-base sm:text-lg" />
+                                                <span className="text-white font-medium text-sm sm:text-base">Profile</span>
                                             </Link>
                                             <Link
                                                 href="/settings"
-                                                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors"
+                                                className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors touch-manipulation min-h-[44px]"
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
-                                                <FaCog className="text-indigo-400" />
-                                                <span className="text-white font-medium">Settings</span>
+                                                <FaCog className="text-indigo-400 text-base sm:text-lg" />
+                                                <span className="text-white font-medium text-sm sm:text-base">Settings</span>
                                             </Link>
                                             <button
                                                 onClick={() => {
                                                     handleLogout();
                                                     setIsMobileMenuOpen(false);
                                                 }}
-                                                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors w-full text-left text-red-400"
+                                                className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors w-full text-left text-red-400 touch-manipulation min-h-[44px]"
                                             >
-                                                <FaSignOutAlt />
-                                                <span className="font-medium">Sign Out</span>
+                                                <FaSignOutAlt className="text-base sm:text-lg" />
+                                                <span className="font-medium text-sm sm:text-base">Sign Out</span>
                                             </button>
                                         </>
                                     )}

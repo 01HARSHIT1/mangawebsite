@@ -58,15 +58,15 @@ export default function BrowsePage() {
     const statuses = ['all', 'ongoing', 'completed', 'upcoming'];
 
     return (
-        <div className="min-h-screen bg-gray-950 text-white">
+        <div className="min-h-screen bg-gray-950 text-white pt-16 sm:pt-0">
             {/* Navigation is handled by AnimeAppNavigator */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <h1 className="text-3xl font-bold mb-8">Browse Anime</h1>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 md:mb-8">Browse Anime</h1>
 
-                {/* Search and Filters */}
-                <div className="mb-8 space-y-4">
+                {/* Search and Filters - Responsive */}
+                <div className="mb-6 sm:mb-8 space-y-3 sm:space-y-4">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search anime..."
@@ -77,18 +77,18 @@ export default function BrowsePage() {
                                     fetchAnime();
                                 }
                             }}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500"
+                            className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 bg-gray-900 border border-gray-800 rounded-lg text-white text-sm sm:text-base placeholder-gray-400 focus:outline-none focus:border-red-500 touch-manipulation"
                         />
                     </div>
 
-                    <div className="flex flex-wrap gap-4">
-                        <div className="flex items-center space-x-2">
-                            <Filter className="w-5 h-5 text-gray-400" />
-                            <span className="text-gray-400">Genre:</span>
+                    <div className="flex flex-wrap gap-3 sm:gap-4">
+                        <div className="flex items-center space-x-2 flex-1 min-w-[140px]">
+                            <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-400 text-sm sm:text-base hidden sm:inline">Genre:</span>
                             <select
                                 value={selectedGenre}
                                 onChange={(e) => setSelectedGenre(e.target.value)}
-                                className="px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-red-500"
+                                className="flex-1 px-3 sm:px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white text-sm sm:text-base focus:outline-none focus:border-red-500 touch-manipulation"
                             >
                                 <option value="all">All Genres</option>
                                 {genres.map((genre) => (
@@ -99,12 +99,12 @@ export default function BrowsePage() {
                             </select>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                            <span className="text-gray-400">Status:</span>
+                        <div className="flex items-center space-x-2 flex-1 min-w-[140px]">
+                            <span className="text-gray-400 text-sm sm:text-base hidden sm:inline">Status:</span>
                             <select
                                 value={selectedStatus}
                                 onChange={(e) => setSelectedStatus(e.target.value)}
-                                className="px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-red-500"
+                                className="flex-1 px-3 sm:px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white text-sm sm:text-base focus:outline-none focus:border-red-500 touch-manipulation"
                             >
                                 {statuses.map((status) => (
                                     <option key={status} value={status}>
@@ -116,20 +116,20 @@ export default function BrowsePage() {
                     </div>
                 </div>
 
-                {/* Results */}
+                {/* Results - Responsive Grid */}
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+                    <div className="flex items-center justify-center py-12 sm:py-20">
+                        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-red-500"></div>
                     </div>
                 ) : anime.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                         {anime.map((item) => (
                             <EpisodeCard key={item._id} anime={item} />
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-20">
-                        <p className="text-gray-400 text-xl">No anime found</p>
+                    <div className="text-center py-12 sm:py-20">
+                        <p className="text-gray-400 text-lg sm:text-xl">No anime found</p>
                     </div>
                 )}
             </div>

@@ -971,51 +971,53 @@ export default function EnhancedVideoPlayer({
                 </div>
             )}
 
-            {/* Top Bar */}
+            {/* Top Bar - Responsive */}
             <div
                 className={`absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'
                     }`}
             >
-                <div className="flex items-center justify-between p-4">
+                <div className="flex items-center justify-between p-3 sm:p-4">
                     <button
                         onClick={onBackToSeries}
-                        className="flex items-center space-x-2 text-white hover:text-red-400 transition-colors"
+                        className="flex items-center space-x-2 text-white hover:text-red-400 active:text-red-500 transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                     >
-                        <ChevronLeft className="w-6 h-6" />
-                        <div className="hidden md:block">
-                            <p className="text-sm font-semibold">{series?.title || 'Loading...'}</p>
-                            <p className="text-xs text-gray-400">Episode {episode?.episodeNumber || 1}: {episode?.title || 'Untitled'}</p>
+                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <div className="hidden sm:block">
+                            <p className="text-xs sm:text-sm font-semibold truncate max-w-[200px] md:max-w-none">{series?.title || 'Loading...'}</p>
+                            <p className="text-[10px] sm:text-xs text-gray-400 hidden md:block">Episode {episode?.episodeNumber || 1}: {episode?.title || 'Untitled'}</p>
                         </div>
                     </button>
-                    <AppModeSwitcher />
+                    <div className="hidden sm:block">
+                        <AppModeSwitcher />
+                    </div>
                 </div>
             </div>
 
-            {/* Center Play/Replay Button */}
+            {/* Center Play/Replay Button - Larger on mobile */}
             {!isPlaying && (resumePosition === 0 || hasEnded) && (
                 <div className="absolute inset-0 flex items-center justify-center">
                     <button
                         onClick={togglePlay}
-                        className={`w-20 h-20 ${hasEnded ? 'bg-orange-600 hover:bg-orange-700' : 'bg-red-600 hover:bg-red-700'} rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110`}
+                        className={`w-16 h-16 sm:w-20 sm:h-20 ${hasEnded ? 'bg-orange-600 hover:bg-orange-700 active:bg-orange-800' : 'bg-red-600 hover:bg-red-700 active:bg-red-800'} rounded-full flex items-center justify-center transition-all shadow-lg hover:scale-110 active:scale-95 touch-manipulation`}
                         title={hasEnded ? 'Replay' : 'Play'}
                     >
                         {hasEnded ? (
-                            <RotateCw className="w-10 h-10 text-white" />
+                            <RotateCw className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                         ) : (
-                            <Play className="w-10 h-10 text-white ml-1" />
+                            <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white ml-1" />
                         )}
                     </button>
                 </div>
             )}
 
-            {/* Bottom Controls */}
+            {/* Bottom Controls - Responsive */}
             <div
                 className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'
                     }`}
             >
-                <div className="p-4 space-y-4">
-                    {/* Progress Bar */}
-                    <div className="flex items-center space-x-2">
+                <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+                    {/* Progress Bar - Larger on mobile */}
+                    <div className="flex items-center space-x-2 sm:space-x-3">
                         <input
                             type="range"
                             min="0"
@@ -1023,58 +1025,58 @@ export default function EnhancedVideoPlayer({
                             step="0.1"
                             value={currentTime}
                             onChange={handleSeek}
-                            className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600"
+                            className="flex-1 h-2 sm:h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600 touch-manipulation"
                             style={{
                                 background: duration ? `linear-gradient(to right, #dc2626 0%, #dc2626 ${(currentTime / duration) * 100}%, #374151 ${(currentTime / duration) * 100}%, #374151 100%)` : undefined
                             }}
                         />
-                        <span className="text-white text-sm font-mono min-w-[80px] text-right">
+                        <span className="text-white text-xs sm:text-sm font-mono min-w-[70px] sm:min-w-[80px] text-right">
                             {formatTime(currentTime)} / {formatTime(duration || 0)}
                         </span>
                     </div>
 
-                    {/* Control Buttons */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
+                    {/* Control Buttons - Responsive spacing and sizing */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-0">
+                        <div className="flex items-center space-x-2 sm:space-x-4">
                             <button
                                 onClick={onPreviousEpisode}
                                 disabled={!hasPreviousEpisode}
-                                className={`p-2 rounded transition-colors ${hasPreviousEpisode
-                                    ? 'hover:bg-white/10'
+                                className={`p-2.5 sm:p-2 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0 ${hasPreviousEpisode
+                                    ? 'hover:bg-white/10 active:bg-white/20'
                                     : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 title={hasPreviousEpisode ? "Previous Episode" : "No previous episode"}
                             >
-                                <SkipBack className="w-5 h-5 text-white" />
+                                <SkipBack className="w-5 h-5 sm:w-5 sm:h-5 text-white" />
                             </button>
                             <button
                                 onClick={togglePlay}
-                                className="p-2 hover:bg-white/10 rounded transition-colors"
+                                className="p-2.5 sm:p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                 title={hasEnded ? 'Replay' : isPlaying ? 'Pause' : 'Play'}
                             >
                                 {hasEnded ? (
-                                    <RotateCw className="w-6 h-6 text-white" />
+                                    <RotateCw className="w-6 h-6 sm:w-6 sm:h-6 text-white" />
                                 ) : isPlaying ? (
-                                    <Pause className="w-6 h-6 text-white" />
+                                    <Pause className="w-6 h-6 sm:w-6 sm:h-6 text-white" />
                                 ) : (
-                                    <Play className="w-6 h-6 text-white" />
+                                    <Play className="w-6 h-6 sm:w-6 sm:h-6 text-white" />
                                 )}
                             </button>
                             <button
                                 onClick={onNextEpisode}
                                 disabled={!hasNextEpisode}
-                                className={`p-2 rounded transition-colors ${hasNextEpisode
-                                    ? 'hover:bg-white/10'
+                                className={`p-2.5 sm:p-2 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0 ${hasNextEpisode
+                                    ? 'hover:bg-white/10 active:bg-white/20'
                                     : 'opacity-50 cursor-not-allowed'
                                     }`}
                                 title={hasNextEpisode ? "Next Episode" : "No next episode"}
                             >
-                                <SkipForward className="w-5 h-5 text-white" />
+                                <SkipForward className="w-5 h-5 sm:w-5 sm:h-5 text-white" />
                             </button>
 
-                            {/* Volume */}
-                            <div className="flex items-center space-x-2">
-                                <button onClick={toggleMute} className="p-2 hover:bg-white/10 rounded transition-colors">
+                            {/* Volume - Hidden on small mobile, shown on larger screens */}
+                            <div className="hidden sm:flex items-center space-x-2">
+                                <button onClick={toggleMute} className="p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation">
                                     {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
                                 </button>
                                 <input
@@ -1084,11 +1086,17 @@ export default function EnhancedVideoPlayer({
                                     step="0.01"
                                     value={isMuted ? 0 : volume}
                                     onChange={handleVolumeChange}
-                                    className="w-24 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600"
+                                    className="w-20 sm:w-24 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600 touch-manipulation"
                                 />
                             </div>
+                            {/* Mobile Volume Toggle */}
+                            <div className="sm:hidden">
+                                <button onClick={toggleMute} className="p-2.5 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px]">
+                                    {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                                </button>
+                            </div>
 
-                            {/* Subtitles */}
+                            {/* Subtitles - Responsive */}
                             {((playbackData?.subtitles && playbackData.subtitles.length > 0) || (episode.subtitles && episode.subtitles.length > 0) || (episode.availableTracks?.subtitles && episode.availableTracks.subtitles.length > 0)) && (
                                 <div className="relative">
                                     <button
@@ -1098,13 +1106,13 @@ export default function EnhancedVideoPlayer({
                                             setShowAudioMenu(false);
                                             setShowSettings(false);
                                         }}
-                                        className="p-2 hover:bg-white/10 rounded transition-colors"
+                                        className="p-2.5 sm:p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                         title="Subtitles"
                                     >
                                         <Subtitles className={`w-5 h-5 ${selectedSubtitle ? 'text-red-400' : 'text-white'}`} />
                                     </button>
                                     {showSubtitlesMenu && (
-                                        <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[200px] z-50">
+                                        <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[180px] sm:min-w-[200px] z-50 max-h-[200px] overflow-y-auto">
                                             <button
                                                 onClick={() => handleSubtitleChange(null)}
                                                 className={`w-full text-left px-2 py-1 text-sm rounded hover:bg-gray-800 ${!selectedSubtitle ? 'text-red-400 font-semibold' : 'text-white'
@@ -1127,7 +1135,7 @@ export default function EnhancedVideoPlayer({
                                 </div>
                             )}
 
-                            {/* Audio Tracks */}
+                            {/* Audio Tracks - Responsive */}
                             {((playbackData?.audioTracks && playbackData.audioTracks.length > 1) || ((episode.audioTracks || episode.availableTracks?.audio || []).length > 1)) && (
                                 <div className="relative">
                                     <button
@@ -1137,13 +1145,13 @@ export default function EnhancedVideoPlayer({
                                             setShowQualityMenu(false);
                                             setShowSettings(false);
                                         }}
-                                        className="p-2 hover:bg-white/10 rounded transition-colors"
+                                        className="p-2.5 sm:p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                         title="Audio"
                                     >
                                         <Languages className="w-5 h-5 text-white" />
                                     </button>
                                     {showAudioMenu && (
-                                        <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[200px] z-50">
+                                        <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[180px] sm:min-w-[200px] z-50 max-h-[200px] overflow-y-auto">
                                             {(playbackData?.audioTracks || episode.audioTracks || episode.availableTracks?.audio || []).map((audio: AudioTrack) => (
                                                 <button
                                                     key={audio.languageCode}
@@ -1159,7 +1167,7 @@ export default function EnhancedVideoPlayer({
                                 </div>
                             )}
 
-                            {/* Quality */}
+                            {/* Quality - Responsive */}
                             {playbackData?.qualityLevels && playbackData.qualityLevels.length > 1 && (
                                 <div className="relative">
                                     <button
@@ -1169,15 +1177,15 @@ export default function EnhancedVideoPlayer({
                                             setShowAudioMenu(false);
                                             setShowSettings(false);
                                         }}
-                                        className="p-2 hover:bg-white/10 rounded transition-colors"
+                                        className="p-2.5 sm:p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                         title="Quality"
                                     >
-                                        <span className="text-white text-sm font-semibold">
+                                        <span className="text-white text-xs sm:text-sm font-semibold">
                                             {selectedQuality?.quality || 'Auto'}
                                         </span>
                                     </button>
                                     {showQualityMenu && (
-                                        <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[150px] z-50">
+                                        <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[130px] sm:min-w-[150px] z-50 max-h-[200px] overflow-y-auto">
                                             {playbackData.qualityLevels.map((quality: QualityLevel) => (
                                                 <button
                                                     key={quality.quality}
@@ -1193,7 +1201,7 @@ export default function EnhancedVideoPlayer({
                                 </div>
                             )}
 
-                            {/* Settings */}
+                            {/* Settings - Responsive */}
                             <div className="relative">
                                 <button
                                     onClick={() => {
@@ -1202,12 +1210,12 @@ export default function EnhancedVideoPlayer({
                                         setShowQualityMenu(false);
                                         setShowAudioMenu(false);
                                     }}
-                                    className="p-2 hover:bg-white/10 rounded transition-colors"
+                                    className="p-2.5 sm:p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
                                     <Settings className="w-5 h-5 text-white" />
                                 </button>
                                 {showSettings && (
-                                    <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[150px] z-50">
+                                    <div className="absolute bottom-full left-0 mb-2 bg-gray-900 rounded-lg shadow-xl p-2 min-w-[130px] sm:min-w-[150px] z-50 max-h-[200px] overflow-y-auto">
                                         <p className="text-white text-sm font-semibold px-2 py-1">Speed</p>
                                         {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
                                             <button
@@ -1249,18 +1257,18 @@ export default function EnhancedVideoPlayer({
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-4">
-                            <span className="text-white text-sm">Episode {episode.episodeNumber}</span>
-                            {document.pictureInPictureEnabled && (
+                        <div className="flex items-center space-x-2 sm:space-x-4">
+                            <span className="text-white text-xs sm:text-sm hidden sm:inline">Episode {episode.episodeNumber}</span>
+                            {typeof document !== 'undefined' && document.pictureInPictureEnabled && (
                                 <button
                                     onClick={togglePictureInPicture}
-                                    className="p-2 hover:bg-white/10 rounded transition-colors"
+                                    className="p-2.5 sm:p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                     title={isPictureInPicture ? 'Exit Picture-in-Picture' : 'Enter Picture-in-Picture'}
                                 >
                                     <Maximize2 className={`w-5 h-5 ${isPictureInPicture ? 'text-orange-500' : 'text-white'}`} />
                                 </button>
                             )}
-                            <button onClick={toggleFullscreen} className="p-2 hover:bg-white/10 rounded transition-colors">
+                            <button onClick={toggleFullscreen} className="p-2.5 sm:p-2 hover:bg-white/10 active:bg-white/20 rounded transition-colors touch-manipulation min-h-[44px] sm:min-h-0">
                                 {isFullscreen ? <Minimize className="w-5 h-5 text-white" /> : <Maximize className="w-5 h-5 text-white" />}
                             </button>
                         </div>

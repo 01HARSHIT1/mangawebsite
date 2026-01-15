@@ -230,31 +230,31 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white">
-            <div className="max-w-7xl mx-auto px-4 py-8">
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Left: Cover and actions */}
-                    <div className="lg:w-80 flex-shrink-0">
-                        <div className="bg-gray-800 rounded-xl overflow-hidden mb-6 shadow-lg">
+        <div className="min-h-screen bg-gray-900 text-white pt-14 sm:pt-0">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 md:gap-8">
+                    {/* Left: Cover and actions - Responsive */}
+                    <div className="w-full sm:w-64 md:w-72 lg:w-80 flex-shrink-0 mx-auto lg:mx-0">
+                        <div className="bg-gray-800 rounded-lg sm:rounded-xl overflow-hidden mb-4 sm:mb-6 shadow-lg">
                             {manga.coverImage ? (
                                 <img
                                     src={manga.coverImage}
                                     alt={manga.title}
-                                    className="w-full h-96 object-cover"
+                                    className="w-full h-64 sm:h-80 md:h-96 object-cover"
                                     onError={e => { e.currentTarget.src = '/file.svg'; }}
                                 />
                             ) : (
                                 <img
                                     src="/file.svg"
                                     alt={manga.title}
-                                    className="w-full h-96 object-cover bg-gray-700"
+                                    className="w-full h-64 sm:h-80 md:h-96 object-cover bg-gray-700"
                                 />
                             )}
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                             <Link href={`/manga/${manga._id}/chapter/${chapters && chapters[0]?._id ? chapters[0]._id : '1'}`}>
-                                <button className="w-full bg-red-600 hover:bg-red-700 text-white border-none rounded-lg py-4 font-bold text-lg transition-colors">
+                                <button className="w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border-none rounded-lg py-3 sm:py-3.5 md:py-4 font-bold text-sm sm:text-base md:text-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-0">
                                     {chapters && chapters[0] ? `Read Chapter ${chapters[0].chapterNumber}` : 'No Chapters Available'}
                                 </button>
                             </Link>
@@ -262,9 +262,9 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                             <button
                                 onClick={handleBookmark}
                                 disabled={loading}
-                                className={`w-full border-none rounded-lg py-4 font-bold text-lg transition-colors ${bookmarked
-                                    ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                className={`w-full border-none rounded-lg py-3 sm:py-3.5 md:py-4 font-bold text-sm sm:text-base md:text-lg transition-colors touch-manipulation min-h-[44px] sm:min-h-0 ${bookmarked
+                                    ? 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white'
+                                    : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white'
                                     }`}
                             >
                                 {bookmarked ? 'Remove Bookmark' : 'Bookmark'}
@@ -276,16 +276,16 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                                     setTipMessage('');
                                     setShowTip(true);
                                 }}
-                                className="w-full bg-pink-500 hover:bg-pink-600 text-white border-none rounded-lg py-4 font-bold text-lg mt-3 flex items-center justify-center gap-2 transition-colors"
+                                className="w-full bg-pink-500 hover:bg-pink-600 active:bg-pink-700 text-white border-none rounded-lg py-3 sm:py-3.5 md:py-4 font-bold text-sm sm:text-base md:text-lg mt-2 sm:mt-3 flex items-center justify-center gap-2 transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                 aria-label="Tip the Creator"
                             >
-                                <FaGift /> Tip the Creator
+                                <FaGift className="text-sm sm:text-base" /> <span>Tip the Creator</span>
                             </button>
                         </div>
 
-                        <div className="flex gap-4 mt-6 items-center">
-                            <span className="text-yellow-400 font-bold text-lg">★ {ratings}</span>
-                            <span className="text-blue-400 font-bold text-lg">♥ {favorites.toLocaleString()}</span>
+                        <div className="flex gap-3 sm:gap-4 mt-4 sm:mt-6 items-center justify-center lg:justify-start">
+                            <span className="text-yellow-400 font-bold text-base sm:text-lg">★ {ratings}</span>
+                            <span className="text-blue-400 font-bold text-base sm:text-lg">♥ {favorites.toLocaleString()}</span>
                         </div>
 
                         {/* AI Feedback Buttons */}
@@ -296,7 +296,7 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                             <PreviouslyOnRecap mangaId={manga._id} enabled={true} />
                         </div>
 
-                        <div className="mt-6 text-sm text-white bg-gray-800 rounded-xl p-5 space-y-2">
+                        <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-white bg-gray-800 rounded-lg sm:rounded-xl p-4 sm:p-5 space-y-2">
                             <div><span className="font-semibold">Status:</span> <span className="text-green-400 font-medium">{status}</span></div>
                             <div><span className="font-semibold">Type:</span> <span className="text-pink-400 font-medium">{type}</span></div>
                             <div><span className="font-semibold">Author:</span> {author}</div>
@@ -312,27 +312,28 @@ export default function MangaDetailClient({ manga, chapters, ratings, favorites,
                 </div>
             </div>
 
-            {/* Live Features */}
-            <div className="fixed bottom-4 right-4 flex flex-col items-end space-y-4 z-40">
-                {/* Current Readers Indicator */}
+            {/* Live Features - Responsive */}
+            <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 flex flex-col items-end space-y-2 sm:space-y-3 md:space-y-4 z-40">
+                {/* Current Readers Indicator - Responsive */}
                 {currentReaders[manga._id] && currentReaders[manga._id].length > 0 && (
-                    <div className="bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 border border-purple-500/20 shadow-lg">
-                        <div className="flex items-center space-x-2 text-white">
-                            <FaUsers className="text-purple-400" />
-                            <span className="text-sm">
+                    <div className="bg-slate-900/90 backdrop-blur-md rounded-xl sm:rounded-2xl p-2 sm:p-3 border border-purple-500/20 shadow-lg">
+                        <div className="flex items-center space-x-1.5 sm:space-x-2 text-white">
+                            <FaUsers className="text-purple-400 text-sm sm:text-base" />
+                            <span className="text-xs sm:text-sm">
                                 {currentReaders[manga._id].length} reader{currentReaders[manga._id].length !== 1 ? 's' : ''} online
                             </span>
                         </div>
                     </div>
                 )}
 
-                {/* Live Chat Toggle */}
+                {/* Live Chat Toggle - Responsive */}
                 <button
                     onClick={() => setShowLiveChat(!showLiveChat)}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-full shadow-lg hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105"
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 sm:p-4 rounded-full shadow-lg hover:shadow-purple-500/25 active:shadow-purple-500/40 transition-all duration-300 transform hover:scale-105 active:scale-95 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
                     title="Toggle Live Chat"
+                    aria-label="Toggle Live Chat"
                 >
-                    <FaComments className="text-xl" />
+                    <FaComments className="text-lg sm:text-xl" />
                 </button>
 
                 {/* Live Reactions */}

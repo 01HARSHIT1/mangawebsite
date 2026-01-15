@@ -260,7 +260,7 @@ export default function AnimeHome() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="relative h-[85vh] overflow-hidden"
+                    className="relative h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-[85vh] overflow-hidden"
                 >
                     {/* Background Image with Overlay */}
                     <div className="absolute inset-0">
@@ -302,90 +302,90 @@ export default function AnimeHome() {
                         </div>
                     )}
 
-                    {/* Hero Content */}
+                    {/* Hero Content - Responsive */}
                     <div className="relative z-10 h-full flex items-center">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                             <div className="max-w-3xl">
-                                {/* Badges */}
+                                {/* Badges - Responsive */}
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="flex items-center space-x-3 mb-6"
+                                    className="flex items-center flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6"
                                 >
-                                    <span className="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold rounded-full shadow-lg shadow-orange-500/50 flex items-center space-x-2">
-                                        <Sparkles className="w-4 h-4" />
+                                    <span className="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs sm:text-sm font-bold rounded-full shadow-lg shadow-orange-500/50 flex items-center space-x-1 sm:space-x-2">
+                                        <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
                                         <span>{currentHero.status === 'ongoing' ? 'ONGOING' : currentHero.status === 'completed' ? 'COMPLETED' : 'UPCOMING'}</span>
                                     </span>
-                                    <span className="px-3 py-1.5 bg-black/50 text-orange-300 text-sm font-semibold rounded-full border border-orange-500/30">
+                                    <span className="px-2 sm:px-3 py-1 sm:py-1.5 bg-black/50 text-orange-300 text-xs sm:text-sm font-semibold rounded-full border border-orange-500/30">
                                         {currentHero.year}
                                     </span>
-                                    <div className="flex items-center space-x-1 px-3 py-1.5 bg-black/50 rounded-full border border-yellow-500/30">
-                                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                        <span className="text-yellow-400 text-sm font-bold">{(currentHero.rating || 0).toFixed(1)}</span>
+                                    <div className="flex items-center space-x-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-black/50 rounded-full border border-yellow-500/30">
+                                        <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400" />
+                                        <span className="text-yellow-400 text-xs sm:text-sm font-bold">{(currentHero.rating || 0).toFixed(1)}</span>
                                     </div>
                                 </motion.div>
 
-                                {/* Title */}
+                                {/* Title - Responsive */}
                                 <motion.h1
                                     initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.2 }}
-                                    className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-tight"
+                                    className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black mb-4 sm:mb-6 leading-tight"
                                 >
                                     <span className="bg-gradient-to-r from-white via-orange-200 to-red-200 bg-clip-text text-transparent drop-shadow-2xl">
                                         {currentHero.title}
                                     </span>
                                 </motion.h1>
 
-                                {/* Description */}
+                                {/* Description - Responsive */}
                                 <motion.p
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.4 }}
-                                    className="text-xl text-gray-300 mb-8 line-clamp-3 max-w-2xl leading-relaxed"
+                                    className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-300 mb-6 sm:mb-8 line-clamp-2 sm:line-clamp-3 max-w-2xl leading-relaxed"
                                 >
                                     {currentHero.description}
                                 </motion.p>
 
-                                {/* Genres */}
+                                {/* Genres - Responsive */}
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5 }}
-                                    className="flex flex-wrap gap-2 mb-8"
+                                    className="flex flex-wrap gap-2 mb-6 sm:mb-8"
                                 >
                                     {currentHero.genres.slice(0, 4).map((genre, index) => (
                                         <span
                                             key={index}
-                                            className="px-3 py-1 bg-black/40 backdrop-blur-sm text-orange-300 text-xs font-semibold rounded-md border border-orange-500/30"
+                                            className="px-2 sm:px-3 py-1 bg-black/40 backdrop-blur-sm text-orange-300 text-[10px] sm:text-xs font-semibold rounded-md border border-orange-500/30"
                                         >
                                             {genre.toUpperCase()}
                                         </span>
                                     ))}
                                 </motion.div>
 
-                                {/* Action Buttons */}
+                                {/* Action Buttons - Responsive */}
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.6 }}
-                                    className="flex items-center space-x-4"
+                                    className="flex items-center flex-wrap gap-2 sm:gap-4"
                                 >
                                     <Link
                                         href={`/anime/${currentHero._id}?episode=1`}
-                                        className="group flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-bold text-lg transition-all shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 hover:scale-105"
+                                        className="group flex items-center space-x-2 sm:space-x-3 px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white rounded-lg sm:rounded-xl font-bold text-sm sm:text-base md:text-lg transition-all shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 hover:scale-105 active:scale-95 touch-manipulation"
                                     >
-                                        <Play className="w-6 h-6 fill-white group-hover:scale-110 transition-transform" />
+                                        <Play className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 fill-white group-hover:scale-110 transition-transform" />
                                         <span>WATCH NOW</span>
                                     </Link>
-                                    <button className="p-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/20 rounded-xl transition-all hover:scale-105">
-                                        <Heart className="w-6 h-6 text-white" />
+                                    <button className="p-3 sm:p-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/70 border border-white/20 rounded-lg sm:rounded-xl transition-all hover:scale-105 active:scale-95 touch-manipulation">
+                                        <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                     </button>
-                                    <button className="p-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/20 rounded-xl transition-all hover:scale-105">
-                                        <Bookmark className="w-6 h-6 text-white" />
+                                    <button className="p-3 sm:p-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/70 border border-white/20 rounded-lg sm:rounded-xl transition-all hover:scale-105 active:scale-95 touch-manipulation">
+                                        <Bookmark className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                     </button>
-                                    <button className="p-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 border border-white/20 rounded-xl transition-all hover:scale-105">
-                                        <Share2 className="w-6 h-6 text-white" />
+                                    <button className="p-3 sm:p-4 bg-black/40 backdrop-blur-sm hover:bg-black/60 active:bg-black/70 border border-white/20 rounded-lg sm:rounded-xl transition-all hover:scale-105 active:scale-95 touch-manipulation">
+                                        <Share2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                     </button>
                                 </motion.div>
 
@@ -430,11 +430,11 @@ export default function AnimeHome() {
                 </motion.div>
             )}
 
-            {/* Content Sections */}
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Content Sections - Responsive */}
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
                     {/* Main Content */}
-                    <div className="lg:col-span-3 space-y-16">
+                    <div className="lg:col-span-3 space-y-8 sm:space-y-12 md:space-y-16">
                 {/* Trending Now - Crunchyroll Style */}
                 {trendingAnime.length > 0 && (
                     <motion.section
@@ -443,23 +443,23 @@ export default function AnimeHome() {
                         viewport={{ once: true }}
                         className="mb-16"
                     >
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                        <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 flex-wrap gap-3 sm:gap-0">
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                                <div className="w-1 h-6 sm:h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
                                 <div>
-                                    <div className="flex items-center space-x-2 mb-1">
-                                        <TrendingUp className="w-6 h-6 text-orange-400" />
-                                        <h2 className="text-3xl font-black text-white">TRENDING NOW</h2>
+                                    <div className="flex items-center space-x-1 sm:space-x-2 mb-0.5 sm:mb-1">
+                                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-orange-400" />
+                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white">TRENDING NOW</h2>
                                     </div>
-                                    <p className="text-sm text-gray-400">Most watched this week</p>
+                                    <p className="text-xs sm:text-sm text-gray-400 hidden sm:block">Most watched this week</p>
                                 </div>
                             </div>
                             <Link
                                 href="/anime/browse"
-                                className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
+                                className="flex items-center space-x-1 sm:space-x-2 text-orange-400 hover:text-orange-300 active:text-orange-200 transition-colors font-semibold text-xs sm:text-sm group touch-manipulation"
                             >
                                 <span>VIEW ALL</span>
-                                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>
                         <AnimeCarousel anime={trendingAnime} />
@@ -551,7 +551,7 @@ export default function AnimeHome() {
                                 </div>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                             {latestEpisodes.slice(0, 12).map((episode) => (
                                 <Link
                                     key={episode._id}
@@ -638,8 +638,8 @@ export default function AnimeHome() {
                     </motion.section>
                 )}
 
-                {/* Top Airing, Most Favourite, Latest Completed - Grid Layout */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                {/* Top Airing, Most Favourite, Latest Completed - Grid Layout - Responsive */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-12 sm:mb-16">
                     {/* Top Airing */}
                     {topAiring.length > 0 && (
                         <motion.section
@@ -877,13 +877,13 @@ export default function AnimeHome() {
                 </div>
             </div>
 
-            {/* Floating Action Button - Mode Switcher */}
+            {/* Floating Action Button - Mode Switcher - Responsive */}
             <motion.div
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="fixed bottom-8 right-8 z-50"
+                className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-8 z-50"
             >
-                <div className="bg-black/80 backdrop-blur-xl border border-orange-500/30 rounded-2xl p-4 shadow-2xl">
+                <div className="bg-black/80 backdrop-blur-xl border border-orange-500/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-2xl">
                     <AppModeSwitcher />
                 </div>
             </motion.div>

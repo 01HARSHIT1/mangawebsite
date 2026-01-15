@@ -529,84 +529,89 @@ export default function ChapterReader({
     };
 
         return (
-        <div className="min-h-screen bg-gray-950 text-white">
-            {/* Top Navigation */}
-            <div className="w-full bg-black border-b border-gray-800 py-6">
-                <div className="max-w-4xl mx-auto px-4">
-                    {/* Chapter Cover and Title */}
-                    <div className="flex items-center gap-6 mb-6">
+        <div className="min-h-screen bg-gray-950 text-white pt-14 sm:pt-0">
+            {/* Top Navigation - Responsive */}
+            <div className="w-full bg-black border-b border-gray-800 py-4 sm:py-6">
+                <div className="max-w-4xl mx-auto px-3 sm:px-4">
+                    {/* Chapter Cover and Title - Responsive */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
                         {chapter.coverPage && (
                             <img
                                 src={chapter.coverPage}
                                 alt={`Chapter ${chapter.chapterNumber}`}
-                                className="w-32 h-auto rounded-lg border border-gray-700 shadow-lg"
+                                className="w-24 sm:w-28 md:w-32 h-auto rounded-lg border border-gray-700 shadow-lg flex-shrink-0"
                             />
                         )}
-                        <div>
-                            <h1 className="text-3xl font-bold mb-2">
-                                {manga.title} Chapter {chapter.chapterNumber}
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2 break-words">
+                                <span className="hidden sm:inline">{manga.title} </span>
+                                <span className="sm:hidden">{manga.title.length > 30 ? manga.title.substring(0, 30) + '...' : manga.title} </span>
+                                Chapter {chapter.chapterNumber}
                             </h1>
                             {chapter.subtitle && (
-                                <p className="text-gray-400 text-lg">{chapter.subtitle}</p>
+                                <p className="text-gray-400 text-sm sm:text-base md:text-lg break-words">{chapter.subtitle}</p>
                             )}
-                            <p className="text-gray-500 text-sm mt-2">
+                            <p className="text-gray-500 text-xs sm:text-sm mt-1 sm:mt-2">
                                 {new Date(chapter.createdAt).toLocaleDateString()}
                             </p>
                 </div>
             </div>
 
-                    {/* Navigation Buttons */}
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-4">
-                            {/* Previous Button */}
+                    {/* Navigation Buttons - Responsive */}
+                    <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
+                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-center flex-wrap">
+                            {/* Previous Button - Responsive */}
                             {prevChapter ? (
                                 <Link
                                     href={`/manga/${mangaId}/chapter/${prevChapter._id}`}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                    className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
-                                    <FaChevronLeft />
-                                    <span>Prev</span>
+                                    <FaChevronLeft className="text-sm sm:text-base" />
+                                    <span className="hidden sm:inline">Prev</span>
+                                    <span className="sm:hidden">◀</span>
                                 </Link>
                             ) : (
-                                <div className="w-24"></div>
+                                <div className="w-16 sm:w-20 md:w-24"></div>
                             )}
 
-                            {/* Home Button */}
+                            {/* Home Button - Responsive */}
                             <Link
                                 href={`/manga/${mangaId}`}
-                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                className="flex items-center gap-1.5 sm:gap-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg touch-manipulation min-h-[44px] sm:min-h-0"
                             >
-                                <FaHome />
-                                <span>Home</span>
+                                <FaHome className="text-sm sm:text-base" />
+                                <span className="hidden sm:inline">Home</span>
+                                <span className="sm:hidden">🏠</span>
                             </Link>
 
-                            {/* Next Button */}
+                            {/* Next Button - Responsive */}
                             {nextChapter ? (
                                 <Link
                                     href={`/manga/${mangaId}/chapter/${nextChapter._id}`}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                    className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
-                                    <span>Next</span>
-                                    <FaChevronRight />
+                                    <span className="hidden sm:inline">Next</span>
+                                    <span className="sm:hidden">▶</span>
+                                    <FaChevronRight className="text-sm sm:text-base" />
                             </Link>
                             ) : (
-                                <div className="w-24"></div>
+                                <div className="w-16 sm:w-20 md:w-24"></div>
                             )}
                         </div>
 
-                        {/* Chapter Dropdown */}
-                        <div className="relative" ref={dropdownRef}>
+                        {/* Chapter Dropdown - Responsive */}
+                        <div className="relative w-full sm:w-auto" ref={dropdownRef}>
                             <button
                                 onClick={() => setShowChapterDropdown(!showChapterDropdown)}
-                                className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg min-w-[200px] justify-center"
+                                className="flex items-center gap-2 sm:gap-3 bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg w-full sm:w-auto sm:min-w-[200px] justify-center touch-manipulation min-h-[44px] sm:min-h-0"
                             >
                                 <span>Chapter {chapter.chapterNumber}</span>
-                                <FaChevronDown className={`transition-transform ${showChapterDropdown ? 'rotate-180' : ''}`} />
+                                <FaChevronDown className={`transition-transform text-sm sm:text-base ${showChapterDropdown ? 'rotate-180' : ''}`} />
                             </button>
 
-                            {/* Dropdown Menu */}
+                            {/* Dropdown Menu - Responsive */}
                             {showChapterDropdown && (
-                                <div className="absolute top-full mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden z-50 min-w-[200px]">
+                                <div className="absolute top-full left-0 right-0 sm:left-auto sm:right-auto mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden z-50 w-full sm:w-auto sm:min-w-[200px]">
                                     <div className="max-h-[280px] overflow-y-auto chapter-dropdown-scroll">
                                         {allChapters.map((ch) => (
                             <Link
@@ -646,10 +651,10 @@ export default function ChapterReader({
                 </div>
             )}
 
-            {/* Manga Content */}
-            <div className="w-full max-w-4xl mx-auto py-8 px-4">
+            {/* Manga Content - Responsive */}
+            <div className="w-full max-w-4xl mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4">
                 {chapterImages.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 sm:space-y-3 md:space-y-4">
                         {chapterImages.slice(0, Math.min(Math.max(loadedPageCount, 3), chapterImages.length)).map((imageSrc, index) => {
                             // Only render first 3 images initially, then progressively load more
                             // Stop rendering after too many consecutive failures or if max page reached
@@ -664,12 +669,12 @@ export default function ChapterReader({
                         <div
                                     key={`page-${index}-${imageSrc.slice(-20)}`}
                                     id={`chapter-page-${index}`}
-                                    className="w-full mb-4"
+                                    className="w-full mb-3 sm:mb-4"
                         >
                             <img
                                 src={imageSrc}
                                         alt={`Page ${index + 1}`}
-                                        className="w-full h-auto rounded-lg shadow-2xl"
+                                        className="w-full h-auto rounded-lg sm:rounded-xl shadow-2xl"
                                 onLoad={() => {
                                             // Use requestAnimationFrame to batch updates
                                             requestAnimationFrame(() => handleImageLoad(index));
@@ -694,81 +699,84 @@ export default function ChapterReader({
                 )}
             </div>
 
-            {/* Bottom Navigation (Repeat) */}
-            <div className="w-full bg-black border-t border-gray-800 py-6">
-                <div className="max-w-4xl mx-auto px-4">
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-4">
-                            {/* Previous Button */}
+            {/* Bottom Navigation (Repeat) - Responsive */}
+            <div className="w-full bg-black border-t border-gray-800 py-4 sm:py-6">
+                <div className="max-w-4xl mx-auto px-3 sm:px-4">
+                    <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
+                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 w-full justify-center flex-wrap">
+                            {/* Previous Button - Responsive */}
                             {prevChapter ? (
                                 <Link
                                     href={`/manga/${mangaId}/chapter/${prevChapter._id}`}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                    className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
-                                    <FaChevronLeft />
-                                    <span>Prev</span>
+                                    <FaChevronLeft className="text-sm sm:text-base" />
+                                    <span className="hidden sm:inline">Prev</span>
+                                    <span className="sm:hidden">◀</span>
                                 </Link>
                             ) : (
-                                <div className="w-24"></div>
+                                <div className="w-16 sm:w-20 md:w-24"></div>
                             )}
 
-                            {/* Home Button */}
+                            {/* Home Button - Responsive */}
                             <Link
                                 href={`/manga/${mangaId}`}
-                                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                className="flex items-center gap-1.5 sm:gap-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg touch-manipulation min-h-[44px] sm:min-h-0"
                             >
-                                <FaHome />
-                                <span>Home</span>
+                                <FaHome className="text-sm sm:text-base" />
+                                <span className="hidden sm:inline">Home</span>
+                                <span className="sm:hidden">🏠</span>
                             </Link>
 
-                            {/* Next Button */}
+                            {/* Next Button - Responsive */}
                             {nextChapter ? (
                                 <Link
                                     href={`/manga/${mangaId}/chapter/${nextChapter._id}`}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg"
+                                    className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
-                                    <span>Next</span>
-                                    <FaChevronRight />
+                                    <span className="hidden sm:inline">Next</span>
+                                    <span className="sm:hidden">▶</span>
+                                    <FaChevronRight className="text-sm sm:text-base" />
                                 </Link>
                             ) : (
-                                <div className="w-24"></div>
+                                <div className="w-16 sm:w-20 md:w-24"></div>
                             )}
                         </div>
 
-                        {/* Chapter Dropdown (Repeat) */}
-                        <div className="relative">
+                        {/* Chapter Dropdown (Repeat) - Responsive */}
+                        <div className="relative w-full sm:w-auto">
                             <button
                                 onClick={() => setShowChapterDropdown(!showChapterDropdown)}
-                                className="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-semibold transition-all shadow-lg min-w-[200px] justify-center"
+                                className="flex items-center gap-2 sm:gap-3 bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base transition-all shadow-lg w-full sm:w-auto sm:min-w-[200px] justify-center touch-manipulation min-h-[44px] sm:min-h-0"
                             >
                                 <span>Chapter {chapter.chapterNumber}</span>
-                                <FaChevronDown className={`transition-transform ${showChapterDropdown ? 'rotate-180' : ''}`} />
+                                <FaChevronDown className={`transition-transform text-sm sm:text-base ${showChapterDropdown ? 'rotate-180' : ''}`} />
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Social Media Share Section */}
-            <div className="w-full bg-gray-900 border-t border-gray-800 py-8">
-                <div className="max-w-4xl mx-auto px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Share */}
-                        <div className="bg-gray-800 rounded-lg p-6 text-center">
-                            <h3 className="font-semibold mb-3 text-lg">Share This Chapter</h3>
+            {/* Social Media Share Section - Responsive */}
+            <div className="w-full bg-gray-900 border-t border-gray-800 py-6 sm:py-8">
+                <div className="max-w-4xl mx-auto px-3 sm:px-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+                        {/* Share - Responsive */}
+                        <div className="bg-gray-800 rounded-lg p-4 sm:p-6 text-center">
+                            <h3 className="font-semibold mb-3 text-base sm:text-lg">Share This Chapter</h3>
                             <button
                                 onClick={handleShare}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+                                className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation min-h-[44px] sm:min-h-0"
                             >
-                                <FaShareAlt />
+                                <FaShareAlt className="text-sm sm:text-base" />
                                 Share
                             </button>
                         </div>
 
-                        {/* Join Our Socials */}
-                        <div className="bg-gray-800 rounded-lg p-6 text-center">
-                            <h3 className="font-semibold mb-3 text-lg">Join Our Socials</h3>
-                            <div className="flex items-center justify-center gap-3">
+                        {/* Join Our Socials - Responsive */}
+                        <div className="bg-gray-800 rounded-lg p-4 sm:p-6 text-center">
+                            <h3 className="font-semibold mb-3 text-base sm:text-lg">Join Our Socials</h3>
+                            <div className="flex items-center justify-center gap-3 sm:gap-4">
                                 {socialMediaLinks.facebook && (
                                     <a href={socialMediaLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 text-2xl">
                                         <FaFacebook />
@@ -800,12 +808,12 @@ export default function ChapterReader({
                             )}
                         </div>
 
-                        {/* Support Us */}
-                        <div className="bg-gray-800 rounded-lg p-6 text-center">
-                            <h3 className="font-semibold mb-3 text-lg">Support Us</h3>
+                        {/* Support Us - Responsive */}
+                        <div className="bg-gray-800 rounded-lg p-4 sm:p-6 text-center sm:col-span-2 md:col-span-1">
+                            <h3 className="font-semibold mb-3 text-base sm:text-lg">Support Us</h3>
                             <button
                                 onClick={() => alert('Support/Donation feature coming soon!')}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
+                                className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold text-sm sm:text-base transition-all touch-manipulation min-h-[44px] sm:min-h-0"
                             >
                                 Donate
                             </button>
@@ -814,18 +822,18 @@ export default function ChapterReader({
                 </div>
             </div>
 
-            {/* Comments Section */}
-            <div className="w-full bg-gray-950 border-t border-gray-800 py-8">
-                <div className="max-w-4xl mx-auto px-4">
-                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            {/* Comments Section - Responsive */}
+            <div className="w-full bg-gray-950 border-t border-gray-800 py-6 sm:py-8">
+                <div className="max-w-4xl mx-auto px-3 sm:px-4">
+                    <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
                         💬 Comments ({comments.length})
                     </h2>
 
-                    {/* Comments List - SHOW FIRST */}
-                    <div className="space-y-4 mb-6">
+                    {/* Comments List - SHOW FIRST - Responsive */}
+                    <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                         {comments.length > 0 ? (
                             comments.map((comment) => (
-                                <div key={comment._id} className="bg-gray-900 rounded-lg p-4">
+                                <div key={comment._id} className="bg-gray-900 rounded-lg p-3 sm:p-4">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="font-semibold text-blue-400">{comment.username}</span>
                                         <span className="text-gray-500 text-sm">
@@ -844,28 +852,28 @@ export default function ChapterReader({
 
                     {/* Comment Input - SHOW AFTER COMMENTS */}
                     {isLoggedIn ? (
-                        <div className="bg-gray-900 rounded-lg p-4 border-t-2 border-blue-600">
+                        <div className="bg-gray-900 rounded-lg p-3 sm:p-4 border-t-2 border-blue-600">
                             <textarea
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                                 placeholder="Write your comment..."
-                                className="w-full bg-gray-800 text-white rounded-lg p-3 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full bg-gray-800 text-white rounded-lg p-2.5 sm:p-3 min-h-[100px] text-sm sm:text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
                             />
-                            <div className="flex justify-between items-center mt-3">
-                                <span className="text-gray-400 text-sm">Commenting as {username}</span>
+                            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-0 mt-3">
+                                <span className="text-gray-400 text-xs sm:text-sm">Commenting as {username}</span>
                                 <button
                                     onClick={handleSubmitComment}
                                     disabled={submittingComment || !newComment.trim()}
-                                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-semibold transition-all"
+                                    className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-4 sm:px-6 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition-all touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
                                     {submittingComment ? 'Posting...' : 'Post Comment'}
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-gray-900 rounded-lg p-6 text-center border-t-2 border-blue-600">
-                            <p className="text-gray-400 mb-3">Please login to comment</p>
-                            <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all">
+                        <div className="bg-gray-900 rounded-lg p-4 sm:p-6 text-center border-t-2 border-blue-600">
+                            <p className="text-gray-400 mb-3 text-sm sm:text-base">Please login to comment</p>
+                            <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-5 sm:px-6 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition-all touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center">
                                 Login
                                 </Link>
                         </div>

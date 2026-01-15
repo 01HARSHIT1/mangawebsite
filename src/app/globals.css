@@ -13,6 +13,56 @@
     scrollbar-width: none;  /* Firefox */
 }
 
+/* Touch-friendly improvements for mobile and tablet */
+@media (max-width: 768px) {
+    /* Improve touch targets - minimum 44x44px for accessibility */
+    button, a {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Better text selection on mobile */
+    * {
+        -webkit-tap-highlight-color: rgba(255, 165, 0, 0.2);
+    }
+    
+    /* Smooth scrolling on iOS */
+    html {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent text size adjustment on orientation change */
+    body {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+}
+
+/* Touch manipulation for better performance */
+.touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Better scrolling on touch devices */
+.touch-pan-x {
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive image handling */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Prevent horizontal scroll on mobile */
+@media (max-width: 640px) {
+    body {
+        overflow-x: hidden;
+    }
+}
+
 /* Modern CSS Variables for Professional Design */
 :root {
     /* Primary Brand Colors - Professional Dark Theme */

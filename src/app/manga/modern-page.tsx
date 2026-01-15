@@ -247,50 +247,50 @@ function MangaBrowseContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-16">
-            <div className="container mx-auto px-4 py-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-14 sm:pt-16">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-12"
                 >
-                    <h1 className="text-5xl font-bold mb-4">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
                         <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                             📚 Browse Manga
                         </span>
                     </h1>
-                    <p className="text-gray-400 text-xl max-w-2xl mx-auto">
+                    <p className="text-gray-400 text-base sm:text-lg md:text-xl max-w-2xl mx-auto px-4">
                         Discover thousands of amazing manga stories from talented creators worldwide
                     </p>
                 </motion.div>
 
-                {/* Search and Filters */}
+                {/* Search and Filters - Responsive */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-slate-800/50 rounded-2xl p-6 mb-8 border border-slate-700/50 backdrop-blur-sm"
+                    className="bg-slate-800/50 rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 border border-slate-700/50 backdrop-blur-sm"
                 >
-                    <div className="flex flex-col lg:flex-row gap-4 items-center">
-                        {/* Search */}
-                        <div className="relative flex-1">
-                            <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-stretch lg:items-center">
+                        {/* Search - Responsive */}
+                        <div className="relative flex-1 w-full">
+                            <FaSearch className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm sm:text-base" />
                             <input
                                 type="text"
                                 placeholder="Search manga, creators, genres..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-slate-700/50 border border-slate-600/50 rounded-xl pl-12 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500/50 transition-all duration-300"
+                                className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg sm:rounded-xl pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 text-white text-sm sm:text-base placeholder-gray-400 focus:outline-none focus:border-indigo-500/50 transition-all duration-300 touch-manipulation"
                             />
                         </div>
 
-                        {/* Filters */}
-                        <div className="flex items-center space-x-4">
+                        {/* Filters - Responsive */}
+                        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
                             <select
                                 value={selectedGenre}
                                 onChange={(e) => setSelectedGenre(e.target.value)}
-                                className="bg-slate-700/50 border border-slate-600/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500/50 transition-all duration-300"
+                                className="bg-slate-700/50 border border-slate-600/50 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white text-sm sm:text-base focus:outline-none focus:border-indigo-500/50 transition-all duration-300 touch-manipulation flex-1 min-w-[140px]"
                             >
                                 {genres.map(genre => (
                                     <option key={genre} value={genre} className="bg-slate-800">

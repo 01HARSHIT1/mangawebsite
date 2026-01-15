@@ -151,7 +151,7 @@ export default function AnimeNavigation() {
                             animate={{ x: 0 }}
                             exit={{ x: -320 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed left-0 top-0 bottom-0 w-80 bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-[70] overflow-y-auto"
+                            className="fixed left-0 top-0 bottom-0 w-[85vw] sm:w-80 max-w-sm bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-[70] overflow-y-auto"
                         >
                             <div className="p-4">
                                 {/* Close Button */}
@@ -272,45 +272,45 @@ export default function AnimeNavigation() {
             </AnimatePresence>
 
         <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
-            <div className="w-full px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center h-16 gap-6">
+            <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">
+                <div className="flex items-center h-14 sm:h-16 gap-3 sm:gap-4 md:gap-6">
                         {/* Left Side: Hamburger Menu Button + Logo + Navigation Links */}
-                        <div className="flex items-center gap-6 flex-1 min-w-0">
-                            {/* Hamburger Menu Button */}
+                        <div className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-1 min-w-0">
+                            {/* Hamburger Menu Button - Larger touch target for mobile */}
                             <button
                                 data-hamburger-button
                                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                                className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30 flex-shrink-0"
+                                className="p-2 sm:p-2.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 active:bg-orange-500/30 transition-colors border border-orange-500/30 flex-shrink-0 touch-manipulation"
                                 aria-label="Toggle sidebar menu"
                             >
-                                <Menu className="w-6 h-6 text-orange-400" />
+                                <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                             </button>
                             
-                    {/* Logo */}
-                    <Link href="/anime" className="flex items-center space-x-3 group flex-shrink-0">
+                    {/* Logo - Responsive sizing */}
+                    <Link href="/anime" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
                         <motion.div
                             whileHover={{ scale: 1.1, rotate: 5 }}
                             className="relative"
                         >
-                            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/50">
-                                <Play className="w-7 h-7 text-white fill-white" />
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/50">
+                                <Play className="w-5 h-5 sm:w-7 sm:h-7 text-white fill-white" />
                             </div>
                             <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ duration: 2, repeat: Infinity }}
-                                className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400 rounded-full border-2 border-black"
+                                className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-orange-400 rounded-full border-2 border-black"
                             />
                         </motion.div>
-                        <div className="hidden md:block">
-                            <h1 className="text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent">
+                        <div className="hidden sm:block">
+                            <h1 className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent leading-tight">
                                 ANIMESTREAM
                             </h1>
-                            <p className="text-xs text-orange-300/70 -mt-1">Premium Anime Hub</p>
+                            <p className="text-[10px] sm:text-xs text-orange-300/70 -mt-0.5 sm:-mt-1 hidden md:block">Premium Anime Hub</p>
                         </div>
                     </Link>
 
                     {/* Navigation Links - Positioned right after logo with equal spacing */}
-                    <div className="hidden lg:flex items-center gap-6">
+                    <div className="hidden lg:flex items-center gap-4 xl:gap-6">
                         {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                             const active = isActive(item.href);
                             const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
@@ -344,11 +344,11 @@ export default function AnimeNavigation() {
                         })}
                     </div>
 
-                    {/* Mobile Menu Button */}
+                    {/* Mobile Menu Button - Better touch target */}
                     <div className="lg:hidden flex items-center space-x-2">
                         <button
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30"
+                            className="p-2.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 active:bg-orange-500/30 transition-colors border border-orange-500/30 touch-manipulation"
                             aria-label="Toggle menu"
                         >
                             {isMobileMenuOpen ? (
@@ -357,23 +357,25 @@ export default function AnimeNavigation() {
                                 <Menu className="w-5 h-5 text-orange-400" />
                             )}
                         </button>
-                        <AppModeSwitcher />
+                        <div className="hidden sm:block">
+                            <AppModeSwitcher />
+                        </div>
                     </div>
 
                     {/* Right Side Actions */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0">
                         {/* Search Button (Desktop) */}
                         <button className="hidden lg:block p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30">
                             <Search className="w-5 h-5 text-orange-400" />
                         </button>
                         
-                        {/* Profile/Account Dropdown */}
+                        {/* Profile/Account Dropdown - Responsive sizing */}
                         <div className="relative" ref={profileMenuRef}>
                             {isAuthenticated ? (
                                 <>
                                     <button
                                         onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                                        className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/50 hover:scale-110 transition-transform border-2 border-orange-400/50"
+                                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/50 hover:scale-110 active:scale-95 transition-transform border-2 border-orange-400/50 touch-manipulation"
                                     >
                                         {user?.creatorProfile?.displayName?.charAt(0)?.toUpperCase() || 
                                          user?.username?.charAt(0)?.toUpperCase() || 
@@ -459,28 +461,31 @@ export default function AnimeNavigation() {
                             ) : (
                                 <Link
                                     href="/login"
-                                    className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500/50 via-red-500/50 to-pink-500/50 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/30 hover:scale-110 transition-transform border-2 border-orange-400/30 hover:border-orange-400/50"
+                                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-orange-500/50 via-red-500/50 to-pink-500/50 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/30 hover:scale-110 active:scale-95 transition-transform border-2 border-orange-400/30 hover:border-orange-400/50 touch-manipulation"
                                     title="Sign In"
                                 >
-                                    <User className="w-5 h-5" />
+                                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </Link>
                             )}
                         </div>
                         
-                        <AppModeSwitcher />
+                        {/* App Mode Switcher - Hidden on mobile, shown on tablet+ */}
+                        <div className="hidden sm:block">
+                            <AppModeSwitcher />
+                        </div>
                     </div>
                     </div>
                 </div>
 
-                {/* Mobile Navigation Menu */}
+                {/* Mobile Navigation Menu - Improved spacing and touch targets */}
                 {isMobileMenuOpen && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="lg:hidden border-t border-orange-500/20 py-4"
+                        className="lg:hidden border-t border-orange-500/20 py-4 max-h-[calc(100vh-4rem)] overflow-y-auto"
                     >
-                        <div className="flex flex-col space-y-3">
+                        <div className="flex flex-col space-y-2 sm:space-y-3 px-2">
                             {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                                 const active = isActive(item.href);
                                 const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
@@ -490,12 +495,12 @@ export default function AnimeNavigation() {
                                         href={item.href}
                                         onClick={() => setIsMobileMenuOpen(false)}
                                         className={`
-                                            px-4 py-2 rounded-lg transition-colors flex items-center gap-2
+                                            px-4 py-3 sm:py-2.5 rounded-lg transition-colors flex items-center gap-2 touch-manipulation min-h-[44px] sm:min-h-0
                                             ${isCreatorButton
-                                                ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold shadow-lg shadow-orange-500/50'
+                                                ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-bold shadow-lg shadow-orange-500/50'
                                                 : active
                                                 ? 'bg-orange-500/20 text-orange-400 font-bold'
-                                                : 'text-gray-400 hover:bg-orange-500/10 hover:text-orange-400'
+                                                : 'text-gray-400 hover:bg-orange-500/10 active:bg-orange-500/20 hover:text-orange-400'
                                             }
                                         `}
                                     >
