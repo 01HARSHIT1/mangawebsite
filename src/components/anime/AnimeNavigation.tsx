@@ -8,6 +8,8 @@ import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Se
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import { useTheme } from '@/components/AdvancedThemeSystem';
+import { useAppMode } from '@/contexts/AppModeContext';
+import { BookOpen } from 'lucide-react';
 
 /**
  * Anime Navigation Component
@@ -17,7 +19,6 @@ import { useTheme } from '@/components/AdvancedThemeSystem';
 export default function AnimeNavigation() {
     const pathname = usePathname();
     const router = useRouter();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -25,6 +26,7 @@ export default function AnimeNavigation() {
     const { isAuthenticated, isCreator, user, logout } = useAuth();
     const [hasUploadedAnime, setHasUploadedAnime] = useState(false);
     const { theme, setTheme } = useTheme();
+    const { switchToManga } = useAppMode();
     
     // Check if user is admin - check both role property and isAdmin property
     const isAdmin = user?.role === 'admin' || user?.isAdmin === true;
@@ -157,84 +159,145 @@ export default function AnimeNavigation() {
                                 {/* Close Button */}
                                 <button
                                     onClick={() => setIsSidebarOpen(false)}
-                                    className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6 transition-colors"
+                                    className="flex items-center space-x-2 text-gray-400 hover:text-white mb-4 sm:mb-6 transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
                                     <ChevronLeft className="w-5 h-5" />
                                     <span className="font-semibold">Close menu</span>
                                 </button>
 
+                                {/* App Mode Switcher - Mobile */}
+                                <div className="mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-orange-500/20">
+                                    <div className="flex items-center justify-center">
+                                        <AppModeSwitcher onSwitch={() => setIsSidebarOpen(false)} />
+                                    </div>
+                                </div>
+
+                                {/* Read Manga Button - Prominent */}
+                                <Link
+                                    href="/"
+                                    onClick={() => {
+                                        setIsSidebarOpen(false);
+                                        switchToManga();
+                                    }}
+                                    className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 border border-indigo-500/30 rounded-lg mb-4 sm:mb-6 transition-all touch-manipulation min-h-[44px]"
+                                >
+                                    <BookOpen className="w-5 h-5 text-indigo-400" />
+                                    <span className="font-semibold text-white">Read Manga</span>
+                                </Link>
+
                                 {/* Community Button */}
                                 <Link
                                     href="/anime/browse"
                                     onClick={() => setIsSidebarOpen(false)}
-                                    className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 rounded-lg mb-6 transition-all"
+                                    className="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 rounded-lg mb-4 sm:mb-6 transition-all touch-manipulation min-h-[44px]"
                                 >
                                     <MessageCircle className="w-5 h-5 text-pink-400" />
                                     <span className="font-semibold">Community</span>
                                 </Link>
 
-                                {/* Navigation Links */}
-                                <div className="space-y-2 mb-8">
-                                    <Link
-                                        href="/anime"
-                                        onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
-                                    >
-                                        Home
-                                    </Link>
+                                {/* Main Navigation Links - Merged from mobile menu */}
+                                <div className="space-y-2 mb-4 sm:mb-6">
+                                    <h3 className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Navigation</h3>
+                                    {navItems.map((item) => {
+                                        const active = isActive(item.href);
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={() => setIsSidebarOpen(false)}
+                                                className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
+                                                    active
+                                                        ? 'bg-orange-500/20 text-orange-400 font-bold'
+                                                        : 'hover:bg-orange-500/20 text-gray-300'
+                                                }`}
+                                            >
+                                                {item.icon && <item.icon className="w-4 h-4" />}
+                                                <span>{item.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Creator and Admin Nav Items */}
+                                {[...creatorNavItems, ...adminNavItems].length > 0 && (
+                                    <div className="space-y-2 mb-4 sm:mb-6">
+                                        {[...creatorNavItems, ...adminNavItems].map((item) => {
+                                            const active = isActive(item.href);
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    onClick={() => setIsSidebarOpen(false)}
+                                                    className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] ${
+                                                        active
+                                                            ? 'bg-orange-500/20 text-orange-400 font-bold'
+                                                            : 'hover:bg-orange-500/20 text-gray-300'
+                                                    }`}
+                                                >
+                                                    {item.icon && <item.icon className="w-4 h-4" />}
+                                                    <span>{item.label}</span>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Anime Categories */}
+                                <div className="space-y-2 mb-4 sm:mb-6">
+                                    <h3 className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Categories</h3>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         Subbed Anime
                                     </Link>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         Dubbed Anime
                                     </Link>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         Movies
                                     </Link>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         TV Series
                                     </Link>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         OVAs
                                     </Link>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg bg-pink-500/30 hover:bg-pink-500/40 transition-colors"
+                                        className="block px-4 py-2 rounded-lg bg-pink-500/30 hover:bg-pink-500/40 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         ONAs
                                     </Link>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         Specials
                                     </Link>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
-                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors"
+                                        className="block px-4 py-2 rounded-lg hover:bg-orange-500/20 transition-colors touch-manipulation min-h-[44px] flex items-center"
                                     >
                                         Events
                                     </Link>
@@ -286,28 +349,48 @@ export default function AnimeNavigation() {
                                 <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                             </button>
                             
-                    {/* Logo - Responsive sizing */}
-                    <Link href="/anime" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
-                        <motion.div
-                            whileHover={{ scale: 1.1, rotate: 5 }}
-                            className="relative"
+                    {/* Logo - Responsive sizing with Manga Logo */}
+                    <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                        {/* Manga Logo - M button */}
+                        <Link 
+                            href="/" 
+                            className="flex items-center justify-center group"
+                            onClick={() => {
+                                // Switch to manga mode when clicking M logo
+                                switchToManga();
+                            }}
                         >
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/50">
-                                <Play className="w-5 h-5 sm:w-7 sm:h-7 text-white fill-white" />
+                            <div className="relative">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                    <span className="text-white font-bold text-base sm:text-lg md:text-xl">M</span>
+                                </div>
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
                             </div>
+                        </Link>
+                        
+                        {/* Anime Logo - Play button */}
+                        <Link href="/anime" className="flex items-center space-x-2 sm:space-x-3 group">
                             <motion.div
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-orange-400 rounded-full border-2 border-black"
-                            />
-                        </motion.div>
-                        <div className="hidden sm:block">
-                            <h1 className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent leading-tight">
-                                ANIMESTREAM
-                            </h1>
-                            <p className="text-[10px] sm:text-xs text-orange-300/70 -mt-0.5 sm:-mt-1 hidden md:block">Premium Anime Hub</p>
-                        </div>
-                    </Link>
+                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                className="relative"
+                            >
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/50">
+                                    <Play className="w-5 h-5 sm:w-7 sm:h-7 text-white fill-white" />
+                                </div>
+                                <motion.div
+                                    animate={{ scale: [1, 1.2, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-orange-400 rounded-full border-2 border-black"
+                                />
+                            </motion.div>
+                            <div className="hidden sm:block">
+                                <h1 className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent leading-tight">
+                                    ANIMESTREAM
+                                </h1>
+                                <p className="text-[10px] sm:text-xs text-orange-300/70 -mt-0.5 sm:-mt-1 hidden md:block">Premium Anime Hub</p>
+                            </div>
+                        </Link>
+                    </div>
 
                     {/* Navigation Links - Positioned right after logo with equal spacing */}
                     <div className="hidden lg:flex items-center gap-4 xl:gap-6">
@@ -344,22 +427,10 @@ export default function AnimeNavigation() {
                         })}
                     </div>
 
-                    {/* Mobile Menu Button - Better touch target */}
-                    <div className="lg:hidden flex items-center space-x-2">
-                        <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="p-2.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 active:bg-orange-500/30 transition-colors border border-orange-500/30 touch-manipulation"
-                            aria-label="Toggle menu"
-                        >
-                            {isMobileMenuOpen ? (
-                                <X className="w-5 h-5 text-orange-400" />
-                            ) : (
-                                <Menu className="w-5 h-5 text-orange-400" />
-                            )}
-                        </button>
-                        <div className="hidden sm:block">
-                            <AppModeSwitcher />
-                        </div>
+                    {/* Mobile Menu Button - Removed, merged with sidebar hamburger */}
+                    {/* App Mode Switcher - Hidden on mobile, shown in sidebar */}
+                    <div className="hidden sm:block lg:hidden">
+                        <AppModeSwitcher />
                     </div>
 
                     {/* Right Side Actions */}
@@ -477,41 +548,7 @@ export default function AnimeNavigation() {
                     </div>
                 </div>
 
-                {/* Mobile Navigation Menu - Improved spacing and touch targets */}
-                {isMobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="lg:hidden border-t border-orange-500/20 py-4 max-h-[calc(100vh-4rem)] overflow-y-auto"
-                    >
-                        <div className="flex flex-col space-y-2 sm:space-y-3 px-2">
-                            {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
-                                const active = isActive(item.href);
-                                const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
-                                return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className={`
-                                            px-4 py-3 sm:py-2.5 rounded-lg transition-colors flex items-center gap-2 touch-manipulation min-h-[44px] sm:min-h-0
-                                            ${isCreatorButton
-                                                ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 active:from-orange-700 active:to-red-700 text-white font-bold shadow-lg shadow-orange-500/50'
-                                                : active
-                                                ? 'bg-orange-500/20 text-orange-400 font-bold'
-                                                : 'text-gray-400 hover:bg-orange-500/10 active:bg-orange-500/20 hover:text-orange-400'
-                                            }
-                                        `}
-                                    >
-                                        {item.icon && <item.icon className="w-4 h-4" />}
-                                        {item.label}
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    </motion.div>
-                )}
+                {/* Mobile Navigation Menu - Removed, merged into sidebar */}
             </div>
         </nav>
         </div>
