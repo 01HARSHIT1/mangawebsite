@@ -158,10 +158,10 @@ export default function AnimeNavigation() {
                                 {/* Close Button */}
                                 <button
                                     onClick={() => setIsSidebarOpen(false)}
-                                    className="flex items-center space-x-2 text-gray-400 hover:text-white mb-4 sm:mb-6 transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
+                                    className="flex items-center space-x-2 text-gray-300 hover:text-white mb-4 sm:mb-6 transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
                                 >
                                     <ChevronLeft className="w-5 h-5" />
-                                    <span className="font-semibold">Close menu</span>
+                                    <span className="text-base sm:text-lg font-bold">Close menu</span>
                                 </button>
 
                                 {/* App Mode Switcher - Mobile */}
@@ -196,7 +196,7 @@ export default function AnimeNavigation() {
 
                                 {/* Main Navigation Links - Merged from mobile menu */}
                                 <div className="space-y-2 mb-4 sm:mb-6">
-                                    <h3 className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Navigation</h3>
+                                    <h3 className="px-4 py-3 text-sm sm:text-base font-black text-orange-400 uppercase tracking-wider mb-3 border-b border-orange-500/30">Navigation</h3>
                                     {navItems.map((item) => {
                                         const active = isActive(item.href);
                                         return (
@@ -243,7 +243,7 @@ export default function AnimeNavigation() {
 
                                 {/* Anime Categories */}
                                 <div className="space-y-2 mb-4 sm:mb-6">
-                                    <h3 className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Categories</h3>
+                                    <h3 className="px-4 py-3 text-sm sm:text-base font-black text-orange-400 uppercase tracking-wider mb-3 border-b border-orange-500/30">Categories</h3>
                                     <Link
                                         href="/anime/browse"
                                         onClick={() => setIsSidebarOpen(false)}
@@ -304,7 +304,7 @@ export default function AnimeNavigation() {
 
                                 {/* Genre Section */}
                                 <div className="mb-6">
-                                    <h3 className="px-4 py-2 text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                    <h3 className="px-4 py-3 text-sm sm:text-base font-black text-orange-400 uppercase tracking-wider mb-3 border-b border-orange-500/30">
                                         Genre
                                     </h3>
                                     <div className="grid grid-cols-2 gap-2">
@@ -376,11 +376,6 @@ export default function AnimeNavigation() {
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/50">
                                     <Play className="w-5 h-5 sm:w-7 sm:h-7 text-white fill-white" />
                                 </div>
-                                <motion.div
-                                    animate={{ scale: [1, 1.2, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-orange-400 rounded-full border-2 border-black"
-                                />
                             </motion.div>
                             <div className="hidden sm:block">
                                 <h1 className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent leading-tight">

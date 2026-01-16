@@ -306,7 +306,7 @@ export default function AnimeHome() {
                     {heroList.length > 1 && (
                         <button
                             onClick={() => setHeroIndex((prev) => (prev - 1 + heroList.length) % heroList.length)}
-                            className="absolute left-2 sm:left-4 md:left-6 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full border border-orange-500/30 hover:border-orange-500/50 transition-all hover:scale-110 active:scale-95 touch-manipulation"
+                            className="absolute left-2 sm:left-4 md:left-6 top-[35%] sm:top-[40%] -translate-y-1/2 z-20 p-2 sm:p-3 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full border border-orange-500/30 hover:border-orange-500/50 transition-all hover:scale-110 active:scale-95 touch-manipulation"
                             aria-label="Previous anime"
                         >
                             <ChevronsLeft className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
@@ -317,7 +317,7 @@ export default function AnimeHome() {
                     {heroList.length > 1 && (
                         <button
                             onClick={() => setHeroIndex((prev) => (prev + 1) % heroList.length)}
-                            className="absolute right-2 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full border border-orange-500/30 hover:border-orange-500/50 transition-all hover:scale-110 active:scale-95 touch-manipulation"
+                            className="absolute right-2 sm:right-4 md:right-6 top-[35%] sm:top-[40%] -translate-y-1/2 z-20 p-2 sm:p-3 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full border border-orange-500/30 hover:border-orange-500/50 transition-all hover:scale-110 active:scale-95 touch-manipulation"
                             aria-label="Next anime"
                         >
                             <ChevronsRight className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
@@ -416,7 +416,7 @@ export default function AnimeHome() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.8 }}
-                                    className="mt-8 flex items-center space-x-6 text-sm text-gray-400"
+                                    className="mt-8 mb-4 sm:mb-6 flex items-center space-x-6 text-sm text-gray-400"
                                 >
                                     <div className="flex items-center space-x-2">
                                         <Zap className="w-4 h-4 text-orange-400" />
