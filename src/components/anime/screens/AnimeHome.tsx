@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Play, Search, TrendingUp, Clock, Star, ChevronRight, Sparkles, Zap, Heart, Bookmark, Share2, MoreVertical, Filter, Calendar, Tv, Award, MessageCircle, Share, Menu, X, ChevronLeft } from 'lucide-react';
+import { Play, Search, TrendingUp, Clock, Star, ChevronRight, Sparkles, Zap, Heart, Bookmark, Share2, MoreVertical, Filter, Calendar, Tv, Award, MessageCircle, Share, Menu, X, ChevronLeft, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import AnimeCarousel from '@/components/anime/components/AnimeCarousel';
@@ -302,6 +302,28 @@ export default function AnimeHome() {
                         </div>
                     )}
 
+                    {/* Left Arrow Button */}
+                    {heroList.length > 1 && (
+                        <button
+                            onClick={() => setHeroIndex((prev) => (prev - 1 + heroList.length) % heroList.length)}
+                            className="absolute left-2 sm:left-4 md:left-6 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full border border-orange-500/30 hover:border-orange-500/50 transition-all hover:scale-110 active:scale-95 touch-manipulation"
+                            aria-label="Previous anime"
+                        >
+                            <ChevronsLeft className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
+                        </button>
+                    )}
+
+                    {/* Right Arrow Button */}
+                    {heroList.length > 1 && (
+                        <button
+                            onClick={() => setHeroIndex((prev) => (prev + 1) % heroList.length)}
+                            className="absolute right-2 sm:right-4 md:right-6 top-1/2 -translate-y-1/2 z-20 p-2 sm:p-3 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full border border-orange-500/30 hover:border-orange-500/50 transition-all hover:scale-110 active:scale-95 touch-manipulation"
+                            aria-label="Next anime"
+                        >
+                            <ChevronsRight className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
+                        </button>
+                    )}
+
                     {/* Hero Content - Responsive */}
                     <div className="relative z-10 h-full flex items-center">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -411,19 +433,31 @@ export default function AnimeHome() {
                         </div>
                     </div>
 
-                    {/* Hero Navigation Dots */}
+                    {/* Hero Navigation - Poster Images */}
                     {heroList.length > 1 && (
-                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2">
-                            {heroList.slice(0, 5).map((_, index) => (
+                        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-2 sm:gap-3 max-w-full px-4 overflow-x-auto pb-2">
+                            {heroList.slice(0, 5).map((anime, index) => (
                                 <button
-                                    key={index}
+                                    key={anime._id || index}
                                     onClick={() => setHeroIndex(index)}
-                                    className={`h-2 rounded-full transition-all ${
+                                    className={`relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border-2 transition-all touch-manipulation ${
                                         index === heroIndex
-                                            ? 'w-8 bg-orange-500'
-                                            : 'w-2 bg-white/30 hover:bg-white/50'
+                                            ? 'border-orange-500 scale-110 shadow-lg shadow-orange-500/50'
+                                            : 'border-white/20 hover:border-orange-400/50 opacity-60 hover:opacity-100'
                                     }`}
-                                />
+                                    aria-label={`Go to ${anime.title}`}
+                                >
+                                    <Image
+                                        src={anime.coverImage || anime.bannerImage || '/placeholder.jpg'}
+                                        alt={anime.title}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
+                                    />
+                                    {index === heroIndex && (
+                                        <div className="absolute inset-0 bg-orange-500/20" />
+                                    )}
+                                </button>
                             ))}
                         </div>
                     )}
@@ -601,19 +635,25 @@ export default function AnimeHome() {
                         <div className="bg-black/40 backdrop-blur-sm border border-orange-500/20 rounded-xl p-6">
                             {/* Day Selector */}
                             <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
-                                {Object.keys(schedule).map((day) => (
-                                    <button
-                                        key={day}
-                                        onClick={() => setSelectedScheduleDay(day)}
-                                        className={`px-4 py-2 rounded-lg font-semibold text-sm whitespace-nowrap transition-all ${
-                                            selectedScheduleDay === day
-                                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
-                                                : 'bg-gray-800 text-gray-400 hover:text-orange-400'
-                                        }`}
-                                    >
-                                        {day}
-                                    </button>
-                                ))}
+                                {Object.keys(schedule).map((day) => {
+                                    // Shorten day names for better display
+                                    const shortDay = day.length > 3 
+                                        ? day.substring(0, 3).toUpperCase()
+                                        : day.toUpperCase();
+                                    return (
+                                        <button
+                                            key={day}
+                                            onClick={() => setSelectedScheduleDay(day)}
+                                            className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
+                                                selectedScheduleDay === day
+                                                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                                                    : 'bg-gray-800 text-gray-400 hover:text-orange-400'
+                                            }`}
+                                        >
+                                            {shortDay}
+                                        </button>
+                                    );
+                                })}
                             </div>
                             {/* Schedule List */}
                             <div className="space-y-3">
