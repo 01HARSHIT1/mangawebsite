@@ -568,6 +568,13 @@ export default function ModernNavigation() {
                                     </button>
                                 </div>
 
+                                {/* App Mode Switcher - Mobile */}
+                                <div className="mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-slate-700">
+                                    <div className="flex items-center justify-center">
+                                        <AppModeSwitcher onSwitch={() => setIsMobileMenuOpen(false)} />
+                                    </div>
+                                </div>
+
                                 <div className="space-y-2 sm:space-y-3">
                                     {/* Navigation Items - Touch-friendly */}
                                     {[...navItems, ...userNavItems, ...creatorNavItems].map((item) => (
