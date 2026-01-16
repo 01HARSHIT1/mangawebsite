@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppMode } from '@/contexts/AppModeContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import { FaSearch, FaBell, FaUser, FaBookmark, FaChartBar, FaUpload, FaCog, FaSignOutAlt, FaBars, FaTimes, FaHome, FaBook, FaTags, FaCoins, FaCrown, FaExchangeAlt, FaShieldAlt, FaQuestionCircle, FaHeadset, FaMoon, FaSun, FaCoffee, FaHeart } from 'react-icons/fa';
+import { Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import RazorpayPayment from './RazorpayPayment';
 
@@ -20,7 +21,7 @@ export default function ModernNavigation() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [showCoffeeModal, setShowCoffeeModal] = useState(false);
     const { isAuthenticated, user, logout, isCreator } = useAuth();
-    const { appMode } = useAppMode();
+    const { appMode, switchToAnime } = useAppMode();
     const router = useRouter();
 
     // Handle scroll effect
@@ -93,6 +94,7 @@ export default function ModernNavigation() {
     const navItems = [
         { href: '/', label: 'Home', icon: FaHome },
         { href: '/manga', label: 'Browse', icon: FaBook },
+        { href: '/anime', label: 'Anime', icon: Play }, // Added Anime menu item
         { href: '/genres', label: 'Genres', icon: FaTags },
         // Show Become a Creator for authenticated non-creators in the main nav cluster
         ...(isAuthenticated && !isCreator ? [{ href: '/upload?type=manga', label: 'Become Creator', icon: FaUpload }] : [])
@@ -141,19 +143,39 @@ export default function ModernNavigation() {
                             <AppModeSwitcher />
                         </div>
 
-                        {/* Logo - Responsive */}
-                        <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group flex-shrink-0">
-                            <div className="relative">
-                                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                    <span className="text-white font-bold text-base sm:text-lg">M</span>
+                        {/* Logo - Responsive with Anime Logo */}
+                        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                            <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
+                                <div className="relative">
+                                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                        <span className="text-white font-bold text-base sm:text-lg">M</span>
+                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
                                 </div>
-                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
-                            </div>
-                            <div className="hidden sm:block min-w-0">
-                                <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">MangaReader</h1>
-                                <p className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:-mt-1 truncate hidden md:block">Professional Platform</p>
-                            </div>
-                        </Link>
+                                <div className="hidden sm:block min-w-0">
+                                    <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">MangaReader</h1>
+                                    <p className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:-mt-1 truncate hidden md:block">Professional Platform</p>
+                                </div>
+                            </Link>
+                            {/* Anime Logo - A button */}
+                            <Link 
+                                href="/anime" 
+                                className="flex items-center justify-center group"
+                                onClick={() => {
+                                    // Switch to anime mode when clicking A logo
+                                    if (appMode !== 'anime') {
+                                        switchToAnime();
+                                    }
+                                }}
+                            >
+                                <div className="relative">
+                                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                        <span className="text-white font-bold text-base sm:text-lg">A</span>
+                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
+                                </div>
+                            </Link>
+                        </div>
 
                         {/* Desktop Navigation - Responsive */}
                         <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center max-w-2xl">
@@ -577,7 +599,39 @@ export default function ModernNavigation() {
 
                                 <div className="space-y-2 sm:space-y-3">
                                     {/* Navigation Items - Touch-friendly */}
-                                    {[...navItems, ...userNavItems, ...creatorNavItems].map((item) => (
+                                    {navItems.map((item) => (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors touch-manipulation min-h-[44px]"
+                                            onClick={() => {
+                                                setIsMobileMenuOpen(false);
+                                                // Switch to anime mode if clicking anime link
+                                                if (item.href === '/anime' && appMode !== 'anime') {
+                                                    switchToAnime();
+                                                }
+                                            }}
+                                        >
+                                            <item.icon className="text-indigo-400 text-base sm:text-lg" />
+                                            <span className="text-white font-medium text-sm sm:text-base">{item.label}</span>
+                                        </Link>
+                                    ))}
+                                    
+                                    {/* User Nav Items */}
+                                    {userNavItems.map((item) => (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors touch-manipulation min-h-[44px]"
+                                            onClick={() => setIsMobileMenuOpen(false)}
+                                        >
+                                            <item.icon className="text-indigo-400 text-base sm:text-lg" />
+                                            <span className="text-white font-medium text-sm sm:text-base">{item.label}</span>
+                                        </Link>
+                                    ))}
+                                    
+                                    {/* Creator Nav Items */}
+                                    {creatorNavItems.map((item) => (
                                         <Link
                                             key={item.href}
                                             href={item.href}

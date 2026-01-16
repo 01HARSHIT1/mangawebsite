@@ -130,34 +130,8 @@ export default function PWAInstaller() {
                 </button>
             )}
 
-            {/* Mobile Install Banner */}
-            {deviceType === 'mobile' && deferredPrompt && (
-                <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 z-50 shadow-lg">
-                    <div className="flex items-center justify-between max-w-sm mx-auto">
-                        <div className="flex items-center space-x-3">
-                            <FaMobile className="text-xl" />
-                            <div>
-                                <p className="font-semibold text-sm">Install MangaReader</p>
-                                <p className="text-xs opacity-90">Get the full app experience</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <button
-                                onClick={handleInstallClick}
-                                className="bg-white text-purple-600 px-3 py-1 rounded text-sm font-semibold hover:bg-gray-100 transition-colors"
-                            >
-                                Install
-                            </button>
-                            <button
-                                onClick={() => setShowInstallPrompt(false)}
-                                className="text-white/80 hover:text-white"
-                            >
-                                <FaTimes />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Mobile Install Banner - Removed per user request */}
+            {/* User requested to remove the install banner from bottom */}
 
             {/* Install Prompt Modal */}
             <AnimatePresence>
