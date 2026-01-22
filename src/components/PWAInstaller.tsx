@@ -17,6 +17,12 @@ export default function PWAInstaller() {
     const [deviceType, setDeviceType] = useState<'desktop' | 'mobile' | 'tablet'>('desktop');
 
     useEffect(() => {
+        // Check if user has dismissed the install prompt before
+        const installPromptDismissed = localStorage.getItem('pwa-install-dismissed') === 'true';
+        if (installPromptDismissed) {
+            return; // Don't show if user dismissed it before
+        }
+
         // Check if app is already installed
         setIsStandalone(window.matchMedia('(display-mode: standalone)').matches);
         setIsInstalled(window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches);
@@ -38,7 +44,7 @@ export default function PWAInstaller() {
             
             // Show install prompt after user has spent some time on the site
             setTimeout(() => {
-                if (!isInstalled && !isStandalone) {
+                if (!isInstalled && !isStandalone && !installPromptDismissed) {
                     setShowInstallPrompt(true);
                 }
             }, 30000); // Show after 30 seconds
@@ -52,6 +58,7 @@ export default function PWAInstaller() {
             setIsInstalled(true);
             setShowInstallPrompt(false);
             setDeferredPrompt(null);
+            localStorage.setItem('pwa-install-dismissed', 'true');
         });
 
         return () => {
@@ -215,7 +222,11 @@ export default function PWAInstaller() {
                                 )}
                                 
                                 <button
-                                    onClick={() => setShowInstallPrompt(false)}
+                                    onClick={() => {
+                                        setShowInstallPrompt(false);
+                                        // Remember that user dismissed the prompt
+                                        localStorage.setItem('pwa-install-dismissed', 'true');
+                                    }}
                                     className="px-6 py-3 text-gray-400 hover:text-white transition-colors"
                                 >
                                     Maybe Later
