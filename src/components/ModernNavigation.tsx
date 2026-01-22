@@ -178,26 +178,37 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
-                        <div className="hidden lg:flex items-center gap-3 xl:gap-4 flex-1 justify-center min-w-0">
-                            {navItems.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className="nav-link flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0"
-                                >
-                                    <item.icon className="text-sm flex-shrink-0" />
-                                    <span className="hidden xl:inline">{item.label}</span>
-                                </Link>
-                            ))}
+                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide ${isAuthenticated ? 'gap-2 xl:gap-3' : 'gap-3 xl:gap-4'}`}>
+                            {navItems.map((item) => {
+                                // Special styling for Home and Become Creator
+                                const isHome = item.href === '/';
+                                const isBecomeCreator = item.label === 'Become Creator';
+                                const isSpecial = isHome || isBecomeCreator;
+                                
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ${
+                                            isSpecial
+                                                ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 text-white font-semibold hover:from-indigo-500/30 hover:to-purple-500/30 hover:border-indigo-400/60 hover:shadow-lg hover:shadow-indigo-500/20'
+                                                : 'text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50'
+                                        }`}
+                                    >
+                                        <item.icon className={`text-sm flex-shrink-0 ${isSpecial ? 'text-indigo-300' : ''}`} />
+                                        <span className="hidden xl:inline">{item.label}</span>
+                                    </Link>
+                                );
+                            })}
 
                             {userNavItems.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-2 px-4 py-2 whitespace-nowrap flex-shrink-0"
+                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0" />
-                                    <span>{item.label}</span>
+                                    <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -205,10 +216,10 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-2 px-4 py-2 whitespace-nowrap flex-shrink-0"
+                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0" />
-                                    <span>{item.label}</span>
+                                    <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -216,10 +227,10 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg whitespace-nowrap flex-shrink-0"
+                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white font-semibold hover:from-purple-600/30 hover:to-pink-600/30 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0" />
-                                    <span>{item.label}</span>
+                                    <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -229,7 +240,7 @@ export default function ModernNavigation() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setShowCoffeeModal(true)}
-                                    className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 sm:px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 shadow-lg whitespace-nowrap flex-shrink-0"
+                                    className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 xl:px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1.5 sm:space-x-2 shadow-lg whitespace-nowrap flex-shrink-0"
                                 >
                                     <motion.div
                                         animate={{
