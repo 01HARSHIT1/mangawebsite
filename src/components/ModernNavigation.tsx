@@ -139,7 +139,12 @@ export default function ModernNavigation() {
         }
     }, [isCreator, isAdmin, isAuthenticated]);
 
-    // Creator nav items - show for creators (admins can also be creators, so show if creator)
+    // Admin nav items - show for admins (always visible)
+    const adminNavItems = isAdmin ? [
+        { href: '/admin/dashboard', label: 'Admin', icon: FaShieldAlt },
+    ] : [];
+
+    // Creator nav items - show for creators and admins
     // If user has uploaded content, show Creator Dashboard instead of Upload
     const creatorNavItems = (isCreator || isAdmin) ? [
         ...(hasUploadedManga 
@@ -147,9 +152,6 @@ export default function ModernNavigation() {
             : [{ href: '/upload', label: 'Upload', icon: FaUpload }]
         ),
     ] : [];
-
-    // Admin nav items - removed from main navigation (accessible via user menu)
-    const adminNavItems: any[] = [];
 
     // Don't show manga navigation in anime mode
     if (appMode === 'anime') {
@@ -211,6 +213,17 @@ export default function ModernNavigation() {
                                     className="flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0" />
+                                    <span className="hidden xl:inline">{item.label}</span>
+                                </Link>
+                            ))}
+
+                            {adminNavItems.map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white font-semibold hover:from-purple-600/30 hover:to-pink-600/30 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-200"
+                                >
+                                    <item.icon className="text-sm flex-shrink-0 text-purple-300" />
                                     <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
