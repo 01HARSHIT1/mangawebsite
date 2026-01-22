@@ -17,10 +17,10 @@ export default function PWAInstaller() {
     const [deviceType, setDeviceType] = useState<'desktop' | 'mobile' | 'tablet'>('desktop');
 
     useEffect(() => {
-        // Check if user has dismissed the install prompt before
+        // Check if user has dismissed the install prompt before - check at component mount
         const installPromptDismissed = localStorage.getItem('pwa-install-dismissed') === 'true';
         if (installPromptDismissed) {
-            return; // Don't show if user dismissed it before
+            return; // Don't set up anything if user dismissed it before
         }
 
         // Check if app is already installed
@@ -39,12 +39,20 @@ export default function PWAInstaller() {
 
         // Listen for install prompt
         const handleBeforeInstallPrompt = (e: Event) => {
+            // Check localStorage again when event fires
+            const isDismissed = localStorage.getItem('pwa-install-dismissed') === 'true';
+            if (isDismissed) {
+                return; // Don't proceed if dismissed
+            }
+
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
             
             // Show install prompt after user has spent some time on the site
             setTimeout(() => {
-                if (!isInstalled && !isStandalone && !installPromptDismissed) {
+                // Check localStorage again before showing
+                const stillDismissed = localStorage.getItem('pwa-install-dismissed') === 'true';
+                if (!isInstalled && !isStandalone && !stillDismissed) {
                     setShowInstallPrompt(true);
                 }
             }, 30000); // Show after 30 seconds
@@ -119,8 +127,9 @@ export default function PWAInstaller() {
         }
     };
 
-    // Don't show if already installed or in standalone mode
-    if (isInstalled || isStandalone) {
+    // Don't show if already installed, in standalone mode, or if user dismissed it
+    const installPromptDismissed = typeof window !== 'undefined' && localStorage.getItem('pwa-install-dismissed') === 'true';
+    if (isInstalled || isStandalone || installPromptDismissed) {
         return null;
     }
 
@@ -214,7 +223,11 @@ export default function PWAInstaller() {
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={() => setShowInstallPrompt(false)}
+                                        onClick={() => {
+                                            setShowInstallPrompt(false);
+                                            // Remember that user dismissed the prompt
+                                            localStorage.setItem('pwa-install-dismissed', 'true');
+                                        }}
                                         className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
                                     >
                                         Got it!
