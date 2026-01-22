@@ -137,7 +137,7 @@ export default function ModernNavigation() {
                 : 'bg-transparent'
                 }`}>
                 <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3 md:gap-4">
+                    <div className="flex items-center justify-between h-14 sm:h-16 gap-3 sm:gap-4 md:gap-6">
                         {/* App Mode Switcher - Desktop */}
                         <div className="hidden lg:block mr-2 sm:mr-4">
                             <AppModeSwitcher />
@@ -178,14 +178,14 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
-                        <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center max-w-2xl">
+                        <div className="hidden lg:flex items-center gap-3 xl:gap-4 flex-1 justify-center min-w-0">
                             {navItems.map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm"
+                                    className="nav-link flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0"
                                 >
-                                    <item.icon className="text-sm" />
+                                    <item.icon className="text-sm flex-shrink-0" />
                                     <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
@@ -194,9 +194,9 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-2 px-4 py-2"
+                                    className="nav-link flex items-center space-x-2 px-4 py-2 whitespace-nowrap flex-shrink-0"
                                 >
-                                    <item.icon className="text-sm" />
+                                    <item.icon className="text-sm flex-shrink-0" />
                                     <span>{item.label}</span>
                                 </Link>
                             ))}
@@ -205,9 +205,9 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-2 px-4 py-2"
+                                    className="nav-link flex items-center space-x-2 px-4 py-2 whitespace-nowrap flex-shrink-0"
                                 >
-                                    <item.icon className="text-sm" />
+                                    <item.icon className="text-sm flex-shrink-0" />
                                     <span>{item.label}</span>
                                 </Link>
                             ))}
@@ -216,9 +216,9 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="nav-link flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg"
+                                    className="nav-link flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg whitespace-nowrap flex-shrink-0"
                                 >
-                                    <item.icon className="text-sm" />
+                                    <item.icon className="text-sm flex-shrink-0" />
                                     <span>{item.label}</span>
                                 </Link>
                             ))}
@@ -229,7 +229,7 @@ export default function ModernNavigation() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setShowCoffeeModal(true)}
-                                    className="relative ml-2 sm:ml-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 sm:px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 shadow-lg whitespace-nowrap flex-shrink-0"
+                                    className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 sm:px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 sm:space-x-2 shadow-lg whitespace-nowrap flex-shrink-0"
                                 >
                                     <motion.div
                                         animate={{
@@ -237,6 +237,7 @@ export default function ModernNavigation() {
                                             scale: [1, 1.1, 1]
                                         }}
                                         transition={{ duration: 2, repeat: Infinity }}
+                                        className="flex-shrink-0"
                                     >
                                         <FaCoffee />
                                     </motion.div>
@@ -244,6 +245,7 @@ export default function ModernNavigation() {
                                     <motion.div
                                         animate={{ scale: [1, 1.2, 1] }}
                                         transition={{ duration: 1.5, repeat: Infinity }}
+                                        className="flex-shrink-0"
                                     >
                                         <FaHeart className="text-red-200 text-xs" />
                                     </motion.div>
