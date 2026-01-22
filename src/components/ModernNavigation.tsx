@@ -94,7 +94,6 @@ export default function ModernNavigation() {
     const navItems = [
         { href: '/', label: 'Home', icon: FaHome },
         { href: '/manga', label: 'Browse', icon: FaBook },
-        { href: '/anime', label: 'Anime', icon: Play }, // Added Anime menu item
         { href: '/genres', label: 'Genres', icon: FaTags },
         // Show Become a Creator for authenticated non-creators in the main nav cluster
         ...(isAuthenticated && !isCreator ? [{ href: '/upload?type=manga', label: 'Become Creator', icon: FaUpload }] : [])
@@ -154,7 +153,7 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
-                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-2 xl:gap-2.5' : 'gap-2.5 xl:gap-3'}`}>
+                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-2.5 xl:gap-3' : 'gap-3 xl:gap-3.5'}`}>
                             {navItems.map((item) => {
                                 // Special styling for Home and Become Creator
                                 const isHome = item.href === '/';
