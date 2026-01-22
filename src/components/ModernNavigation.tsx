@@ -208,7 +208,7 @@ export default function ModernNavigation() {
                                     className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0" />
-                                    <span className="hidden xl:inline">{item.label}</span>
+                                    <span className="lg:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -216,10 +216,10 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
+                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-white font-semibold hover:from-yellow-500/30 hover:to-amber-500/30 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-500/20 transition-all duration-200"
                                 >
-                                    <item.icon className="text-sm flex-shrink-0" />
-                                    <span className="hidden xl:inline">{item.label}</span>
+                                    <item.icon className="text-sm flex-shrink-0 text-yellow-300" />
+                                    <span className="lg:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -229,8 +229,8 @@ export default function ModernNavigation() {
                                     href={item.href}
                                     className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white font-semibold hover:from-purple-600/30 hover:to-pink-600/30 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-200"
                                 >
-                                    <item.icon className="text-sm flex-shrink-0" />
-                                    <span className="hidden xl:inline">{item.label}</span>
+                                    <item.icon className="text-sm flex-shrink-0 text-purple-300" />
+                                    <span className="lg:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -252,7 +252,7 @@ export default function ModernNavigation() {
                                     >
                                         <FaCoffee />
                                     </motion.div>
-                                    <span className="hidden xl:inline">Coffee</span>
+                                    <span className="lg:inline">Coffee</span>
                                     <motion.div
                                         animate={{ scale: [1, 1.2, 1] }}
                                         transition={{ duration: 1.5, repeat: Infinity }}
