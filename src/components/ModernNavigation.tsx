@@ -118,12 +118,12 @@ export default function ModernNavigation() {
     // Creator nav items - show for creators (admins can also be creators, so show if creator)
     const creatorNavItems = isCreator ? [
         { href: '/upload', label: 'Upload', icon: FaUpload },
-        { href: '/creator/dashboard', label: 'Creator Dashboard', icon: FaCrown },
+        { href: '/creator/dashboard', label: 'Creator', icon: FaCrown },
     ] : [];
 
     // Admin nav items - show for admins
     const adminNavItems = isAdmin ? [
-        { href: '/admin/dashboard', label: 'Admin Dashboard', icon: FaShieldAlt },
+        { href: '/admin/dashboard', label: 'Admin', icon: FaShieldAlt },
     ] : [];
 
     // Don't show manga navigation in anime mode
@@ -159,28 +159,10 @@ export default function ModernNavigation() {
                                     <p className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:-mt-1 truncate hidden md:block">Professional Platform</p>
                                 </div>
                             </Link>
-                            {/* Anime Logo - A button */}
-                            <Link 
-                                href="/anime" 
-                                className="flex items-center justify-center group"
-                                onClick={() => {
-                                    // Switch to anime mode when clicking A logo
-                                    if (appMode !== 'anime') {
-                                        switchToAnime();
-                                    }
-                                }}
-                            >
-                                <div className="relative">
-                                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                        <span className="text-white font-bold text-base sm:text-lg">A</span>
-                                    </div>
-                                    <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
-                                </div>
-                            </Link>
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
-                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-2 xl:gap-3' : 'gap-3 xl:gap-4'}`}>
+                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-1.5 xl:gap-2' : 'gap-2 xl:gap-3'}`}>
                             {navItems.map((item) => {
                                 // Special styling for Home and Become Creator
                                 const isHome = item.href === '/';
@@ -191,7 +173,7 @@ export default function ModernNavigation() {
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className={`flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ${
+                                        className={`flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ${
                                             isSpecial
                                                 ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 text-white font-semibold hover:from-indigo-500/30 hover:to-purple-500/30 hover:border-indigo-400/60 hover:shadow-lg hover:shadow-indigo-500/20'
                                                 : 'text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50'
@@ -207,10 +189,10 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
+                                    className="flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0" />
-                                    <span className="lg:inline">{item.label}</span>
+                                    <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -218,10 +200,10 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-white font-semibold hover:from-yellow-500/30 hover:to-amber-500/30 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-500/20 transition-all duration-200"
+                                    className="flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-white font-semibold hover:from-yellow-500/30 hover:to-amber-500/30 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-500/20 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0 text-yellow-300" />
-                                    <span className="lg:inline">{item.label}</span>
+                                    <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -229,10 +211,10 @@ export default function ModernNavigation() {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="flex items-center space-x-2 px-3 xl:px-4 py-2 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white font-semibold hover:from-purple-600/30 hover:to-pink-600/30 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-200"
+                                    className="flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white font-semibold hover:from-purple-600/30 hover:to-pink-600/30 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0 text-purple-300" />
-                                    <span className="lg:inline">{item.label}</span>
+                                    <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -242,7 +224,7 @@ export default function ModernNavigation() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setShowCoffeeModal(true)}
-                                    className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 xl:px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1.5 sm:space-x-2 shadow-lg whitespace-nowrap flex-shrink-0"
+                                    className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-2.5 xl:px-3 py-1.5 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 shadow-lg whitespace-nowrap flex-shrink-0 text-sm"
                                 >
                                     <motion.div
                                         animate={{
@@ -252,15 +234,15 @@ export default function ModernNavigation() {
                                         transition={{ duration: 2, repeat: Infinity }}
                                         className="flex-shrink-0"
                                     >
-                                        <FaCoffee />
+                                        <FaCoffee className="text-sm" />
                                     </motion.div>
-                                    <span className="lg:inline">Coffee</span>
+                                    <span className="hidden xl:inline">Coffee</span>
                                     <motion.div
                                         animate={{ scale: [1, 1.2, 1] }}
                                         transition={{ duration: 1.5, repeat: Infinity }}
                                         className="flex-shrink-0"
                                     >
-                                        <FaHeart className="text-red-200 text-xs" />
+                                        <FaHeart className="text-red-200 text-[10px]" />
                                     </motion.div>
                                 </motion.button>
                             )}
