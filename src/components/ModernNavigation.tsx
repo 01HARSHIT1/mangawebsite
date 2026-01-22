@@ -115,11 +115,13 @@ export default function ModernNavigation() {
     // Check if user is admin
     const isAdmin = user?.role === 'admin';
 
-    const creatorNavItems = isCreator && !isAdmin ? [
+    // Creator nav items - show for creators (admins can also be creators, so show if creator)
+    const creatorNavItems = isCreator ? [
         { href: '/upload', label: 'Upload', icon: FaUpload },
-        { href: '/creator/dashboard', label: 'Dashboard', icon: FaCrown },
+        { href: '/creator/dashboard', label: 'Creator Dashboard', icon: FaCrown },
     ] : [];
 
+    // Admin nav items - show for admins
     const adminNavItems = isAdmin ? [
         { href: '/admin/dashboard', label: 'Admin Dashboard', icon: FaShieldAlt },
     ] : [];
@@ -136,7 +138,7 @@ export default function ModernNavigation() {
                 ? 'glass-strong shadow-xl border-b border-white/10'
                 : 'bg-transparent'
                 }`}>
-                <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+                <div className="max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-14 sm:h-16 gap-3 sm:gap-4 md:gap-6">
                         {/* App Mode Switcher - Desktop */}
                         <div className="hidden lg:block mr-2 sm:mr-4">
@@ -178,7 +180,7 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
-                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide ${isAuthenticated ? 'gap-2 xl:gap-3' : 'gap-3 xl:gap-4'}`}>
+                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-2 xl:gap-3' : 'gap-3 xl:gap-4'}`}>
                             {navItems.map((item) => {
                                 // Special styling for Home and Become Creator
                                 const isHome = item.href === '/';
