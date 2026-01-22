@@ -20,6 +20,7 @@ export default function ModernNavigation() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showCoffeeModal, setShowCoffeeModal] = useState(false);
+    const [hasUploadedManga, setHasUploadedManga] = useState(false);
     const { isAuthenticated, user, logout, isCreator } = useAuth();
     const { appMode, switchToAnime } = useAppMode();
     const router = useRouter();
@@ -114,10 +115,37 @@ export default function ModernNavigation() {
     // Check if user is admin
     const isAdmin = user?.role === 'admin';
 
+    // Check if user has uploaded manga (for both creators and admins)
+    useEffect(() => {
+        if ((isCreator || isAdmin) && isAuthenticated) {
+            const checkMangaUpload = async () => {
+                try {
+                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                    const response = await fetch('/api/creator/dashboard', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setHasUploadedManga(data.stats?.totalManga > 0 || data.series?.length > 0);
+                    } else {
+                        setHasUploadedManga(false);
+                    }
+                } catch (error) {
+                    // Silently fail - user might not have uploaded yet
+                    setHasUploadedManga(false);
+                }
+            };
+            checkMangaUpload();
+        }
+    }, [isCreator, isAdmin, isAuthenticated]);
+
     // Creator nav items - show for creators (admins can also be creators, so show if creator)
-    const creatorNavItems = isCreator ? [
-        { href: '/upload', label: 'Upload', icon: FaUpload },
-        { href: '/creator/dashboard', label: 'Creator', icon: FaCrown },
+    // If user has uploaded content, show Creator Dashboard instead of Upload
+    const creatorNavItems = (isCreator || isAdmin) ? [
+        ...(hasUploadedManga 
+            ? [{ href: '/creator/dashboard', label: 'Creator', icon: FaCrown }]
+            : [{ href: '/upload', label: 'Upload', icon: FaUpload }]
+        ),
     ] : [];
 
     // Admin nav items - removed from main navigation (accessible via user menu)
