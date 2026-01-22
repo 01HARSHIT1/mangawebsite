@@ -121,10 +121,8 @@ export default function ModernNavigation() {
         { href: '/creator/dashboard', label: 'Creator', icon: FaCrown },
     ] : [];
 
-    // Admin nav items - show for admins
-    const adminNavItems = isAdmin ? [
-        { href: '/admin/dashboard', label: 'Admin', icon: FaShieldAlt },
-    ] : [];
+    // Admin nav items - removed from main navigation (accessible via user menu)
+    const adminNavItems: any[] = [];
 
     // Don't show manga navigation in anime mode
     if (appMode === 'anime') {
@@ -145,15 +143,9 @@ export default function ModernNavigation() {
                             <AppModeSwitcher />
                         </div>
 
-                        {/* Logo - Responsive with Anime Logo */}
+                        {/* Logo - Text Only */}
                         <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
                             <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
-                                <div className="relative">
-                                    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                        <span className="text-white font-bold text-base sm:text-lg">M</span>
-                                    </div>
-                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
-                                </div>
                                 <div className="hidden sm:block min-w-0">
                                     <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">MangaReader</h1>
                                     <p className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:-mt-1 truncate hidden md:block">Professional Platform</p>
@@ -162,7 +154,7 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
-                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-1.5 xl:gap-2' : 'gap-2 xl:gap-3'}`}>
+                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-2 xl:gap-2.5' : 'gap-2.5 xl:gap-3'}`}>
                             {navItems.map((item) => {
                                 // Special styling for Home and Become Creator
                                 const isHome = item.href === '/';
@@ -203,17 +195,6 @@ export default function ModernNavigation() {
                                     className="flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-white font-semibold hover:from-yellow-500/30 hover:to-amber-500/30 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-500/20 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0 text-yellow-300" />
-                                    <span className="hidden xl:inline">{item.label}</span>
-                                </Link>
-                            ))}
-
-                            {adminNavItems.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className="flex items-center space-x-1 px-2.5 xl:px-3 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white font-semibold hover:from-purple-600/30 hover:to-pink-600/30 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-200"
-                                >
-                                    <item.icon className="text-sm flex-shrink-0 text-purple-300" />
                                     <span className="hidden xl:inline">{item.label}</span>
                                 </Link>
                             ))}
