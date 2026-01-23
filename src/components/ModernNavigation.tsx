@@ -173,7 +173,7 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Logo - Text Only */}
-                        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0 -ml-2 sm:-ml-3 md:-ml-4">
+                        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0 -ml-4 sm:-ml-5 md:-ml-6">
                             <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
                                 <div className="hidden sm:block min-w-0">
                                     <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">MangaReader</h1>
@@ -183,7 +183,7 @@ export default function ModernNavigation() {
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
-                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ${isAuthenticated ? 'gap-3 xl:gap-4' : 'gap-3.5 xl:gap-4'}`}>
+                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ml-2 xl:ml-3 ${isAuthenticated ? 'gap-3 xl:gap-4' : 'gap-3.5 xl:gap-4'}`}>
                             {navItems.map((item) => {
                                 // Special styling for Home and Become Creator
                                 const isHome = item.href === '/';
@@ -272,7 +272,7 @@ export default function ModernNavigation() {
                         {/* Search & Actions - Responsive */}
                         <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 lg:space-x-4 flex-shrink-0 ml-2 xl:ml-3">
                             {/* Search - Responsive */}
-                            <div className="relative">
+                            <div className="relative ml-2 xl:ml-3">
                                 <button
                                     onClick={() => setIsSearchOpen(!isSearchOpen)}
                                     className="p-2 sm:p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
