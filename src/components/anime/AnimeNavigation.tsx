@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
 import { useTheme } from '@/components/AdvancedThemeSystem';
 import { useAppMode } from '@/contexts/AppModeContext';
-import { motion } from 'framer-motion';
 import RazorpayPayment from '@/components/RazorpayPayment';
 
 /**
