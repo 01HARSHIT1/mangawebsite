@@ -43,11 +43,11 @@ export default function UploadIntroClient() {
 
     const trustLine = 'Your work stays yours. RealmVerse never claims ownership.';
 
-    // Encode the image path for spaces
-    const imagePath = '/ChatGPT Image Jan 28, 2026, 11_35_21 PM.png';
+    // URL-safe path (no spaces/special chars) so it loads reliably on Vercel
+    const imagePath = '/creator-landing.png';
 
     return (
-        <div className="relative min-h-screen w-full overflow-hidden">
+        <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
             {/* Full-page background image */}
             <div className="fixed inset-0 z-0">
                 <Image
