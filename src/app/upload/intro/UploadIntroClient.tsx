@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import { X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import LoginForm from '@/components/LoginForm';
@@ -47,46 +46,40 @@ export default function UploadIntroClient() {
     const imagePath = '/creator-landing.png';
 
     return (
-        <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
-            {/* Full-page background image */}
-            <div className="fixed inset-0 z-0">
-                <Image
+        <div className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
+            {/* Scrollable image + buttons: image sets page height, both scroll together */}
+            <div className="relative w-full">
+                {/* Full-width image at natural height so the whole image is visible and scrolls */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                     src={imagePath}
                     alt="RealmVerse Creator Landing Page"
-                    fill
-                    className="object-contain sm:object-cover object-center"
-                    priority
-                    quality={90}
-                    sizes="100vw"
+                    className="block w-full h-auto"
                 />
-            </div>
-
-            {/* Overlay container for functional buttons */}
-            <div className="relative z-10 min-h-screen w-full">
-                {/* Top CTA Button - positioned where it appears in the image (below the description) */}
-                <div className="absolute top-[28%] sm:top-[26%] md:top-[24%] left-1/2 transform -translate-x-1/2">
-                    <button
-                        onClick={handleContinue}
-                        className="px-10 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[48px] backdrop-blur-sm whitespace-nowrap"
-                        style={{
-                            background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
-                        }}
-                    >
-                        Continue as Creator (Free)
-                    </button>
-                </div>
-
-                {/* Bottom CTA Button - positioned at the bottom where it appears in the image */}
-                <div className="absolute bottom-[6%] sm:bottom-[5%] md:bottom-[4%] left-1/2 transform -translate-x-1/2">
-                    <button
-                        onClick={handleContinue}
-                        className="px-10 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[48px] backdrop-blur-sm whitespace-nowrap"
-                        style={{
-                            background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
-                        }}
-                    >
-                        Continue as Creator (Free Upload)
-                    </button>
+                {/* Buttons overlaid on image at same positions as "Continue as Creator" in the design */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-[28%] left-1/2 -translate-x-1/2 pointer-events-auto">
+                        <button
+                            onClick={handleContinue}
+                            className="px-10 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[48px] backdrop-blur-sm whitespace-nowrap"
+                            style={{
+                                background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
+                            }}
+                        >
+                            Continue as Creator (Free)
+                        </button>
+                    </div>
+                    <div className="absolute top-[78%] left-1/2 -translate-x-1/2 pointer-events-auto">
+                        <button
+                            onClick={handleContinue}
+                            className="px-10 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[48px] backdrop-blur-sm whitespace-nowrap"
+                            style={{
+                                background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
+                            }}
+                        >
+                            Continue as Creator (Free Upload)
+                        </button>
+                    </div>
                 </div>
             </div>
 
