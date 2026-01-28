@@ -128,7 +128,7 @@ export default function HelpPage() {
                         <h3 className="font-bold mb-2">About Us</h3>
                         <p className="text-sm text-gray-300">Learn about MangaReader</p>
                     </Link>
-                    <Link href="/upload" className="bg-slate-800/50 rounded-xl p-6 text-center hover:bg-slate-700/50 transition-colors group">
+                    <Link href="/upload/intro?mode=manga" className="bg-slate-800/50 rounded-xl p-6 text-center hover:bg-slate-700/50 transition-colors group">
                         <FaUpload className="text-purple-400 text-3xl mx-auto mb-3 group-hover:scale-110 transition-transform" />
                         <h3 className="font-bold mb-2">Upload Guide</h3>
                         <p className="text-sm text-gray-300">Start creating content</p>

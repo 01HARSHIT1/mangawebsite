@@ -75,7 +75,7 @@ export default function MangaListClient() {
             <div className="text-center py-12">
                 <p className="text-gray-600 mb-4">No manga found.</p>
                 <Link
-                    href="/upload"
+                    href="/upload/intro?mode=manga"
                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
                     Upload First Manga

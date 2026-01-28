@@ -377,7 +377,7 @@ export default function ModernHomePage() {
                             </div>
                         ) : (
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                                <Link href="/upload" className="btn btn-primary btn-lg group">
+                                <Link href="/upload/intro?mode=manga" className="btn btn-primary btn-lg group">
                                     <FaRocket className="group-hover:scale-110 transition-transform" />
                                     Create Your Manga
                                 </Link>

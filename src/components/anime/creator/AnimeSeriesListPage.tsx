@@ -77,7 +77,7 @@ export default function AnimeSeriesListPage() {
                     </div>
 
                     <Link
-                        href="/anime/creator/upload"
+                        href="/upload/intro?mode=anime"
                         className="mt-4 md:mt-0 inline-flex items-center space-x-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-orange-500/50 transition-all duration-300 hover:scale-105"
                     >
                         <FaPlus />
@@ -241,7 +241,7 @@ export default function AnimeSeriesListPage() {
                         </p>
                         {!searchQuery && filterStatus === 'all' && (
                             <Link
-                                href="/anime/creator/upload"
+                                href="/upload/intro?mode=anime"
                                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-orange-500/50 transition-all duration-300"
                             >
                                 <FaPlus />

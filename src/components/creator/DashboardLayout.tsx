@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         },
         { 
             label: 'Upload', 
-            href: '/creator/dashboard/upload', 
+            href: '/upload/intro?mode=manga&returnTo=/creator/dashboard/upload', 
             icon: FaUpload,
             description: 'Upload new content'
         },

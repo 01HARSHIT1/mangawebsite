@@ -149,7 +149,7 @@ export default function ModernNavigation() {
     const creatorNavItems = (isCreator || isAdmin) ? [
         ...(hasUploadedManga 
             ? [{ href: '/creator/dashboard', label: 'Creator', icon: FaCrown }]
-            : [{ href: '/upload', label: 'Upload', icon: FaUpload }]
+            : [{ href: '/upload/intro?mode=manga&returnTo=/upload', label: 'Upload', icon: FaUpload }]
         ),
     ] : [];
 

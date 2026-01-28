@@ -49,7 +49,7 @@ export default function Navigation() {
                             </Link>
                             {isAuthenticated && (
                                 <Link
-                                    href="/upload"
+                                    href="/upload/intro?mode=manga"
                                     className="group relative px-4 py-2 text-gray-300 hover:text-white rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-amber-500/20"
                                 >
                                     <span className="relative z-10">📤 Upload</span>
@@ -165,7 +165,7 @@ export default function Navigation() {
                                     Statistics
                                 </Link>
                                 <Link
-                                    href="/upload"
+                                    href="/upload/intro?mode=manga"
                                     className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
                                     onClick={() => setIsMobileMenuOpen(false)}
                                 >

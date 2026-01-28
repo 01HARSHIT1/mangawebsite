@@ -96,7 +96,7 @@ export default function AuthNav() {
                         )}
 
                         <Link
-                            href="/upload"
+                            href="/upload/intro?mode=manga"
                             className="group flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-amber-500/20 transition-all duration-300"
                             onClick={() => setShowUserMenu(false)}
                         >

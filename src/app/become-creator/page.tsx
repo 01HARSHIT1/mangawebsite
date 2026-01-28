@@ -75,7 +75,7 @@ export default function BecomeCreatorPage() {
                         <Link href="/creator/analytics" className="block w-full bg-blue-600 text-white text-center py-3 rounded-lg hover:bg-blue-700 transition-colors">
                             View Analytics
                         </Link>
-                        <Link href="/upload" className="block w-full bg-green-600 text-white text-center py-3 rounded-lg hover:bg-green-700 transition-colors">
+                        <Link href="/upload/intro?mode=manga" className="block w-full bg-green-600 text-white text-center py-3 rounded-lg hover:bg-green-700 transition-colors">
                             Upload Manga
                         </Link>
                     </div>

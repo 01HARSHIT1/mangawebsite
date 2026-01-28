@@ -38,7 +38,7 @@ export default function AnimeDashboardLayout({ children }: AnimeDashboardLayoutP
         },
         { 
             label: 'Upload', 
-            href: '/anime/creator/upload', 
+            href: '/upload/intro?mode=anime', 
             icon: FaUpload,
             description: 'Upload new content'
         },

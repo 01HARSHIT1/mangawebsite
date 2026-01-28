@@ -77,7 +77,7 @@ export default function SeriesListPage() {
                     </div>
 
                     <Link
-                        href="/creator/dashboard/upload"
+                        href="/upload/intro?mode=manga&returnTo=/creator/dashboard/upload"
                         className="mt-4 md:mt-0 inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105"
                     >
                         <FaPlus />
@@ -241,7 +241,7 @@ export default function SeriesListPage() {
                         </p>
                         {!searchQuery && filterStatus === 'all' && (
                             <Link
-                                href="/creator/dashboard/upload"
+                                href="/upload/intro?mode=manga&returnTo=/creator/dashboard/upload"
                                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300"
                             >
                                 <FaPlus />

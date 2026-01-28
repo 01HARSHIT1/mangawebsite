@@ -109,7 +109,7 @@ export default function AnimeNavigation() {
         { href: '/anime/genres', label: 'GENRES' },
         { href: '/anime/library', label: 'MY LIBRARY' },
         // Show Become a Creator for authenticated non-creators - points to anime-specific upload
-        ...(isAuthenticated && !isCreator ? [{ href: '/anime/creator/upload', label: 'BECOME CREATOR', icon: Upload }] : []),
+        ...(isAuthenticated && !isCreator ? [{ href: '/upload/intro?mode=anime&returnTo=/anime/creator/upload', label: 'BECOME CREATOR', icon: Upload }] : []),
     ];
 
     // Creator navigation items (shown when user is already a creator) - anime-specific routes
@@ -424,7 +424,7 @@ export default function AnimeNavigation() {
                     <div className="hidden lg:flex items-center gap-4 xl:gap-6">
                         {[...navItems, ...creatorNavItems, ...adminNavItems].map((item) => {
                             const active = isActive(item.href);
-                            const isCreatorButton = item.href?.includes('/anime/creator/upload') || item.href === '/become-creator';
+                            const isCreatorButton = item.href?.includes('/upload/intro?mode=anime') || item.href === '/become-creator';
                             const isDashboardButton = item.href === '/anime/creator/dashboard' || item.href === '/admin/dashboard';
                             return (
                                 <Link

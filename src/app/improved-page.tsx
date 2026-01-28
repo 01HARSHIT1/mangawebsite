@@ -689,7 +689,7 @@ export default function ImprovedHomePage() {
                                 <>
                                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                         <Link
-                                            href="/upload"
+                                            href="/upload/intro?mode=manga"
                                             className="relative group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-10 py-5 rounded-2xl font-bold text-xl shadow-2xl transition-all duration-300 flex items-center space-x-3"
                                         >
                                             <FaRocket />

@@ -281,7 +281,7 @@ export default function OverviewPage() {
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Link
-                    href="/creator/dashboard/upload"
+                    href="/upload/intro?mode=manga&returnTo=/creator/dashboard/upload"
                     className="group bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-2xl p-6 shadow-xl transition-all duration-300 hover:scale-105"
                 >
                     <div className="flex items-center space-x-4">

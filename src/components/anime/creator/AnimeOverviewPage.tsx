@@ -92,7 +92,7 @@ export default function AnimeOverviewPage() {
                             </p>
                         </div>
                         <Link
-                            href="/anime/creator/upload"
+                            href="/upload/intro?mode=anime"
                             className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold rounded-xl transition-all duration-300 hover:scale-105 shadow-lg shadow-orange-500/50"
                         >
                             <FaUpload />
@@ -265,7 +265,7 @@ export default function AnimeOverviewPage() {
                     <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Link
-                            href="/anime/creator/upload"
+                            href="/upload/intro?mode=anime"
                             className="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-xl transition-all duration-300 hover:scale-105"
                         >
                             <FaUpload className="text-white text-xl" />
