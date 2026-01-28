@@ -56,12 +56,13 @@ export default function UploadIntroClient() {
                     alt="RealmVerse Creator Landing Page"
                     className="block w-full h-auto"
                 />
-                {/* Buttons overlaid on image at same positions as "Continue as Creator" in the design */}
+                {/* Buttons overlaid exactly on image "Continue as Creator" graphics; positions are % of image height so they move with image on scroll */}
                 <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-[28%] left-1/2 -translate-x-1/2 pointer-events-auto">
+                    {/* First CTA: overlaps the grey "Continue as Creator (Free)" graphic below the headline */}
+                    <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[90%] max-w-[420px] flex justify-center" style={{ top: '22%' }}>
                         <button
                             onClick={handleContinue}
-                            className="px-10 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[48px] backdrop-blur-sm whitespace-nowrap"
+                            className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[52px] backdrop-blur-sm"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                             }}
@@ -69,10 +70,11 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    <div className="absolute top-[78%] left-1/2 -translate-x-1/2 pointer-events-auto">
+                    {/* Second CTA: overlaps the dark "Continue as Creator (Free Upload)" banner near bottom */}
+                    <div className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[90%] max-w-[420px] flex justify-center" style={{ top: '88%' }}>
                         <button
                             onClick={handleContinue}
-                            className="px-10 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[48px] backdrop-blur-sm whitespace-nowrap"
+                            className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[52px] backdrop-blur-sm"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                             }}
