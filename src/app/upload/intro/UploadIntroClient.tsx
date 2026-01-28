@@ -47,78 +47,44 @@ export default function UploadIntroClient() {
     const trustLine = 'Your work stays yours. RealmVerse never claims ownership.';
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f7f2ff] via-[#f3f7ff] to-[#fff6f2] text-slate-900">
-            {/* soft paper texture */}
-            <div className="absolute inset-0 pointer-events-none opacity-40">
-                <div className="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-gradient-to-br from-purple-200/70 to-blue-200/40 blur-3xl" />
-                <div className="absolute -bottom-40 -right-40 h-[520px] w-[520px] rounded-full bg-gradient-to-br from-pink-200/60 to-orange-200/40 blur-3xl" />
+        <div className="min-h-screen bg-gradient-to-br from-[#f6f0ff] via-[#f6f7ff] to-[#fff4ef] text-slate-900">
+            {/* watercolor blobs (closer to reference) */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute -top-32 left-[-60px] h-[520px] w-[520px] rounded-full bg-gradient-to-br from-indigo-200/55 to-purple-200/30 blur-3xl" />
+                <div className="absolute top-24 right-[-80px] h-[420px] w-[420px] rounded-full bg-gradient-to-br from-pink-200/45 to-orange-200/25 blur-3xl" />
+                <div className="absolute bottom-[-140px] left-[20%] h-[520px] w-[520px] rounded-full bg-gradient-to-br from-blue-200/35 to-indigo-200/20 blur-3xl" />
             </div>
 
-            <div className="relative mx-auto max-w-5xl px-4 py-10 sm:py-14">
-                <div className="rounded-3xl bg-white/70 backdrop-blur-md border border-slate-200 shadow-[0_20px_60px_rgba(15,23,42,0.12)] overflow-hidden">
-                    <div className="px-6 sm:px-10 pt-10 sm:pt-12 pb-8">
+            <div className="relative mx-auto max-w-6xl px-4 py-10 sm:py-14">
+                {/* Main poster area */}
+                <div className="mx-auto max-w-4xl">
+                    <div className="rounded-[28px] bg-white/60 border border-slate-200/70 shadow-[0_25px_70px_rgba(15,23,42,0.10)] backdrop-blur-sm px-6 sm:px-10 py-10 sm:py-12">
                         <div className="text-center">
-                            <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/70 border border-slate-200 text-slate-700 font-semibold text-sm shadow-sm">
-                                <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600" />
-                                RealmVerse Creator Platform
-                            </div>
-                            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+                            <h1 className="font-serif text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
                                 Upload Your Manga &amp; Anime —<br className="hidden sm:block" />
                                 Keep 100% Ownership
                             </h1>
+
                             <p className="mt-4 text-slate-700 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-                                Publish on <span className="font-semibold">RealmVerse</span> — built for Indian storytellers,
-                                artists, and animators. Upload manga chapters or anime episodes, grow your audience, and stay
-                                in full control.
+                                <span className="font-semibold">RealmVerse</span> is India’s indie-first manga &amp; anime platform where
+                                creators can publish freely, grow an audience, and stay in full control of their work.
                             </p>
-                            <p className="mt-2 text-slate-700 font-semibold">No fees. No exclusivity. No pressure.</p>
+
+                            <p className="mt-3 text-slate-700 font-semibold">No fees. No exclusivity. No pressure.</p>
                         </div>
 
-                        <div className="mt-7 flex flex-col items-center gap-3">
-                            {/* Creator Type Selector */}
-                            <div className="w-full max-w-xl rounded-2xl bg-white/70 border border-slate-200 p-3">
-                                <div className="text-center text-sm font-semibold text-slate-700 mb-3">I create:</div>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                    {([
-                                        { id: 'manga', label: 'Manga 📚' },
-                                        { id: 'anime', label: 'Anime 🎬' },
-                                        { id: 'both', label: 'Both ✨' },
-                                    ] as Array<{ id: CreatorType; label: string }>).map((opt) => {
-                                        const active = creatorType === opt.id;
-                                        return (
-                                            <button
-                                                key={opt.id}
-                                                type="button"
-                                                onClick={() => setCreatorType(opt.id)}
-                                                className={[
-                                                    'min-h-[44px] rounded-xl px-4 py-3 font-bold transition-all text-sm',
-                                                    active
-                                                        ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md'
-                                                        : 'bg-white/80 hover:bg-white text-slate-800 border border-slate-200',
-                                                ].join(' ')}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <div className="mt-3 text-center text-xs text-slate-600">
-                                    Selected: <span className="font-semibold">{resolvedModeLabel}</span>
-                                </div>
-                            </div>
-
+                        {/* CTA */}
+                        <div className="mt-8 flex flex-col items-center gap-3">
                             <button
                                 onClick={handleContinue}
-                                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-[0.99] min-h-[44px]"
+                                className="w-full sm:w-auto px-10 py-4 rounded-xl bg-gradient-to-b from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-blue-600/25 transition-all active:scale-[0.99] min-h-[44px]"
                             >
                                 Continue as Creator (Free)
                             </button>
 
-                            <div className="text-xs sm:text-sm text-slate-700 font-semibold">✅ {trustLine}</div>
-
-                            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-700">
+                            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-700">
                                 <span className="inline-flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                    <CheckCircle2 className="h-4 w-4 text-sky-600" />
                                     Free Upload
                                 </span>
                                 <span className="inline-flex items-center gap-2">
@@ -126,127 +92,126 @@ export default function UploadIntroClient() {
                                     Full Ownership
                                 </span>
                                 <span className="inline-flex items-center gap-2">
-                                    <Globe2 className="h-4 w-4 text-sky-600" />
+                                    <Globe2 className="h-4 w-4 text-emerald-600" />
                                     Global Audience
                                 </span>
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="px-6 sm:px-10 pb-10 sm:pb-12">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                            <div className="rounded-2xl bg-white/70 border border-slate-200 p-6 sm:p-7">
-                                <div className="flex items-center gap-2 mb-4">
+                            <div className="text-xs sm:text-sm text-slate-700 font-semibold">✅ {trustLine}</div>
+                        </div>
+
+                        {/* Selector (kept but less prominent, so it doesn't break the "exact" look) */}
+                        <div className="mt-8 mx-auto max-w-2xl">
+                            <div className="text-center text-sm font-semibold text-slate-700 mb-3">I create:</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                {([
+                                    { id: 'manga', label: 'Manga 📚' },
+                                    { id: 'anime', label: 'Anime 🎬' },
+                                    { id: 'both', label: 'Both ✨' },
+                                ] as Array<{ id: CreatorType; label: string }>).map((opt) => {
+                                    const active = creatorType === opt.id;
+                                    return (
+                                        <button
+                                            key={opt.id}
+                                            type="button"
+                                            onClick={() => setCreatorType(opt.id)}
+                                            className={[
+                                                'min-h-[44px] rounded-xl px-4 py-3 font-bold transition-all text-sm',
+                                                active
+                                                    ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md'
+                                                    : 'bg-white/70 hover:bg-white text-slate-800 border border-slate-200',
+                                            ].join(' ')}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <div className="mt-3 text-center text-xs text-slate-600">
+                                Selected: <span className="font-semibold">{resolvedModeLabel}</span>
+                            </div>
+                        </div>
+
+                        {/* Sections */}
+                        <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div>
+                                <div className="flex items-center gap-2 mb-3">
                                     <Sparkles className="h-5 w-5 text-amber-600" />
                                     <h2 className="text-lg sm:text-xl font-extrabold tracking-wide">WHY REALMVERSE?</h2>
                                 </div>
                                 <p className="text-slate-700 mb-4">We are building a creator-first home for:</p>
                                 <ul className="space-y-2 text-slate-800">
-                                    <li className="flex items-start gap-3">
-                                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-                                        <span>Manga artists</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-                                        <span>Webtoon storytellers</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-                                        <span>Indie anime &amp; animation creators</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-                                        <span>Motion comic creators</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
-                                        <span>New and upcoming talent</span>
-                                    </li>
+                                    {[
+                                        'Manga artists',
+                                        'Webtoon storytellers',
+                                        'Indie anime & animation creators',
+                                        'Motion comic creators',
+                                        'New and upcoming talent',
+                                    ].map((t) => (
+                                        <li key={t} className="flex items-start gap-3">
+                                            <span className="mt-2 h-2 w-2 rounded-full bg-blue-600" />
+                                            <span>{t}</span>
+                                        </li>
+                                    ))}
                                 </ul>
-
                                 <p className="mt-5 text-slate-700">
                                     Whether you’re a beginner or experienced — you are welcome here.
                                 </p>
                             </div>
 
-                            <div className="rounded-2xl bg-white/70 border border-slate-200 p-6 sm:p-7">
-                                <h2 className="text-lg sm:text-xl font-extrabold tracking-wide mb-4">
+                            <div>
+                                <h2 className="text-lg sm:text-xl font-extrabold tracking-wide mb-3">
                                     CREATOR PROMISE — WHAT YOU GET
                                 </h2>
-
                                 <ul className="space-y-3 text-slate-800">
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
-                                        <span className="font-semibold">Free Upload Forever</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
-                                        <span>Upload manga chapters or anime episodes without paying anything</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
-                                        <span>You own your work 100%</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
-                                        <span>No exclusivity</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
-                                        <span>Remove anytime</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
-                                        <span>Built for indie creators</span>
-                                    </li>
+                                    {[
+                                        'Free Upload Forever',
+                                        'Upload manga chapters or anime episodes without paying anything',
+                                        'You own your work 100%',
+                                        'No exclusivity',
+                                        'Remove anytime',
+                                        'Built for indie creators',
+                                    ].map((t, i) => (
+                                        <li key={t} className="flex items-start gap-3">
+                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5" />
+                                            <span className={i === 0 ? 'font-semibold' : ''}>{t}</span>
+                                        </li>
+                                    ))}
                                 </ul>
 
-                                <div className="mt-6 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-5">
-                                    <div className="font-extrabold tracking-wide text-slate-900 mb-1">
-                                        RealmVerse Spotlight Program
-                                    </div>
+                                <div className="mt-6 rounded-xl bg-white/65 border border-slate-200 p-5">
+                                    <div className="font-extrabold tracking-wide text-slate-900 mb-1">FOUNDING CREATOR PROGRAM</div>
                                     <p className="text-slate-700 text-sm">
-                                        Become an early creator on RealmVerse and get extra visibility as we grow.
+                                        We are inviting our first creators as Founding Creators of RealmVerse.
                                     </p>
                                     <ul className="mt-3 space-y-2 text-sm text-slate-800">
-                                        <li className="flex items-start gap-2">
-                                            <span className="mt-1 h-2 w-2 rounded-full bg-amber-600" />
-                                            <span>Special badge on your profile</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="mt-1 h-2 w-2 rounded-full bg-amber-600" />
-                                            <span>Featured placement on homepage</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="mt-1 h-2 w-2 rounded-full bg-amber-600" />
-                                            <span>Early visibility boost</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="mt-1 h-2 w-2 rounded-full bg-amber-600" />
-                                            <span>Lifetime creator perks as we grow</span>
-                                        </li>
+                                        {[
+                                            'Special badge on your profile',
+                                            'Featured placement on homepage',
+                                            'Early visibility boost',
+                                            'Lifetime creator perks as we grow',
+                                        ].map((t) => (
+                                            <li key={t} className="flex items-start gap-2">
+                                                <span className="mt-2 h-2 w-2 rounded-full bg-amber-600" />
+                                                <span>{t}</span>
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-8 flex flex-col items-center gap-3">
+                        {/* Bottom CTA like reference */}
+                        <div className="mt-10 flex flex-col items-center gap-3">
                             <button
                                 onClick={handleContinue}
-                                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-[0.99] min-h-[44px]"
+                                className="w-full sm:w-auto px-10 py-4 rounded-xl bg-gradient-to-b from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-blue-600/25 transition-all active:scale-[0.99] min-h-[44px]"
                             >
-                                Continue as Creator (Free)
+                                Continue as Creator (Free Upload)
                             </button>
-                            <div className="text-xs text-slate-600">
-                                Not ready? You can always come back later from the navigation.{' '}
-                                <Link href="/" className="underline underline-offset-2 hover:text-slate-900">
-                                    Go Home
-                                </Link>
-                            </div>
 
-                            <div className="mt-2 text-xs text-slate-600">
-                                © {new Date().getFullYear()} <span className="font-semibold">RealmVerse</span>. All rights
-                                reserved.
+                            <div className="text-xs text-slate-600">
+                                © {new Date().getFullYear()} <span className="font-semibold">RealmVerse</span>.
                             </div>
                         </div>
                     </div>

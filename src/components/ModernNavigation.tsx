@@ -97,7 +97,7 @@ export default function ModernNavigation() {
         { href: '/manga', label: 'Browse', icon: FaBook },
         { href: '/genres', label: 'Genres', icon: FaTags },
         // Show Become a Creator for authenticated non-creators in the main nav cluster
-        ...(isAuthenticated && !isCreator ? [{ href: '/upload?type=manga', label: 'Become Creator', icon: FaUpload }] : [])
+        ...(isAuthenticated && !isCreator ? [{ href: '/upload/intro?mode=manga&returnTo=/upload', label: 'Become Creator', icon: FaUpload }] : [])
     ];
 
     const policyItems = [
