@@ -77,22 +77,28 @@ export default function UploadIntroClient() {
                         <div className="mt-8 flex flex-col items-center gap-3">
                             <button
                                 onClick={handleContinue}
-                                className="w-full sm:w-auto px-10 py-4 rounded-xl bg-gradient-to-b from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-bold shadow-lg shadow-blue-600/25 transition-all active:scale-[0.99] min-h-[44px]"
+                                className="w-full sm:w-auto px-10 py-4 rounded-xl bg-gradient-to-b from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-bold shadow-[0_12px_24px_rgba(37,99,235,0.25)] border border-indigo-300/40 transition-all active:scale-[0.99] min-h-[44px]"
                             >
                                 Continue as Creator (Free)
                             </button>
 
                             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-700">
                                 <span className="inline-flex items-center gap-2">
-                                    <CheckCircle2 className="h-4 w-4 text-sky-600" />
+                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 border border-sky-200">
+                                        <CheckCircle2 className="h-4 w-4 text-sky-700" />
+                                    </span>
                                     Free Upload
                                 </span>
                                 <span className="inline-flex items-center gap-2">
-                                    <ShieldCheck className="h-4 w-4 text-amber-600" />
+                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 border border-amber-200">
+                                        <ShieldCheck className="h-4 w-4 text-amber-700" />
+                                    </span>
                                     Full Ownership
                                 </span>
                                 <span className="inline-flex items-center gap-2">
-                                    <Globe2 className="h-4 w-4 text-emerald-600" />
+                                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 border border-emerald-200">
+                                        <Globe2 className="h-4 w-4 text-emerald-700" />
+                                    </span>
                                     Global Audience
                                 </span>
                             </div>
@@ -100,36 +106,43 @@ export default function UploadIntroClient() {
                             <div className="text-xs sm:text-sm text-slate-700 font-semibold">✅ {trustLine}</div>
                         </div>
 
-                        {/* Selector (kept but less prominent, so it doesn't break the "exact" look) */}
-                        <div className="mt-8 mx-auto max-w-2xl">
-                            <div className="text-center text-sm font-semibold text-slate-700 mb-3">I create:</div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                {([
-                                    { id: 'manga', label: 'Manga 📚' },
-                                    { id: 'anime', label: 'Anime 🎬' },
-                                    { id: 'both', label: 'Both ✨' },
-                                ] as Array<{ id: CreatorType; label: string }>).map((opt) => {
-                                    const active = creatorType === opt.id;
-                                    return (
-                                        <button
-                                            key={opt.id}
-                                            type="button"
-                                            onClick={() => setCreatorType(opt.id)}
-                                            className={[
-                                                'min-h-[44px] rounded-xl px-4 py-3 font-bold transition-all text-sm',
-                                                active
-                                                    ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md'
-                                                    : 'bg-white/70 hover:bg-white text-slate-800 border border-slate-200',
-                                            ].join(' ')}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <div className="mt-3 text-center text-xs text-slate-600">
-                                Selected: <span className="font-semibold">{resolvedModeLabel}</span>
-                            </div>
+                        {/* Optional: creator type selector (collapsed by default to match reference image) */}
+                        <div className="mt-6 mx-auto max-w-2xl">
+                            <details className="group">
+                                <summary className="cursor-pointer select-none text-center text-xs sm:text-sm font-semibold text-slate-700 underline underline-offset-4">
+                                    Choose what you create (optional)
+                                </summary>
+                                <div className="mt-4">
+                                    <div className="text-center text-sm font-semibold text-slate-700 mb-3">I create:</div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        {([
+                                            { id: 'manga', label: 'Manga 📚' },
+                                            { id: 'anime', label: 'Anime 🎬' },
+                                            { id: 'both', label: 'Both ✨' },
+                                        ] as Array<{ id: CreatorType; label: string }>).map((opt) => {
+                                            const active = creatorType === opt.id;
+                                            return (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => setCreatorType(opt.id)}
+                                                    className={[
+                                                        'min-h-[44px] rounded-xl px-4 py-3 font-bold transition-all text-sm',
+                                                        active
+                                                            ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md'
+                                                            : 'bg-white/70 hover:bg-white text-slate-800 border border-slate-200',
+                                                    ].join(' ')}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="mt-3 text-center text-xs text-slate-600">
+                                        Selected: <span className="font-semibold">{resolvedModeLabel}</span>
+                                    </div>
+                                </div>
+                            </details>
                         </div>
 
                         {/* Sections */}
