@@ -58,10 +58,10 @@ export default function UploadIntroClient() {
                 />
                 {/* Buttons overlaid exactly on image "Continue as Creator" graphics; positions are % of image height so they move with image on scroll */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA: overlaps the grey "Continue as Creator (Free)" graphic below the headline — nudged left and up for proper overlap */}
+                    {/* First CTA: overlaps the grey "Continue as Creator (Free)" graphic below the headline */}
                     <div
-                        className="absolute -translate-x-1/2 pointer-events-auto w-[92%] max-w-[440px] flex justify-center"
-                        style={{ top: '20%', left: '48%' }}
+                        className="absolute -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px] flex justify-center"
+                        style={{ top: '21.7%', left: '48%' }}
                     >
                         <button
                             onClick={handleContinue}
@@ -73,10 +73,10 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA: overlaps the dark "Continue as Creator (Free Upload)" banner — moved down so it sits on the banner */}
+                    {/* Second CTA: overlaps the dark "Continue as Creator (Free Upload)" banner */}
                     <div
-                        className="absolute -translate-x-1/2 pointer-events-auto w-[92%] max-w-[440px] flex justify-center"
-                        style={{ top: '92.5%', left: '50%' }}
+                        className="absolute -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px] flex justify-center"
+                        style={{ top: '97%', left: '50%' }}
                     >
                         <button
                             onClick={handleContinue}
