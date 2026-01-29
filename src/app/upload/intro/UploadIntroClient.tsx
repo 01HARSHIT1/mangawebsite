@@ -21,7 +21,7 @@ export default function UploadIntroClient() {
     const [authOpen, setAuthOpen] = useState(false);
     const [authView, setAuthView] = useState<'signup' | 'login'>('signup');
 
-    const mode = useMemo<UploadMode>(() => normalizeMode(searchParams?.get('mode')), [searchParams]);
+    const mode = useMemo<UploadMode>(() => normalizeMode(searchParams?.get('mode') ?? null), [searchParams]);
     const [creatorType, setCreatorType] = useState<CreatorType>(mode);
 
     const continueHref = useMemo(() => {
@@ -60,12 +60,12 @@ export default function UploadIntroClient() {
                 <div className="absolute inset-0 pointer-events-none">
                     {/* First CTA: centered on the image's "Continue as Creator (Free)" graphic so it fully covers it */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px]"
-                        style={{ top: '24%' }}
+                        className="absolute left-1/2 -translate-x-1/2 -ml-[30px] pointer-events-auto w-[95%] max-w-[680px]"
+                        style={{ top: '21.7%' }}
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-8 py-4 rounded-xl text-white font-bold text-base sm:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[56px] shadow-lg"
+                            className="w-full px-8 py-4 rounded-xl text-white font-bold text-base sm:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[107px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -76,8 +76,8 @@ export default function UploadIntroClient() {
                     </div>
                     {/* Second CTA: positioned on the image's "Continue as Creator (Free Upload)" banner, tall enough to fully cover it so no "Cu" shows below */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px]"
-                        style={{ top: '97.5%' }}
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[95%] max-w-[800px]"
+                        style={{ top: '97.0%' }}
                     >
                         <button
                             onClick={handleContinue}
