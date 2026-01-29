@@ -56,33 +56,35 @@ export default function UploadIntroClient() {
                     alt="RealmVerse Creator Landing Page"
                     className="block w-full h-auto"
                 />
-                {/* Buttons overlaid exactly on image "Continue as Creator" graphics; positions are % of image height so they move with image on scroll */}
+                {/* Buttons overlaid exactly on image "Continue as Creator" graphics — one per CTA, fully covering the image graphic */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA: overlaps the grey "Continue as Creator (Free)" graphic below the headline */}
+                    {/* First CTA: centered on the image's "Continue as Creator (Free)" graphic so it fully covers it */}
                     <div
-                        className="absolute -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px] flex justify-center"
-                        style={{ top: '21.7%', left: '48%' }}
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px]"
+                        style={{ top: '24%' }}
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[52px] backdrop-blur-sm"
+                            className="w-full px-8 py-4 rounded-xl text-white font-bold text-base sm:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[56px] shadow-lg"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
+                                boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
                             }}
                         >
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA: overlaps the dark "Continue as Creator (Free Upload)" banner */}
+                    {/* Second CTA: positioned on the image's "Continue as Creator (Free Upload)" banner, tall enough to fully cover it so no "Cu" shows below */}
                     <div
-                        className="absolute -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px] flex justify-center"
-                        style={{ top: '97%', left: '50%' }}
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[95%] max-w-[600px]"
+                        style={{ top: '97.5%' }}
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold text-base sm:text-lg shadow-[0_8px_20px_rgba(59,130,246,0.4)] border border-white/20 transition-all active:scale-[0.98] min-h-[52px] backdrop-blur-sm"
+                            className="w-full px-8 py-5 rounded-xl text-white font-bold text-base sm:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[60px] shadow-lg"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
+                                boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
                             }}
                         >
                             Continue as Creator (Free Upload)
