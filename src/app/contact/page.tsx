@@ -7,15 +7,15 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-gray-50 py-12">
+    <main className="min-h-screen bg-gray-50 py-8 sm:py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow-lg rounded-lg p-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">
+        <div className="bg-white shadow-lg rounded-lg p-5 sm:p-6 md:p-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">
             Contact Us
           </h1>
 
-          <div className="prose prose-lg max-w-none">
-            <p className="text-gray-600 mb-6">
+          <div className="prose prose-sm sm:prose-lg max-w-none">
+            <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base">
               We're here to help! Get in touch with the <strong>Time2fun</strong> support team for any questions, concerns, or assistance with your manga reading experience.
             </p>
 
@@ -24,8 +24,8 @@ export default function ContactPage() {
               Our dedicated support team is available to assist you with any issues related to your account, payments, content access, or general inquiries.
             </p>
 
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Contact Information</h2>
-            <div className="bg-gray-50 rounded-lg p-6 mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">Contact Information</h2>
+            <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6">
               <div className="space-y-4">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">

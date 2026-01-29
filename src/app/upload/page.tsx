@@ -480,9 +480,9 @@ function UploadPageContent() {
                         });
                     } else {
                         const errMsg = saveData?.error || "Upload failed";
-                    setMessage(errMsg.includes('Entity Too Large') || errMsg.startsWith('Request En')
-                        ? 'File too large for server (possible 4.5MB limit).'
-                        : errMsg);
+                        setMessage(errMsg.includes('Entity Too Large') || errMsg.startsWith('Request En')
+                            ? 'File too large for server (possible 4.5MB limit).'
+                            : errMsg);
                     }
                 } else {
                     setMessage("Failed to get manga information");
@@ -496,7 +496,7 @@ function UploadPageContent() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-12 px-4">
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-6 sm:py-10 md:py-12 px-3 sm:px-4">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-12">
                     <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6">
@@ -510,8 +510,8 @@ function UploadPageContent() {
                     </p>
                 </div>
 
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl shadow-2xl p-8 border border-purple-500/20 backdrop-blur-md">
-                    <div className="flex gap-4 mb-8 justify-center">
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 border border-purple-500/20 backdrop-blur-md">
+                    <div className="flex flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-8 justify-center">
                         <button
                             onClick={() => handleTypeChange("manga")}
                             className={`group relative px-8 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 transform hover:scale-105 ${uploadType === "manga"

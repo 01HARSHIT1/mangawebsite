@@ -45,9 +45,9 @@ export default function BecomeCreatorPage() {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
-                <div className="bg-gray-800 rounded-xl p-8 max-w-md w-full border border-gray-700">
-                    <h1 className="text-2xl font-bold text-white mb-4">Login Required</h1>
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
+                <div className="bg-gray-800 rounded-xl p-6 sm:p-8 max-w-md w-full border border-gray-700">
+                    <h1 className="text-xl sm:text-2xl font-bold text-white mb-4">Login Required</h1>
                     <p className="text-gray-300 mb-6">You need to be logged in to become a creator.</p>
                     <Link href="/login" className="block w-full bg-blue-600 text-white text-center py-3 rounded-lg hover:bg-blue-700 transition-colors">
                         Go to Login
@@ -59,13 +59,13 @@ export default function BecomeCreatorPage() {
 
     if (isCreator) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
-                <div className="bg-gray-800 rounded-xl p-8 max-w-md w-full border border-gray-700 text-center">
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
+                <div className="bg-gray-800 rounded-xl p-6 sm:p-8 max-w-md w-full border border-gray-700 text-center">
                     <div className="mb-6">
-                        <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-4xl">✅</span>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-3xl sm:text-4xl">✅</span>
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-2">You're Already a Creator!</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">You're Already a Creator!</h1>
                         <p className="text-gray-300">You have full access to all creator features.</p>
                     </div>
                     <div className="space-y-3">
@@ -85,18 +85,18 @@ export default function BecomeCreatorPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
-            <div className="bg-gray-800 rounded-xl p-8 max-w-2xl w-full border border-gray-700">
-                <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-4xl">🎨</span>
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4 sm:p-6">
+            <div className="bg-gray-800 rounded-xl p-6 sm:p-8 max-w-2xl w-full border border-gray-700">
+                <div className="text-center mb-6 sm:mb-8">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-3xl sm:text-4xl">🎨</span>
                     </div>
-                    <h1 className="text-4xl font-bold text-white mb-2">Become a Creator</h1>
-                    <p className="text-gray-300">Unlock exclusive features and start sharing your manga with the world!</p>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2">Become a Creator</h1>
+                    <p className="text-sm sm:text-base text-gray-300">Unlock exclusive features and start sharing your manga with the world!</p>
                 </div>
 
-                <div className="bg-gray-700/50 rounded-lg p-6 mb-6">
-                    <h2 className="text-xl font-bold text-white mb-4">Creator Benefits:</h2>
+                <div className="bg-gray-700/50 rounded-lg p-4 sm:p-6 mb-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-4">Creator Benefits:</h2>
                     <ul className="space-y-3 text-gray-300">
                         <li className="flex items-start">
                             <span className="text-green-400 mr-3 mt-1">✓</span>

@@ -105,19 +105,19 @@ export default function HelpPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-            <div className="max-w-6xl mx-auto px-4 py-16">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
                 {/* Header */}
-                <div className="text-center mb-12">
-                    <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <div className="text-center mb-8 sm:mb-12">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                         Help & Support
                     </h1>
-                    <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                    <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto px-1">
                         Find answers to common questions and get help with using RealmVerse
                     </p>
                 </div>
 
                 {/* Quick Actions */}
-                <div className="grid md:grid-cols-4 gap-6 mb-12">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
                     <Link href="/contact" className="bg-slate-800/50 rounded-xl p-6 text-center hover:bg-slate-700/50 transition-colors group">
                         <FaQuestionCircle className="text-blue-400 text-3xl mx-auto mb-3 group-hover:scale-110 transition-transform" />
                         <h3 className="font-bold mb-2">Contact Support</h3>
@@ -166,7 +166,7 @@ export default function HelpPage() {
 
                     {/* FAQ Section */}
                     <div className="space-y-4">
-                        <h2 className="text-2xl font-bold text-purple-400 mb-6">Frequently Asked Questions</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold text-purple-400 mb-4 sm:mb-6">Frequently Asked Questions</h2>
                         {filteredFAQs.length === 0 ? (
                             <div className="text-center py-8">
                                 <p className="text-gray-400">No FAQs found matching your search criteria.</p>
@@ -176,11 +176,11 @@ export default function HelpPage() {
                                 <div key={faq.id} className="bg-slate-700/50 rounded-xl overflow-hidden">
                                     <button
                                         onClick={() => toggleFAQ(faq.id)}
-                                        className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-slate-600/50 transition-colors"
+                                        className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left flex items-center justify-between gap-3 hover:bg-slate-600/50 transition-colors"
                                     >
-                                        <div>
-                                            <span className="text-sm text-purple-400 font-medium">{faq.category}</span>
-                                            <h3 className="font-semibold text-lg">{faq.question}</h3>
+                                        <div className="min-w-0 flex-1">
+                                            <span className="text-xs sm:text-sm text-purple-400 font-medium">{faq.category}</span>
+                                            <h3 className="font-semibold text-sm sm:text-base md:text-lg break-words">{faq.question}</h3>
                                         </div>
                                         {expandedFAQ === faq.id ? (
                                             <FaChevronUp className="text-purple-400" />
@@ -200,21 +200,21 @@ export default function HelpPage() {
                 </div>
 
                 {/* Contact Section */}
-                <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-3xl p-8 text-center border border-purple-500/20">
-                    <h2 className="text-3xl font-bold mb-4">Still Need Help?</h2>
-                    <p className="text-lg text-gray-300 mb-6">
+                <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center border border-purple-500/20">
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Still Need Help?</h2>
+                    <p className="text-base sm:text-lg text-gray-300 mb-4 sm:mb-6">
                         Can't find what you're looking for? Our support team is here to help!
                     </p>
-                    <div className="flex flex-wrap gap-4 justify-center">
+                    <div className="flex flex-wrap gap-3 sm:gap-4 justify-center">
                         <Link
                             href="/contact"
-                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105"
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-2.5 sm:py-3 px-6 sm:px-8 rounded-xl transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
                         >
                             Contact Support
                         </Link>
                         <Link
                             href="/"
-                            className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-xl transition-colors duration-300"
+                            className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 sm:py-3 px-6 sm:px-8 rounded-xl transition-colors duration-300 text-sm sm:text-base"
                         >
                             Back to Home
                         </Link>

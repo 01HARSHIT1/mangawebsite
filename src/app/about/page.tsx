@@ -5,24 +5,24 @@ import { FaHeart, FaUsers, FaBook, FaGlobe } from 'react-icons/fa';
 export default function AboutPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
-            <div className="max-w-4xl mx-auto px-4 py-16">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
                 {/* Hero Section */}
-                <div className="text-center mb-16">
-                    <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <div className="text-center mb-10 sm:mb-16">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                         About RealmVerse
                     </h1>
-                    <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed px-1">
                         Your ultimate destination for reading and sharing manga online. Built by manga lovers, for manga lovers.
                     </p>
                 </div>
 
                 {/* Mission Section */}
-                <div className="bg-gradient-to-r from-slate-800/50 to-purple-800/50 rounded-3xl p-8 mb-12 backdrop-blur-sm">
-                    <div className="flex items-center mb-6">
-                        <FaHeart className="text-pink-400 text-3xl mr-4" />
-                        <h2 className="text-3xl font-bold">Our Mission</h2>
+                <div className="bg-gradient-to-r from-slate-800/50 to-purple-800/50 rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 mb-8 sm:mb-12 backdrop-blur-sm">
+                    <div className="flex items-center mb-4 sm:mb-6">
+                        <FaHeart className="text-pink-400 text-2xl sm:text-3xl mr-3 sm:mr-4 flex-shrink-0" />
+                        <h2 className="text-2xl sm:text-3xl font-bold">Our Mission</h2>
                     </div>
-                    <p className="text-lg text-gray-300 leading-relaxed">
+                    <p className="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed">
                         We believe that great stories should be accessible to everyone. RealmVerse provides a platform where
                         creators can share their work with a global audience, and readers can discover amazing manga from
                         talented artists around the world. Our mission is to foster a vibrant community that celebrates
@@ -31,17 +31,17 @@ export default function AboutPage() {
                 </div>
 
                 {/* Features Grid */}
-                <div className="grid md:grid-cols-3 gap-8 mb-12">
-                    <div className="bg-slate-800/50 rounded-2xl p-6 text-center backdrop-blur-sm">
-                        <FaUsers className="text-blue-400 text-4xl mx-auto mb-4" />
-                        <h3 className="text-xl font-bold mb-3">Community Driven</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-8 sm:mb-12">
+                    <div className="bg-slate-800/50 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center backdrop-blur-sm">
+                        <FaUsers className="text-blue-400 text-3xl sm:text-4xl mx-auto mb-3 sm:mb-4" />
+                        <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Community Driven</h3>
                         <p className="text-gray-300">
                             Built by the community, for the community. Connect with fellow manga enthusiasts worldwide.
                         </p>
                     </div>
-                    <div className="bg-slate-800/50 rounded-2xl p-6 text-center backdrop-blur-sm">
-                        <FaBook className="text-green-400 text-4xl mx-auto mb-4" />
-                        <h3 className="text-xl font-bold mb-3">Creator Friendly</h3>
+                    <div className="bg-slate-800/50 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center backdrop-blur-sm">
+                        <FaBook className="text-green-400 text-3xl sm:text-4xl mx-auto mb-3 sm:mb-4" />
+                        <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Creator Friendly</h3>
                         <p className="text-gray-300">
                             Easy-to-use tools for uploading and managing your manga, with analytics to track your success.
                         </p>
@@ -56,9 +56,9 @@ export default function AboutPage() {
                 </div>
 
                 {/* Story Section */}
-                <div className="bg-gradient-to-r from-blue-800/50 to-indigo-800/50 rounded-3xl p-8 mb-12 backdrop-blur-sm">
-                    <h2 className="text-3xl font-bold mb-6">Our Story</h2>
-                    <div className="space-y-4 text-lg text-gray-300">
+                <div className="bg-gradient-to-r from-blue-800/50 to-indigo-800/50 rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 mb-8 sm:mb-12 backdrop-blur-sm">
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Our Story</h2>
+                    <div className="space-y-3 sm:space-y-4 text-sm sm:text-base md:text-lg text-gray-300">
                         <p>
                             RealmVerse was born from a simple idea: what if there was a platform that truly understood
                             both readers and creators? We noticed that existing platforms often focused on one or the other,

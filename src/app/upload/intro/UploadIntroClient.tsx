@@ -56,16 +56,15 @@ export default function UploadIntroClient() {
                     alt="RealmVerse Creator Landing Page"
                     className="block w-full h-auto"
                 />
-                {/* Buttons overlaid exactly on image "Continue as Creator" graphics — one per CTA, fully covering the image graphic */}
+                {/* Buttons overlaid exactly on image "Continue as Creator" graphics — responsive so overlap is correct on mobile, tablet, desktop */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA: centered on the image's "Continue as Creator (Free)" graphic so it fully covers it */}
+                    {/* First CTA: responsive top/left so it overlaps the graphic on all screen sizes */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 -ml-[30px] pointer-events-auto w-[95%] max-w-[680px]"
-                        style={{ top: '21.7%' }}
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[92%] sm:w-[94%] md:w-[95%] max-w-[340px] sm:max-w-[500px] md:max-w-[600px] lg:max-w-[680px] ml-[-8px] sm:ml-[-16px] md:ml-[-24px] lg:ml-[-30px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-8 py-4 rounded-xl text-white font-bold text-base sm:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[107px]"
+                            className="w-full px-4 py-3 sm:px-6 sm:py-4 md:px-8 rounded-xl text-white font-bold text-sm sm:text-base md:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[72px] md:min-h-[90px] lg:min-h-[107px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -74,14 +73,13 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA: positioned on the image's "Continue as Creator (Free Upload)" banner, tall enough to fully cover it so no "Cu" shows below */}
+                    {/* Second CTA: responsive so it overlaps the bottom banner on mobile, tablet, desktop */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[95%] max-w-[800px]"
-                        style={{ top: '97.0%' }}
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[92%] sm:w-[94%] md:w-[95%] max-w-[340px] sm:max-w-[560px] md:max-w-[700px] lg:max-w-[800px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-8 py-5 rounded-xl text-white font-bold text-base sm:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[60px] shadow-lg"
+                            className="w-full px-4 py-3 sm:px-6 sm:py-4 md:px-8 md:py-5 rounded-xl text-white font-bold text-sm sm:text-base md:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[56px] md:min-h-[60px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -95,10 +93,10 @@ export default function UploadIntroClient() {
 
             {/* Auth Modal (Signup/Login) */}
             {authOpen && (
-                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
                     <div className="absolute inset-0 bg-black/60" onClick={() => setAuthOpen(false)} />
-                    <div className="relative w-full max-w-xl">
-                        <div className="rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+                    <div className="relative w-full max-w-xl my-auto min-h-0">
+                        <div className="rounded-xl sm:rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] overflow-y-auto">
                             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
                                 <div className="font-extrabold text-slate-900">Join RealmVerse</div>
                                 <button

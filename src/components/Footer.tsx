@@ -3,13 +3,13 @@ import { FaEnvelope, FaPhone, FaShieldAlt, FaTruck, FaQuestionCircle } from 'rea
 
 export default function Footer() {
     return (
-        <footer className="bg-gray-900 text-white py-12 mt-20">
+        <footer className="bg-gray-900 text-white py-8 sm:py-12 mt-12 sm:mt-20">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
                     {/* Company Info */}
-                    <div className="space-y-4">
-                        <h3 className="text-xl font-bold text-white">RealmVerse</h3>
-                        <p className="text-gray-400 text-sm">
+                    <div className="space-y-3 sm:space-y-4">
+                        <h3 className="text-lg sm:text-xl font-bold text-white">RealmVerse</h3>
+                        <p className="text-gray-400 text-xs sm:text-sm">
                             Your ultimate destination for digital manga content. Read, discover, and enjoy manga from around the world.
                         </p>
                         <div className="space-y-2">
@@ -100,12 +100,12 @@ export default function Footer() {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="border-t border-gray-800 mt-8 pt-8">
-                    <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                        <p className="text-gray-400 text-sm">
+                <div className="border-t border-gray-800 mt-6 sm:mt-8 pt-6 sm:pt-8">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+                        <p className="text-gray-400 text-xs sm:text-sm">
                             © 2024 Time2fun. All rights reserved.
                         </p>
-                        <div className="flex space-x-6">
+                        <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
                             <Link href="/refund" className="text-gray-400 hover:text-white transition-colors text-sm">
                                 Refund Policy
                             </Link>
