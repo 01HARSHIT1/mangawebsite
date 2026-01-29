@@ -61,11 +61,11 @@ export default function UploadIntroClient() {
                 <div className="absolute inset-0 pointer-events-none">
                     {/* First CTA: compact size to match image graphic — no oversize overlap */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[78%] sm:w-[84%] md:w-[90%] lg:w-[92%] max-w-[220px] sm:max-w-[300px] md:max-w-[440px] lg:max-w-[540px] ml-[-4px] sm:ml-[-10px] md:ml-[-16px] lg:ml-[-24px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[72%] sm:w-[76%] md:w-[82%] lg:w-[86%] max-w-[180px] sm:max-w-[240px] md:max-w-[340px] lg:max-w-[420px] ml-[-4px] sm:ml-[-10px] md:ml-[-16px] lg:ml-[-24px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-lg sm:rounded-xl text-white font-bold text-[11px] sm:text-xs md:text-sm lg:text-base border border-white/20 transition-all active:scale-[0.98] min-h-[36px] sm:min-h-[44px] md:min-h-[58px] lg:min-h-[72px]"
+                            className="w-full px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 rounded-lg sm:rounded-xl text-white font-bold text-[11px] sm:text-xs md:text-sm lg:text-base border border-white/20 transition-all active:scale-[0.98] min-h-[32px] sm:min-h-[38px] md:min-h-[48px] lg:min-h-[56px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -76,11 +76,11 @@ export default function UploadIntroClient() {
                     </div>
                     {/* Second CTA: compact size to match image banner — proper overlap, no oversize */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[78%] sm:w-[84%] md:w-[90%] lg:w-[92%] max-w-[220px] sm:max-w-[340px] md:max-w-[520px] lg:max-w-[640px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[72%] sm:w-[76%] md:w-[82%] lg:w-[86%] max-w-[180px] sm:max-w-[260px] md:max-w-[400px] lg:max-w-[500px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-2.5 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-lg sm:rounded-xl text-white font-bold text-[11px] sm:text-xs md:text-sm lg:text-base border border-white/20 transition-all active:scale-[0.98] min-h-[36px] sm:min-h-[42px] md:min-h-[50px]"
+                            className="w-full px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 rounded-lg sm:rounded-xl text-white font-bold text-[11px] sm:text-xs md:text-sm lg:text-base border border-white/20 transition-all active:scale-[0.98] min-h-[32px] sm:min-h-[38px] md:min-h-[46px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
