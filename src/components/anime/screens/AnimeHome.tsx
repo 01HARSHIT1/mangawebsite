@@ -78,12 +78,12 @@ export default function AnimeHome() {
             setLoading(true);
             const token = localStorage.getItem('authToken') || localStorage.getItem('token');
             const userId = token ? 'user' : null; // In production, get actual userId from token
-            
+
             // Fetch home blocks (includes personalized content)
             const homeBlocksRes = await fetch(`/api/homeblocks?user_id=${userId || ''}`, {
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
             });
-            
+
             let homeBlocks: any = null;
             if (homeBlocksRes.ok) {
                 homeBlocks = await homeBlocksRes.json();
@@ -460,11 +460,10 @@ export default function AnimeHome() {
                                 <button
                                     key={anime._id || index}
                                     onClick={() => setHeroIndex(index)}
-                                    className={`relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border-2 transition-all touch-manipulation ${
-                                        index === heroIndex
+                                    className={`relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border-2 transition-all touch-manipulation ${index === heroIndex
                                             ? 'border-orange-500 scale-110 shadow-lg shadow-orange-500/50'
                                             : 'border-white/20 hover:border-orange-400/50 opacity-60 hover:opacity-100'
-                                    }`}
+                                        }`}
                                     aria-label={`Go to ${anime.title}`}
                                 >
                                     <Image
@@ -489,382 +488,381 @@ export default function AnimeHome() {
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-3 space-y-8 sm:space-y-12 md:space-y-16">
-                {/* Trending Now - Crunchyroll Style */}
-                {trendingAnime.length > 0 && (
-                    <motion.section
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16"
-                    >
-                        <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 flex-wrap gap-3 sm:gap-0">
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                                <div className="w-1 h-6 sm:h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
-                                <div>
-                                    <div className="flex items-center space-x-1 sm:space-x-2 mb-0.5 sm:mb-1">
-                                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-orange-400" />
-                                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white">TRENDING NOW</h2>
-                                    </div>
-                                    <p className="text-xs sm:text-sm text-gray-400 hidden sm:block">Most watched this week</p>
-                                </div>
-                            </div>
-                            <Link
-                                href="/anime/browse"
-                                className="flex items-center space-x-1 sm:space-x-2 text-orange-400 hover:text-orange-300 active:text-orange-200 transition-colors font-semibold text-xs sm:text-sm group touch-manipulation"
+                        {/* Trending Now - Crunchyroll Style */}
+                        {trendingAnime.length > 0 && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 40 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                className="mb-16"
                             >
-                                <span>VIEW ALL</span>
-                                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </div>
-                        <AnimeCarousel anime={trendingAnime} />
-                    </motion.section>
-                )}
-
-                {/* Continue Watching */}
-                <ContinueWatching limit={12} />
-
-                {/* Popular Anime */}
-                {popularAnime.length > 0 && (
-                    <motion.section
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-1">
-                                        <Star className="w-6 h-6 text-orange-400 fill-orange-400" />
-                                        <h2 className="text-3xl font-black text-white">POPULAR ANIME</h2>
+                                <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 flex-wrap gap-3 sm:gap-0">
+                                    <div className="flex items-center space-x-2 sm:space-x-3">
+                                        <div className="w-1 h-6 sm:h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                        <div>
+                                            <div className="flex items-center space-x-1 sm:space-x-2 mb-0.5 sm:mb-1">
+                                                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-orange-400" />
+                                                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white">TRENDING NOW</h2>
+                                            </div>
+                                            <p className="text-xs sm:text-sm text-gray-400 hidden sm:block">Most watched this week</p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-400">Top rated series</p>
+                                    <Link
+                                        href="/anime/browse"
+                                        className="flex items-center space-x-1 sm:space-x-2 text-orange-400 hover:text-orange-300 active:text-orange-200 transition-colors font-semibold text-xs sm:text-sm group touch-manipulation"
+                                    >
+                                        <span>VIEW ALL</span>
+                                        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
                                 </div>
-                            </div>
-                            <Link
-                                href="/anime/browse"
-                                className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
+                                <AnimeCarousel anime={trendingAnime} />
+                            </motion.section>
+                        )}
+
+                        {/* Continue Watching */}
+                        <ContinueWatching limit={12} />
+
+                        {/* Popular Anime */}
+                        {popularAnime.length > 0 && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 40 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                className="mb-16"
                             >
-                                <span>VIEW ALL</span>
-                                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </div>
-                        <AnimeCarousel anime={popularAnime} />
-                    </motion.section>
-                )}
-
-                {/* Recently Added */}
-                {recentAnime.length > 0 && (
-                    <motion.section
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-1">
-                                        <Zap className="w-6 h-6 text-orange-400" />
-                                        <h2 className="text-3xl font-black text-white">RECENTLY ADDED</h2>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-1">
+                                                <Star className="w-6 h-6 text-orange-400 fill-orange-400" />
+                                                <h2 className="text-3xl font-black text-white">POPULAR ANIME</h2>
+                                            </div>
+                                            <p className="text-sm text-gray-400">Top rated series</p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-400">Latest releases</p>
+                                    <Link
+                                        href="/anime/browse"
+                                        className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
+                                    >
+                                        <span>VIEW ALL</span>
+                                        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
                                 </div>
-                            </div>
-                            <Link
-                                href="/anime/browse"
-                                className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
+                                <AnimeCarousel anime={popularAnime} />
+                            </motion.section>
+                        )}
+
+                        {/* Recently Added */}
+                        {recentAnime.length > 0 && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 40 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                className="mb-16"
                             >
-                                <span>VIEW ALL</span>
-                                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        </div>
-                        <AnimeCarousel anime={recentAnime} />
-                    </motion.section>
-                )}
-
-                {/* Latest Episodes */}
-                {latestEpisodes.length > 0 && (
-                    <motion.section
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-1">
-                                        <Clock className="w-6 h-6 text-orange-400" />
-                                        <h2 className="text-3xl font-black text-white">LATEST EPISODES</h2>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-1">
+                                                <Zap className="w-6 h-6 text-orange-400" />
+                                                <h2 className="text-3xl font-black text-white">RECENTLY ADDED</h2>
+                                            </div>
+                                            <p className="text-sm text-gray-400">Latest releases</p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-400">Newly released episodes</p>
+                                    <Link
+                                        href="/anime/browse"
+                                        className="flex items-center space-x-2 text-orange-400 hover:text-orange-300 transition-colors font-semibold group"
+                                    >
+                                        <span>VIEW ALL</span>
+                                        <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
                                 </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                            {latestEpisodes.slice(0, 12).map((episode) => (
-                                <Link
-                                    key={episode._id}
-                                    href={`/anime/${episode.seriesId}?episode=${episode.episodeNumber}`}
-                                    className="group relative aspect-video rounded-lg overflow-hidden bg-gray-900 border border-orange-500/20 hover:border-orange-500/50 transition-all"
-                                >
-                                    <Image
-                                        src={episode.thumbnail || episode.seriesCoverImage || '/placeholder.jpg'}
-                                        alt={episode.title}
-                                        fill
-                                        className="object-cover group-hover:scale-110 transition-transform"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
-                                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                                        <p className="text-white text-sm font-semibold line-clamp-1">{episode.seriesTitle}</p>
-                                        <p className="text-orange-400 text-xs">Ep {episode.episodeNumber}</p>
-                                    </div>
-                                    <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white">
-                                        {Math.floor(episode.duration / 60)} min
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </motion.section>
-                )}
+                                <AnimeCarousel anime={recentAnime} />
+                            </motion.section>
+                        )}
 
-                {/* Estimated Schedule */}
-                {Object.keys(schedule).length > 0 && (
-                    <motion.section
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-16"
-                    >
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
-                                <div>
-                                    <div className="flex items-center space-x-2 mb-1">
-                                        <Calendar className="w-6 h-6 text-orange-400" />
-                                        <h2 className="text-3xl font-black text-white">ESTIMATED SCHEDULE</h2>
+                        {/* Latest Episodes */}
+                        {latestEpisodes.length > 0 && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 40 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                className="mb-16"
+                            >
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-1">
+                                                <Clock className="w-6 h-6 text-orange-400" />
+                                                <h2 className="text-3xl font-black text-white">LATEST EPISODES</h2>
+                                            </div>
+                                            <p className="text-sm text-gray-400">Newly released episodes</p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm text-gray-400">Anime airing times</p>
                                 </div>
-                            </div>
-                        </div>
-                        <div className="bg-black/40 backdrop-blur-sm border border-orange-500/20 rounded-xl p-6">
-                            {/* Day Selector */}
-                            <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
-                                {Object.keys(schedule).map((day) => {
-                                    // Shorten day names for better display
-                                    const shortDay = day.length > 3 
-                                        ? day.substring(0, 3).toUpperCase()
-                                        : day.toUpperCase();
-                                    return (
-                                        <button
-                                            key={day}
-                                            onClick={() => setSelectedScheduleDay(day)}
-                                            className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
-                                                selectedScheduleDay === day
-                                                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
-                                                    : 'bg-gray-800 text-gray-400 hover:text-orange-400'
-                                            }`}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                                    {latestEpisodes.slice(0, 12).map((episode) => (
+                                        <Link
+                                            key={episode._id}
+                                            href={`/anime/${episode.seriesId}?episode=${episode.episodeNumber}`}
+                                            className="group relative aspect-video rounded-lg overflow-hidden bg-gray-900 border border-orange-500/20 hover:border-orange-500/50 transition-all"
                                         >
-                                            {shortDay}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            {/* Schedule List */}
-                            <div className="space-y-3">
-                                {schedule[selectedScheduleDay]?.slice(0, 10).map((anime: any, index: number) => (
-                                    <Link
-                                        key={anime._id || index}
-                                        href={`/anime/${anime._id}`}
-                                        className="flex items-center space-x-4 p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
-                                    >
-                                        <span className="text-orange-400 font-mono text-sm min-w-[60px]">{anime.airTime || 'TBA'}</span>
-                                        <div className="flex-1">
-                                            <p className="text-white font-semibold group-hover:text-orange-400 transition-colors">{anime.title}</p>
-                                            <p className="text-gray-400 text-xs">► {anime.status || 'Ongoing'}</p>
-                                        </div>
-                                    </Link>
-                                ))}
-                                {(!schedule[selectedScheduleDay] || schedule[selectedScheduleDay].length === 0) && (
-                                    <p className="text-gray-400 text-center py-8">No scheduled anime for this day</p>
-                                )}
-                            </div>
-                        </div>
-                    </motion.section>
-                )}
+                                            <Image
+                                                src={episode.thumbnail || episode.seriesCoverImage || '/placeholder.jpg'}
+                                                alt={episode.title}
+                                                fill
+                                                className="object-cover group-hover:scale-110 transition-transform"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                                                <p className="text-white text-sm font-semibold line-clamp-1">{episode.seriesTitle}</p>
+                                                <p className="text-orange-400 text-xs">Ep {episode.episodeNumber}</p>
+                                            </div>
+                                            <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white">
+                                                {Math.floor(episode.duration / 60)} min
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </motion.section>
+                        )}
 
-                {/* Top Airing, Most Favourite, Latest Completed - Grid Layout - Responsive */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-12 sm:mb-16">
-                    {/* Top Airing */}
-                    {topAiring.length > 0 && (
-                        <motion.section
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                        >
-                            <div className="flex items-center space-x-2 mb-6">
-                                <Tv className="w-5 h-5 text-orange-400" />
-                                <h3 className="text-xl font-black text-white">TOP AIRING</h3>
-                            </div>
-                            <div className="space-y-3">
-                                {topAiring.slice(0, 5).map((anime, index) => (
-                                    <Link
-                                        key={anime._id}
-                                        href={`/anime/${anime._id}`}
-                                        className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
-                                    >
-                                        <span className="text-orange-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
-                                        <Image
-                                            src={anime.coverImage}
-                                            alt={anime.title}
-                                            width={60}
-                                            height={80}
-                                            className="rounded object-cover"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-white text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">{anime.title}</p>
-                                            <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </motion.section>
-                    )}
-
-                    {/* Most Favourite */}
-                    {mostFavourite.length > 0 && (
-                        <motion.section
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                        >
-                            <div className="flex items-center space-x-2 mb-6">
-                                <Heart className="w-5 h-5 text-pink-400 fill-pink-400" />
-                                <h3 className="text-xl font-black text-white">MOST FAVOURITE</h3>
-                            </div>
-                            <div className="space-y-3">
-                                {mostFavourite.slice(0, 5).map((anime, index) => (
-                                    <Link
-                                        key={anime._id}
-                                        href={`/anime/${anime._id}`}
-                                        className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
-                                    >
-                                        <span className="text-pink-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
-                                        <Image
-                                            src={anime.coverImage}
-                                            alt={anime.title}
-                                            width={60}
-                                            height={80}
-                                            className="rounded object-cover"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-white text-sm font-semibold truncate group-hover:text-pink-400 transition-colors">{anime.title}</p>
-                                            <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </motion.section>
-                    )}
-
-                    {/* Latest Completed */}
-                    {latestCompleted.length > 0 && (
-                        <motion.section
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                        >
-                            <div className="flex items-center space-x-2 mb-6">
-                                <Award className="w-5 h-5 text-yellow-400" />
-                                <h3 className="text-xl font-black text-white">LATEST COMPLETED</h3>
-                            </div>
-                            <div className="space-y-3">
-                                {latestCompleted.slice(0, 5).map((anime, index) => (
-                                    <Link
-                                        key={anime._id}
-                                        href={`/anime/${anime._id}`}
-                                        className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
-                                    >
-                                        <span className="text-yellow-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
-                                        <Image
-                                            src={anime.coverImage}
-                                            alt={anime.title}
-                                            width={60}
-                                            height={80}
-                                            className="rounded object-cover"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-white text-sm font-semibold truncate group-hover:text-yellow-400 transition-colors">{anime.title}</p>
-                                            <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </motion.section>
-                    )}
-                </div>
-
-                {/* Genres Quick Access */}
-                <motion.section
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="mb-16"
-                >
-                    <div className="flex items-center space-x-3 mb-6">
-                        <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
-                        <h2 className="text-2xl font-black text-white">BROWSE BY GENRE</h2>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                        {['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Mystery', 'Thriller', 'Isekai'].map((genre) => (
-                            <Link
-                                key={genre}
-                                href={`/anime/genres?genre=${genre.toLowerCase()}`}
-                                className="px-4 py-2 bg-gray-900/50 hover:bg-gradient-to-r hover:from-orange-500 hover:to-red-500 text-gray-300 hover:text-white rounded-lg font-semibold text-sm transition-all border border-orange-500/20 hover:border-orange-500"
+                        {/* Estimated Schedule */}
+                        {Object.keys(schedule).length > 0 && (
+                            <motion.section
+                                initial={{ opacity: 0, y: 40 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                className="mb-16"
                             >
-                                {genre}
-                            </Link>
-                        ))}
-                    </div>
-                </motion.section>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-1">
+                                                <Calendar className="w-6 h-6 text-orange-400" />
+                                                <h2 className="text-3xl font-black text-white">ESTIMATED SCHEDULE</h2>
+                                            </div>
+                                            <p className="text-sm text-gray-400">Anime airing times</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-black/40 backdrop-blur-sm border border-orange-500/20 rounded-xl p-6">
+                                    {/* Day Selector */}
+                                    <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
+                                        {Object.keys(schedule).map((day) => {
+                                            // Shorten day names for better display
+                                            const shortDay = day.length > 3
+                                                ? day.substring(0, 3).toUpperCase()
+                                                : day.toUpperCase();
+                                            return (
+                                                <button
+                                                    key={day}
+                                                    onClick={() => setSelectedScheduleDay(day)}
+                                                    className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${selectedScheduleDay === day
+                                                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                                                            : 'bg-gray-800 text-gray-400 hover:text-orange-400'
+                                                        }`}
+                                                >
+                                                    {shortDay}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Schedule List */}
+                                    <div className="space-y-3">
+                                        {schedule[selectedScheduleDay]?.slice(0, 10).map((anime: any, index: number) => (
+                                            <Link
+                                                key={anime._id || index}
+                                                href={`/anime/${anime._id}`}
+                                                className="flex items-center space-x-4 p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                            >
+                                                <span className="text-orange-400 font-mono text-sm min-w-[60px]">{anime.airTime || 'TBA'}</span>
+                                                <div className="flex-1">
+                                                    <p className="text-white font-semibold group-hover:text-orange-400 transition-colors">{anime.title}</p>
+                                                    <p className="text-gray-400 text-xs">► {anime.status || 'Ongoing'}</p>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                        {(!schedule[selectedScheduleDay] || schedule[selectedScheduleDay].length === 0) && (
+                                            <p className="text-gray-400 text-center py-8">No scheduled anime for this day</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.section>
+                        )}
 
-                {/* Share Section */}
-                <motion.section
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="mb-16"
-                >
-                    <div className="bg-gradient-to-r from-orange-900/30 via-red-900/30 to-pink-900/30 border border-orange-500/30 rounded-xl p-8 text-center">
-                        <Share className="w-12 h-12 text-orange-400 mx-auto mb-4" />
-                        <h3 className="text-2xl font-black text-white mb-2">Share ANIMESTREAM</h3>
-                        <p className="text-gray-400 mb-6">Help us grow by sharing with your friends!</p>
-                        <div className="flex items-center justify-center space-x-4">
-                            <button
-                                onClick={() => {
-                                    if (navigator.share) {
-                                        navigator.share({
-                                            title: 'ANIMESTREAM - Premium Anime Hub',
-                                            text: 'Check out this amazing anime streaming platform!',
-                                            url: window.location.origin + '/anime',
-                                        });
-                                    } else {
-                                        navigator.clipboard.writeText(window.location.origin + '/anime');
-                                        alert('Link copied to clipboard!');
-                                    }
-                                }}
-                                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-bold transition-all shadow-lg shadow-orange-500/50"
-                            >
-                                Share Now
-                            </button>
+                        {/* Top Airing, Most Favourite, Latest Completed - Grid Layout - Responsive */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-12 sm:mb-16">
+                            {/* Top Airing */}
+                            {topAiring.length > 0 && (
+                                <motion.section
+                                    initial={{ opacity: 0, y: 40 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                >
+                                    <div className="flex items-center space-x-2 mb-6">
+                                        <Tv className="w-5 h-5 text-orange-400" />
+                                        <h3 className="text-xl font-black text-white">TOP AIRING</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {topAiring.slice(0, 5).map((anime, index) => (
+                                            <Link
+                                                key={anime._id}
+                                                href={`/anime/${anime._id}`}
+                                                className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                            >
+                                                <span className="text-orange-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
+                                                <Image
+                                                    src={anime.coverImage}
+                                                    alt={anime.title}
+                                                    width={60}
+                                                    height={80}
+                                                    className="rounded object-cover"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-white text-sm font-semibold truncate group-hover:text-orange-400 transition-colors">{anime.title}</p>
+                                                    <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </motion.section>
+                            )}
+
+                            {/* Most Favourite */}
+                            {mostFavourite.length > 0 && (
+                                <motion.section
+                                    initial={{ opacity: 0, y: 40 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                >
+                                    <div className="flex items-center space-x-2 mb-6">
+                                        <Heart className="w-5 h-5 text-pink-400 fill-pink-400" />
+                                        <h3 className="text-xl font-black text-white">MOST FAVOURITE</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {mostFavourite.slice(0, 5).map((anime, index) => (
+                                            <Link
+                                                key={anime._id}
+                                                href={`/anime/${anime._id}`}
+                                                className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                            >
+                                                <span className="text-pink-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
+                                                <Image
+                                                    src={anime.coverImage}
+                                                    alt={anime.title}
+                                                    width={60}
+                                                    height={80}
+                                                    className="rounded object-cover"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-white text-sm font-semibold truncate group-hover:text-pink-400 transition-colors">{anime.title}</p>
+                                                    <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </motion.section>
+                            )}
+
+                            {/* Latest Completed */}
+                            {latestCompleted.length > 0 && (
+                                <motion.section
+                                    initial={{ opacity: 0, y: 40 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                >
+                                    <div className="flex items-center space-x-2 mb-6">
+                                        <Award className="w-5 h-5 text-yellow-400" />
+                                        <h3 className="text-xl font-black text-white">LATEST COMPLETED</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {latestCompleted.slice(0, 5).map((anime, index) => (
+                                            <Link
+                                                key={anime._id}
+                                                href={`/anime/${anime._id}`}
+                                                className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
+                                            >
+                                                <span className="text-yellow-400 font-bold text-lg min-w-[30px]">#{index + 1}</span>
+                                                <Image
+                                                    src={anime.coverImage}
+                                                    alt={anime.title}
+                                                    width={60}
+                                                    height={80}
+                                                    className="rounded object-cover"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-white text-sm font-semibold truncate group-hover:text-yellow-400 transition-colors">{anime.title}</p>
+                                                    <p className="text-gray-400 text-xs">{anime.episodeCount} eps</p>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </motion.section>
+                            )}
                         </div>
-                    </div>
-                </motion.section>
+
+                        {/* Genres Quick Access */}
+                        <motion.section
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="mb-16"
+                        >
+                            <div className="flex items-center space-x-3 mb-6">
+                                <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+                                <h2 className="text-2xl font-black text-white">BROWSE BY GENRE</h2>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                {['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Mystery', 'Thriller', 'Isekai'].map((genre) => (
+                                    <Link
+                                        key={genre}
+                                        href={`/anime/genres?genre=${genre.toLowerCase()}`}
+                                        className="px-4 py-2 bg-gray-900/50 hover:bg-gradient-to-r hover:from-orange-500 hover:to-red-500 text-gray-300 hover:text-white rounded-lg font-semibold text-sm transition-all border border-orange-500/20 hover:border-orange-500"
+                                    >
+                                        {genre}
+                                    </Link>
+                                ))}
+                            </div>
+                        </motion.section>
+
+                        {/* Share Section */}
+                        <motion.section
+                            initial={{ opacity: 0, y: 40 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="mb-16"
+                        >
+                            <div className="bg-gradient-to-r from-orange-900/30 via-red-900/30 to-pink-900/30 border border-orange-500/30 rounded-xl p-8 text-center">
+                                <Share className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                                <h3 className="text-2xl font-black text-white mb-2">Share RealmVerse</h3>
+                                <p className="text-gray-400 mb-6">Help us grow by sharing with your friends!</p>
+                                <div className="flex items-center justify-center space-x-4">
+                                    <button
+                                        onClick={() => {
+                                            if (navigator.share) {
+                                                navigator.share({
+                                                    title: 'RealmVerse - Professional Platform',
+                                                    text: 'Check out this amazing anime streaming platform!',
+                                                    url: window.location.origin + '/anime',
+                                                });
+                                            } else {
+                                                navigator.clipboard.writeText(window.location.origin + '/anime');
+                                                alert('Link copied to clipboard!');
+                                            }
+                                        }}
+                                        className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-bold transition-all shadow-lg shadow-orange-500/50"
+                                    >
+                                        Share Now
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.section>
                     </div>
 
                     {/* Sidebar - Top 10 */}
@@ -887,11 +885,10 @@ export default function AnimeHome() {
                                                 <button
                                                     key={period}
                                                     onClick={() => setTop10Period(period)}
-                                                    className={`px-2 py-1 text-xs font-semibold rounded transition-all ${
-                                                        top10Period === period
+                                                    className={`px-2 py-1 text-xs font-semibold rounded transition-all ${top10Period === period
                                                             ? 'bg-orange-500 text-white'
                                                             : 'text-gray-400 hover:text-orange-400'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {period.charAt(0).toUpperCase() + period.slice(1)}
                                                 </button>
@@ -905,12 +902,11 @@ export default function AnimeHome() {
                                                 href={`/anime/${anime._id}`}
                                                 className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
                                             >
-                                                <span className={`font-black text-lg min-w-[30px] ${
-                                                    index === 0 ? 'text-yellow-400' :
-                                                    index === 1 ? 'text-gray-300' :
-                                                    index === 2 ? 'text-orange-600' :
-                                                    'text-gray-500'
-                                                }`}>
+                                                <span className={`font-black text-lg min-w-[30px] ${index === 0 ? 'text-yellow-400' :
+                                                        index === 1 ? 'text-gray-300' :
+                                                            index === 2 ? 'text-orange-600' :
+                                                                'text-gray-500'
+                                                    }`}>
                                                     #{index + 1}
                                                 </span>
                                                 <Image

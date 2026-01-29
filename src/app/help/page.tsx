@@ -20,20 +20,20 @@ const faqs: FAQ[] = [
     {
         id: 2,
         category: "Getting Started",
-        question: "Is MangaReader free to use?",
-        answer: "Yes! MangaReader is completely free for readers. You can read all manga, create reading lists, and participate in the community without any cost."
+        question: "Is RealmVerse free to use?",
+        answer: "Yes! RealmVerse is completely free for readers. You can read all manga, create reading lists, and participate in the community without any cost."
     },
     {
         id: 3,
         category: "Reading",
-        question: "How do I read manga on MangaReader?",
+        question: "How do I read manga on RealmVerse?",
         answer: "Browse our manga collection, click on any series you're interested in, then select a chapter to start reading. Our reader supports both vertical scrolling and page-by-page navigation."
     },
     {
         id: 4,
         category: "Reading",
         question: "Can I read manga offline?",
-        answer: "Currently, MangaReader requires an internet connection to read manga. We're working on offline reading features for the future."
+        answer: "Currently, RealmVerse requires an internet connection to read manga. We're working on offline reading features for the future."
     },
     {
         id: 5,
@@ -112,7 +112,7 @@ export default function HelpPage() {
                         Help & Support
                     </h1>
                     <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                        Find answers to common questions and get help with using MangaReader
+                        Find answers to common questions and get help with using RealmVerse
                     </p>
                 </div>
 
@@ -126,7 +126,7 @@ export default function HelpPage() {
                     <Link href="/about" className="bg-slate-800/50 rounded-xl p-6 text-center hover:bg-slate-700/50 transition-colors group">
                         <FaBook className="text-green-400 text-3xl mx-auto mb-3 group-hover:scale-110 transition-transform" />
                         <h3 className="font-bold mb-2">About Us</h3>
-                        <p className="text-sm text-gray-300">Learn about MangaReader</p>
+                        <p className="text-sm text-gray-300">Learn about RealmVerse</p>
                     </Link>
                     <Link href="/upload/intro?mode=manga" className="bg-slate-800/50 rounded-xl p-6 text-center hover:bg-slate-700/50 transition-colors group">
                         <FaUpload className="text-purple-400 text-3xl mx-auto mb-3 group-hover:scale-110 transition-transform" />

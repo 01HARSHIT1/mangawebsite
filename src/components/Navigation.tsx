@@ -18,7 +18,7 @@ export default function Navigation() {
                         <Link href="/" className="flex-shrink-0 flex items-center group">
                             <div className="relative">
                                 <span className="text-3xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent group-hover:from-blue-400 group-hover:via-purple-400 group-hover:to-pink-400 transition-all duration-300">
-                                    MangaReader
+                                    RealmVerse
                                 </span>
                                 <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
                             </div>

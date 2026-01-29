@@ -19,7 +19,7 @@ const USD_TO_INR_RATE = 83;
 // UPI Configuration
 const UPI_CONFIG = {
     UPI_ID: 'harsshitrk0120@oksbi',
-    BUSINESS_NAME: 'MangaReader',
+    BUSINESS_NAME: 'RealmVerse',
 };
 
 export default function SimpleUPIPayment({ amount, description, onSuccess, onError, metadata }: SimpleUPIPaymentProps) {
@@ -37,7 +37,7 @@ export default function SimpleUPIPayment({ amount, description, onSuccess, onErr
         const transactionId = `manga_${Date.now()}_${user?._id || 'guest'}`;
         const encodedDescription = encodeURIComponent(description);
         const encodedMerchantName = encodeURIComponent(UPI_CONFIG.BUSINESS_NAME);
-        
+
         return `upi://pay?pa=${UPI_CONFIG.UPI_ID}&pn=${encodedMerchantName}&am=${amountInINR.toFixed(2)}&cu=INR&tn=${encodedDescription}&tr=${transactionId}&mode=02`;
     };
 
@@ -48,7 +48,7 @@ export default function SimpleUPIPayment({ amount, description, onSuccess, onErr
         }
 
         setProcessing(true);
-        
+
         try {
             const upiUrl = generateUPIUrl();
             const qrCodeDataUrl = await QRCode.toDataURL(upiUrl, {
@@ -111,7 +111,7 @@ export default function SimpleUPIPayment({ amount, description, onSuccess, onErr
                         <h3 className="text-lg font-semibold text-white mb-2">Pay via UPI</h3>
                         <p className="text-gray-300 mb-2">Amount: ₹{amountInINR.toFixed(2)}</p>
                         <p className="text-gray-300 mb-4">{description}</p>
-                        
+
                         {/* UPI ID Display */}
                         <div className="mb-4">
                             <div className="inline-flex items-center px-3 py-1 rounded-full bg-green-500/20 text-green-300 text-sm">
@@ -122,9 +122,9 @@ export default function SimpleUPIPayment({ amount, description, onSuccess, onErr
                     </div>
 
                     <div className="flex justify-center mb-4">
-                        <img 
-                            src={qrCodeDataUrl} 
-                            alt="UPI Payment QR Code" 
+                        <img
+                            src={qrCodeDataUrl}
+                            alt="UPI Payment QR Code"
                             className="w-64 h-64 border border-gray-600 rounded-lg"
                         />
                     </div>

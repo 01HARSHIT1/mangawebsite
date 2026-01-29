@@ -96,7 +96,7 @@ export default function RazorpayPayment({
             if (!orderData.success) {
                 console.error('❌ Order creation failed:', orderData);
                 console.error('❌ Error object:', JSON.stringify(orderData, null, 2));
-                
+
                 // Build detailed error message
                 let errorMessage = orderData.error || 'Failed to create order';
                 if (orderData.details) {
@@ -108,7 +108,7 @@ export default function RazorpayPayment({
                 if (orderData.type) {
                     errorMessage += ' [Type: ' + orderData.type + ']';
                 }
-                
+
                 console.error('📢 FULL ERROR MESSAGE:', errorMessage);
                 throw new Error(errorMessage);
             }
@@ -123,7 +123,7 @@ export default function RazorpayPayment({
             const startPaymentPolling = () => {
                 console.log('🔄 Starting payment status polling for order:', orderId);
                 console.log('⏰ Will check every 5 seconds for payment completion');
-                
+
                 pollingIntervalRef.current = setInterval(async () => {
                     pollCount++;
                     console.log(`📡 Polling payment status... (attempt ${pollCount}/${maxPolls})`);
@@ -144,7 +144,7 @@ export default function RazorpayPayment({
                         if (statusData.success && statusData.paymentCompleted) {
                             console.log('✅ PAYMENT DETECTED! Payment ID:', statusData.paymentId);
                             console.log('🎉 SUCCESS! Triggering thank you screen...');
-                            
+
                             // Stop polling
                             if (pollingIntervalRef.current) {
                                 clearInterval(pollingIntervalRef.current);
@@ -182,7 +182,7 @@ export default function RazorpayPayment({
                         console.error('❌ Error during polling:', error);
                     }
                 }, 5000); // Poll every 5 seconds
-                
+
                 console.log('✅ Polling interval started with ID:', pollingIntervalRef.current);
             };
 
@@ -194,19 +194,19 @@ export default function RazorpayPayment({
                 key: orderData.key,
                 amount: orderData.amount,
                 currency: orderData.currency,
-                name: 'MangaReader',
+                name: 'RealmVerse',
                 description: description,
                 order_id: orderData.orderId,
                 handler: async (response: any) => {
                     console.log('✅ Payment completed via handler, verifying...', response);
-                    
+
                     // Stop polling since payment was completed via normal handler
                     if (pollingIntervalRef.current) {
                         console.log('⏹️ Stopping polling (handler triggered)');
                         clearInterval(pollingIntervalRef.current);
                         pollingIntervalRef.current = null;
                     }
-                    
+
                     try {
                         // Verify payment
                         const verifyResponse = await fetch('/api/razorpay/verify-payment', {
@@ -250,14 +250,14 @@ export default function RazorpayPayment({
                 modal: {
                     ondismiss: () => {
                         console.log('⚠️ Payment modal dismissed by user');
-                        
+
                         // Stop polling when modal is closed
                         if (pollingIntervalRef.current) {
                             console.log('⏹️ Stopping polling (modal dismissed)');
                             clearInterval(pollingIntervalRef.current);
                             pollingIntervalRef.current = null;
                         }
-                        
+
                         setLoading(false);
                     },
                     // Allow user to close modal if needed
@@ -270,7 +270,7 @@ export default function RazorpayPayment({
 
             // Open Razorpay checkout
             const razorpay = new window.Razorpay(options);
-            
+
             // Listen for Razorpay events
             razorpay.on('payment.success', function (resp: any) {
                 console.log('🎉 Razorpay payment.success event:', resp);

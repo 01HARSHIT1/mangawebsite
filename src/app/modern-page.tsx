@@ -65,7 +65,7 @@ export default function ModernHomePage() {
                     >
                         <FaBookOpen className="text-white text-3xl" />
                     </motion.div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Loading MangaReader</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">Loading RealmVerse</h2>
                     <p className="text-gray-400">Preparing your manga experience...</p>
                 </div>
             </div>
@@ -401,7 +401,7 @@ export default function ModernHomePage() {
                                     <span className="text-white font-bold text-xl">M</span>
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-bold text-gradient">MangaReader</h3>
+                                    <h3 className="text-2xl font-bold text-gradient">RealmVerse</h3>
                                     <p className="text-sm text-gray-400">Professional Platform</p>
                                 </div>
                             </Link>
@@ -420,7 +420,7 @@ export default function ModernHomePage() {
 
                         <div className="border-t border-slate-700 pt-8">
                             <p className="text-gray-400">
-                                © 2024 MangaReader. All rights reserved. Built with ❤️ for manga lovers worldwide.
+                                © 2024 RealmVerse. All rights reserved. Built with ❤️ for manga lovers worldwide.
                             </p>
                         </div>
                     </div>

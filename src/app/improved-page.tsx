@@ -731,7 +731,7 @@ export default function ImprovedHomePage() {
                             </motion.div>
                             <div className="text-left">
                                 <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-                                    MangaReader
+                                    RealmVerse
                                 </h3>
                                 <p className="text-sm text-gray-400">Professional Platform</p>
                             </div>
@@ -761,7 +761,7 @@ export default function ImprovedHomePage() {
 
                         <div className="border-t border-slate-700 pt-8">
                             <p className="text-gray-400">
-                                © 2024 MangaReader. All rights reserved. Built with ❤️ for manga lovers worldwide.
+                                © 2024 RealmVerse. All rights reserved. Built with ❤️ for manga lovers worldwide.
                             </p>
                         </div>
                     </motion.div>

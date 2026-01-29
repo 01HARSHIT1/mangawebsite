@@ -35,7 +35,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
     const tutorialSteps: TutorialStep[] = [
         {
             id: 'welcome',
-            title: 'Welcome to MangaReader!',
+            title: 'Welcome to RealmVerse!',
             description: 'Let\'s take a quick tour to help you get started with reading and discovering manga.',
             position: 'center'
         },
@@ -62,7 +62,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
         },
         {
             id: 'reader',
-            title: 'Manga Reader',
+            title: 'RealmVerse Reader',
             description: 'Our advanced reader supports multiple viewing modes, zoom controls, and auto-scroll. You can also adjust reading speed and track your progress.',
             target: 'reader-controls',
             position: 'left'
@@ -84,7 +84,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
         {
             id: 'complete',
             title: 'You\'re All Set!',
-            description: 'You now know the basics of MangaReader. Start exploring and enjoy your reading journey!',
+            description: 'You now know the basics of RealmVerse. Start exploring and enjoy your reading journey!',
             position: 'center'
         }
     ];
@@ -302,10 +302,10 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
                                 key={index}
                                 onClick={() => handleStepClick(index)}
                                 className={`w-3 h-3 rounded-full transition-colors ${index === currentStep
-                                        ? 'bg-blue-500'
-                                        : index < currentStep
-                                            ? 'bg-green-500'
-                                            : 'bg-gray-300 dark:bg-gray-600'
+                                    ? 'bg-blue-500'
+                                    : index < currentStep
+                                        ? 'bg-green-500'
+                                        : 'bg-gray-300 dark:bg-gray-600'
                                     }`}
                             />
                         ))}

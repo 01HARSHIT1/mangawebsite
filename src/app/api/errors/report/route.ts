@@ -119,7 +119,7 @@ async function sendErrorReportEmail(errorReport: any) {
   try {
     // In a real application, use a proper email service (SendGrid, SES, etc.)
     const emailContent = `
-New Error Report Received\n\nError ID: ${errorReport.errorId || 'N/A'}\nUser Email: ${errorReport.userEmail}\nStatus Code: ${errorReport.statusCode || 'N/A'}\nURL: ${errorReport.url}\nTimestamp: ${errorReport.timestamp}\n\nUser Message:\n${errorReport.userMessage || 'No message provided'}\n\nError Details:\n${errorReport.error || 'No error details'}\n\nComponent Stack:\n${errorReport.componentStack || 'No component stack'}\n\nUser Agent: ${errorReport.userAgent}\nIP Address: ${errorReport.ip}\n\n---\nThis is an automated message from MangaReader Error Reporting System.`;
+New Error Report Received\n\nError ID: ${errorReport.errorId || 'N/A'}\nUser Email: ${errorReport.userEmail}\nStatus Code: ${errorReport.statusCode || 'N/A'}\nURL: ${errorReport.url}\nTimestamp: ${errorReport.timestamp}\n\nUser Message:\n${errorReport.userMessage || 'No message provided'}\n\nError Details:\n${errorReport.error || 'No error details'}\n\nComponent Stack:\n${errorReport.componentStack || 'No component stack'}\n\nUser Agent: ${errorReport.userAgent}\nIP Address: ${errorReport.ip}\n\n---\nThis is an automated message from RealmVerse Error Reporting System.`;
     console.log('Error Report Email:', emailContent);
     // Example: Send to webhook for email service
     if (process.env.ERROR_EMAIL_WEBHOOK) {
@@ -127,7 +127,7 @@ New Error Report Received\n\nError ID: ${errorReport.errorId || 'N/A'}\nUser Ema
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: 'support@mangareader.com',
+          to: 'support@realmverse.com',
           subject: `Error Report: ${errorReport.errorId || 'New Report'}`,
           text: emailContent,
         }),

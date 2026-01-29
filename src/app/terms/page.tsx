@@ -16,7 +16,7 @@ export default function TermsPage() {
                     <section>
                         <h2 className="text-2xl font-bold text-purple-400 mb-4">1. Acceptance of Terms</h2>
                         <p className="text-gray-300 leading-relaxed">
-                            By accessing and using MangaReader, you accept and agree to be bound by the terms and provision of this agreement.
+                            By accessing and using RealmVerse, you accept and agree to be bound by the terms and provision of this agreement.
                             If you do not agree to abide by the above, please do not use this service.
                         </p>
                     </section>
@@ -47,8 +47,8 @@ export default function TermsPage() {
                     <section>
                         <h2 className="text-2xl font-bold text-purple-400 mb-4">4. Creator Rights and Responsibilities</h2>
                         <div className="text-gray-300 leading-relaxed space-y-3">
-                            <p>As a creator on MangaReader, you retain ownership of your original content.</p>
-                            <p>By uploading content, you grant MangaReader a non-exclusive license to display, distribute, and promote your work on our platform.</p>
+                            <p>As a creator on RealmVerse, you retain ownership of your original content.</p>
+                            <p>By uploading content, you grant RealmVerse a non-exclusive license to display, distribute, and promote your work on our platform.</p>
                             <p>Creators are responsible for ensuring they have the right to upload and share their content.</p>
                         </div>
                     </section>
@@ -56,7 +56,7 @@ export default function TermsPage() {
                     <section>
                         <h2 className="text-2xl font-bold text-purple-400 mb-4">5. User Conduct</h2>
                         <div className="text-gray-300 leading-relaxed space-y-3">
-                            <p>Users agree to use MangaReader in a respectful and lawful manner. Prohibited activities include:</p>
+                            <p>Users agree to use RealmVerse in a respectful and lawful manner. Prohibited activities include:</p>
                             <ul className="list-disc list-inside ml-4 space-y-2">
                                 <li>Harassment, bullying, or threatening other users</li>
                                 <li>Attempting to hack, exploit, or damage the platform</li>
@@ -86,7 +86,7 @@ export default function TermsPage() {
                         <h2 className="text-2xl font-bold text-purple-400 mb-4">8. Disclaimer</h2>
                         <p className="text-gray-300 leading-relaxed">
                             The information on this website is provided on an "as is" basis. To the fullest extent permitted by law,
-                            MangaReader excludes all representations, warranties, conditions and terms.
+                            RealmVerse excludes all representations, warranties, conditions and terms.
                         </p>
                     </section>
 

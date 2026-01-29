@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
         // Check environment variables first
         const keyId = process.env.RAZORPAY_KEY_ID;
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
-        
+
         console.log('🔍 Environment check:', {
             hasKeyId: !!keyId,
             hasKeySecret: !!keySecret,
@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
         // Validate amount
         if (!amount || amount <= 0) {
             console.error('❌ Invalid amount received:', amount);
-            return NextResponse.json({ 
-                error: 'Invalid amount', 
-                details: `Amount must be greater than 0, received: ${amount}` 
+            return NextResponse.json({
+                error: 'Invalid amount',
+                details: `Amount must be greater than 0, received: ${amount}`
             }, { status: 400 });
         }
 
@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
         const amountInPaise = Math.round(amount * 100);
         if (amountInPaise < 100) {
             console.error('❌ Amount too small for Razorpay:', amountInPaise);
-            return NextResponse.json({ 
-                error: 'Amount too small', 
-                details: 'Minimum amount is ₹1.00' 
+            return NextResponse.json({
+                error: 'Amount too small',
+                details: 'Minimum amount is ₹1.00'
             }, { status: 400 });
         }
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         const timestamp = Date.now().toString().slice(-8); // Last 8 digits
         const userIdShort = user._id.toString().slice(-8); // Last 8 digits of user ID
         const receiptId = `rcpt_${timestamp}_${userIdShort}`; // Format: rcpt_12345678_abcd1234 (max 25 chars)
-        
+
         console.log('📦 Creating Razorpay order with params:', {
             amount: amountInPaise,
             currency,
@@ -87,12 +87,12 @@ export async function POST(request: NextRequest) {
             const orderNotes = {
                 userId: user._id.toString(),
                 userEmail: user.email,
-                description: description || 'MangaReader Payment',
+                description: description || 'RealmVerse Payment',
                 metadata: metadata // Pass metadata within notes
             };
-            
+
             console.log('📦 Creating order with notes:', JSON.stringify(orderNotes, null, 2));
-            
+
             order = await razorpay.orders.create({
                 amount: amountInPaise, // Use pre-calculated paise amount
                 currency,
@@ -102,10 +102,10 @@ export async function POST(request: NextRequest) {
             console.log('✅ Razorpay order created successfully:', order.id);
         } catch (orderError) {
             console.error('❌ Razorpay order creation error:', orderError);
-            const errorDetails = orderError instanceof Error 
+            const errorDetails = orderError instanceof Error
                 ? `${orderError.message}${(orderError as any).description ? ` - ${(orderError as any).description}` : ''}`
                 : JSON.stringify(orderError);
-            
+
             return NextResponse.json({
                 error: 'Failed to create payment order',
                 details: errorDetails,
@@ -125,9 +125,9 @@ export async function POST(request: NextRequest) {
         console.error('❌ Unexpected error in payment API:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         const errorStack = error instanceof Error ? error.stack : '';
-        
+
         console.error('Error stack:', errorStack);
-        
+
         return NextResponse.json({
             error: 'Payment initialization failed',
             details: errorMessage,

@@ -3,10 +3,10 @@ import AdvancedSearch from '@/components/AdvancedSearch';
 import SmartRecommendations from '@/components/SmartRecommendations';
 
 export const metadata: Metadata = {
-    title: 'Search & Discover Manga - Manga Reader',
+    title: 'Search & Discover Manga - RealmVerse',
     description: 'Find your next favorite manga with advanced search, filters, and personalized recommendations.',
     openGraph: {
-        title: 'Search & Discover Manga - Manga Reader',
+        title: 'Search & Discover Manga - RealmVerse',
         description: 'Find your next favorite manga with advanced search, filters, and personalized recommendations.',
         type: 'website',
     },

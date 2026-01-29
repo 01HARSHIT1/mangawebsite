@@ -147,7 +147,7 @@ export default function ModernNavigation() {
     // Creator nav items - show for creators and admins
     // If user has uploaded content, show Creator Dashboard instead of Upload
     const creatorNavItems = (isCreator || isAdmin) ? [
-        ...(hasUploadedManga 
+        ...(hasUploadedManga
             ? [{ href: '/creator/dashboard', label: 'Creator', icon: FaCrown }]
             : [{ href: '/upload/intro?mode=manga&returnTo=/upload', label: 'Upload', icon: FaUpload }]
         ),
@@ -176,7 +176,7 @@ export default function ModernNavigation() {
                         <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0 -ml-4 sm:-ml-5 md:-ml-6">
                             <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
                                 <div className="hidden sm:block min-w-0">
-                                    <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">MangaReader</h1>
+                                    <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">RealmVerse</h1>
                                     <p className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:-mt-1 truncate hidden md:block">Professional Platform</p>
                                 </div>
                             </Link>
@@ -189,16 +189,15 @@ export default function ModernNavigation() {
                                 const isHome = item.href === '/';
                                 const isBecomeCreator = item.label === 'Become Creator';
                                 const isSpecial = isHome || isBecomeCreator;
-                                
+
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className={`flex items-center space-x-1 px-2 xl:px-2.5 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ${
-                                            isSpecial
+                                        className={`flex items-center space-x-1 px-2 xl:px-2.5 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ${isSpecial
                                                 ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 text-white font-semibold hover:from-indigo-500/30 hover:to-purple-500/30 hover:border-indigo-400/60 hover:shadow-lg hover:shadow-indigo-500/20'
                                                 : 'text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50'
-                                        }`}
+                                            }`}
                                     >
                                         <item.icon className={`text-sm flex-shrink-0 ${isSpecial ? 'text-indigo-300' : ''}`} />
                                         <span className="hidden xl:inline">{item.label}</span>
@@ -545,15 +544,15 @@ export default function ModernNavigation() {
                                 </div>
                             ) : (
                                 <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3">
-                                    <Link 
-                                        href="/login" 
+                                    <Link
+                                        href="/login"
                                         className="px-3 sm:px-4 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 text-white text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center"
                                     >
                                         <span className="hidden sm:inline">Sign In</span>
                                         <span className="sm:hidden">Login</span>
                                     </Link>
-                                    <Link 
-                                        href="/signup" 
+                                    <Link
+                                        href="/signup"
                                         className="px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:from-indigo-800 active:to-purple-800 text-white text-xs sm:text-sm font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 whitespace-nowrap touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center"
                                     >
                                         <span className="hidden sm:inline">Sign Up</span>
@@ -634,7 +633,7 @@ export default function ModernNavigation() {
                                             <span className="text-white font-medium text-sm sm:text-base">{item.label}</span>
                                         </Link>
                                     ))}
-                                    
+
                                     {/* User Nav Items */}
                                     {userNavItems.map((item) => (
                                         <Link
@@ -647,7 +646,7 @@ export default function ModernNavigation() {
                                             <span className="text-white font-medium text-sm sm:text-base">{item.label}</span>
                                         </Link>
                                     ))}
-                                    
+
                                     {/* Creator Nav Items */}
                                     {creatorNavItems.map((item) => (
                                         <Link

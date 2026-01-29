@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Shipping & Delivery Policy - MangaReader',
+  title: 'Shipping & Delivery Policy - RealmVerse',
   description: 'Learn about our digital content delivery policy. Instant access to manga content with no physical shipping required.',
 };
 
@@ -13,7 +13,7 @@ export default function ShippingPolicy() {
           <h1 className="text-3xl font-bold text-gray-900 mb-6">
             Shipping & Delivery Policy
           </h1>
-          
+
           <div className="prose prose-lg max-w-none">
             <p className="text-gray-600 mb-6">
               <strong>Time2fun</strong> specializes in digital manga content delivery. Since we deal exclusively with digital products, there is no physical shipping involved.

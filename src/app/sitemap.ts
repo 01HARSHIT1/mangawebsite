@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://mangareader.com';
+    const baseUrl = 'https://realmverse.com';
 
     // Return minimal sitemap to prevent build-time stack overflow
     // Dynamic manga/chapter pages will be indexed by search engines naturally

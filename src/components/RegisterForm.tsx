@@ -59,7 +59,7 @@ export default function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFor
                     <span className="text-2xl">🚀</span>
                 </div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                    Join MangaReader
+                    Join RealmVerse
                 </h2>
                 <p className="text-gray-400 mt-2">Create your account and start reading</p>
             </div>

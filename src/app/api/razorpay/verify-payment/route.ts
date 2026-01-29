@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
             status: payment.status,
             paymentMethod: payment.method,
             createdAt: new Date(),
-            description: order.notes?.description || 'MangaReader Payment'
+            description: order.notes?.description || 'RealmVerse Payment'
         };
 
         await db.collection('payments').insertOne(paymentRecord);
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
             // Check for coins in metadata or notes (case-insensitive)
             const description = (order.notes?.description || '').toLowerCase();
             const metadata = order.notes?.metadata || {};
-            
+
             console.log('🔍 Processing coins:', {
                 description,
                 metadata,
@@ -107,18 +107,18 @@ export async function POST(request: NextRequest) {
                 hasCoins: !!metadata.coins,
                 descriptionIncludesCoins: description.includes('coins')
             });
-            
+
             if (description.includes('coins') || metadata.packageId || metadata.coins) {
                 // Get coins amount from metadata or calculate from payment amount
                 const coinsToAdd = metadata.coins || Math.floor(payment.amount / 100) || 1;
-                
+
                 console.log('💰 Adding coins:', {
                     coinsToAdd,
                     userId: user._id,
                     fromMetadata: metadata.coins,
                     fromAmount: Math.floor(payment.amount / 100)
                 });
-                
+
                 await db.collection('users').updateOne(
                     { _id: new (await import('mongodb')).ObjectId(user._id) },
                     { $inc: { coins: coinsToAdd } }

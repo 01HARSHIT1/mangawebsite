@@ -32,7 +32,7 @@ interface SEOHeadProps {
 const SEOHead: React.FC<SEOHeadProps> = ({
     title,
     description,
-    keywords = ['Read manga online for free', 'MangaReader', 'Manga', 'Online Manga', 'Free Manga'],
+    keywords = ['Read manga online for free', 'RealmVerse', 'Manga', 'Online Manga', 'Free Manga'],
     image = '/og-image.webp',
     url,
     type = 'website',
@@ -44,10 +44,10 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     manga,
     chapter
 }) => {
-    const siteTitle = title ? `${title} | MangaReader` : 'MangaReader - Read Manga Online for Free';
-    const siteDescription = description || 'Read manga online for free on MangaReader. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.';
-    const siteUrl = url || 'https://mangareader.com';
-    const siteImage = image.startsWith('http') ? image : `https://mangareader.com${image}`;
+    const siteTitle = title ? `${title} | RealmVerse` : 'RealmVerse - Read Manga Online for Free';
+    const siteDescription = description || 'Read manga online for free on RealmVerse. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.';
+    const siteUrl = url || 'https://realmverse.com';
+    const siteImage = image.startsWith('http') ? image : `https://realmverse.com${image}`;
 
     // Generate structured data based on content type
     const generateStructuredData = () => {
@@ -68,7 +68,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
                 inLanguage: "en",
                 publisher: {
                     "@type": "Organization",
-                    name: "MangaReader"
+                    name: "RealmVerse"
                 },
                 url: siteUrl,
                 potentialAction: {
@@ -101,8 +101,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
             url: siteUrl,
             publisher: {
                 "@type": "Organization",
-                name: "MangaReader",
-                url: "https://mangareader.com"
+                name: "RealmVerse",
+                url: "https://realmverse.com"
             }
         };
     };
@@ -113,7 +113,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
             <title>{siteTitle}</title>
             <meta name="description" content={siteDescription} />
             <meta name="keywords" content={keywords.join(', ')} />
-            <meta name="author" content={author || 'MangaReader Team'} />
+            <meta name="author" content={author || 'RealmVerse Team'} />
 
             {/* Canonical URL */}
             <link rel="canonical" href={siteUrl} />
@@ -124,7 +124,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
             <meta property="og:type" content={type} />
             <meta property="og:url" content={siteUrl} />
             <meta property="og:image" content={siteImage} />
-            <meta property="og:site_name" content="MangaReader" />
+            <meta property="og:site_name" content="RealmVerse" />
             <meta property="og:locale" content="en_US" />
 
             {publishedTime && <meta property="article:published_time" content={publishedTime} />}
@@ -140,8 +140,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
             <meta name="twitter:title" content={siteTitle} />
             <meta name="twitter:description" content={siteDescription} />
             <meta name="twitter:image" content={siteImage} />
-            <meta name="twitter:site" content="@mangareader" />
-            <meta name="twitter:creator" content="@mangareader" />
+            <meta name="twitter:site" content="@realmverse" />
+            <meta name="twitter:creator" content="@realmverse" />
 
             {/* Additional SEO Meta Tags */}
             <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -174,13 +174,13 @@ const SEOHead: React.FC<SEOHeadProps> = ({
                                     "@type": "ListItem",
                                     position: 1,
                                     name: "Home",
-                                    item: "https://mangareader.com"
+                                    item: "https://realmverse.com"
                                 },
                                 {
                                     "@type": "ListItem",
                                     position: 2,
                                     name: "Manga",
-                                    item: "https://mangareader.com/series"
+                                    item: "https://realmverse.com/series"
                                 },
                                 {
                                     "@type": "ListItem",

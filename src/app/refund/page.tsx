@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Cancellation & Refund Policy - MangaReader',
+  title: 'Cancellation & Refund Policy - RealmVerse',
   description: 'Learn about our refund and cancellation policy for digital manga content. 7-day refund policy with full support.',
 };
 
@@ -13,7 +13,7 @@ export default function RefundPolicy() {
           <h1 className="text-3xl font-bold text-gray-900 mb-6">
             Cancellation & Refund Policy
           </h1>
-          
+
           <div className="prose prose-lg max-w-none">
             <p className="text-gray-600 mb-6">
               <strong>Time2fun</strong> follows a transparent and customer-friendly refund and cancellation policy for all digital manga content and premium services.

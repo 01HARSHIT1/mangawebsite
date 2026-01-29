@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
         // Check environment variables
         const keyId = process.env.RAZORPAY_KEY_ID;
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
-        
+
         if (!keyId || !keySecret) {
             console.error('❌ Missing Razorpay environment variables');
             return NextResponse.json({
@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
 
         // Validate amount
         if (!amount || amount <= 0) {
-            return NextResponse.json({ 
-                error: 'Invalid amount', 
-                details: `Amount must be greater than 0, received: ${amount}` 
+            return NextResponse.json({
+                error: 'Invalid amount',
+                details: `Amount must be greater than 0, received: ${amount}`
             }, { status: 400 });
         }
 
@@ -45,13 +45,13 @@ export async function POST(request: NextRequest) {
             amountInPaise,
             minimumRequired: 100
         });
-        
+
         // Razorpay QR codes might have different minimum requirements
         if (amountInPaise < 100) {
             console.error('❌ Amount too small for QR code:', amountInPaise);
-            return NextResponse.json({ 
-                error: 'Amount too small', 
-                details: `Minimum amount for QR code is ₹1.00, received ₹${(amountInPaise / 100).toFixed(2)}` 
+            return NextResponse.json({
+                error: 'Amount too small',
+                details: `Minimum amount for QR code is ₹1.00, received ₹${(amountInPaise / 100).toFixed(2)}`
             }, { status: 400 });
         }
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         console.log('🔍 Razorpay object keys:', Object.keys(razorpay));
         console.log('🔍 qrCodes available:', !!razorpay.qrCodes);
         console.log('🔍 qrCodes.create available:', typeof razorpay.qrCodes?.create);
-        
+
         // For now, let's try to create QR code even if API might not be available
         // This will help us see the actual error from Razorpay
 
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         // Try with minimal required parameters first
         const qrCodeParams = {
             type: 'upi_qr',
-            name: `MangaReader - ${description || 'Coins'}`,
+            name: `RealmVerse - ${description || 'Coins'}`,
             usage: 'single_use',
             fixed_amount: true,
             payment_amount: amountInPaise,
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
             notes: {
                 userId: user._id.toString(),
                 userEmail: user.email,
-                description: description || 'MangaReader Payment',
+                description: description || 'RealmVerse Payment',
                 ...metadata
             }
         };
@@ -114,22 +114,22 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error('❌ QR code creation failed:', error);
         const errorObj = error as any;
-        
+
         // Log full error details for debugging
         console.error('❌ Full error object:', JSON.stringify(errorObj, null, 2));
-        
+
         // Extract specific error information
         const errorDetails = errorObj.error?.description || errorObj.message || 'Unknown error';
         const errorCode = errorObj.error?.code || errorObj.statusCode;
         const errorSource = errorObj.error?.source || 'unknown';
-        
+
         console.error('❌ Error details:', {
             code: errorCode,
             description: errorDetails,
             source: errorSource,
             fullError: errorObj
         });
-        
+
         return NextResponse.json({
             error: 'Failed to create QR code',
             details: errorDetails,

@@ -18,7 +18,7 @@ const SEOBreadcrumbs: React.FC<SEOBreadcrumbsProps> = ([object Object]items, cla
       itemListElement: items.map((item, index) => ([object Object]        @type': 'ListItem',
         position: index + 1,
         name: item.label,
-        item: item.href ? `https://mangareader.com${item.href}` : undefined,
+        item: item.href ? `https://realmverse.com${item.href}` : undefined,
       })),
     };
   };

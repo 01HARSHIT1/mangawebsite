@@ -100,7 +100,7 @@ export default function WorkingRazorpayPayment({
                 key: orderData.key, // Use key from response
                 amount: orderData.amount,
                 currency: orderData.currency,
-                name: 'MangaReader',
+                name: 'RealmVerse',
                 description: description,
                 order_id: orderData.orderId,
                 // Test mode settings
@@ -242,7 +242,7 @@ export default function WorkingRazorpayPayment({
 
             <div className="mt-3 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
                 <p className="text-blue-300 text-sm">
-                    <strong>💡 Test Mode Info:</strong> 
+                    <strong>💡 Test Mode Info:</strong>
                     <br />• UPI works perfectly in test mode ✅
                     <br />• Available wallets in test mode: Mobikwik, JioMoney, OlaMoney, etc.
                     <br />• Paytm & PhonePe will be available in <strong>Live Mode</strong> ✅

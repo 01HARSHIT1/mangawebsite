@@ -9,7 +9,7 @@ export default function AboutPage() {
                 {/* Hero Section */}
                 <div className="text-center mb-16">
                     <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        About MangaReader
+                        About RealmVerse
                     </h1>
                     <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
                         Your ultimate destination for reading and sharing manga online. Built by manga lovers, for manga lovers.
@@ -23,7 +23,7 @@ export default function AboutPage() {
                         <h2 className="text-3xl font-bold">Our Mission</h2>
                     </div>
                     <p className="text-lg text-gray-300 leading-relaxed">
-                        We believe that great stories should be accessible to everyone. MangaReader provides a platform where
+                        We believe that great stories should be accessible to everyone. RealmVerse provides a platform where
                         creators can share their work with a global audience, and readers can discover amazing manga from
                         talented artists around the world. Our mission is to foster a vibrant community that celebrates
                         creativity, storytelling, and the art of manga.
@@ -60,7 +60,7 @@ export default function AboutPage() {
                     <h2 className="text-3xl font-bold mb-6">Our Story</h2>
                     <div className="space-y-4 text-lg text-gray-300">
                         <p>
-                            MangaReader was born from a simple idea: what if there was a platform that truly understood
+                            RealmVerse was born from a simple idea: what if there was a platform that truly understood
                             both readers and creators? We noticed that existing platforms often focused on one or the other,
                             but rarely both.
                         </p>
@@ -70,7 +70,7 @@ export default function AboutPage() {
                             support they need to succeed.
                         </p>
                         <p>
-                            Today, MangaReader hosts thousands of manga series from creators worldwide, providing a home for
+                            Today, RealmVerse hosts thousands of manga series from creators worldwide, providing a home for
                             both established artists and newcomers to share their stories with a global audience.
                         </p>
                     </div>
@@ -112,7 +112,7 @@ export default function AboutPage() {
                     <h2 className="text-3xl font-bold mb-4">Join Our Community</h2>
                     <p className="text-lg text-gray-300 mb-6">
                         Whether you're a reader looking for your next favorite series or a creator ready to share your work,
-                        MangaReader is your home.
+                        RealmVerse is your home.
                     </p>
                     <div className="flex flex-wrap gap-4 justify-center">
                         <Link

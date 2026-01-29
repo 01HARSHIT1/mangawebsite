@@ -14,7 +14,7 @@ export const socialMediaLinks = {
 };
 
 export const websiteInfo = {
-  name: 'MangaReader',
+  name: 'RealmVerse',
   tagline: 'Quality Manga - Read anywhere, anytime',
   version: '1.0',
   copyright: '© 2025 All Rights Reserved',

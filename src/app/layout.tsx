@@ -8,45 +8,45 @@ import { ThemeProvider } from "@/components/AdvancedThemeSystem";
 
 export const metadata: Metadata = {
   title: {
-    default: "MangaReader - Read Manga Online for Free",
-    template: "%s | MangaReader",
+    default: "RealmVerse - Read Manga Online for Free",
+    template: "%s | RealmVerse",
   },
-  description: "Read manga online for free on MangaReader. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts. High-quality scans, fast updates, and mobile-friendly reading experience.",
+  description: "Read manga online for free on RealmVerse. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts. High-quality scans, fast updates, and mobile-friendly reading experience.",
   keywords: ["manga", "read manga online", "free manga", "manga reader", "anime", "comics", "manga chapters", "manga series", "manga community", "manga scans"],
-  authors: [{ name: "MangaReader Team" }],
-  creator: "MangaReader",
-  publisher: "MangaReader",
+  authors: [{ name: "RealmVerse Team" }],
+  creator: "RealmVerse",
+  publisher: "RealmVerse",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://mangareader.com'),
+  metadataBase: new URL('https://realmverse.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://mangareader.com',
-    siteName: 'MangaReader',
-    title: 'MangaReader - Read Manga Online for Free',
-    description: 'Read manga online for free on MangaReader. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.',
+    url: 'https://realmverse.com',
+    siteName: 'RealmVerse',
+    title: 'RealmVerse - Read Manga Online for Free',
+    description: 'Read manga online for free on RealmVerse. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.',
     images: [
       {
         url: '/og-image.webp',
         width: 1200,
         height: 630,
-        alt: 'MangaReader - Read Manga Online',
+        alt: 'RealmVerse - Read Manga Online',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MangaReader - Read Manga Online for Free',
-    description: 'Read manga online for free on MangaReader. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.',
+    title: 'RealmVerse - Read Manga Online for Free',
+    description: 'Read manga online for free on RealmVerse. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.',
     images: ['/twitter-image.webp'],
-    creator: '@mangareader',
+    creator: '@realmverse',
   },
   robots: {
     index: true,
@@ -67,19 +67,19 @@ export const metadata: Metadata = {
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "MangaReader",
-  "url": "https://mangareader.com",
-  "logo": "https://mangareader.com/logo.png",
-  "description": "Read manga online for free on MangaReader. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.",
+  "name": "RealmVerse",
+  "url": "https://realmverse.com",
+  "logo": "https://realmverse.com/logo.png",
+  "description": "Read manga online for free on RealmVerse. Discover thousands of manga series, latest chapters, and join our community of manga enthusiasts.",
   "sameAs": [
-    "https://twitter.com/mangareader",
-    "https://facebook.com/mangareader",
-    "https://instagram.com/mangareader"
+    "https://twitter.com/realmverse",
+    "https://facebook.com/realmverse",
+    "https://instagram.com/realmverse"
   ],
   "contactPoint": {
     "@type": "ContactPoint",
     "contactType": "customer service",
-    "email": "support@mangareader.com"
+    "email": "support@realmverse.com"
   }
 };
 
@@ -116,17 +116,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="mobile-web-app-title" content="MangaReader" />
+        <meta name="mobile-web-app-title" content="RealmVerse" />
 
         {/* Apple PWA Meta Tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="MangaReader" />
+        <meta name="apple-mobile-web-app-title" content="RealmVerse" />
         <meta name="apple-touch-fullscreen" content="yes" />
 
         {/* Windows PWA Meta Tags */}
         <meta name="msapplication-starturl" content="/" />
-        <meta name="msapplication-tooltip" content="MangaReader - Read Manga Online" />
+        <meta name="msapplication-tooltip" content="RealmVerse - Read Manga Online" />
         <meta name="msapplication-tap-highlight" content="no" />
 
         {/* PWA Display */}

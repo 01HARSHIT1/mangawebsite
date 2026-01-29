@@ -2,16 +2,16 @@
 export const UPI_CONFIG = {
     // Your personal UPI ID for direct payments
     PERSONAL_UPI_ID: 'harsshitrk0120@oksbi',
-    
+
     // Business name for UPI payments
-    BUSINESS_NAME: 'MangaReader',
-    
+    BUSINESS_NAME: 'RealmVerse',
+
     // Payment gateway webhook URL
     WEBHOOK_URL: process.env.WEBHOOK_URL || 'https://mangawebsite.vercel.app/api/upi/webhook',
-    
+
     // UPI payment timeout (in seconds)
     PAYMENT_TIMEOUT: 300, // 5 minutes
-    
+
     // Razorpay configuration
     RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
@@ -20,25 +20,25 @@ export const UPI_CONFIG = {
 // Generate UPI payment URL using personal UPI ID
 export function generateUPIPaymentUrl(amount: number, description: string, transactionId: string): string {
     const { PERSONAL_UPI_ID, BUSINESS_NAME } = UPI_CONFIG;
-    
+
     // Format amount to 2 decimal places
     const formattedAmount = amount.toFixed(2);
-    
+
     // Create UPI payment URL with proper format
     const upiUrl = `upi://pay?pa=${PERSONAL_UPI_ID}&pn=${encodeURIComponent(BUSINESS_NAME)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent(description)}&tr=${transactionId}&mode=02`;
-    
+
     console.log('🔍 Generated UPI URL:', upiUrl);
     console.log('🔍 UPI ID:', PERSONAL_UPI_ID);
     console.log('🔍 Amount:', formattedAmount);
     console.log('🔍 Description:', description);
-    
+
     return upiUrl;
 }
 
 // Generate Razorpay QR code
 export async function generateRazorpayQR(amount: number, description: string, userId: string) {
     const Razorpay = require('razorpay');
-    
+
     const razorpay = new Razorpay({
         key_id: UPI_CONFIG.RAZORPAY_KEY_ID,
         key_secret: UPI_CONFIG.RAZORPAY_KEY_SECRET,
@@ -47,7 +47,7 @@ export async function generateRazorpayQR(amount: number, description: string, us
     try {
         const qr = await razorpay.qrCodes.create({
             type: "upi_qr",
-            name: `MangaReader - ${description}`,
+            name: `RealmVerse - ${description}`,
             usage: "single_use",
             fixed_amount: true,
             payment_amount: Math.round(amount * 100), // Convert to paise

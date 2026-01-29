@@ -14,12 +14,12 @@ interface SocialShareProps {
     variant?: 'button' | 'dropdown' | 'modal';
 }
 
-export default function SocialShare({ 
-    title, 
-    description = '', 
-    url, 
+export default function SocialShare({
+    title,
+    description = '',
+    url,
     imageUrl,
-    hashtags = ['manga', 'mangareader'],
+    hashtags = ['manga', 'realmverse'],
     size = 'medium',
     variant = 'dropdown'
 }: SocialShareProps) {
@@ -159,11 +159,11 @@ export default function SocialShare({
                 {showShareMenu && (
                     <>
                         {/* Backdrop */}
-                        <div 
+                        <div
                             className="fixed inset-0 z-40"
                             onClick={() => setShowShareMenu(false)}
                         />
-                        
+
                         {/* Share Options */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: -10 }}
@@ -172,7 +172,7 @@ export default function SocialShare({
                             className="absolute bottom-full mb-2 right-0 bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-purple-500/20 z-50 min-w-64"
                         >
                             <h3 className="text-white font-semibold mb-3 text-center">Share this manga</h3>
-                            
+
                             {/* Social Platforms */}
                             <div className="grid grid-cols-3 gap-2 mb-4">
                                 {shareOptions.map((option) => (

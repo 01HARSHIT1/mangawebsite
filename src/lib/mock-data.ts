@@ -165,7 +165,7 @@ export const mockChapters = [
 export const mockUsers = [
     {
         _id: 'user1',
-        email: 'demo@mangareader.com',
+        email: 'demo@realmverse.com',
         username: 'DemoUser',
         role: 'user',
         isCreator: false,
@@ -173,7 +173,7 @@ export const mockUsers = [
     },
     {
         _id: 'creator1',
-        email: 'creator@mangareader.com',
+        email: 'creator@realmverse.com',
         username: 'MangaCreator',
         role: 'creator',
         isCreator: true,

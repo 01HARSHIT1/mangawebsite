@@ -47,7 +47,7 @@ export default function PWAInstaller() {
 
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
-            
+
             // Show install prompt after user has spent some time on the site
             setTimeout(() => {
                 // Check localStorage again before showing
@@ -78,13 +78,13 @@ export default function PWAInstaller() {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            
+
             if (outcome === 'accepted') {
                 console.log('✅ User accepted the install prompt');
             } else {
                 console.log('❌ User dismissed the install prompt');
             }
-            
+
             setDeferredPrompt(null);
             setShowInstallPrompt(false);
         }
@@ -93,7 +93,7 @@ export default function PWAInstaller() {
     const getInstallInstructions = () => {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const isAndroid = /Android/.test(navigator.userAgent);
-        
+
         if (isIOS) {
             return {
                 icon: <FaApple className="text-2xl" />,
@@ -120,7 +120,7 @@ export default function PWAInstaller() {
                 title: "Install on Desktop",
                 steps: [
                     "1. Look for the install icon in your browser's address bar",
-                    "2. Click 'Install MangaReader'",
+                    "2. Click 'Install RealmVerse'",
                     "3. The app will be added to your desktop"
                 ]
             };
@@ -169,7 +169,7 @@ export default function PWAInstaller() {
                                     {getInstallInstructions().icon}
                                 </div>
                                 <h2 className="text-2xl font-bold text-white mb-2">
-                                    Install MangaReader
+                                    Install RealmVerse
                                 </h2>
                                 <p className="text-gray-300">
                                     Get the full app experience with offline reading, push notifications, and faster loading.
@@ -233,7 +233,7 @@ export default function PWAInstaller() {
                                         Got it!
                                     </button>
                                 )}
-                                
+
                                 <button
                                     onClick={() => {
                                         setShowInstallPrompt(false);

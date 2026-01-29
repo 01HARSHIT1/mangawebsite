@@ -15,7 +15,7 @@ export default function TestMangaReaderPage() {
                 const createResponse = await fetch('/api/test/create-test-chapter', {
                     method: 'POST'
                 });
-                
+
                 if (createResponse.ok) {
                     const data = await createResponse.json();
                     setTestData(data);
@@ -57,8 +57,8 @@ export default function TestMangaReaderPage() {
                 <div className="text-center">
                     <h1 className="text-2xl font-bold mb-4">Error Loading Test Data</h1>
                     <p className="text-red-400 mb-4">{error}</p>
-                    <button 
-                        onClick={() => window.location.reload()} 
+                    <button
+                        onClick={() => window.location.reload()}
                         className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg"
                     >
                         Retry
@@ -83,7 +83,7 @@ export default function TestMangaReaderPage() {
         <div className="min-h-screen bg-gray-900 text-white">
             <div className="max-w-6xl mx-auto px-4 py-8">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold mb-4">🧪 Manga Reader Test Page</h1>
+                    <h1 className="text-4xl font-bold mb-4">🧪 RealmVerse Test Page</h1>
                     <p className="text-xl text-gray-400">Test the complete manga reading experience</p>
                 </div>
 
@@ -115,7 +115,7 @@ export default function TestMangaReaderPage() {
                         <p className="text-gray-300 mb-4">
                             View the manga detail page with chapters list and navigation
                         </p>
-                        <Link 
+                        <Link
                             href={`/manga/${testData.manga._id}`}
                             className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
                         >
@@ -128,7 +128,7 @@ export default function TestMangaReaderPage() {
                         <p className="text-gray-300 mb-4">
                             Experience the full manga reading interface with sample pages
                         </p>
-                        <Link 
+                        <Link
                             href={`/manga/${testData.manga._id}/chapter/${testData.chapter._id}`}
                             className="inline-block bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
                         >

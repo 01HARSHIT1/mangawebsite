@@ -37,7 +37,7 @@ export default function PushNotifications() {
                 await registerServiceWorker();
 
                 // Show success notification
-                new Notification('MangaReader Notifications', {
+                new Notification('RealmVerse Notifications', {
                     body: 'You\'ll now receive notifications about new manga chapters!',
                     icon: '/favicon.ico',
                     badge: '/favicon.ico'
