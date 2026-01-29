@@ -46,7 +46,8 @@ export default function UploadIntroClient() {
     const imagePath = '/creator-landing.png';
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950">
+        <div className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 pt-14 sm:pt-16">
+            {/* Nav lives in layout (fixed); pt-14/16 reserves space so image starts below nav and is not covered */}
             {/* Scrollable image + buttons: image sets page height, both scroll together */}
             <div className="relative w-full">
                 {/* Full-width image at natural height so the whole image is visible and scrolls */}
@@ -58,13 +59,13 @@ export default function UploadIntroClient() {
                 />
                 {/* Buttons overlaid exactly on image "Continue as Creator" graphics — responsive so overlap is correct on mobile, tablet, desktop */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA: responsive top/left so it overlaps the graphic on all screen sizes */}
+                    {/* First CTA: fixed size to match image graphic — no oversize overlap, especially on mobile */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[92%] sm:w-[94%] md:w-[95%] max-w-[340px] sm:max-w-[500px] md:max-w-[600px] lg:max-w-[680px] ml-[-8px] sm:ml-[-16px] md:ml-[-24px] lg:ml-[-30px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[85%] sm:w-[90%] md:w-[95%] max-w-[260px] sm:max-w-[380px] md:max-w-[520px] lg:max-w-[620px] ml-[-6px] sm:ml-[-12px] md:ml-[-20px] lg:ml-[-28px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-4 py-3 sm:px-6 sm:py-4 md:px-8 rounded-xl text-white font-bold text-sm sm:text-base md:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[72px] md:min-h-[90px] lg:min-h-[107px]"
+                            className="w-full px-3 py-2.5 sm:px-5 sm:py-3 md:px-6 md:py-4 rounded-lg sm:rounded-xl text-white font-bold text-xs sm:text-sm md:text-base lg:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[40px] sm:min-h-[52px] md:min-h-[72px] lg:min-h-[88px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -73,13 +74,13 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA: responsive so it overlaps the bottom banner on mobile, tablet, desktop */}
+                    {/* Second CTA: fixed size to match image banner — proper overlap, no oversize */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[92%] sm:w-[94%] md:w-[95%] max-w-[340px] sm:max-w-[560px] md:max-w-[700px] lg:max-w-[800px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[85%] sm:w-[90%] md:w-[95%] max-w-[260px] sm:max-w-[420px] md:max-w-[620px] lg:max-w-[760px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-4 py-3 sm:px-6 sm:py-4 md:px-8 md:py-5 rounded-xl text-white font-bold text-sm sm:text-base md:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[56px] md:min-h-[60px]"
+                            className="w-full px-3 py-2.5 sm:px-5 sm:py-3 md:px-6 md:py-4 rounded-lg sm:rounded-xl text-white font-bold text-xs sm:text-sm md:text-base lg:text-lg border border-white/20 transition-all active:scale-[0.98] min-h-[40px] sm:min-h-[48px] md:min-h-[56px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
