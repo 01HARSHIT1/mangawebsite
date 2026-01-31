@@ -196,19 +196,22 @@ export default function AnimeNavigation() {
                                     <span className="font-semibold">Community</span>
                                 </Link>
 
-                                {/* Main Navigation Links - Merged from mobile menu */}
+                                {/* Main Navigation Links - Merged from mobile menu; highlight Become a Creator */}
                                 <div className="space-y-2 mb-4 sm:mb-6">
                                     <h3 className="px-4 py-3 text-sm sm:text-base font-black text-orange-400 uppercase tracking-wider mb-3 border-b border-orange-500/30">Navigation</h3>
                                     {navItems.map((item) => {
                                         const active = isActive(item.href);
+                                        const isBecomeCreator = item.href?.includes('/upload/intro?mode=anime') || item.label === 'BECOME CREATOR';
                                         return (
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
                                                 onClick={() => setIsSidebarOpen(false)}
-                                                className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] ${active
-                                                        ? 'bg-orange-500/20 text-orange-400 font-bold'
-                                                        : 'hover:bg-orange-500/20 text-gray-300'
+                                                className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px] ${isBecomeCreator
+                                                        ? 'bg-gradient-to-r from-orange-500/25 to-red-500/25 border border-orange-400/50 text-white font-bold hover:from-orange-500/35 hover:to-red-500/35'
+                                                        : active
+                                                            ? 'bg-orange-500/20 text-orange-400 font-bold'
+                                                            : 'hover:bg-orange-500/20 text-gray-300'
                                                     }`}
                                             >
                                                 {item.icon && <item.icon className="w-4 h-4" />}
@@ -416,6 +419,28 @@ export default function AnimeNavigation() {
                                         <p className="text-[10px] sm:text-xs text-orange-300/70 -mt-0.5 sm:-mt-1 hidden md:block">Professional Platform</p>
                                     </div>
                                 </Link>
+                            </div>
+
+                            {/* Mobile: Become a Creator in nav bar */}
+                            <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
+                                {!isCreator && (
+                                    <Link
+                                        href="/upload/intro?mode=anime&returnTo=/anime/creator/upload"
+                                        className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-400/50 text-white font-semibold text-xs sm:text-sm hover:from-orange-500/30 hover:to-red-500/30 touch-manipulation min-h-[44px]"
+                                    >
+                                        <Upload className="w-4 h-4 text-orange-300" />
+                                        <span className="sm:inline">Become Creator</span>
+                                    </Link>
+                                )}
+                                {isCreator && hasUploadedAnime && (
+                                    <Link
+                                        href="/anime/creator/dashboard"
+                                        className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-400/50 text-white font-semibold text-xs sm:text-sm touch-manipulation min-h-[44px]"
+                                    >
+                                        <LayoutDashboard className="w-4 h-4 text-orange-300" />
+                                        <span className="sm:inline">Creator</span>
+                                    </Link>
+                                )}
                             </div>
 
                             {/* Navigation Links - Positioned right after logo with equal spacing */}

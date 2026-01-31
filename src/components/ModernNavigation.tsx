@@ -202,6 +202,36 @@ export default function ModernNavigation() {
                             </Link>
                         </div>
 
+                        {/* Mobile: Play (Anime) + Become a Creator in nav bar */}
+                        <div className="lg:hidden flex items-center gap-2 flex-shrink-0 ml-2">
+                            <Link
+                                href="/anime"
+                                onClick={() => switchToAnime()}
+                                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-colors touch-manipulation min-h-[44px] flex items-center justify-center"
+                                aria-label="Go to Anime section"
+                            >
+                                <Play className="w-5 h-5 text-indigo-400 fill-indigo-400" />
+                            </Link>
+                            {(!isCreator || (user?.role === 'admin' && !hasUploadedManga)) && (
+                                <Link
+                                    href="/upload/intro?mode=manga&returnTo=/upload"
+                                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 text-white font-semibold text-xs sm:text-sm hover:from-indigo-500/30 hover:to-purple-500/30 touch-manipulation min-h-[44px]"
+                                >
+                                    <FaUpload className="w-4 h-4 text-indigo-300" />
+                                    <span>Become Creator</span>
+                                </Link>
+                            )}
+                            {(isCreator || user?.role === 'admin') && hasUploadedManga && (
+                                <Link
+                                    href="/creator/dashboard"
+                                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-white font-semibold text-xs sm:text-sm touch-manipulation min-h-[44px]"
+                                >
+                                    <FaCrown className="w-4 h-4 text-yellow-300" />
+                                    <span className="sm:inline">Creator</span>
+                                </Link>
+                            )}
+                        </div>
+
                         {/* Desktop Navigation - Responsive */}
                         <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ml-2 xl:ml-3 ${isAuthenticated ? 'gap-3 xl:gap-4' : 'gap-3.5 xl:gap-4'}`}>
                             {navItems.map((item) => {
@@ -702,24 +732,29 @@ export default function ModernNavigation() {
                                 </div>
 
                                 <div className="space-y-2 sm:space-y-3">
-                                    {/* Navigation Items - Touch-friendly */}
-                                    {navItems.map((item) => (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            className="flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg hover:bg-slate-800/50 active:bg-slate-700/50 transition-colors touch-manipulation min-h-[44px]"
-                                            onClick={() => {
-                                                setIsMobileMenuOpen(false);
-                                                // Switch to anime mode if clicking anime link
-                                                if (item.href === '/anime' && appMode !== 'anime') {
-                                                    switchToAnime();
-                                                }
-                                            }}
-                                        >
-                                            <item.icon className="text-indigo-400 text-base sm:text-lg" />
-                                            <span className="text-white font-medium text-sm sm:text-base">{item.label}</span>
-                                        </Link>
-                                    ))}
+                                    {/* Navigation Items - Touch-friendly; highlight Become a Creator */}
+                                    {navItems.map((item) => {
+                                        const isBecomeCreator = item.label === 'Become Creator';
+                                        return (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href}
+                                                className={`flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg transition-colors touch-manipulation min-h-[44px] ${isBecomeCreator
+                                                    ? 'bg-gradient-to-r from-indigo-500/25 to-purple-500/25 border border-indigo-400/50 text-white font-semibold hover:from-indigo-500/35 hover:to-purple-500/35'
+                                                    : 'hover:bg-slate-800/50 active:bg-slate-700/50'
+                                                }`}
+                                                onClick={() => {
+                                                    setIsMobileMenuOpen(false);
+                                                    if (item.href === '/anime' && appMode !== 'anime') {
+                                                        switchToAnime();
+                                                    }
+                                                }}
+                                            >
+                                                <item.icon className={`text-base sm:text-lg ${isBecomeCreator ? 'text-indigo-300' : 'text-indigo-400'}`} />
+                                                <span className={`font-medium text-sm sm:text-base ${isBecomeCreator ? 'text-white' : 'text-white'}`}>{item.label}</span>
+                                            </Link>
+                                        );
+                                    })}
 
                                     {/* User Nav Items */}
                                     {userNavItems.map((item) => (
