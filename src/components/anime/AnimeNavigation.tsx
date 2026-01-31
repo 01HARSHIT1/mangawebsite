@@ -369,11 +369,11 @@ export default function AnimeNavigation() {
             </AnimatePresence>
 
             <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
-                <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">
-                    <div className="flex items-center h-14 sm:h-16 gap-3">
+                <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8">
+                    <div className="flex items-center h-14 sm:h-16 gap-2 sm:gap-3">
                         {/* Left Side: Hamburger + M logo + Become Creator + nav links */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                            {/* Hamburger Menu Button - Larger touch target for mobile */}
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
+                            {/* Hamburger Menu Button */}
                             <button
                                 data-hamburger-button
                                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -383,38 +383,40 @@ export default function AnimeNavigation() {
                                 <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                             </button>
 
-                            {/* Manga logo only - M button (Play/RealmVerse removed per design) */}
+                            {/* Manga logo - M button */}
                             <Link
                                 href="/"
                                 className="flex items-center justify-center group flex-shrink-0"
                                 onClick={() => switchToManga()}
                             >
                                 <div className="relative">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                        <span className="text-white font-bold text-base sm:text-lg md:text-xl">M</span>
+                                    <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                        <span className="text-white font-bold text-sm sm:text-base md:text-xl">M</span>
                                     </div>
                                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
                                 </div>
                             </Link>
 
-                            {/* Mobile: Become a Creator in nav bar */}
-                            <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
+                            {/* Mobile: Become Creator - icon-only on xs so right actions fit */}
+                            <div className="lg:hidden flex items-center flex-shrink min-w-0">
                                 {!isCreator && (
                                     <Link
                                         href="/upload/intro?mode=anime&returnTo=/anime/creator/upload"
-                                        className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-400/50 text-white font-semibold text-xs sm:text-sm hover:from-orange-500/30 hover:to-red-500/30 touch-manipulation min-h-[44px]"
+                                        className="flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-400/50 text-white font-semibold text-xs sm:text-sm hover:from-orange-500/30 hover:to-red-500/30 touch-manipulation min-h-[40px] sm:min-h-[44px]"
+                                        aria-label="Become Creator"
                                     >
-                                        <Upload className="w-4 h-4 text-orange-300" />
-                                        <span className="sm:inline">Become Creator</span>
+                                        <Upload className="w-4 h-4 text-orange-300 flex-shrink-0" />
+                                        <span className="hidden sm:inline truncate max-w-[80px] md:max-w-none">Become Creator</span>
                                     </Link>
                                 )}
                                 {isCreator && hasUploadedAnime && (
                                     <Link
                                         href="/anime/creator/dashboard"
-                                        className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-400/50 text-white font-semibold text-xs sm:text-sm touch-manipulation min-h-[44px]"
+                                        className="flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-400/50 text-white font-semibold text-xs sm:text-sm touch-manipulation min-h-[40px] sm:min-h-[44px]"
+                                        aria-label="Creator dashboard"
                                     >
-                                        <LayoutDashboard className="w-4 h-4 text-orange-300" />
-                                        <span className="sm:inline">Creator</span>
+                                        <LayoutDashboard className="w-4 h-4 text-orange-300 flex-shrink-0" />
+                                        <span className="hidden sm:inline">Creator</span>
                                     </Link>
                                 )}
                             </div>
@@ -488,34 +490,35 @@ export default function AnimeNavigation() {
                             <div className="hidden sm:block lg:hidden">
                                 <AppModeSwitcher />
                             </div>
+                        </div>
 
-                            {/* Right Side Actions - equal gap for professional look */}
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                                {/* Search - icon button same style as manga */}
+                        {/* Right Side Actions - sibling so never clipped; equal gap */}
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                                {/* Search */}
                                 <button
                                     type="button"
-                                    className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 flex items-center justify-center transition-colors touch-manipulation"
+                                    className="w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 flex items-center justify-center transition-colors touch-manipulation"
                                     aria-label="Search"
                                 >
-                                    <Search className="w-5 h-5 text-orange-400" />
+                                    <Search className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
                                 </button>
 
-                                {/* Bell / Notifications - icon button */}
+                                {/* Bell / Notifications */}
                                 <Link
                                     href="/notifications"
-                                    className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 flex items-center justify-center transition-colors touch-manipulation"
+                                    className="w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 flex items-center justify-center transition-colors touch-manipulation"
                                     aria-label="Notifications"
                                 >
-                                    <Bell className="w-5 h-5 text-orange-400" />
+                                    <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
                                 </Link>
 
-                                {/* Profile/Account Dropdown - Responsive sizing */}
-                                <div className="relative" ref={profileMenuRef}>
+                                {/* Profile - same size so aligned with equal gap */}
+                                <div className="relative flex-shrink-0" ref={profileMenuRef}>
                                     {isAuthenticated ? (
                                         <>
                                             <button
                                                 onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/50 hover:scale-110 active:scale-95 transition-transform border-2 border-orange-400/50 touch-manipulation"
+                                                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/50 hover:scale-110 active:scale-95 transition-transform border-2 border-orange-400/50 touch-manipulation flex-shrink-0"
                                             >
                                                 {user?.creatorProfile?.displayName?.charAt(0)?.toUpperCase() ||
                                                     user?.username?.charAt(0)?.toUpperCase() ||
@@ -601,24 +604,16 @@ export default function AnimeNavigation() {
                                     ) : (
                                         <Link
                                             href="/login"
-                                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-orange-500/50 via-red-500/50 to-pink-500/50 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/30 hover:scale-110 active:scale-95 transition-transform border-2 border-orange-400/30 hover:border-orange-400/50 touch-manipulation"
+                                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-orange-500/50 via-red-500/50 to-pink-500/50 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/30 hover:scale-110 active:scale-95 transition-transform border-2 border-orange-400/30 hover:border-orange-400/50 touch-manipulation flex-shrink-0"
                                             title="Sign In"
                                         >
                                             <User className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </Link>
                                     )}
                                 </div>
-
-                                {/* App Mode Switcher - Hidden on mobile, shown on tablet+ */}
-                                <div className="hidden sm:block">
-                                    <AppModeSwitcher />
-                                </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* Mobile Navigation Menu - Removed, merged into sidebar */}
-                </div>
             </nav>
 
             {/* Buy Me a Coffee Modal */}
