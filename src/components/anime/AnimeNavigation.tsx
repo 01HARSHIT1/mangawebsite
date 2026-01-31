@@ -147,14 +147,14 @@ export default function AnimeNavigation() {
                             onClick={() => setIsSidebarOpen(false)}
                             className="fixed inset-0 bg-black/70 z-[60]"
                         />
-                        {/* Sidebar - proper mobile layout, touch targets */}
+                        {/* Sidebar - full width on mobile so no strip; clean layout */}
                         <motion.div
                             ref={sidebarRef}
                             initial={{ x: -320 }}
                             animate={{ x: 0 }}
                             exit={{ x: -320 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed left-0 top-0 bottom-0 w-[85vw] sm:w-80 max-w-sm bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-[70] overflow-y-auto max-h-[100dvh]"
+                            className="fixed left-0 top-0 bottom-0 w-full sm:w-80 max-w-sm bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-[70] overflow-y-auto max-h-[100dvh] shadow-2xl"
                         >
                             <div className="p-4 pb-8">
                                 {/* Close Button */}

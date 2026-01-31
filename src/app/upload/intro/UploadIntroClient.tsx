@@ -59,13 +59,13 @@ export default function UploadIntroClient() {
                 />
                 {/* Buttons overlaid exactly on image "Continue as Creator" graphics — responsive so overlap is correct on mobile, tablet, desktop */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA: size to properly cover image "Continue" graphic */}
+                    {/* First CTA: slightly smaller so it does not overlap the boy illustration */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[72%] max-w-[220px] sm:w-[80%] sm:max-w-[280px] md:w-[85%] md:max-w-[380px] lg:w-[88%] lg:max-w-[460px] ml-[-4px] sm:ml-[-10px] md:ml-[-16px] lg:ml-[-24px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[62%] max-w-[190px] sm:w-[72%] sm:max-w-[240px] md:w-[80%] md:max-w-[340px] lg:w-[85%] lg:max-w-[420px] ml-[-4px] sm:ml-[-10px] md:ml-[-16px] lg:ml-[-24px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-3 py-2 text-xs min-h-[40px] sm:px-4 sm:py-2.5 sm:text-sm sm:min-h-[48px] md:px-5 md:py-3 md:text-base md:min-h-[56px] lg:min-h-[60px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98]"
+                            className="w-full px-2.5 py-1.5 text-[11px] min-h-[36px] sm:px-3.5 sm:py-2 sm:text-xs sm:min-h-[42px] md:px-4 md:py-2.5 md:text-sm md:min-h-[50px] lg:text-base lg:min-h-[56px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',

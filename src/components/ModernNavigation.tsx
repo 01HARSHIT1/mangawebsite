@@ -16,7 +16,7 @@ export default function ModernNavigation() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isScrolled, setIsScrolled] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showCoffeeModal, setShowCoffeeModal] = useState(false);
@@ -65,7 +65,7 @@ export default function ModernNavigation() {
         }
     }, [isAuthenticated]);
 
-    // Run search (manga API returns { manga: [...] })
+    // Run search (manga API returns { manga: [...] } or { results: [...] })
     const runSearch = useCallback(async (query: string) => {
         const q = (query || '').trim();
         if (!q) {
@@ -73,10 +73,13 @@ export default function ModernNavigation() {
             return;
         }
         try {
-            const response = await fetch(`/api/manga/search?q=${encodeURIComponent(q)}&limit=10`);
+            const response = await fetch(`/api/manga/search?q=${encodeURIComponent(q)}&limit=20`);
             if (response.ok) {
                 const data = await response.json();
-                setSearchResults(data.manga ?? data ?? []);
+                const list = Array.isArray(data)
+                    ? data
+                    : (data?.manga ?? data?.results ?? data?.data ?? []);
+                setSearchResults(Array.isArray(list) ? list : []);
             } else {
                 setSearchResults([]);
             }
@@ -351,7 +354,16 @@ export default function ModernNavigation() {
                                                             </Link>
                                                         ))
                                                     ) : searchQuery.trim().length >= 1 ? (
-                                                        <p className="text-slate-400 text-sm py-4 text-center">No results found. Try another term.</p>
+                                                        <div className="py-4 text-center space-y-3">
+                                                            <p className="text-slate-400 text-sm">No results found. Try another term.</p>
+                                                            <Link
+                                                                href="/manga"
+                                                                onClick={() => setIsSearchOpen(false)}
+                                                                className="inline-block px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium"
+                                                            >
+                                                                Browse all manga
+                                                            </Link>
+                                                        </div>
                                                     ) : null}
                                                 </div>
                                             </div>
@@ -390,7 +402,10 @@ export default function ModernNavigation() {
                                                             </Link>
                                                         ))
                                                     ) : searchQuery.trim().length >= 1 ? (
-                                                        <p className="text-slate-400 text-sm py-3 px-2">No results found.</p>
+                                                        <div className="py-3 px-2">
+                                                            <p className="text-slate-400 text-sm">No results found.</p>
+                                                            <Link href="/manga" onClick={() => setIsSearchOpen(false)} className="text-indigo-400 text-sm hover:underline mt-1 inline-block">Browse manga</Link>
+                                                        </div>
                                                     ) : null}
                                                 </div>
                                             </div>
@@ -454,7 +469,7 @@ export default function ModernNavigation() {
                                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                className="absolute right-0 top-full mt-2 w-[min(90vw,24rem)] max-w-sm bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[75vh] overflow-y-auto lg:right-0 lg:w-80"
+                                                className="absolute right-0 top-full mt-2 w-full min-w-[18rem] max-w-sm bg-slate-900/98 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[75vh] overflow-y-auto sm:right-0 sm:w-80"
                                             >
                                                 {/* User Info Header */}
                                                 <div className="p-4 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border-b border-slate-700">
@@ -659,13 +674,13 @@ export default function ModernNavigation() {
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
 
-                        {/* Mobile Menu Panel - starts below nav bar so layout is professional */}
+                        {/* Mobile Menu Panel - full width on mobile so no strip; below nav for clean layout */}
                         <motion.div
                             initial={{ opacity: 0, x: '100%' }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: '100%' }}
                             transition={{ type: 'tween', duration: 0.3 }}
-                            className="fixed top-14 sm:top-16 right-0 bottom-0 w-[85vw] sm:w-80 max-w-sm glass-strong border-l border-white/10 z-50 lg:hidden overflow-y-auto"
+                            className="fixed top-14 sm:top-16 right-0 bottom-0 w-full sm:w-80 max-w-sm glass-strong border-l border-white/10 z-50 lg:hidden overflow-y-auto shadow-2xl"
                         >
                             <div className="p-4 sm:p-6">
                                 <div className="flex items-center justify-between mb-6 sm:mb-8">

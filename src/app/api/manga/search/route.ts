@@ -27,13 +27,16 @@ export async function GET(req: NextRequest) {
         const manga = db.collection('manga');
         // Build search query
         const searchQuery: any = {};
-        // Text search using regex (simpler and more reliable)
-        if (query.trim()) {
+        // Text search using regex (simpler and more reliable); escape special regex chars for safety
+        const q = (query || '').trim();
+        if (q) {
+            const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             searchQuery.$or = [
-                { title: { $regex: query, $options: 'i' } },
-                { description: { $regex: query, $options: 'i' } },
-                { author: { $regex: query, $options: 'i' } },
-                { alternativeTitles: { $regex: query, $options: 'i' } },
+                { title: { $regex: escaped, $options: 'i' } },
+                { name: { $regex: escaped, $options: 'i' } },
+                { description: { $regex: escaped, $options: 'i' } },
+                { author: { $regex: escaped, $options: 'i' } },
+                { alternativeTitles: { $regex: escaped, $options: 'i' } },
             ];
         }
         // Genre filter
