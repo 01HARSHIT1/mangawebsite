@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,26 +65,43 @@ export default function ModernNavigation() {
         }
     }, [isAuthenticated]);
 
-    // Handle search
+    // Run search (manga API returns { manga: [...] })
+    const runSearch = useCallback(async (query: string) => {
+        const q = (query || '').trim();
+        if (!q) {
+            setSearchResults([]);
+            return;
+        }
+        try {
+            const response = await fetch(`/api/manga/search?q=${encodeURIComponent(q)}&limit=10`);
+            if (response.ok) {
+                const data = await response.json();
+                setSearchResults(data.manga ?? data ?? []);
+            } else {
+                setSearchResults([]);
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            setSearchResults([]);
+        }
+    }, []);
+
+    // Debounced search when typing
     useEffect(() => {
-        if (searchQuery.length > 2) {
-            // Debounced search
-            const timer = setTimeout(async () => {
-                try {
-                    const response = await fetch(`/api/manga/search?q=${encodeURIComponent(searchQuery)}&limit=5`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        setSearchResults(data.manga || []);
-                    }
-                } catch (error) {
-                    console.error('Search error:', error);
-                }
-            }, 300);
+        if (searchQuery.trim().length >= 1) {
+            const timer = setTimeout(() => runSearch(searchQuery), 300);
             return () => clearTimeout(timer);
         } else {
             setSearchResults([]);
         }
-    }, [searchQuery]);
+    }, [searchQuery, runSearch]);
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            runSearch(searchQuery);
+        }
+    };
 
     const handleLogout = async () => {
         await logout();
@@ -306,12 +323,13 @@ export default function ModernNavigation() {
                                                     placeholder="Search manga, creators, genres..."
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                                    onKeyDown={handleSearchKeyDown}
                                                     className="w-full px-4 py-3.5 rounded-xl bg-slate-800/80 border border-slate-600 text-white placeholder-slate-400 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                                     autoFocus
                                                 />
-                                                {searchResults.length > 0 && (
-                                                    <div className="mt-4 flex-1 overflow-y-auto space-y-2">
-                                                        {searchResults.map((manga: any) => (
+                                                <div className="mt-4 flex-1 overflow-y-auto space-y-2">
+                                                    {searchResults.length > 0 ? (
+                                                        searchResults.map((manga: any) => (
                                                             <Link
                                                                 key={manga._id}
                                                                 href={`/manga/${manga._id}`}
@@ -328,12 +346,14 @@ export default function ModernNavigation() {
                                                                 />
                                                                 <div className="min-w-0">
                                                                     <h4 className="font-medium text-white truncate">{manga.title}</h4>
-                                                                    <p className="text-sm text-gray-400 truncate">by {manga.creator}</p>
+                                                                    <p className="text-sm text-gray-400 truncate">by {manga.author || manga.creator || '—'}</p>
                                                                 </div>
                                                             </Link>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                        ))
+                                                    ) : searchQuery.trim().length >= 1 ? (
+                                                        <p className="text-slate-400 text-sm py-4 text-center">No results found. Try another term.</p>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                             {/* Desktop: dropdown below button */}
                                             <div className="hidden lg:block bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden p-2">
@@ -342,35 +362,37 @@ export default function ModernNavigation() {
                                                     placeholder="Search manga, creators, genres..."
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                                    onKeyDown={handleSearchKeyDown}
                                                     className="input focus-ring text-sm w-full"
                                                     autoFocus
                                                 />
-
-                                            {searchResults.length > 0 && (
-                                                <div className="search-results mt-2">
-                                                    {searchResults.map((manga: any) => (
-                                                        <Link
-                                                            key={manga._id}
-                                                            href={`/manga/${manga._id}`}
-                                                            className="search-item flex items-center space-x-3"
-                                                            onClick={() => {
-                                                                setIsSearchOpen(false);
-                                                                setSearchQuery('');
-                                                            }}
-                                                        >
-                                                            <img
-                                                                src={manga.coverImage || '/placeholder.svg'}
-                                                                alt={manga.title}
-                                                                className="w-12 h-16 object-cover rounded-md"
-                                                            />
-                                                            <div>
-                                                                <h4 className="font-medium text-white">{manga.title}</h4>
-                                                                <p className="text-sm text-gray-400">by {manga.creator}</p>
-                                                            </div>
-                                                        </Link>
-                                                    ))}
+                                                <div className="search-results mt-2 max-h-80 overflow-y-auto">
+                                                    {searchResults.length > 0 ? (
+                                                        searchResults.map((manga: any) => (
+                                                            <Link
+                                                                key={manga._id}
+                                                                href={`/manga/${manga._id}`}
+                                                                className="search-item flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-800/50"
+                                                                onClick={() => {
+                                                                    setIsSearchOpen(false);
+                                                                    setSearchQuery('');
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={manga.coverImage || '/placeholder.svg'}
+                                                                    alt={manga.title}
+                                                                    className="w-12 h-16 object-cover rounded-md flex-shrink-0"
+                                                                />
+                                                                <div className="min-w-0">
+                                                                    <h4 className="font-medium text-white truncate">{manga.title}</h4>
+                                                                    <p className="text-sm text-gray-400 truncate">by {manga.author || manga.creator || '—'}</p>
+                                                                </div>
+                                                            </Link>
+                                                        ))
+                                                    ) : searchQuery.trim().length >= 1 ? (
+                                                        <p className="text-slate-400 text-sm py-3 px-2">No results found.</p>
+                                                    ) : null}
                                                 </div>
-                                            )}
                                             </div>
                                         </motion.div>
                                     )}
@@ -637,15 +659,15 @@ export default function ModernNavigation() {
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
 
-                        {/* Mobile Menu Panel - Responsive, proper layout below nav */}
+                        {/* Mobile Menu Panel - starts below nav bar so layout is professional */}
                         <motion.div
                             initial={{ opacity: 0, x: '100%' }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: '100%' }}
                             transition={{ type: 'tween', duration: 0.3 }}
-                            className="fixed top-0 right-0 h-full w-[85vw] sm:w-80 max-w-sm glass-strong border-l border-white/10 z-50 lg:hidden overflow-y-auto"
+                            className="fixed top-14 sm:top-16 right-0 bottom-0 w-[85vw] sm:w-80 max-w-sm glass-strong border-l border-white/10 z-50 lg:hidden overflow-y-auto"
                         >
-                            <div className="p-4 sm:p-6 pt-4">
+                            <div className="p-4 sm:p-6">
                                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                                     <h2 className="text-lg sm:text-xl font-bold text-white">Menu</h2>
                                     <button
