@@ -186,50 +186,23 @@ export default function ModernNavigation() {
                 : 'bg-transparent'
                 }`}>
                 <div className="max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-14 sm:h-16 gap-3 sm:gap-4 md:gap-6">
-                        {/* App Mode Switcher - Desktop */}
-                        <div className="hidden lg:block mr-2 sm:mr-4">
-                            <AppModeSwitcher />
-                        </div>
-
-                        {/* Logo - Text Only */}
-                        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0 -ml-4 sm:-ml-5 md:-ml-6">
-                            <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group">
-                                <div className="hidden sm:block min-w-0">
-                                    <h1 className="text-base sm:text-lg md:text-xl font-bold text-gradient truncate">RealmVerse</h1>
-                                    <p className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:-mt-1 truncate hidden md:block">Professional Platform</p>
-                                </div>
+                    <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
+                        {/* Left: App Mode (desktop) + Logo + Play (mobile) — aligned like anime nav */}
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
+                            <div className="hidden lg:block mr-2 sm:mr-4">
+                                <AppModeSwitcher />
+                            </div>
+                            <Link href="/" className="flex items-center flex-shrink-0 min-w-0">
+                                <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gradient truncate">RealmVerse</h1>
                             </Link>
-                        </div>
-
-                        {/* Mobile: Play (Anime) + Become a Creator in nav bar */}
-                        <div className="lg:hidden flex items-center gap-2 flex-shrink-0 ml-2">
                             <Link
                                 href="/anime"
                                 onClick={() => switchToAnime()}
-                                className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/50 hover:border-indigo-500/50 transition-colors touch-manipulation min-h-[44px] flex items-center justify-center"
+                                className="lg:hidden w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 border border-slate-600/50 hover:border-indigo-500/50 flex items-center justify-center transition-colors touch-manipulation"
                                 aria-label="Go to Anime section"
                             >
-                                <Play className="w-5 h-5 text-indigo-400 fill-indigo-400" />
+                                <Play className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-400 fill-indigo-400" />
                             </Link>
-                            {(!isCreator || (user?.role === 'admin' && !hasUploadedManga)) && (
-                                <Link
-                                    href="/upload/intro?mode=manga&returnTo=/upload"
-                                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 text-white font-semibold text-xs sm:text-sm hover:from-indigo-500/30 hover:to-purple-500/30 touch-manipulation min-h-[44px]"
-                                >
-                                    <FaUpload className="w-4 h-4 text-indigo-300" />
-                                    <span>Become Creator</span>
-                                </Link>
-                            )}
-                            {(isCreator || user?.role === 'admin') && hasUploadedManga && (
-                                <Link
-                                    href="/creator/dashboard"
-                                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-white font-semibold text-xs sm:text-sm touch-manipulation min-h-[44px]"
-                                >
-                                    <FaCrown className="w-4 h-4 text-yellow-300" />
-                                    <span className="sm:inline">Creator</span>
-                                </Link>
-                            )}
                         </div>
 
                         {/* Desktop Navigation - Responsive */}
