@@ -147,16 +147,16 @@ export default function AnimeNavigation() {
                             onClick={() => setIsSidebarOpen(false)}
                             className="fixed inset-0 bg-black/70 z-[60]"
                         />
-                        {/* Sidebar */}
+                        {/* Sidebar - proper mobile layout, touch targets */}
                         <motion.div
                             ref={sidebarRef}
                             initial={{ x: -320 }}
                             animate={{ x: 0 }}
                             exit={{ x: -320 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed left-0 top-0 bottom-0 w-[85vw] sm:w-80 max-w-sm bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-[70] overflow-y-auto"
+                            className="fixed left-0 top-0 bottom-0 w-[85vw] sm:w-80 max-w-sm bg-black/95 backdrop-blur-xl border-r border-orange-500/20 z-[70] overflow-y-auto max-h-[100dvh]"
                         >
-                            <div className="p-4">
+                            <div className="p-4 pb-8">
                                 {/* Close Button */}
                                 <button
                                     onClick={() => setIsSidebarOpen(false)}
@@ -515,7 +515,7 @@ export default function AnimeNavigation() {
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                                                         transition={{ duration: 0.2 }}
-                                                        className="absolute right-0 mt-2 w-56 bg-black/95 backdrop-blur-xl border border-orange-500/30 rounded-xl shadow-2xl overflow-hidden z-50"
+                                                        className="absolute right-0 mt-2 w-[min(calc(100vw-2rem),14rem)] sm:w-56 max-h-[75vh] overflow-y-auto bg-black/95 backdrop-blur-xl border border-orange-500/30 rounded-xl shadow-2xl overflow-hidden z-50"
                                                     >
                                                         <div className="p-4 border-b border-orange-500/20">
                                                             <p className="text-white font-semibold text-sm truncate">

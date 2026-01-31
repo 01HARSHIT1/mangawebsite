@@ -286,16 +286,65 @@ export default function ModernNavigation() {
                                             initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                            className="absolute right-0 top-full mt-2 w-[90vw] sm:w-80 max-w-sm search-container"
+                                            className="absolute right-0 top-full mt-2 w-[90vw] sm:w-80 max-w-sm search-container lg:block"
                                         >
-                                            <input
-                                                type="text"
-                                                placeholder="Search manga, creators, genres..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="input focus-ring text-sm sm:text-base"
-                                                autoFocus
-                                            />
+                                            {/* Mobile: full-width overlay with safe top so layout is proper and not clipped */}
+                                            <div className="lg:hidden fixed inset-0 z-[60] pt-14 sm:pt-16 px-4 pb-4 bg-black/90 backdrop-blur-sm flex flex-col" role="dialog" aria-label="Search">
+                                                <div className="flex items-center gap-3 mb-3 flex-shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsSearchOpen(false)}
+                                                        className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 text-white touch-manipulation"
+                                                        aria-label="Close search"
+                                                    >
+                                                        <FaTimes className="w-5 h-5" />
+                                                    </button>
+                                                    <span className="text-white font-semibold text-sm">Search</span>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search manga, creators, genres..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="w-full px-4 py-3.5 rounded-xl bg-slate-800/80 border border-slate-600 text-white placeholder-slate-400 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                                    autoFocus
+                                                />
+                                                {searchResults.length > 0 && (
+                                                    <div className="mt-4 flex-1 overflow-y-auto space-y-2">
+                                                        {searchResults.map((manga: any) => (
+                                                            <Link
+                                                                key={manga._id}
+                                                                href={`/manga/${manga._id}`}
+                                                                className="search-item flex items-center space-x-3 p-3 rounded-lg bg-slate-800/50 hover:bg-slate-700/50"
+                                                                onClick={() => {
+                                                                    setIsSearchOpen(false);
+                                                                    setSearchQuery('');
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={manga.coverImage || '/placeholder.svg'}
+                                                                    alt={manga.title}
+                                                                    className="w-12 h-16 object-cover rounded-md flex-shrink-0"
+                                                                />
+                                                                <div className="min-w-0">
+                                                                    <h4 className="font-medium text-white truncate">{manga.title}</h4>
+                                                                    <p className="text-sm text-gray-400 truncate">by {manga.creator}</p>
+                                                                </div>
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* Desktop: dropdown below button */}
+                                            <div className="hidden lg:block bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden p-2">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search manga, creators, genres..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="input focus-ring text-sm w-full"
+                                                    autoFocus
+                                                />
 
                                             {searchResults.length > 0 && (
                                                 <div className="search-results mt-2">
@@ -322,6 +371,7 @@ export default function ModernNavigation() {
                                                     ))}
                                                 </div>
                                             )}
+                                            </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -382,7 +432,7 @@ export default function ModernNavigation() {
                                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                className="absolute right-0 top-full mt-2 w-[90vw] sm:w-80 max-w-sm bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[80vh] overflow-y-auto"
+                                                className="absolute right-0 top-full mt-2 w-[min(90vw,24rem)] max-w-sm bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[75vh] overflow-y-auto lg:right-0 lg:w-80"
                                             >
                                                 {/* User Info Header */}
                                                 <div className="p-4 bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border-b border-slate-700">
@@ -587,7 +637,7 @@ export default function ModernNavigation() {
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
 
-                        {/* Mobile Menu Panel - Responsive */}
+                        {/* Mobile Menu Panel - Responsive, proper layout below nav */}
                         <motion.div
                             initial={{ opacity: 0, x: '100%' }}
                             animate={{ opacity: 1, x: 0 }}
@@ -595,7 +645,7 @@ export default function ModernNavigation() {
                             transition={{ type: 'tween', duration: 0.3 }}
                             className="fixed top-0 right-0 h-full w-[85vw] sm:w-80 max-w-sm glass-strong border-l border-white/10 z-50 lg:hidden overflow-y-auto"
                         >
-                            <div className="p-4 sm:p-6">
+                            <div className="p-4 sm:p-6 pt-4">
                                 <div className="flex items-center justify-between mb-6 sm:mb-8">
                                     <h2 className="text-lg sm:text-xl font-bold text-white">Menu</h2>
                                     <button

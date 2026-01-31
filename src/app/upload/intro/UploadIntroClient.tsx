@@ -46,8 +46,8 @@ export default function UploadIntroClient() {
     const imagePath = '/creator-landing.png';
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 pt-14 sm:pt-16">
-            {/* Nav lives in layout (fixed); pt-14/16 reserves space so image starts below nav and is not covered */}
+        <div className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 pt-14 sm:pt-16 pb-24 sm:pb-28">
+            {/* Nav lives in layout (fixed); pt-14/16 reserves space; pb-24/28 prevents second CTA from being cut off on mobile */}
             {/* Scrollable image + buttons: image sets page height, both scroll together */}
             <div className="relative w-full">
                 {/* Full-width image at natural height so the whole image is visible and scrolls */}
@@ -74,13 +74,13 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA: compact on mobile, proper overlap */}
+                    {/* Second CTA: compact, overlaps image "continue" only; not oversized, not cut off on mobile */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[58%] max-w-[155px] sm:w-[76%] sm:max-w-[260px] md:w-[82%] md:max-w-[400px] lg:w-[86%] lg:max-w-[500px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[58%] max-w-[155px] sm:w-[76%] sm:max-w-[260px] md:w-[82%] md:max-w-[400px] lg:w-[86%] lg:max-w-[500px] top-[94%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-1.5 py-1 text-[10px] min-h-[36px] sm:px-3 sm:py-2 sm:text-xs sm:min-h-[38px] md:px-4 md:py-2.5 md:text-sm md:min-h-[46px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98] leading-tight"
+                            className="w-full px-1.5 py-1 text-[10px] min-h-[36px] sm:px-3 sm:py-2 sm:text-xs sm:min-h-[38px] md:px-4 md:py-2.5 md:text-sm md:min-h-[46px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98] leading-tight shrink-0"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
