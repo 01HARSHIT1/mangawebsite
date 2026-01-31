@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen, MessageCircle, ChevronLeft, Moon, Sun, Shield } from 'lucide-react';
+import { Search, Menu, X, Upload, LayoutDashboard, User, LogOut, LogIn, Settings, BookOpen, MessageCircle, ChevronLeft, Moon, Sun, Shield, Bell } from 'lucide-react';
 import { FaCoffee, FaHeart, FaTimes } from 'react-icons/fa';
 import { useAuth } from '@/contexts/AuthContext';
 import AppModeSwitcher from '@/components/AppModeSwitcher';
@@ -370,9 +370,9 @@ export default function AnimeNavigation() {
 
             <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-orange-500/20">
                 <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">
-                    <div className="flex items-center h-14 sm:h-16 gap-3 sm:gap-4 md:gap-6">
-                        {/* Left Side: Hamburger Menu Button + Logo + Navigation Links */}
-                        <div className="flex items-center gap-2 sm:gap-3 md:gap-6 flex-1 min-w-0">
+                    <div className="flex items-center h-14 sm:h-16 gap-3">
+                        {/* Left Side: Hamburger + M logo + Become Creator + nav links */}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                             {/* Hamburger Menu Button - Larger touch target for mobile */}
                             <button
                                 data-hamburger-button
@@ -383,43 +383,19 @@ export default function AnimeNavigation() {
                                 <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
                             </button>
 
-                            {/* Logo - Responsive sizing with Manga Logo */}
-                            <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                                {/* Manga Logo - M button */}
-                                <Link
-                                    href="/"
-                                    className="flex items-center justify-center group"
-                                    onClick={() => {
-                                        // Switch to manga mode when clicking M logo
-                                        switchToManga();
-                                    }}
-                                >
-                                    <div className="relative">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                                            <span className="text-white font-bold text-base sm:text-lg md:text-xl">M</span>
-                                        </div>
-                                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
+                            {/* Manga logo only - M button (Play/RealmVerse removed per design) */}
+                            <Link
+                                href="/"
+                                className="flex items-center justify-center group flex-shrink-0"
+                                onClick={() => switchToManga()}
+                            >
+                                <div className="relative">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                                        <span className="text-white font-bold text-base sm:text-lg md:text-xl">M</span>
                                     </div>
-                                </Link>
-
-                                {/* Anime Logo - Play button */}
-                                <Link href="/anime" className="flex items-center space-x-2 sm:space-x-3 group">
-                                    <motion.div
-                                        whileHover={{ scale: 1.1, rotate: 5 }}
-                                        className="relative"
-                                    >
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/50">
-                                            <Play className="w-5 h-5 sm:w-7 sm:h-7 text-white fill-white" />
-                                        </div>
-                                    </motion.div>
-                                    <div className="hidden sm:block">
-                                        <h1 className="text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent leading-tight">
-                                            RealmVerse
-                                        </h1>
-                                        <p className="text-[10px] sm:text-xs text-orange-300/70 -mt-0.5 sm:-mt-1 hidden md:block">Professional Platform</p>
-                                    </div>
-                                </Link>
-                            </div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-300"></div>
+                                </div>
+                            </Link>
 
                             {/* Mobile: Become a Creator in nav bar */}
                             <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
@@ -513,12 +489,25 @@ export default function AnimeNavigation() {
                                 <AppModeSwitcher />
                             </div>
 
-                            {/* Right Side Actions */}
-                            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0">
-                                {/* Search Button (Desktop) */}
-                                <button className="hidden lg:block p-2 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 transition-colors border border-orange-500/30">
+                            {/* Right Side Actions - equal gap for professional look */}
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                                {/* Search - icon button same style as manga */}
+                                <button
+                                    type="button"
+                                    className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 flex items-center justify-center transition-colors touch-manipulation"
+                                    aria-label="Search"
+                                >
                                     <Search className="w-5 h-5 text-orange-400" />
                                 </button>
+
+                                {/* Bell / Notifications - icon button */}
+                                <Link
+                                    href="/notifications"
+                                    className="w-10 h-10 sm:w-11 sm:h-11 flex-shrink-0 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 flex items-center justify-center transition-colors touch-manipulation"
+                                    aria-label="Notifications"
+                                >
+                                    <Bell className="w-5 h-5 text-orange-400" />
+                                </Link>
 
                                 {/* Profile/Account Dropdown - Responsive sizing */}
                                 <div className="relative" ref={profileMenuRef}>

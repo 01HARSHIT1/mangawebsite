@@ -186,15 +186,12 @@ export default function ModernNavigation() {
                 : 'bg-transparent'
                 }`}>
                 <div className="max-w-[1920px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
-                        {/* Left: App Mode (desktop) + Logo + Play (mobile) — aligned like anime nav */}
-                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
-                            <div className="hidden lg:block mr-2 sm:mr-4">
+                    <div className="flex items-center justify-between h-14 sm:h-16 gap-3">
+                        {/* Left: App Mode (desktop) + Play (mobile) — no logo per design */}
+                        <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
+                            <div className="hidden lg:block">
                                 <AppModeSwitcher />
                             </div>
-                            <Link href="/" className="flex items-center flex-shrink-0 min-w-0">
-                                <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gradient truncate">RealmVerse</h1>
-                            </Link>
                             <Link
                                 href="/anime"
                                 onClick={() => switchToAnime()}
@@ -291,10 +288,10 @@ export default function ModernNavigation() {
                             )}
                         </div>
 
-                        {/* Search & Actions - Responsive */}
-                        <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 lg:space-x-4 flex-shrink-0 ml-2 xl:ml-3">
+                        {/* Search & Actions - equal gap for professional look */}
+                        <div className="flex items-center gap-3 flex-shrink-0">
                             {/* Search - Responsive */}
-                            <div className="relative ml-2 xl:ml-3">
+                            <div className="relative">
                                 <button
                                     onClick={() => setIsSearchOpen(!isSearchOpen)}
                                     className="p-2 sm:p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 active:bg-slate-600/50 border border-slate-600/50 hover:border-indigo-500/50 transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
@@ -448,6 +445,15 @@ export default function ModernNavigation() {
                                     )}
                                 </Link>
                             )}
+
+                            {/* Become Creator / Creator - in nav bar */}
+                            <Link
+                                href={(isCreator || isAdmin) && hasUploadedManga ? '/creator/dashboard' : '/upload/intro?mode=manga&returnTo=/upload'}
+                                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/50 text-white font-semibold text-xs sm:text-sm hover:from-indigo-500/30 hover:to-purple-500/30 touch-manipulation min-h-[44px] sm:min-h-0"
+                            >
+                                <FaUpload className="w-4 h-4 text-indigo-300" />
+                                <span className="hidden sm:inline">{(isCreator || isAdmin) && hasUploadedManga ? 'Creator' : 'Become Creator'}</span>
+                            </Link>
 
                             {/* User Menu - Responsive */}
                             {isAuthenticated ? (
