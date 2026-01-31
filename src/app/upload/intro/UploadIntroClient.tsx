@@ -59,13 +59,13 @@ export default function UploadIntroClient() {
                 />
                 {/* Buttons overlaid exactly on image "Continue as Creator" graphics — responsive so overlap is correct on mobile, tablet, desktop */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA: compact size to match image graphic — no oversize overlap */}
+                    {/* First CTA: compact on mobile, no oversize overlap */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[72%] sm:w-[76%] md:w-[82%] lg:w-[86%] max-w-[180px] sm:max-w-[240px] md:max-w-[340px] lg:max-w-[420px] ml-[-4px] sm:ml-[-10px] md:ml-[-16px] lg:ml-[-24px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[58%] max-w-[150px] sm:w-[76%] sm:max-w-[240px] md:w-[82%] md:max-w-[340px] lg:w-[86%] lg:max-w-[420px] ml-[-4px] sm:ml-[-10px] md:ml-[-16px] lg:ml-[-24px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 rounded-lg sm:rounded-xl text-white font-bold text-[11px] sm:text-xs md:text-sm lg:text-base border border-white/20 transition-all active:scale-[0.98] min-h-[32px] sm:min-h-[38px] md:min-h-[48px] lg:min-h-[56px]"
+                            className="w-full px-1.5 py-1 text-[10px] min-h-[28px] sm:px-3 sm:py-2 sm:text-xs sm:min-h-[38px] md:px-4 md:py-2.5 md:text-sm md:min-h-[48px] lg:text-base lg:min-h-[56px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -74,13 +74,13 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA: compact size to match image banner — proper overlap, no oversize */}
+                    {/* Second CTA: compact on mobile, proper overlap */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[72%] sm:w-[76%] md:w-[82%] lg:w-[86%] max-w-[180px] sm:max-w-[260px] md:max-w-[400px] lg:max-w-[500px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[58%] max-w-[155px] sm:w-[76%] sm:max-w-[260px] md:w-[82%] md:max-w-[400px] lg:w-[86%] lg:max-w-[500px] top-[96%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2.5 rounded-lg sm:rounded-xl text-white font-bold text-[11px] sm:text-xs md:text-sm lg:text-base border border-white/20 transition-all active:scale-[0.98] min-h-[32px] sm:min-h-[38px] md:min-h-[46px]"
+                            className="w-full px-1.5 py-1 text-[10px] min-h-[36px] sm:px-3 sm:py-2 sm:text-xs sm:min-h-[38px] md:px-4 md:py-2.5 md:text-sm md:min-h-[46px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98] leading-tight"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
