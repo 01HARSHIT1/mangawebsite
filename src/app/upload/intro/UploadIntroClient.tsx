@@ -67,18 +67,18 @@ export default function UploadIntroClient() {
                     {/* First CTA — overlap "Continue as Creator (Free)"; lg/xl = manual full-screen values */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
-                          w-[62%] max-w-[190px] ml-[-4px] top-[20%]
-                          sm:w-[72%] sm:max-w-[240px] sm:ml-[-10px] sm:top-[21%]
-                          md:w-[80%] md:max-w-[340px] md:ml-[-16px] md:top-[21.5%]
+                          w-[62%] max-w-[290px] ml-[-18px] top-[24.5%]
+                          sm:w-[72%] sm:max-w-[332px] sm:ml-[-26px] sm:top-[24.6%]
+                          md:w-[80%] md:max-w-[346px] md:ml-[-28px] md:top-[24.5%]
                           lg:w-[80%] lg:max-w-[682px] lg:ml-[-54px] lg:top-[24.5%]
                           xl:w-[80%] xl:max-w-[682px] xl:ml-[-54px] xl:top-[24.5%]"
                     >
                         <button
                             onClick={handleContinue}
                             className="w-full text-white font-bold border border-white/20 transition-all active:scale-[0.98]
-                              px-2.5 py-1.5 text-[11px] min-h-[36px] rounded-lg
-                              sm:px-3.5 sm:py-2 sm:text-xs sm:min-h-[42px] sm:rounded-xl
-                              md:px-4 md:py-2.5 md:text-sm md:min-h-[50px]
+                              px-2.5 py-1.5 text-[11px] min-h-[42px] rounded-lg
+                              sm:px-3.5 sm:py-2 sm:text-xs sm:min-h-[48px] sm:rounded-xl
+                              md:px-4 md:py-2.5 md:text-sm md:min-h-[54px]
                               lg:px-5 lg:py-3 lg:text-base lg:min-h-[104px] lg:rounded-xl
                               xl:px-5 xl:py-3 xl:text-base xl:min-h-[104px]"
                             style={{
@@ -92,9 +92,9 @@ export default function UploadIntroClient() {
                     {/* Second CTA — overlap "Continue as Creator (Free Upload)"; lg/xl = manual full-screen values */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
-                          w-[72%] max-w-[230px] top-[94%]
-                          sm:w-[80%] sm:max-w-[300px] sm:top-[96.5%]
-                          md:w-[85%] md:max-w-[420px] md:top-[97%]
+                          w-[72%] max-w-[430px] top-[94.5%]
+                          sm:w-[80%] sm:max-w-[500px] sm:top-[94.5%]
+                          md:w-[85%] md:max-w-[520px] md:top-[94.4%]
                           lg:w-[88%] lg:max-w-[1020px] lg:ml-[-13px] lg:top-[94.5%]
                           xl:w-[88%] xl:max-w-[1020px] xl:ml-[-13px] xl:top-[94.5%]"
                     >
