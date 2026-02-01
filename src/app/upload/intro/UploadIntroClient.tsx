@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * Creator landing page. Continue button sizes are independent:
+ * - Mobile/tablet: edit base, sm:, and md: classes only.
+ * - Laptop/desktop: edit lg: and xl: classes only. Changing one does not affect the other.
+ */
 import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
@@ -42,30 +47,40 @@ export default function UploadIntroClient() {
 
     const trustLine = 'Your work stays yours. RealmVerse never claims ownership.';
 
-    // URL-safe path (no spaces/special chars) so it loads reliably on Vercel
-    const imagePath = '/creator-landing.png';
+    // Creator landing image (URL-encoded so it loads on Vercel)
+    const imagePath = '/' + encodeURI('ChatGPT Image Feb 1, 2026, 08_36_27 PM.png');
 
     return (
         <div className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 pt-14 sm:pt-16 pb-24 sm:pb-28">
             {/* Nav lives in layout (fixed); pt-14/16 reserves space; pb-24/28 prevents second CTA from being cut off on mobile */}
             {/* Scrollable image + buttons: image sets page height, both scroll together */}
-            <div className="relative w-full">
-                {/* Full-width image at natural height so the whole image is visible and scrolls */}
+            <div className="relative w-full max-w-[1920px] mx-auto overflow-hidden">
+                {/* Full-width image: responsive, no break on laptop; natural height so whole image visible and scrolls */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={imagePath}
                     alt="RealmVerse Creator Landing Page"
-                    className="block w-full h-auto"
+                    className="block w-full h-auto max-w-full min-w-0 object-contain"
                 />
-                {/* Buttons overlaid exactly on image "Continue as Creator" graphics — responsive so overlap is correct on mobile, tablet, desktop */}
+                {/* Continue buttons: MOBILE/TABLET = base + sm: + md:. LAPTOP = lg: + xl: only. Change one tier without affecting the other. */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA: slightly smaller so it does not overlap the boy illustration */}
+                    {/* First CTA — MOBILE (base) / TABLET (sm, md) / LAPTOP (lg, xl) — edit laptop size only in lg: and xl: */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[62%] max-w-[190px] sm:w-[72%] sm:max-w-[240px] md:w-[80%] md:max-w-[340px] lg:w-[85%] lg:max-w-[420px] ml-[-4px] sm:ml-[-10px] md:ml-[-16px] lg:ml-[-24px] top-[20%] sm:top-[21%] md:top-[21.5%] lg:top-[21.7%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
+                          w-[62%] max-w-[190px] ml-[-4px] top-[20%]
+                          sm:w-[72%] sm:max-w-[240px] sm:ml-[-10px] sm:top-[21%]
+                          md:w-[80%] md:max-w-[340px] md:ml-[-16px] md:top-[21.5%]
+                          lg:w-[85%] lg:max-w-[420px] lg:ml-[-24px] lg:top-[21.7%]
+                          xl:w-[85%] xl:max-w-[420px] xl:ml-[-24px] xl:top-[21.7%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-2.5 py-1.5 text-[11px] min-h-[36px] sm:px-3.5 sm:py-2 sm:text-xs sm:min-h-[42px] md:px-4 md:py-2.5 md:text-sm md:min-h-[50px] lg:text-base lg:min-h-[56px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98]"
+                            className="w-full text-white font-bold border border-white/20 transition-all active:scale-[0.98]
+                              px-2.5 py-1.5 text-[11px] min-h-[36px] rounded-lg
+                              sm:px-3.5 sm:py-2 sm:text-xs sm:min-h-[42px] sm:rounded-xl
+                              md:px-4 md:py-2.5 md:text-sm md:min-h-[50px]
+                              lg:px-5 lg:py-3 lg:text-base lg:min-h-[56px] lg:rounded-xl
+                              xl:px-5 xl:py-3 xl:text-base xl:min-h-[56px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -74,13 +89,23 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA: size to properly cover image "Continue" graphic */}
+                    {/* Second CTA — MOBILE (base) / TABLET (sm, md) / LAPTOP (lg, xl) — edit laptop size only in lg: and xl: */}
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto w-[72%] max-w-[230px] sm:w-[80%] sm:max-w-[300px] md:w-[85%] md:max-w-[420px] lg:w-[88%] lg:max-w-[520px] top-[94%] sm:top-[96.5%] md:top-[97%] lg:top-[97%]"
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
+                          w-[72%] max-w-[230px] top-[94%]
+                          sm:w-[80%] sm:max-w-[300px] sm:top-[96.5%]
+                          md:w-[85%] md:max-w-[420px] md:top-[97%]
+                          lg:w-[88%] lg:max-w-[520px] lg:top-[97%]
+                          xl:w-[88%] xl:max-w-[520px] xl:top-[97%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full px-3 py-2 text-xs min-h-[40px] sm:px-4 sm:py-2.5 sm:text-sm sm:min-h-[48px] md:px-5 md:py-3 md:text-base md:min-h-[52px] rounded-lg sm:rounded-xl text-white font-bold border border-white/20 transition-all active:scale-[0.98] leading-tight shrink-0"
+                            className="w-full text-white font-bold border border-white/20 transition-all active:scale-[0.98] leading-tight shrink-0
+                              px-3 py-2 text-xs min-h-[40px] rounded-lg
+                              sm:px-4 sm:py-2.5 sm:text-sm sm:min-h-[48px] sm:rounded-xl
+                              md:px-5 md:py-3 md:text-base md:min-h-[52px]
+                              lg:px-6 lg:py-3.5 lg:text-base lg:min-h-[58px] lg:rounded-xl
+                              xl:px-6 xl:py-3.5 xl:text-base xl:min-h-[58px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
