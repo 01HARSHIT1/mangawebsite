@@ -62,16 +62,16 @@ export default function UploadIntroClient() {
                     alt="RealmVerse Creator Landing Page"
                     className="block w-full h-auto max-w-full min-w-0 object-contain"
                 />
-                {/* Continue buttons: MOBILE/TABLET = base + sm: + md:. LAPTOP = lg: + xl: only. Change one tier without affecting the other. */}
+                {/* Continue buttons: MOBILE/TABLET = base + sm: + md:. LAPTOP = lg: + xl: only. Desktop overlap fixed via lg:/xl:. */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA — MOBILE (base) / TABLET (sm, md) / LAPTOP (lg, xl) — edit laptop size only in lg: and xl: */}
+                    {/* First CTA — desktop (lg/xl): positioned to overlap "Continue as Creator (Free)" on image */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
                           w-[62%] max-w-[190px] ml-[-4px] top-[20%]
                           sm:w-[72%] sm:max-w-[240px] sm:ml-[-10px] sm:top-[21%]
                           md:w-[80%] md:max-w-[340px] md:ml-[-16px] md:top-[21.5%]
-                          lg:w-[85%] lg:max-w-[420px] lg:ml-[-24px] lg:top-[21.7%]
-                          xl:w-[85%] xl:max-w-[420px] xl:ml-[-24px] xl:top-[21.7%]"
+                          lg:w-[78%] lg:max-w-[480px] lg:ml-[-8px] lg:top-[24%]
+                          xl:w-[78%] xl:max-w-[520px] xl:ml-[-8px] xl:top-[24%]"
                     >
                         <button
                             onClick={handleContinue}
@@ -89,14 +89,14 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA — MOBILE (base) / TABLET (sm, md) / LAPTOP (lg, xl) — edit laptop size only in lg: and xl: */}
+                    {/* Second CTA — desktop (lg/xl): positioned to overlap "Continue as Creator (Free Upload)" on image */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
                           w-[72%] max-w-[230px] top-[94%]
                           sm:w-[80%] sm:max-w-[300px] sm:top-[96.5%]
                           md:w-[85%] md:max-w-[420px] md:top-[97%]
-                          lg:w-[88%] lg:max-w-[520px] lg:top-[97%]
-                          xl:w-[88%] xl:max-w-[520px] xl:top-[97%]"
+                          lg:w-[82%] lg:max-w-[600px] lg:ml-[-20px] lg:top-[93.5%]
+                          xl:w-[82%] xl:max-w-[640px] xl:ml-[-20px] xl:top-[93.5%]"
                     >
                         <button
                             onClick={handleContinue}
