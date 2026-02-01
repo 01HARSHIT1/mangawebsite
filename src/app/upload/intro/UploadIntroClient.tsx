@@ -62,16 +62,16 @@ export default function UploadIntroClient() {
                     alt="RealmVerse Creator Landing Page"
                     className="block w-full h-auto max-w-full min-w-0 object-contain"
                 />
-                {/* Continue buttons: MOBILE/TABLET = base + sm: + md:. LAPTOP = lg: + xl: only. Desktop overlap fixed via lg:/xl:. */}
+                {/* Continue buttons: MOBILE/TABLET = base + sm: + md:. LAPTOP = lg: + xl:. Size/position so button fully covers image graphic. */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA — desktop (lg/xl): positioned to overlap "Continue as Creator (Free)" on image */}
+                    {/* First CTA — overlap "Continue as Creator (Free)" on image; desktop: centered, sized to cover */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
                           w-[62%] max-w-[190px] ml-[-4px] top-[20%]
                           sm:w-[72%] sm:max-w-[240px] sm:ml-[-10px] sm:top-[21%]
                           md:w-[80%] md:max-w-[340px] md:ml-[-16px] md:top-[21.5%]
-                          lg:w-[78%] lg:max-w-[480px] lg:ml-[-8px] lg:top-[24%]
-                          xl:w-[78%] xl:max-w-[520px] xl:ml-[-8px] xl:top-[24%]"
+                          lg:w-[80%] lg:max-w-[500px] lg:ml-0 lg:top-[25.5%]
+                          xl:w-[80%] xl:max-w-[540px] xl:ml-0 xl:top-[25.5%]"
                     >
                         <button
                             onClick={handleContinue}
@@ -79,8 +79,8 @@ export default function UploadIntroClient() {
                               px-2.5 py-1.5 text-[11px] min-h-[36px] rounded-lg
                               sm:px-3.5 sm:py-2 sm:text-xs sm:min-h-[42px] sm:rounded-xl
                               md:px-4 md:py-2.5 md:text-sm md:min-h-[50px]
-                              lg:px-5 lg:py-3 lg:text-base lg:min-h-[56px] lg:rounded-xl
-                              xl:px-5 xl:py-3 xl:text-base xl:min-h-[56px]"
+                              lg:px-5 lg:py-3 lg:text-base lg:min-h-[60px] lg:rounded-xl
+                              xl:px-5 xl:py-3 xl:text-base xl:min-h-[60px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
@@ -89,14 +89,14 @@ export default function UploadIntroClient() {
                             Continue as Creator (Free)
                         </button>
                     </div>
-                    {/* Second CTA — desktop (lg/xl): positioned to overlap "Continue as Creator (Free Upload)" on image */}
+                    {/* Second CTA — overlap "Continue as Creator (Free Upload)" on image; desktop: larger, centered to fully cover */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
                           w-[72%] max-w-[230px] top-[94%]
                           sm:w-[80%] sm:max-w-[300px] sm:top-[96.5%]
                           md:w-[85%] md:max-w-[420px] md:top-[97%]
-                          lg:w-[82%] lg:max-w-[600px] lg:ml-[-20px] lg:top-[93.5%]
-                          xl:w-[82%] xl:max-w-[640px] xl:ml-[-20px] xl:top-[93.5%]"
+                          lg:w-[88%] lg:max-w-[700px] lg:ml-0 lg:top-[94%]
+                          xl:w-[88%] xl:max-w-[720px] xl:ml-0 xl:top-[94%]"
                     >
                         <button
                             onClick={handleContinue}
@@ -104,8 +104,8 @@ export default function UploadIntroClient() {
                               px-3 py-2 text-xs min-h-[40px] rounded-lg
                               sm:px-4 sm:py-2.5 sm:text-sm sm:min-h-[48px] sm:rounded-xl
                               md:px-5 md:py-3 md:text-base md:min-h-[52px]
-                              lg:px-6 lg:py-3.5 lg:text-base lg:min-h-[58px] lg:rounded-xl
-                              xl:px-6 xl:py-3.5 xl:text-base xl:min-h-[58px]"
+                              lg:px-6 lg:py-4 lg:text-base lg:min-h-[66px] lg:rounded-xl
+                              xl:px-6 xl:py-4 xl:text-base xl:min-h-[66px]"
                             style={{
                                 background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
                                 boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
