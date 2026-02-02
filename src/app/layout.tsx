@@ -6,6 +6,11 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AppModeProvider } from "@/contexts/AppModeContext";
 import { ThemeProvider } from "@/components/AdvancedThemeSystem";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: {
     default: "RealmVerse - Read Manga Online for Free",

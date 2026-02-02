@@ -48,7 +48,7 @@ export default function UploadIntroClient() {
     const trustLine = 'Your work stays yours. RealmVerse never claims ownership.';
 
     // Creator landing image (URL-encoded so it loads on Vercel)
-    const imagePath = '/' + encodeURI('ChatGPT Image Feb 1, 2026, 08_36_27 PM.png');
+    const imagePath = '/' + encodeURI('ChatGPT Image Feb 2, 2026, 04_20_31 PM.png');
 
     return (
         <div className="min-h-screen w-full bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 pt-14 sm:pt-16 pb-24 sm:pb-28">
@@ -62,56 +62,70 @@ export default function UploadIntroClient() {
                     alt="RealmVerse Creator Landing Page"
                     className="block w-full h-auto max-w-full min-w-0 object-contain"
                 />
-                {/* Continue buttons: MOBILE/TABLET = base + sm: + md:. LAPTOP = lg: + xl: your manual full-screen values. */}
+                {/* First CTA: between "No fees. No exclusivity. No pressure." and "WHY REALMVERSE?" */}
+                {/* Second CTA: bottom space below Creator Promise / Founding Creator */}
                 <div className="absolute inset-0 pointer-events-none">
-                    {/* First CTA — overlap "Continue as Creator (Free)"; lg/xl = manual full-screen values */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
-                          w-[62%] max-w-[290px] ml-[-18px] top-[24.5%]
-                          sm:w-[72%] sm:max-w-[332px] sm:ml-[-26px] sm:top-[24.6%]
-                          md:w-[80%] md:max-w-[346px] md:ml-[-28px] md:top-[24.5%]
-                          lg:w-[80%] lg:max-w-[682px] lg:ml-[-54px] lg:top-[24.5%]
-                          xl:w-[80%] xl:max-w-[682px] xl:ml-[-54px] xl:top-[24.5%]"
+                          w-[70%] max-w-[320px] top-[28%]
+                          sm:w-[75%] sm:max-w-[400px] sm:top-[28%]
+                          md:w-[78%] md:max-w-[500px] md:top-[28%]
+                          lg:w-[72%] lg:max-w-[580px] lg:top-[28%]
+                          xl:w-[72%] xl:max-w-[620px] xl:top-[28%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full text-white font-bold border border-white/20 transition-all active:scale-[0.98]
-                              px-2.5 py-1.5 text-[11px] min-h-[42px] rounded-lg
-                              sm:px-3.5 sm:py-2 sm:text-xs sm:min-h-[48px] sm:rounded-xl
-                              md:px-4 md:py-2.5 md:text-sm md:min-h-[54px]
-                              lg:px-5 lg:py-3 lg:text-base lg:min-h-[104px] lg:rounded-xl
-                              xl:px-5 xl:py-3 xl:text-base xl:min-h-[104px]"
-                            style={{
-                                background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
-                                boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
-                            }}
+                            className="
+                              relative w-full inline-flex items-center justify-center
+                              px-6 py-3.5 text-sm font-extrabold tracking-wide text-white
+                              sm:px-8 sm:py-4 sm:text-base
+                              md:px-10 md:py-4 md:text-lg
+                              lg:px-12 lg:py-5 lg:text-xl
+                              xl:px-14 xl:py-5 xl:text-xl
+                              rounded-2xl overflow-hidden
+                              bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600
+                              border border-white/25
+                              shadow-[0_0_35px_rgba(99,102,241,0.65)]
+                              hover:shadow-[0_0_60px_rgba(139,92,246,0.9)]
+                              transition-all duration-300 ease-out
+                              hover:scale-[1.05]
+                              active:scale-[0.97]
+                            "
                         >
-                            Continue as Creator (Free)
+                            <span className="absolute inset-0 bg-white/10 blur-xl opacity-30" aria-hidden />
+                            <span className="relative z-10">✨ Continue as Creator (Free)</span>
                         </button>
                     </div>
-                    {/* Second CTA — overlap "Continue as Creator (Free Upload)"; lg/xl = manual full-screen values */}
+                    {/* Second CTA: bottom space of image */}
                     <div
                         className="absolute left-1/2 -translate-x-1/2 pointer-events-auto
-                          w-[72%] max-w-[430px] top-[94.5%]
-                          sm:w-[80%] sm:max-w-[500px] sm:top-[94.5%]
-                          md:w-[85%] md:max-w-[520px] md:top-[94.4%]
-                          lg:w-[88%] lg:max-w-[1020px] lg:ml-[-13px] lg:top-[94.5%]
-                          xl:w-[88%] xl:max-w-[1020px] xl:ml-[-13px] xl:top-[94.5%]"
+                          w-[72%] max-w-[340px] top-[92%]
+                          sm:w-[78%] sm:max-w-[420px] sm:top-[93%]
+                          md:w-[82%] md:max-w-[520px] md:top-[93.5%]
+                          lg:w-[80%] lg:max-w-[680px] lg:top-[94%]
+                          xl:w-[80%] xl:max-w-[720px] xl:top-[94%]"
                     >
                         <button
                             onClick={handleContinue}
-                            className="w-full text-white font-bold border border-white/20 transition-all active:scale-[0.98] leading-tight shrink-0
-                              px-3 py-2 text-xs min-h-[40px] rounded-lg
-                              sm:px-4 sm:py-2.5 sm:text-sm sm:min-h-[48px] sm:rounded-xl
-                              md:px-5 md:py-3 md:text-base md:min-h-[52px]
-                              lg:px-6 lg:py-4 lg:text-base lg:min-h-[94px] lg:rounded-xl
-                              xl:px-6 xl:py-4 xl:text-base xl:min-h-[94px]"
-                            style={{
-                                background: 'linear-gradient(to right, #3b82f6, #6366f1, #9333ea)',
-                                boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
-                            }}
+                            className="
+                              relative w-full inline-flex items-center justify-center
+                              px-6 py-3.5 text-sm font-extrabold tracking-wide text-white leading-tight
+                              sm:px-8 sm:py-4 sm:text-base
+                              md:px-10 md:py-4 md:text-lg
+                              lg:px-12 lg:py-5 lg:text-xl
+                              xl:px-14 xl:py-5 xl:text-xl
+                              rounded-2xl overflow-hidden
+                              bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600
+                              border border-white/25
+                              shadow-[0_0_35px_rgba(99,102,241,0.65)]
+                              hover:shadow-[0_0_60px_rgba(139,92,246,0.9)]
+                              transition-all duration-300 ease-out
+                              hover:scale-[1.05]
+                              active:scale-[0.97]
+                            "
                         >
-                            Continue as Creator (Free Upload)
+                            <span className="absolute inset-0 bg-white/10 blur-xl opacity-30" aria-hidden />
+                            <span className="relative z-10">✨ Continue as Creator (Free Upload)</span>
                         </button>
                     </div>
                 </div>
