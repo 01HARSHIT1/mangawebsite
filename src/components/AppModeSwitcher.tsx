@@ -53,7 +53,7 @@ export default function AppModeSwitcher({ className = '', onSwitch }: AppModeSwi
                 title="Switch to Manga Reading Mode"
             >
                 <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden xs:inline sm:inline">Manga</span>
+                <span className="hidden 2xl:inline">Manga</span>
             </button>
             <button
                 onClick={handleSwitchToAnime}
@@ -67,7 +67,7 @@ export default function AppModeSwitcher({ className = '', onSwitch }: AppModeSwi
                 title="Switch to Anime Watching Mode"
             >
                 <Play className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden xs:inline sm:inline">Anime</span>
+                <span className="hidden 2xl:inline">Anime</span>
             </button>
         </div>
     );

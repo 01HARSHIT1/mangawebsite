@@ -202,8 +202,8 @@ export default function ModernNavigation() {
                             </Link>
                         </div>
 
-                        {/* Desktop Navigation - Responsive */}
-                        <div className={`hidden lg:flex items-center flex-1 justify-center min-w-0 ml-2 xl:ml-3 ${isAuthenticated ? 'gap-3 xl:gap-4' : 'gap-3.5 xl:gap-4'}`}>
+                        {/* Desktop Navigation - scrollable at mid-widths (e.g. 1462px) to prevent overlap */}
+                        <div className={`hidden lg:flex items-center flex-1 min-w-0 ml-2 xl:ml-3 overflow-x-auto overflow-y-hidden justify-center gap-2 xl:gap-3 2xl:gap-4 [scrollbar-width:thin]`}>
                             {navItems.map((item) => {
                                 // Special styling for Home and Become Creator
                                 const isHome = item.href === '/';
@@ -215,12 +215,12 @@ export default function ModernNavigation() {
                                         key={item.href}
                                         href={item.href}
                                         className={`flex items-center space-x-1 px-2 xl:px-2.5 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg transition-all duration-200 ${isSpecial
-                                                ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 text-white font-semibold hover:from-indigo-500/30 hover:to-purple-500/30 hover:border-indigo-400/60 hover:shadow-lg hover:shadow-indigo-500/20'
-                                                : 'text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50'
+                                            ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/40 text-white font-semibold hover:from-indigo-500/30 hover:to-purple-500/30 hover:border-indigo-400/60 hover:shadow-lg hover:shadow-indigo-500/20'
+                                            : 'text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50'
                                             }`}
                                     >
                                         <item.icon className={`text-sm flex-shrink-0 ${isSpecial ? 'text-indigo-300' : ''}`} />
-                                        <span className="hidden xl:inline">{item.label}</span>
+                                        <span className="hidden 2xl:inline">{item.label}</span>
                                     </Link>
                                 );
                             })}
@@ -232,7 +232,7 @@ export default function ModernNavigation() {
                                     className="flex items-center space-x-1 px-2 xl:px-2.5 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-gray-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0" />
-                                    <span className="hidden xl:inline">{item.label}</span>
+                                    <span className="hidden 2xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -243,7 +243,7 @@ export default function ModernNavigation() {
                                     className="flex items-center space-x-1 px-2 xl:px-2.5 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 text-white font-semibold hover:from-purple-600/30 hover:to-pink-600/30 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0 text-purple-300" />
-                                    <span className="hidden xl:inline">{item.label}</span>
+                                    <span className="hidden 2xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
@@ -254,17 +254,18 @@ export default function ModernNavigation() {
                                     className="flex items-center space-x-1 px-2 xl:px-2.5 py-1.5 text-sm whitespace-nowrap flex-shrink-0 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 text-white font-semibold hover:from-yellow-500/30 hover:to-amber-500/30 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-500/20 transition-all duration-200"
                                 >
                                     <item.icon className="text-sm flex-shrink-0 text-yellow-300" />
-                                    <span className="hidden xl:inline">{item.label}</span>
+                                    <span className="hidden 2xl:inline">{item.label}</span>
                                 </Link>
                             ))}
 
-                            {/* Buy Me a Coffee Button - Only for logged-in users */}
+                            {/* Buy Me a Coffee - label at 2xl to avoid overlap at ~1462px */}
                             {isAuthenticated && (
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setShowCoffeeModal(true)}
                                     className="relative bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-2 xl:px-2.5 py-1.5 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-1 shadow-lg whitespace-nowrap flex-shrink-0 text-sm"
+                                    title="Buy me a coffee"
                                 >
                                     <motion.div
                                         animate={{
@@ -276,7 +277,7 @@ export default function ModernNavigation() {
                                     >
                                         <FaCoffee className="text-sm" />
                                     </motion.div>
-                                    <span className="hidden xl:inline">Coffee</span>
+                                    <span className="hidden 2xl:inline">Coffee</span>
                                     <motion.div
                                         animate={{ scale: [1, 1.2, 1] }}
                                         transition={{ duration: 1.5, repeat: Infinity }}
@@ -288,8 +289,8 @@ export default function ModernNavigation() {
                             )}
                         </div>
 
-                        {/* Search & Actions - equal gap for professional look */}
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        {/* Search & Actions - never shrink so center nav scrolls instead of overlapping */}
+                        <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0 min-w-[180px] xl:min-w-[220px]">
                             {/* Search - Responsive */}
                             <div className="relative">
                                 <button
@@ -446,13 +447,14 @@ export default function ModernNavigation() {
                                 </Link>
                             )}
 
-                            {/* Become Creator / Creator - in nav bar */}
+                            {/* Become Creator / Creator - icon-only below 2xl to avoid overlap at ~1462px */}
                             <Link
                                 href={(isCreator || isAdmin) && hasUploadedManga ? '/creator/dashboard' : '/upload/intro?mode=manga&returnTo=/upload'}
-                                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/50 text-white font-semibold text-xs sm:text-sm hover:from-indigo-500/30 hover:to-purple-500/30 touch-manipulation min-h-[44px] sm:min-h-0"
+                                className="flex items-center gap-1.5 px-2 xl:px-2.5 py-2 rounded-lg bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-400/50 text-white font-semibold text-xs sm:text-sm hover:from-indigo-500/30 hover:to-purple-500/30 touch-manipulation min-h-[44px] sm:min-h-0"
+                                title={(isCreator || isAdmin) && hasUploadedManga ? 'Creator Dashboard' : 'Become Creator'}
                             >
-                                <FaUpload className="w-4 h-4 text-indigo-300" />
-                                <span className="hidden sm:inline">{(isCreator || isAdmin) && hasUploadedManga ? 'Creator' : 'Become Creator'}</span>
+                                <FaUpload className="w-4 h-4 text-indigo-300 flex-shrink-0" />
+                                <span className="hidden 2xl:inline">{(isCreator || isAdmin) && hasUploadedManga ? 'Creator' : 'Become Creator'}</span>
                             </Link>
 
                             {/* User Menu - Responsive */}
@@ -467,7 +469,7 @@ export default function ModernNavigation() {
                                                 {user?.username?.charAt(0).toUpperCase() || 'U'}
                                             </span>
                                         </div>
-                                        <span className="hidden lg:block text-xs sm:text-sm font-medium text-white">
+                                        <span className="hidden lg:block text-xs sm:text-sm font-medium text-white truncate max-w-[5rem] xl:max-w-[7rem] 2xl:max-w-none">
                                             {user?.username || 'User'}
                                         </span>
                                     </button>
@@ -721,7 +723,7 @@ export default function ModernNavigation() {
                                                 className={`flex items-center space-x-3 p-3 sm:p-3.5 rounded-lg transition-colors touch-manipulation min-h-[44px] ${isBecomeCreator
                                                     ? 'bg-gradient-to-r from-indigo-500/25 to-purple-500/25 border border-indigo-400/50 text-white font-semibold hover:from-indigo-500/35 hover:to-purple-500/35'
                                                     : 'hover:bg-slate-800/50 active:bg-slate-700/50'
-                                                }`}
+                                                    }`}
                                                 onClick={() => {
                                                     setIsMobileMenuOpen(false);
                                                     if (item.href === '/anime' && appMode !== 'anime') {
