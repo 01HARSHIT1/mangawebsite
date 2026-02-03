@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { getMockManga } from '@/lib/mock-data';
 
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
                         const { verify } = await import('jsonwebtoken');
                         const secret = process.env.JWT_SECRET || 'your-secret-key';
                         const decoded = verify(token, secret) as { userId: string };
-                        
+
                         // Filter by the authenticated user's ID
                         query.uploaderId = uploaderId || decoded.userId;
                         console.log('Filtering manga by uploaderId:', query.uploaderId);
@@ -98,30 +98,35 @@ export async function GET(request: NextRequest) {
             // Get total count
             const total = await db.collection('manga').countDocuments(query);
 
-            // Get manga with pagination
-            const manga = await db.collection('manga')
-                .find(query)
+            // Light payload for list/featured: no description (STEP 4 - reduce API payload)
+            const isListRequest = !search && limit <= 20;
+            const listProjection = { title: 1, creator: 1, coverImage: 1, genres: 1, status: 1, views: 1, likes: 1, createdAt: 1, updatedAt: 1 };
+
+            let cursor = db.collection('manga').find(query);
+            if (isListRequest) cursor = cursor.project(listProjection);
+            const manga = await cursor
                 .sort(sortQuery)
                 .skip((page - 1) * limit)
                 .limit(limit)
                 .toArray();
 
-            // Transform data
-            const transformedManga = manga.map(m => ({
+            const transformedManga = manga.map((m: any) => ({
                 _id: m._id.toString(),
                 title: m.title,
                 creator: m.creator,
-                description: m.description,
+                ...(isListRequest ? {} : { description: m.description }),
                 genres: m.genres || [],
                 status: m.status || 'ongoing',
-                coverImage: typeof m.coverImage === 'string' ? m.coverImage : m.coverImage?.secure_url || m.coverImage, // Handle both string and object formats
+                coverImage: typeof m.coverImage === 'string' ? m.coverImage : m.coverImage?.secure_url || m.coverImage,
                 views: m.views || 0,
                 likes: m.likes || 0,
                 createdAt: m.createdAt,
                 updatedAt: m.updatedAt
             }));
 
-            return NextResponse.json({
+            // Cache public list responses 60s (STEP 2 - caching)
+            const isPublicList = !uploaderId && myManga !== 'true';
+            const res = NextResponse.json({
                 manga: transformedManga,
                 pagination: {
                     page,
@@ -131,6 +136,10 @@ export async function GET(request: NextRequest) {
                     hasNext: page * limit < total
                 }
             });
+            if (isPublicList) {
+                res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+            }
+            return res;
 
         } catch (mongoError) {
             console.log('MongoDB not available, using mock data:', mongoError.message);

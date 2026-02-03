@@ -2,14 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppMode } from '@/contexts/AppModeContext';
 import { FaPlay, FaBookOpen, FaStar, FaClock, FaUsers, FaArrowRight, FaFire, FaGem, FaRocket, FaSearch, FaHeart, FaEye } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import BuyMeACoffee from '@/components/BuyMeACoffee';
-import MoodDiscovery from '@/components/MoodDiscovery';
-import AIFeatureToggles from '@/components/AIFeatureToggles';
+import { getOptimizedCoverUrl } from '@/lib/cloudinary-optimize';
+
+// STEP 8: Load heavy/optional UI after Hero - keeps initial bundle smaller for faster LCP
+const AIFeatureToggles = dynamic(() => import('@/components/AIFeatureToggles'), { ssr: false });
+const BuyMeACoffee = dynamic(() => import('@/components/BuyMeACoffee'), { ssr: false });
+const MoodDiscovery = dynamic(() => import('@/components/MoodDiscovery'), { ssr: false });
 
 const genresList = [
     { name: "Action", color: "from-red-500 to-orange-500", icon: "⚔️" },
@@ -42,9 +46,9 @@ interface FeaturedMangaItem {
     createdAt?: string;
 }
 
+// STEP 5/6: Use optimized cover URL (resize + auto format) for fast list images
 function getCoverUrl(m: FeaturedMangaItem): string {
-    if (!m.coverImage) return '/placeholder.svg';
-    return typeof m.coverImage === 'string' ? m.coverImage : (m.coverImage?.secure_url || '/placeholder.svg');
+    return getOptimizedCoverUrl(m.coverImage, 400);
 }
 
 function isNewManga(createdAt?: string): boolean {
@@ -66,11 +70,11 @@ export default function ImprovedHomePage() {
         setMounted(true);
     }, []);
 
-    // Fetch real featured manga from API (featured/popular sort)
+    // Fetch real featured manga from API (STEP 2: API returns cached list; light payload)
     useEffect(() => {
         setFeaturedLoading(true);
         setFeaturedError(null);
-        fetch('/api/manga?sort=featured&page=1&limit=6')
+        fetch('/api/manga?sort=featured&page=1&limit=6', { cache: 'default' })
             .then((res) => {
                 if (!res.ok) throw new Error('Failed to load featured manga');
                 return res.json();
@@ -98,233 +102,61 @@ export default function ImprovedHomePage() {
             {/* AI Feature Toggle Buttons - Top Right Corner */}
             <AIFeatureToggles position="fixed" />
 
-            {/* Hero Section */}
+            {/* Hero Section - LCP: h1 is plain (no animation delay) so it paints on first frame */}
             <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-                {/* Enhanced Background Effects */}
                 <div className="absolute inset-0">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 via-purple-900/30 to-pink-900/30"></div>
-
-                    {/* Animated Background Orbs */}
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.2, 1],
-                            opacity: [0.3, 0.6, 0.3]
-                        }}
-                        transition={{ duration: 8, repeat: Infinity }}
-                        className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl"
-                    />
-                    <motion.div
-                        animate={{
-                            scale: [1.2, 1, 1.2],
-                            opacity: [0.4, 0.7, 0.4]
-                        }}
-                        transition={{ duration: 6, repeat: Infinity, delay: 2 }}
-                        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"
-                    />
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.3, 1],
-                            opacity: [0.2, 0.5, 0.2]
-                        }}
-                        transition={{ duration: 10, repeat: Infinity, delay: 4 }}
-                        className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"
-                    />
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 via-purple-900/30 to-pink-900/30" />
+                    <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 8, repeat: Infinity }} className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl" />
+                    <motion.div animate={{ scale: [1.2, 1, 1.2], opacity: [0.4, 0.7, 0.4] }} transition={{ duration: 6, repeat: Infinity, delay: 2 }} className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
+                    <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.5, 0.2] }} transition={{ duration: 10, repeat: Infinity, delay: 4 }} className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2" />
                 </div>
-
                 <div className="container mx-auto px-4 relative z-10 text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8 }}
-                        className="max-w-4xl mx-auto"
-                    >
-                        {/* Enhanced Badge */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                            className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-full px-6 py-3 mb-8 backdrop-blur-sm"
-                        >
+                    <div className="max-w-4xl mx-auto">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.1 }} className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-full px-6 py-3 mb-8 backdrop-blur-sm">
                             <FaRocket className="text-indigo-400" />
                             <span className="text-sm font-semibold text-indigo-300">The Future of Manga Reading</span>
-                            <motion.div
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="w-2 h-2 bg-green-400 rounded-full"
-                            />
+                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="w-2 h-2 bg-green-400 rounded-full" />
                         </motion.div>
-
-                        {/* Enhanced Headline with Better Typography */}
-                        <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.3 }}
-                            className="text-6xl md:text-8xl font-black mb-6 leading-tight"
-                        >
-                            <motion.span
-                                animate={{
-                                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
-                                }}
-                                transition={{ duration: 5, repeat: Infinity }}
-                                className="bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-[length:200%_100%] bg-clip-text text-transparent"
-                            >
-                                Discover Amazing
-                            </motion.span>
+                        {/* Plain h1 - no motion/delay so LCP paints immediately when component mounts */}
+                        <h1 className="text-6xl md:text-8xl font-black mb-6 leading-tight">
+                            <span className="bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent">Discover Amazing</span>
                             <br />
-                            <motion.span
-                                animate={{
-                                    backgroundPosition: ["100% 50%", "0% 50%", "100% 50%"]
-                                }}
-                                transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
-                                className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-[length:200%_100%] bg-clip-text text-transparent"
-                            >
-                                Manga Stories
-                            </motion.span>
-                        </motion.h1>
-
-                        {/* Enhanced Subtitle */}
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.4 }}
-                            className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed"
-                        >
-                            Join <motion.span
-                                animate={{ color: ['#60a5fa', '#a78bfa', '#f472b6', '#60a5fa'] }}
-                                transition={{ duration: 3, repeat: Infinity }}
-                                className="font-bold"
-                            >
-                                millions of readers
-                            </motion.span> in the world's most advanced manga platform.
-                            Read, create, and connect with AI-powered recommendations.
+                            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Manga Stories</span>
+                        </h1>
+                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.15 }} className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+                            Join <motion.span animate={{ color: ['#60a5fa', '#a78bfa', '#f472b6', '#60a5fa'] }} transition={{ duration: 3, repeat: Infinity }} className="font-bold">millions of readers</motion.span> in the world&apos;s most advanced manga platform.
                         </motion.p>
-
-                        {/* Enhanced CTA Buttons */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.5 }}
-                            className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16"
-                        >
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <Link
-                                    href="/manga"
-                                    className="relative group bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl transition-all duration-300 flex items-center space-x-3 overflow-hidden"
-                                >
-                                    <motion.div
-                                        animate={{ x: [0, 5, 0] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    >
-                                        <FaPlay />
-                                    </motion.div>
-                                    <span>Start Reading Now</span>
-                                    <motion.div
-                                        className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity blur-xl"
-                                        animate={{ scale: [1, 1.1, 1] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    />
-                                </Link>
-                            </motion.div>
-
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.2 }} className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
+                            <Link href="/manga" className="relative group bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl transition-all duration-300 flex items-center space-x-3 overflow-hidden">
+                                <FaPlay /> <span>Start Reading Now</span>
+                            </Link>
                             {!isAuthenticated ? (
-                                <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    <Link
-                                        href="/signup"
-                                        className="group bg-slate-800/80 hover:bg-slate-700/80 border border-indigo-500/30 hover:border-indigo-500/60 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl transition-all duration-300 flex items-center space-x-3 backdrop-blur-sm"
-                                    >
-                                        <FaUsers />
-                                        <span>Join Community</span>
-                                        <motion.div
-                                            animate={{ x: [0, 5, 0] }}
-                                            transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                                        >
-                                            <FaArrowRight />
-                                        </motion.div>
-                                    </Link>
-                                </motion.div>
+                                <Link href="/signup" className="group bg-slate-800/80 hover:bg-slate-700/80 border border-indigo-500/30 hover:border-indigo-500/60 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl transition-all duration-300 flex items-center space-x-3 backdrop-blur-sm">
+                                    <FaUsers /> <span>Join Community</span> <FaArrowRight />
+                                </Link>
                             ) : (
-                                <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                >
-                                    <Link
-                                        href="/library"
-                                        className="group bg-slate-800/80 hover:bg-slate-700/80 border border-green-500/30 hover:border-green-500/60 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl transition-all duration-300 flex items-center space-x-3 backdrop-blur-sm"
-                                    >
-                                        <FaBookOpen />
-                                        <span>My Library</span>
-                                        <motion.div
-                                            animate={{ x: [0, 5, 0] }}
-                                            transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                                        >
-                                            <FaArrowRight />
-                                        </motion.div>
-                                    </Link>
-                                </motion.div>
+                                <Link href="/library" className="group bg-slate-800/80 hover:bg-slate-700/80 border border-green-500/30 hover:border-green-500/60 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl transition-all duration-300 flex items-center space-x-3 backdrop-blur-sm">
+                                    <FaBookOpen /> <span>My Library</span> <FaArrowRight />
+                                </Link>
                             )}
                         </motion.div>
-
-                        {/* Enhanced Quick Stats */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.6 }}
-                            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-                        >
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.25 }} className="grid grid-cols-2 md:grid-cols-4 gap-8">
                             {stats.map((stat, index) => (
-                                <motion.div
-                                    key={stat.label}
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 0.7 + index * 0.1, duration: 0.5 }}
-                                    whileHover={{ scale: 1.05, y: -5 }}
-                                    className="text-center p-6 bg-slate-800/30 rounded-2xl border border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-300"
-                                >
-                                    <motion.div
-                                        animate={{
-                                            scale: [1, 1.1, 1],
-                                            rotate: [0, 5, -5, 0]
-                                        }}
-                                        transition={{ duration: 3, repeat: Infinity, delay: index * 0.5 }}
-                                        className={`text-4xl font-bold ${stat.color} mb-2`}
-                                    >
-                                        {stat.value}
-                                    </motion.div>
+                                <motion.div key={stat.label} whileHover={{ scale: 1.05, y: -5 }} className="text-center p-6 bg-slate-800/30 rounded-2xl border border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-300">
+                                    <div className={`text-4xl font-bold ${stat.color} mb-2`}>{stat.value}</div>
                                     <div className="text-sm text-gray-400 flex items-center justify-center space-x-2">
-                                        <stat.icon className={stat.color} />
-                                        <span>{stat.label}</span>
+                                        <stat.icon className={stat.color} /> <span>{stat.label}</span>
                                     </div>
                                 </motion.div>
                             ))}
                         </motion.div>
-                    </motion.div>
+                    </div>
                 </div>
-
-                {/* Enhanced Scroll Indicator */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.5 }}
-                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-                >
-                    <motion.div
-                        animate={{ y: [0, 10, 0] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="flex flex-col items-center text-gray-400"
-                    >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+                    <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 2, repeat: Infinity }} className="flex flex-col items-center text-gray-400">
                         <span className="text-sm mb-2">Scroll to explore</span>
                         <div className="w-6 h-10 border-2 border-gray-400 rounded-full flex justify-center">
-                            <motion.div
-                                animate={{ y: [0, 16, 0] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="w-1 h-3 bg-gray-400 rounded-full mt-2"
-                            />
+                            <motion.div animate={{ y: [0, 16, 0] }} transition={{ duration: 2, repeat: Infinity }} className="w-1 h-3 bg-gray-400 rounded-full mt-2" />
                         </div>
                     </motion.div>
                 </motion.div>

@@ -133,9 +133,8 @@ export default function ChapterReader({
         const images: string[] = [];
 
         if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
-            // Cloudinary PDF to image transformation
-            // Start with fewer pages to prevent blocking (lazy load more as needed)
-            const initialPages = Math.min(maxPages, 10); // Reduced from 50 to 10 to prevent blocking
+            // STEP 7: Build URLs for first N pages; only 3 DOM images render initially (slice), so only 3 load
+            const initialPages = Math.min(maxPages, 15);
             for (let i = 1; i <= initialPages; i++) {
                 // Transform: /upload/ -> /upload/f_jpg,pg_{pageNumber},q_auto/
                 // Use proper Cloudinary transformation format

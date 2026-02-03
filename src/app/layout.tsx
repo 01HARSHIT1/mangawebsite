@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
 import ClientLayoutShell from "@/components/ClientLayoutShell";
@@ -67,6 +68,13 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
 };
+
+// STEP 9: Optimize fonts - swap prevents invisible text (LCP fix)
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 // Structured Data for Organization
 const organizationSchema = {
@@ -423,7 +431,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="bg-gray-950 dark:bg-gray-950 text-white dark:text-white min-h-screen font-sans">
+      <body className={`${inter.className} bg-gray-950 dark:bg-gray-950 text-white dark:text-white min-h-screen`}>
         <ThemeProvider>
           <AuthProvider>
             <AppModeProvider>
