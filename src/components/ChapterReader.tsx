@@ -9,23 +9,23 @@ import { useAIFeatures } from '@/hooks/useAIFeatures';
 // Lazy load heavy components to prevent blocking
 import dynamic from 'next/dynamic';
 
-const ChapterSummary = dynamic(() => import('./ChapterSummary'), { 
+const ChapterSummary = dynamic(() => import('./ChapterSummary'), {
     ssr: false,
     loading: () => null // Don't show loading state to prevent blocking
 });
 
-const PreviouslyOnRecap = dynamic(() => import('./PreviouslyOnRecap'), { 
+const PreviouslyOnRecap = dynamic(() => import('./PreviouslyOnRecap'), {
     ssr: false,
     loading: () => null // Don't show loading state to prevent blocking
 });
 
 // AutoBrightness - Re-enabled with optimized position locking (no longer blocks)
-const AutoBrightness = dynamic(() => import('./AutoBrightness'), { 
+const AutoBrightness = dynamic(() => import('./AutoBrightness'), {
     ssr: false,
     loading: () => null
 });
 
-const EyeTracking = dynamic(() => import('./EyeTracking'), { 
+const EyeTracking = dynamic(() => import('./EyeTracking'), {
     ssr: false,
     loading: () => null
 });
@@ -60,21 +60,21 @@ export default function ChapterReader({
 
     // AI Features - Hook call deferred by 2 seconds in useAIFeatures.ts to prevent blocking
     const { voiceAssistantEnabled, eyeTrackingEnabled, autoBrightnessEnabled, isFeatureEnabled, loading: aiFeaturesLoading } = useAIFeatures();
-    
+
     // Use deferred loading - only enable after page is interactive
     const [pageInteractive, setPageInteractive] = useState(false);
     const [userInteracted, setUserInteracted] = useState(false);
-    
+
     useEffect(() => {
         // Mark page as interactive after initial render completes
         const timer = setTimeout(() => setPageInteractive(true), 500);
         return () => clearTimeout(timer);
     }, []);
-    
+
     // Only load heavy AI features after user interaction (scroll, click, etc.)
     useEffect(() => {
         if (!pageInteractive) return;
-        
+
         const handleInteraction = () => {
             setUserInteracted(true);
             // Remove listeners after first interaction
@@ -82,26 +82,26 @@ export default function ChapterReader({
             window.removeEventListener('click', handleInteraction);
             window.removeEventListener('touchstart', handleInteraction, { passive: true });
         };
-        
+
         // Wait for user to interact before loading heavy features
         window.addEventListener('scroll', handleInteraction, { passive: true });
         window.addEventListener('click', handleInteraction);
         window.addEventListener('touchstart', handleInteraction, { passive: true });
-        
+
         return () => {
             window.removeEventListener('scroll', handleInteraction);
             window.removeEventListener('click', handleInteraction);
             window.removeEventListener('touchstart', handleInteraction);
         };
     }, [pageInteractive]);
-    
+
     // Only enable features after page is interactive AND preferences are loaded
-    const chapterSummariesEnabled = useMemo(() => 
-        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('chapterSummaries'), 
+    const chapterSummariesEnabled = useMemo(() =>
+        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('chapterSummaries'),
         [pageInteractive, aiFeaturesLoading, isFeatureEnabled]
     );
-    const previouslyOnEnabled = useMemo(() => 
-        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('previouslyOnRecap'), 
+    const previouslyOnEnabled = useMemo(() =>
+        pageInteractive && !aiFeaturesLoading && isFeatureEnabled('previouslyOnRecap'),
         [pageInteractive, aiFeaturesLoading, isFeatureEnabled]
     );
 
@@ -128,10 +128,10 @@ export default function ChapterReader({
         const last = pages.length > 1 ? (typeof pages[pages.length - 1] === 'string' ? pages[pages.length - 1] : pages[pages.length - 1]?.imagePath || '') : '';
         return `${pages.length}-${first}-${last}`;
     }, [pages]);
-    
+
     const chapterImages: string[] = useMemo(() => {
         const images: string[] = [];
-        
+
         if (pdfUrl && pdfUrl.includes('cloudinary.com')) {
             // Cloudinary PDF to image transformation
             // Start with fewer pages to prevent blocking (lazy load more as needed)
@@ -153,7 +153,7 @@ export default function ChapterReader({
                 }
             });
         }
-        
+
         return images;
     }, [pdfUrl, pagesKey, maxPages]); // Use stable pagesKey instead of array
 
@@ -172,11 +172,11 @@ export default function ChapterReader({
             event.stopPropagation();
             return;
         }
-        
+
         // Throttle state updates to prevent infinite loops
         failedPagesRef.current += 1;
         const newFailedCount = failedPagesRef.current;
-        
+
         // Batch state updates (only update if significant change)
         if (newFailedCount % maxConsecutiveFailures === 0 || (pageIndex > 5 && newFailedCount >= maxConsecutiveFailures)) {
             setFailedPages(newFailedCount);
@@ -190,14 +190,14 @@ export default function ChapterReader({
     // Use refs to prevent infinite re-renders from image load handlers
     const loadedPagesRef = useRef<Set<number>>(new Set());
     const lastUpdateRef = useRef<number>(0);
-    
+
     const handleImageLoad = (pageIndex: number) => {
         // Prevent rapid state updates (throttle to max once per 100ms)
         const now = Date.now();
         if (now - lastUpdateRef.current < 100) {
             return; // Skip if updated recently
         }
-        
+
         if (!loadedPagesRef.current.has(pageIndex)) {
             loadedPagesRef.current.add(pageIndex);
             // Use reduce instead of Math.max with spread to prevent blocking on large sets
@@ -396,29 +396,29 @@ export default function ChapterReader({
                 const currentBright = parseFloat(getComputedStyle(document.documentElement).filter.match(/brightness\(([^)]+)\)/)?.[1] || '1');
                 const newBright = Math.max(0.3, currentBright - 0.1);
                 document.documentElement.style.filter = `brightness(${newBright})`;
-                    break;
+                break;
             case 'toggleEyeTracking':
                 // Toggle eye tracking (would need to communicate with EyeTracking component)
                 // This could be handled via a custom event or context
                 window.dispatchEvent(new CustomEvent('toggleEyeTracking'));
-                    break;
+                break;
             default:
                 // Silently ignore unknown commands
-                    break;
-            }
-        };
+                break;
+        }
+    };
 
     // Check if user is logged in (with timeout to prevent hanging)
     useEffect(() => {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (!token) return;
-        
+
         setIsLoggedIn(true);
-        
+
         // Add timeout to prevent hanging
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
+
         // Fetch user info
         fetch('/api/profile', {
             headers: { Authorization: `Bearer ${token}` },
@@ -448,12 +448,12 @@ export default function ChapterReader({
     // Load comments (with timeout and deferred loading to prevent blocking)
     useEffect(() => {
         if (!chapterId) return;
-        
+
         // Defer comments loading to prevent blocking initial page render
         const delayTimer = setTimeout(() => {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
+
             fetch(`/api/comments/${chapterId}`, {
                 signal: controller.signal
             })
@@ -472,7 +472,7 @@ export default function ChapterReader({
                     clearTimeout(timeoutId);
                 });
         }, 1500); // Wait 1.5 seconds before loading comments
-        
+
         return () => {
             clearTimeout(delayTimer);
         };
@@ -492,8 +492,8 @@ export default function ChapterReader({
         try {
             const response = await fetch(`/api/comments/${chapterId}`, {
                 method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
+                headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({ content: newComment })
@@ -506,7 +506,7 @@ export default function ChapterReader({
             } else {
                 alert('Failed to post comment');
             }
-                } catch (error) {
+        } catch (error) {
             console.error('Error posting comment:', error);
             alert('Error posting comment');
         } finally {
@@ -528,7 +528,7 @@ export default function ChapterReader({
         }
     };
 
-        return (
+    return (
         <div className="min-h-screen bg-gray-950 text-white pt-14 sm:pt-0">
             {/* Top Navigation - Responsive */}
             <div className="w-full bg-black border-b border-gray-800 py-4 sm:py-6">
@@ -554,8 +554,8 @@ export default function ChapterReader({
                             <p className="text-gray-500 text-xs sm:text-sm mt-1 sm:mt-2">
                                 {new Date(chapter.createdAt).toLocaleDateString()}
                             </p>
-                </div>
-            </div>
+                        </div>
+                    </div>
 
                     {/* Navigation Buttons - Responsive */}
                     <div className="flex flex-col items-center gap-2 sm:gap-3 w-full">
@@ -593,7 +593,7 @@ export default function ChapterReader({
                                     <span className="hidden sm:inline">Next</span>
                                     <span className="sm:hidden">▶</span>
                                     <FaChevronRight className="text-sm sm:text-base" />
-                            </Link>
+                                </Link>
                             ) : (
                                 <div className="w-16 sm:w-20 md:w-24"></div>
                             )}
@@ -614,7 +614,7 @@ export default function ChapterReader({
                                 <div className="absolute top-full left-0 right-0 sm:left-auto sm:right-auto mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl overflow-hidden z-50 w-full sm:w-auto sm:min-w-[200px]">
                                     <div className="max-h-[280px] overflow-y-auto chapter-dropdown-scroll">
                                         {allChapters.map((ch) => (
-                            <Link
+                                            <Link
                                                 key={ch._id}
                                                 href={`/manga/${mangaId}/chapter/${ch._id}`}
                                                 className={`block px-4 py-3 hover:bg-gray-800 transition-colors ${ch._id === chapterId
@@ -625,14 +625,14 @@ export default function ChapterReader({
                                             >
                                                 Chapter {ch.chapterNumber}
                                                 {ch.subtitle && <span className="text-sm opacity-75"> - {ch.subtitle}</span>}
-                            </Link>
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>
                             )}
                         </div>
-                        </div>
                     </div>
+                </div>
             </div>
 
             {/* AI Features: Previously On Recap & Chapter Summary - Re-enabled with lazy loading */}
@@ -663,23 +663,23 @@ export default function ChapterReader({
                             }
                             if (index > loadedPageCount + maxConsecutiveFailures && !maxPageReached) {
                                 return null;
-                    }
+                            }
 
-                    return (
-                        <div
+                            return (
+                                <div
                                     key={`page-${index}-${imageSrc.slice(-20)}`}
                                     id={`chapter-page-${index}`}
                                     className="w-full mb-3 sm:mb-4"
-                        >
-                            <img
-                                src={imageSrc}
+                                >
+                                    <img
+                                        src={imageSrc}
                                         alt={`Page ${index + 1}`}
                                         className="w-full h-auto rounded-lg sm:rounded-xl shadow-2xl"
-                                onLoad={() => {
+                                        onLoad={() => {
                                             // Use requestAnimationFrame to batch updates
                                             requestAnimationFrame(() => handleImageLoad(index));
-                                }}
-                                onError={(e) => {
+                                        }}
+                                        onError={(e) => {
                                             handleImageError(index, e);
                                             // Hide broken images (pages beyond actual count)
                                             e.currentTarget.style.display = 'none';
@@ -687,11 +687,11 @@ export default function ChapterReader({
                                         }}
                                         loading="lazy"
                                         decoding="async"
-                            />
-                        </div>
-                    );
-                })}
-            </div>
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
                 ) : (
                     <div className="text-center py-20">
                         <p className="text-gray-400 text-lg">No pages available for this chapter</p>
@@ -802,7 +802,7 @@ export default function ChapterReader({
                                         <FaWhatsapp />
                                     </a>
                                 )}
-                    </div>
+                            </div>
                             {!socialMediaLinks.facebook && !socialMediaLinks.twitter && !socialMediaLinks.instagram && !socialMediaLinks.discord && !socialMediaLinks.whatsapp && (
                                 <p className="text-gray-500 text-sm">Social links coming soon!</p>
                             )}
@@ -846,8 +846,8 @@ export default function ChapterReader({
                         ) : (
                             <div className="text-center py-8 text-gray-500">
                                 No comments yet. Be the first to comment!
-                </div>
-            )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Comment Input - SHOW AFTER COMMENTS */}
@@ -875,7 +875,7 @@ export default function ChapterReader({
                             <p className="text-gray-400 mb-3 text-sm sm:text-base">Please login to comment</p>
                             <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-5 sm:px-6 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition-all touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center">
                                 Login
-                                </Link>
+                            </Link>
                         </div>
                     )}
                 </div>
@@ -900,15 +900,15 @@ export default function ChapterReader({
                             </div>
                             <div className="text-gray-600 text-xs">Made by {websiteInfo.developer}</div>
                         </div>
-                        </div>
                     </div>
                 </div>
+            </div>
 
-            {/* AI Features - Re-enabled with deferred initialization */}
-            {/* Voice Assistant - REMOVED: Now rendered globally in ClientLayoutShell for all pages */}
-            
-            {/* Eye Tracking - Only load after user interaction to prevent blocking */}
-            {pageInteractive && userInteracted && !aiFeaturesLoading && (
+            {/* AI Features - Only show when user has enabled each feature in settings (AI toggles) */}
+            {/* Voice Assistant - Rendered globally in ClientLayoutShell; only shown when enabled */}
+
+            {/* Eye Tracking - Only render panel when user has enabled Eye Tracking in AI settings */}
+            {pageInteractive && userInteracted && !aiFeaturesLoading && eyeTrackingEnabled && (
                 <EyeTracking
                     onGazeDetected={(direction) => {
                         // Actual scrolling is handled in EyeTracking component
@@ -918,8 +918,8 @@ export default function ChapterReader({
                 />
             )}
 
-            {/* Auto-Brightness - Re-enabled with optimized position locking (no longer blocks) */}
-            {pageInteractive && userInteracted && !aiFeaturesLoading && (
+            {/* Auto-Brightness - Only render panel when user has enabled Auto Brightness in AI settings */}
+            {pageInteractive && userInteracted && !aiFeaturesLoading && autoBrightnessEnabled && (
                 <AutoBrightness
                     enabled={autoBrightnessEnabled}
                     showUI={true}

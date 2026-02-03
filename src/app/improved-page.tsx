@@ -29,47 +29,61 @@ const stats = [
     { label: "Creator Earnings", value: "$2M+", icon: FaGem, color: "text-yellow-400" }
 ];
 
-// Sample featured manga for immediate display
-const featuredManga = [
-    {
-        id: '1',
-        title: 'Dragon Quest Chronicles',
-        creator: 'Akira Toriyama',
-        coverImage: '/placeholder.svg',
-        rating: 4.8,
-        views: 1250000,
-        genres: ['Fantasy', 'Adventure'],
-        isNew: true
-    },
-    {
-        id: '2',
-        title: 'Love in Tokyo',
-        creator: 'Naoko Takeuchi',
-        coverImage: '/placeholder.svg',
-        rating: 4.6,
-        views: 980000,
-        genres: ['Romance', 'Drama'],
-        isTrending: true
-    },
-    {
-        id: '3',
-        title: 'Shadow Ninja',
-        creator: 'Masashi Kishimoto',
-        coverImage: '/placeholder.svg',
-        rating: 4.9,
-        views: 2100000,
-        genres: ['Action', 'Supernatural'],
-        isNew: false
-    }
-];
+// Type for featured manga from API
+interface FeaturedMangaItem {
+    _id: string;
+    title: string;
+    creator: string;
+    coverImage: string | { secure_url?: string };
+    rating?: number;
+    views?: number;
+    likes?: number;
+    genres?: string[];
+    createdAt?: string;
+}
+
+function getCoverUrl(m: FeaturedMangaItem): string {
+    if (!m.coverImage) return '/placeholder.svg';
+    return typeof m.coverImage === 'string' ? m.coverImage : (m.coverImage?.secure_url || '/placeholder.svg');
+}
+
+function isNewManga(createdAt?: string): boolean {
+    if (!createdAt) return false;
+    const created = new Date(createdAt).getTime();
+    const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+    return created >= fourteenDaysAgo;
+}
 
 export default function ImprovedHomePage() {
     const { user, isAuthenticated } = useAuth();
     const { appMode, switchToManga } = useAppMode();
     const [mounted, setMounted] = useState(false);
+    const [featuredManga, setFeaturedManga] = useState<FeaturedMangaItem[]>([]);
+    const [featuredLoading, setFeaturedLoading] = useState(true);
+    const [featuredError, setFeaturedError] = useState<string | null>(null);
 
     useEffect(() => {
         setMounted(true);
+    }, []);
+
+    // Fetch real featured manga from API (featured/popular sort)
+    useEffect(() => {
+        setFeaturedLoading(true);
+        setFeaturedError(null);
+        fetch('/api/manga?sort=featured&page=1&limit=6')
+            .then((res) => {
+                if (!res.ok) throw new Error('Failed to load featured manga');
+                return res.json();
+            })
+            .then((data) => {
+                setFeaturedManga(data.manga || []);
+            })
+            .catch(() => {
+                setFeaturedError('Unable to load featured stories.');
+            })
+            .finally(() => {
+                setFeaturedLoading(false);
+            });
     }, []);
 
     // Ensure we're in manga mode when on manga home page
@@ -382,121 +396,149 @@ export default function ImprovedHomePage() {
                         </p>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {featuredManga.map((manga, index) => (
-                            <motion.div
-                                key={manga.id}
-                                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                                transition={{ duration: 0.6, delay: index * 0.2 }}
-                                viewport={{ once: true }}
-                                whileHover={{ y: -10, scale: 1.02 }}
-                                className="group cursor-pointer"
-                            >
-                                <Link href={`/manga/${manga.id}`}>
-                                    <div className="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-indigo-500/50 transition-all duration-300 backdrop-blur-sm hover:shadow-2xl hover:shadow-indigo-500/10">
-                                        {/* Cover Image */}
-                                        <div className="aspect-[3/4] relative overflow-hidden">
-                                            <Image
-                                                src={manga.coverImage}
-                                                alt={manga.title}
-                                                fill
-                                                className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                            />
-
-                                            {/* Overlay with gradient */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                            {/* Status Badges */}
-                                            <div className="absolute top-4 left-4 flex flex-col gap-2">
-                                                {manga.isNew && (
-                                                    <motion.div
-                                                        initial={{ scale: 0, rotate: -180 }}
-                                                        animate={{ scale: 1, rotate: 0 }}
-                                                        transition={{ type: "spring", stiffness: 500, delay: 0.3 + index * 0.1 }}
-                                                        className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
-                                                    >
-                                                        <span>🆕</span>
-                                                        <span>NEW</span>
-                                                    </motion.div>
-                                                )}
-                                                {manga.isTrending && (
-                                                    <motion.div
-                                                        animate={{
-                                                            scale: [1, 1.1, 1],
-                                                            rotate: [0, 5, -5, 0]
-                                                        }}
-                                                        transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
-                                                        className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
-                                                    >
-                                                        <FaFire />
-                                                        <span>HOT</span>
-                                                    </motion.div>
-                                                )}
-                                            </div>
-
-                                            {/* Rating Badge */}
-                                            <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-1">
-                                                <FaStar className="text-yellow-400 text-xs" />
-                                                <span className="text-white text-xs font-semibold">{manga.rating}</span>
-                                            </div>
-
-                                            {/* Hover Play Button */}
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                whileInView={{ opacity: 1, scale: 1 }}
-                                                transition={{ duration: 0.3 }}
-                                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                            >
-                                                <motion.div
-                                                    whileHover={{ scale: 1.1 }}
-                                                    whileTap={{ scale: 0.9 }}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-6 shadow-2xl"
-                                                >
-                                                    <FaPlay className="text-2xl" />
-                                                </motion.div>
-                                            </motion.div>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="p-6">
-                                            <h3 className="text-white font-bold text-xl mb-2 group-hover:text-indigo-400 transition-colors">
-                                                {manga.title}
-                                            </h3>
-                                            <p className="text-gray-400 text-sm mb-4">
-                                                by <span className="text-indigo-400 font-medium">{manga.creator}</span>
-                                            </p>
-
-                                            {/* Genres */}
-                                            <div className="flex flex-wrap gap-2 mb-4">
-                                                {manga.genres.map((genre) => (
-                                                    <span
-                                                        key={genre}
-                                                        className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-medium border border-indigo-500/30"
-                                                    >
-                                                        {genre}
-                                                    </span>
-                                                ))}
-                                            </div>
-
-                                            {/* Stats */}
-                                            <div className="flex items-center justify-between text-sm text-gray-500">
-                                                <div className="flex items-center space-x-1">
-                                                    <FaEye />
-                                                    <span>{manga.views.toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex items-center space-x-1">
-                                                    <FaHeart className="text-red-400" />
-                                                    <span>Like</span>
-                                                </div>
-                                            </div>
+                    {featuredLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 animate-pulse">
+                                    <div className="aspect-[3/4] bg-slate-700" />
+                                    <div className="p-6 space-y-3">
+                                        <div className="h-6 bg-slate-700 rounded w-3/4" />
+                                        <div className="h-4 bg-slate-700 rounded w-1/2" />
+                                        <div className="flex gap-2">
+                                            <div className="h-6 w-16 bg-slate-700 rounded-full" />
+                                            <div className="h-6 w-20 bg-slate-700 rounded-full" />
                                         </div>
                                     </div>
-                                </Link>
-                            </motion.div>
-                        ))}
-                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : featuredError || featuredManga.length === 0 ? (
+                        <div className="text-center py-12">
+                            <p className="text-gray-400 mb-4">{featuredError || 'No featured stories right now.'}</p>
+                            <Link href="/manga" className="text-indigo-400 hover:text-indigo-300 font-medium">
+                                Browse all manga →
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {featuredManga.map((manga, index) => (
+                                <motion.div
+                                    key={manga._id}
+                                    initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ duration: 0.6, delay: index * 0.2 }}
+                                    viewport={{ once: true }}
+                                    whileHover={{ y: -10, scale: 1.02 }}
+                                    className="group cursor-pointer"
+                                >
+                                    <Link href={`/manga/${manga._id}`}>
+                                        <div className="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-indigo-500/50 transition-all duration-300 backdrop-blur-sm hover:shadow-2xl hover:shadow-indigo-500/10">
+                                            {/* Cover Image */}
+                                            <div className="aspect-[3/4] relative overflow-hidden bg-slate-700">
+                                                <Image
+                                                    src={getCoverUrl(manga)}
+                                                    alt={manga.title}
+                                                    fill
+                                                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                                    unoptimized={getCoverUrl(manga).startsWith('http')}
+                                                />
+
+                                                {/* Overlay with gradient */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                                {/* Status Badges */}
+                                                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                                                    {isNewManga(manga.createdAt) && (
+                                                        <motion.div
+                                                            initial={{ scale: 0, rotate: -180 }}
+                                                            animate={{ scale: 1, rotate: 0 }}
+                                                            transition={{ type: "spring", stiffness: 500, delay: 0.3 + index * 0.1 }}
+                                                            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
+                                                        >
+                                                            <span>🆕</span>
+                                                            <span>NEW</span>
+                                                        </motion.div>
+                                                    )}
+                                                    {index < 2 && (
+                                                        <motion.div
+                                                            animate={{
+                                                                scale: [1, 1.1, 1],
+                                                                rotate: [0, 5, -5, 0]
+                                                            }}
+                                                            transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+                                                            className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
+                                                        >
+                                                            <FaFire />
+                                                            <span>HOT</span>
+                                                        </motion.div>
+                                                    )}
+                                                </div>
+
+                                                {/* Rating Badge */}
+                                                {(manga.rating != null && manga.rating > 0) && (
+                                                    <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-1">
+                                                        <FaStar className="text-yellow-400 text-xs" />
+                                                        <span className="text-white text-xs font-semibold">{manga.rating}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Hover Play Button */}
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    whileInView={{ opacity: 1, scale: 1 }}
+                                                    transition={{ duration: 0.3 }}
+                                                    className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                                >
+                                                    <motion.div
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.9 }}
+                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-6 shadow-2xl"
+                                                    >
+                                                        <FaPlay className="text-2xl" />
+                                                    </motion.div>
+                                                </motion.div>
+                                            </div>
+
+                                            {/* Content */}
+                                            <div className="p-6">
+                                                <h3 className="text-white font-bold text-xl mb-2 group-hover:text-indigo-400 transition-colors">
+                                                    {manga.title}
+                                                </h3>
+                                                <p className="text-gray-400 text-sm mb-4">
+                                                    by <span className="text-indigo-400 font-medium">{manga.creator}</span>
+                                                </p>
+
+                                                {/* Genres */}
+                                                <div className="flex flex-wrap gap-2 mb-4">
+                                                    {(manga.genres || []).slice(0, 3).map((genre) => (
+                                                        <span
+                                                            key={genre}
+                                                            className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-medium border border-indigo-500/30"
+                                                        >
+                                                            {genre}
+                                                        </span>
+                                                    ))}
+                                                </div>
+
+                                                {/* Stats */}
+                                                <div className="flex items-center justify-between text-sm text-gray-500">
+                                                    <div className="flex items-center space-x-1">
+                                                        <FaEye />
+                                                        <span>{(manga.views ?? 0).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-1">
+                                                        <FaHeart className="text-red-400" />
+                                                        <span>{(manga.likes ?? 0).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

@@ -23,97 +23,10 @@ interface Manga {
     isTrending?: boolean;
 }
 
-const sampleManga: Manga[] = [
-    {
-        _id: '1',
-        title: 'Dragon Quest Chronicles',
-        creator: 'Akira Toriyama',
-        description: 'An epic fantasy adventure following a young hero on his quest to save the world.',
-        genres: ['Fantasy', 'Adventure', 'Action'],
-        status: 'ongoing',
-        coverImage: '/placeholder.svg',
-        views: 1250000,
-        likes: 45000,
-        rating: 4.8,
-        createdAt: '2024-01-15',
-        isNew: true
-    },
-    {
-        _id: '2',
-        title: 'Love in Tokyo',
-        creator: 'Naoko Takeuchi',
-        description: 'A heartwarming romance story set in modern Tokyo.',
-        genres: ['Romance', 'Drama', 'Slice of Life'],
-        status: 'ongoing',
-        coverImage: '/placeholder.svg',
-        views: 980000,
-        likes: 38000,
-        rating: 4.6,
-        createdAt: '2024-02-01',
-        isTrending: true
-    },
-    {
-        _id: '3',
-        title: 'Shadow Ninja',
-        creator: 'Masashi Kishimoto',
-        description: 'A thrilling tale of ninjas and supernatural powers.',
-        genres: ['Action', 'Supernatural', 'Martial Arts'],
-        status: 'completed',
-        coverImage: '/placeholder.svg',
-        views: 2100000,
-        likes: 67000,
-        rating: 4.9,
-        createdAt: '2023-12-10',
-        isNew: false
-    },
-    {
-        _id: '4',
-        title: 'Space Odyssey',
-        creator: 'Hiromu Arakawa',
-        description: 'Humanity\'s journey to explore the vast cosmos.',
-        genres: ['Sci-Fi', 'Adventure', 'Drama'],
-        status: 'ongoing',
-        coverImage: '/placeholder.svg',
-        views: 750000,
-        likes: 28000,
-        rating: 4.4,
-        createdAt: '2024-03-01',
-        isNew: true
-    },
-    {
-        _id: '5',
-        title: 'Comedy Central',
-        creator: 'Rumiko Takahashi',
-        description: 'Hilarious daily life adventures of high school students.',
-        genres: ['Comedy', 'School', 'Slice of Life'],
-        status: 'ongoing',
-        coverImage: '/placeholder.svg',
-        views: 560000,
-        likes: 22000,
-        rating: 4.3,
-        createdAt: '2024-02-15',
-        isTrending: true
-    },
-    {
-        _id: '6',
-        title: 'Horror Nights',
-        creator: 'Junji Ito',
-        description: 'Spine-chilling horror stories that will keep you awake.',
-        genres: ['Horror', 'Supernatural', 'Thriller'],
-        status: 'completed',
-        coverImage: '/placeholder.svg',
-        views: 890000,
-        likes: 35000,
-        rating: 4.7,
-        createdAt: '2023-10-31',
-        isNew: false
-    }
-];
-
 function MangaBrowseContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    
+
     const [manga, setManga] = useState<Manga[]>([]);
     const [displayedManga, setDisplayedManga] = useState<Manga[]>([]);
     const [loading, setLoading] = useState(true);
@@ -137,7 +50,7 @@ function MangaBrowseContent() {
         const genreParam = searchParams.get('genre');
         const searchParam = searchParams.get('search');
         const sortParam = searchParams.get('sort');
-        
+
         if (genreParam) {
             setSelectedGenre(genreParam.toLowerCase());
         }
@@ -156,7 +69,7 @@ function MangaBrowseContent() {
             try {
                 // Build API URL with query parameters for server-side filtering
                 const params = new URLSearchParams();
-                
+
                 if (selectedGenre !== 'all') {
                     params.append('genre', selectedGenre);
                 }
@@ -166,21 +79,20 @@ function MangaBrowseContent() {
                 if (sortBy) {
                     params.append('sort', sortBy);
                 }
-                
+
                 const apiUrl = `/api/manga${params.toString() ? '?' + params.toString() : ''}`;
                 console.log('Fetching manga with filters:', apiUrl);
-                
+
                 const response = await fetch(apiUrl);
                 if (response.ok) {
                     const data = await response.json();
-                    const mangaList = data.manga || [];
-                    setManga(mangaList.length > 0 ? mangaList : sampleManga);
+                    setManga(data.manga || []);
                 } else {
-                    setManga(sampleManga);
+                    setManga([]);
                 }
             } catch (error) {
                 console.error('Failed to fetch manga:', error);
-                setManga(sampleManga);
+                setManga([]);
             } finally {
                 setLoading(false);
             }
@@ -363,186 +275,186 @@ function MangaBrowseContent() {
                                     }`}
                             >
                                 {displayedManga.map((item, index) => (
-                                <motion.div
-                                    key={item._id}
-                                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ duration: 0.5, delay: index * 0.05 }}
-                                    whileHover={{ y: -8, scale: 1.02 }}
-                                    className="group cursor-pointer"
-                                >
-                                    <Link href={`/manga/${item._id}`}>
-                                        <div className={`bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-indigo-500/50 transition-all duration-300 backdrop-blur-sm hover:shadow-2xl hover:shadow-indigo-500/10 ${viewMode === 'list' ? 'flex space-x-4 p-4' : ''
-                                            }`}>
-                                            {/* Cover Image */}
-                                            <div className={`relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-800 ${viewMode === 'list' ? 'w-24 h-32 flex-shrink-0' : 'aspect-[3/4]'
+                                    <motion.div
+                                        key={item._id}
+                                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ duration: 0.5, delay: index * 0.05 }}
+                                        whileHover={{ y: -8, scale: 1.02 }}
+                                        className="group cursor-pointer"
+                                    >
+                                        <Link href={`/manga/${item._id}`}>
+                                            <div className={`bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 hover:border-indigo-500/50 transition-all duration-300 backdrop-blur-sm hover:shadow-2xl hover:shadow-indigo-500/10 ${viewMode === 'list' ? 'flex space-x-4 p-4' : ''
                                                 }`}>
-                                                {item.coverImage && (typeof item.coverImage === 'string' || item.coverImage?.secure_url) ? (
-                                                    <Image
-                                                        src={
-                                                            typeof item.coverImage === 'string' 
-                                                                ? item.coverImage 
-                                                                : item.coverImage?.secure_url || ''
-                                                        }
-                                                        alt={item.title}
-                                                        fill
-                                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
-                                                        sizes={viewMode === 'list' ? '96px' : '(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw'}
-                                                        unoptimized={false}
-                                                        onError={(e) => {
-                                                            console.error('Failed to load image:', item.coverImage);
-                                                            e.currentTarget.style.display = 'none';
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="text-center p-4">
-                                                            <div className="text-4xl mb-2">📚</div>
-                                                            <div className="text-xs text-gray-400">No Cover</div>
+                                                {/* Cover Image */}
+                                                <div className={`relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-800 ${viewMode === 'list' ? 'w-24 h-32 flex-shrink-0' : 'aspect-[3/4]'
+                                                    }`}>
+                                                    {item.coverImage && (typeof item.coverImage === 'string' || item.coverImage?.secure_url) ? (
+                                                        <Image
+                                                            src={
+                                                                typeof item.coverImage === 'string'
+                                                                    ? item.coverImage
+                                                                    : item.coverImage?.secure_url || ''
+                                                            }
+                                                            alt={item.title}
+                                                            fill
+                                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                            sizes={viewMode === 'list' ? '96px' : '(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw'}
+                                                            unoptimized={false}
+                                                            onError={(e) => {
+                                                                console.error('Failed to load image:', item.coverImage);
+                                                                e.currentTarget.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <div className="text-center p-4">
+                                                                <div className="text-4xl mb-2">📚</div>
+                                                                <div className="text-xs text-gray-400">No Cover</div>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
+                                                    )}
 
-                                                {/* Overlay */}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                                    {/* Overlay */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                                                {/* Status Badges */}
-                                                {viewMode === 'grid' && (
-                                                    <div className="absolute top-2 left-2 flex flex-col gap-1">
-                                                        {item.isNew && (
-                                                            <motion.div
-                                                                initial={{ scale: 0 }}
-                                                                animate={{ scale: 1 }}
-                                                                transition={{ delay: index * 0.1 }}
-                                                                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
-                                                            >
-                                                                <span>🆕</span>
-                                                                <span>NEW</span>
-                                                            </motion.div>
-                                                        )}
-                                                        {item.isTrending && (
-                                                            <motion.div
-                                                                animate={{
-                                                                    scale: [1, 1.1, 1]
-                                                                }}
-                                                                transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
-                                                                className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
-                                                            >
-                                                                <FaFire />
-                                                                <span>HOT</span>
-                                                            </motion.div>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Rating */}
-                                                {viewMode === 'grid' && (
-                                                    <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
-                                                        <FaStar className="text-yellow-400 text-xs" />
-                                                        <span className="text-white text-xs font-semibold">{item.rating}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* Hover Actions */}
-                                                {viewMode === 'grid' && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, scale: 0.8 }}
-                                                        animate={{
-                                                            opacity: 0,
-                                                            scale: 0.8
-                                                        }}
-                                                        whileHover={{
-                                                            opacity: 1,
-                                                            scale: 1
-                                                        }}
-                                                        className="absolute inset-0 flex items-center justify-center"
-                                                    >
-                                                        <div className="flex items-center space-x-2">
-                                                            <motion.button
-                                                                whileHover={{ scale: 1.1 }}
-                                                                whileTap={{ scale: 0.9 }}
-                                                                className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg"
-                                                            >
-                                                                <FaHeart />
-                                                            </motion.button>
-                                                            <motion.button
-                                                                whileHover={{ scale: 1.1 }}
-                                                                whileTap={{ scale: 0.9 }}
-                                                                className="p-4 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
-                                                            >
-                                                                <FaPlay />
-                                                            </motion.button>
-                                                            <motion.button
-                                                                whileHover={{ scale: 1.1 }}
-                                                                whileTap={{ scale: 0.9 }}
-                                                                className="p-3 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg"
-                                                            >
-                                                                <FaBookmark />
-                                                            </motion.button>
+                                                    {/* Status Badges */}
+                                                    {viewMode === 'grid' && (
+                                                        <div className="absolute top-2 left-2 flex flex-col gap-1">
+                                                            {item.isNew && (
+                                                                <motion.div
+                                                                    initial={{ scale: 0 }}
+                                                                    animate={{ scale: 1 }}
+                                                                    transition={{ delay: index * 0.1 }}
+                                                                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
+                                                                >
+                                                                    <span>🆕</span>
+                                                                    <span>NEW</span>
+                                                                </motion.div>
+                                                            )}
+                                                            {item.isTrending && (
+                                                                <motion.div
+                                                                    animate={{
+                                                                        scale: [1, 1.1, 1]
+                                                                    }}
+                                                                    transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
+                                                                    className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1"
+                                                                >
+                                                                    <FaFire />
+                                                                    <span>HOT</span>
+                                                                </motion.div>
+                                                            )}
                                                         </div>
-                                                    </motion.div>
-                                                )}
-                                            </div>
+                                                    )}
 
-                                            {/* Content */}
-                                            <div className={`${viewMode === 'list' ? 'flex-1' : 'p-4'}`}>
-                                                <h3 className="text-white font-semibold text-lg mb-2 group-hover:text-indigo-400 transition-colors line-clamp-2">
-                                                    {item.title}
-                                                </h3>
-                                                <p className="text-gray-400 text-sm mb-2">
-                                                    by <span className="text-indigo-400 font-medium">{item.creator}</span>
-                                                </p>
+                                                    {/* Rating */}
+                                                    {viewMode === 'grid' && (
+                                                        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
+                                                            <FaStar className="text-yellow-400 text-xs" />
+                                                            <span className="text-white text-xs font-semibold">{item.rating}</span>
+                                                        </div>
+                                                    )}
 
-                                                {viewMode === 'list' && (
-                                                    <p className="text-gray-300 text-sm mb-3 line-clamp-2">
-                                                        {item.description}
-                                                    </p>
-                                                )}
-
-                                                {/* Genres */}
-                                                <div className="flex flex-wrap gap-1 mb-3">
-                                                    {item.genres.slice(0, viewMode === 'list' ? 4 : 2).map((genre) => (
-                                                        <span
-                                                            key={genre}
-                                                            className="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-full text-xs font-medium border border-indigo-500/30"
+                                                    {/* Hover Actions */}
+                                                    {viewMode === 'grid' && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, scale: 0.8 }}
+                                                            animate={{
+                                                                opacity: 0,
+                                                                scale: 0.8
+                                                            }}
+                                                            whileHover={{
+                                                                opacity: 1,
+                                                                scale: 1
+                                                            }}
+                                                            className="absolute inset-0 flex items-center justify-center"
                                                         >
-                                                            {genre}
-                                                        </span>
-                                                    ))}
+                                                            <div className="flex items-center space-x-2">
+                                                                <motion.button
+                                                                    whileHover={{ scale: 1.1 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                    className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg"
+                                                                >
+                                                                    <FaHeart />
+                                                                </motion.button>
+                                                                <motion.button
+                                                                    whileHover={{ scale: 1.1 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                    className="p-4 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
+                                                                >
+                                                                    <FaPlay />
+                                                                </motion.button>
+                                                                <motion.button
+                                                                    whileHover={{ scale: 1.1 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                    className="p-3 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg"
+                                                                >
+                                                                    <FaBookmark />
+                                                                </motion.button>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
                                                 </div>
 
-                                                {/* Stats */}
-                                                <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="flex items-center space-x-1">
-                                                            <FaEye />
-                                                            <span>{item.views.toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="flex items-center space-x-1">
-                                                            <FaHeart />
-                                                            <span>{item.likes.toLocaleString()}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center space-x-1 text-indigo-400">
-                                                        <FaStar />
-                                                        <span>{item.rating}</span>
-                                                    </div>
-                                                </div>
+                                                {/* Content */}
+                                                <div className={`${viewMode === 'list' ? 'flex-1' : 'p-4'}`}>
+                                                    <h3 className="text-white font-semibold text-lg mb-2 group-hover:text-indigo-400 transition-colors line-clamp-2">
+                                                        {item.title}
+                                                    </h3>
+                                                    <p className="text-gray-400 text-sm mb-2">
+                                                        by <span className="text-indigo-400 font-medium">{item.creator}</span>
+                                                    </p>
 
-                                                {/* Action Button */}
-                                                <motion.button
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
-                                                >
-                                                    <FaPlay />
-                                                    <span>Read Now</span>
-                                                </motion.button>
+                                                    {viewMode === 'list' && (
+                                                        <p className="text-gray-300 text-sm mb-3 line-clamp-2">
+                                                            {item.description}
+                                                        </p>
+                                                    )}
+
+                                                    {/* Genres */}
+                                                    <div className="flex flex-wrap gap-1 mb-3">
+                                                        {item.genres.slice(0, viewMode === 'list' ? 4 : 2).map((genre) => (
+                                                            <span
+                                                                key={genre}
+                                                                className="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-full text-xs font-medium border border-indigo-500/30"
+                                                            >
+                                                                {genre}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Stats */}
+                                                    <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className="flex items-center space-x-1">
+                                                                <FaEye />
+                                                                <span>{item.views.toLocaleString()}</span>
+                                                            </div>
+                                                            <div className="flex items-center space-x-1">
+                                                                <FaHeart />
+                                                                <span>{item.likes.toLocaleString()}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1 text-indigo-400">
+                                                            <FaStar />
+                                                            <span>{item.rating}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Action Button */}
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
+                                                    >
+                                                        <FaPlay />
+                                                        <span>Read Now</span>
+                                                    </motion.button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Link>
-                                </motion.div>
-                            ))}
+                                        </Link>
+                                    </motion.div>
+                                ))}
                             </motion.div>
 
                             {/* Load More and Show All Buttons */}
