@@ -262,18 +262,18 @@ export default function AnimeHome() {
                     transition={{ duration: 0.5 }}
                     className="relative h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-[85vh] overflow-hidden"
                 >
-                    {/* Background Image with Overlay */}
+                    {/* Background Image with Overlay — brighter poster, lighter overlays for clarity */}
                     <div className="absolute inset-0">
                         <div
-                            className="absolute inset-0 bg-cover bg-center scale-110"
+                            className="absolute inset-0 bg-cover bg-center scale-105"
                             style={{
                                 backgroundImage: `url(${currentHero.bannerImage || currentHero.coverImage})`,
-                                filter: 'brightness(0.4) saturate(1.2)',
+                                filter: 'brightness(0.78) contrast(1.08) saturate(1.15)',
                             }}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-                        <div className="absolute inset-0 bg-gradient-to-br from-orange-900/20 via-transparent to-red-900/20" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/50 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-orange-900/15 via-transparent to-red-900/15" />
                     </div>
 
                     {/* Animated Particles Effect */}
@@ -461,8 +461,8 @@ export default function AnimeHome() {
                                     key={anime._id || index}
                                     onClick={() => setHeroIndex(index)}
                                     className={`relative flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border-2 transition-all touch-manipulation ${index === heroIndex
-                                            ? 'border-orange-500 scale-110 shadow-lg shadow-orange-500/50'
-                                            : 'border-white/20 hover:border-orange-400/50 opacity-60 hover:opacity-100'
+                                        ? 'border-orange-500 scale-110 shadow-lg shadow-orange-500/50'
+                                        : 'border-white/20 hover:border-orange-400/50 opacity-60 hover:opacity-100'
                                         }`}
                                     aria-label={`Go to ${anime.title}`}
                                 >
@@ -664,8 +664,8 @@ export default function AnimeHome() {
                                                     key={day}
                                                     onClick={() => setSelectedScheduleDay(day)}
                                                     className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${selectedScheduleDay === day
-                                                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
-                                                            : 'bg-gray-800 text-gray-400 hover:text-orange-400'
+                                                        ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                                                        : 'bg-gray-800 text-gray-400 hover:text-orange-400'
                                                         }`}
                                                 >
                                                     {shortDay}
@@ -886,8 +886,8 @@ export default function AnimeHome() {
                                                     key={period}
                                                     onClick={() => setTop10Period(period)}
                                                     className={`px-2 py-1 text-xs font-semibold rounded transition-all ${top10Period === period
-                                                            ? 'bg-orange-500 text-white'
-                                                            : 'text-gray-400 hover:text-orange-400'
+                                                        ? 'bg-orange-500 text-white'
+                                                        : 'text-gray-400 hover:text-orange-400'
                                                         }`}
                                                 >
                                                     {period.charAt(0).toUpperCase() + period.slice(1)}
@@ -903,9 +903,9 @@ export default function AnimeHome() {
                                                 className="flex items-center space-x-3 p-2 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors group"
                                             >
                                                 <span className={`font-black text-lg min-w-[30px] ${index === 0 ? 'text-yellow-400' :
-                                                        index === 1 ? 'text-gray-300' :
-                                                            index === 2 ? 'text-orange-600' :
-                                                                'text-gray-500'
+                                                    index === 1 ? 'text-gray-300' :
+                                                        index === 2 ? 'text-orange-600' :
+                                                            'text-gray-500'
                                                     }`}>
                                                     #{index + 1}
                                                 </span>
