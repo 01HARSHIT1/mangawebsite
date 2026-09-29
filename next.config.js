@@ -30,8 +30,8 @@ const nextConfig = {
   },
   // Minimal config to prevent stack overflow
   swcMinify: true,
-  // Enable standalone output for Docker optimization
-  output: 'standalone',
+  // Do NOT use output: 'standalone' on Vercel — it is for Docker/self-host.
+  // Vercel packages Next.js itself; standalone can break API routes.
   // Exclude packages with native binaries from server-side bundling
   serverComponentsExternalPackages: [
     '@xenova/transformers',

@@ -1,83 +1,92 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, type MongoClientOptions } from 'mongodb';
 
-// Use environment variable for MongoDB URI - NO HARDCODED FALLBACKS
+/**
+ * MongoDB client for Vercel / serverless.
+ * IMPORTANT: Never throw at module import time — that crashes every API route with 500.
+ * Connection errors are deferred to await clientPromise so routes can catch & fallback.
+ */
+
 const uri = process.env.MONGODB_URI;
 
-if (!uri) {
-    console.error('❌ MONGODB_URI environment variable is not set!');
-    throw new Error('MONGODB_URI environment variable is required');
+const options: MongoClientOptions = {
+    maxPoolSize: 10,
+    minPoolSize: 0,
+    // Fail fast on Vercel instead of hanging until function timeout (network error)
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 15000,
+};
+
+declare global {
+    // eslint-disable-next-line no-var
+    var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-console.log('MongoDB URI:', uri);
-const options = {};
+function createClientPromise(): Promise<MongoClient> {
+    if (!uri) {
+        console.error('❌ MONGODB_URI is not set. Add it in Vercel → Project → Settings → Environment Variables.');
+        return Promise.reject(
+            new Error('MONGODB_URI environment variable is required. Set it in Vercel Environment Variables.')
+        );
+    }
 
-let client;
+    // Do not log the full URI (contains credentials)
+    try {
+        const host = new URL(uri.replace('mongodb+srv://', 'https://').replace('mongodb://', 'http://')).host;
+        console.log('MongoDB: connecting to', host);
+    } catch {
+        console.log('MongoDB: connecting…');
+    }
+
+    const client = new MongoClient(uri, options);
+    return client.connect().catch((error) => {
+        console.error('MongoDB connection error:', error?.message || error);
+        console.error(
+            'Tip: In MongoDB Atlas → Network Access, allow 0.0.0.0/0 (or Vercel IPs). Check MONGODB_URI is correct.'
+        );
+        throw error;
+    });
+}
+
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
-    // In development mode, use a global variable so that the value
-    // is preserved across module reloads caused by HMR (Hot Module Replacement).
-    let globalWithMongo = global as typeof globalThis & {
-        _mongoClientPromise?: Promise<MongoClient>;
-    };
-
-    if (!globalWithMongo._mongoClientPromise) {
-        client = new MongoClient(uri, options);
-        globalWithMongo._mongoClientPromise = client.connect().catch(error => {
-            console.error('MongoDB connection error:', error);
-            throw error;
-        });
+    // Preserve client across HMR reloads
+    if (!global._mongoClientPromise) {
+        global._mongoClientPromise = createClientPromise();
     }
-    clientPromise = globalWithMongo._mongoClientPromise;
+    clientPromise = global._mongoClientPromise;
 } else {
-    // In production mode, it's best to not use a global variable.
-    client = new MongoClient(uri, options);
-    clientPromise = client.connect();
+    // Production / Vercel: reuse global across warm invocations when possible
+    if (!global._mongoClientPromise) {
+        global._mongoClientPromise = createClientPromise();
+    }
+    clientPromise = global._mongoClientPromise;
 }
 
 // Create database indexes for performance optimization
 async function createIndexes() {
     try {
         const client = await clientPromise;
-        const db = client.db();
+        const db = client.db('mangawebsite');
 
-        // Manga collection indexes
         await db.collection('manga').createIndex({ uploaderId: 1 });
         await db.collection('manga').createIndex({ createdAt: -1 });
         await db.collection('manga').createIndex({ likes: -1, views: -1 });
-        await db.collection('manga').createIndex({ genre: 1 });
+        await db.collection('manga').createIndex({ views: -1, likes: -1 });
+        await db.collection('manga').createIndex({ genres: 1 });
         await db.collection('manga').createIndex({ status: 1 });
         await db.collection('manga').createIndex({ title: 'text', description: 'text' });
 
-        // Chapters collection indexes
         await db.collection('chapters').createIndex({ mangaId: 1 });
         await db.collection('chapters').createIndex({ mangaId: 1, chapterNumber: -1 });
         await db.collection('chapters').createIndex({ publishDate: 1 });
         await db.collection('chapters').createIndex({ createdAt: -1 });
-        await db.collection('chapters').createIndex({ title: 'text' });
 
-        // Users collection indexes
         await db.collection('users').createIndex({ email: 1 }, { unique: true });
         await db.collection('users').createIndex({ username: 1 });
         await db.collection('users').createIndex({ role: 1 });
-        await db.collection('users').createIndex({ isBanned: 1 });
         await db.collection('users').createIndex({ createdAt: -1 });
-        await db.collection('users').createIndex({ 'readingHistory.timestamp': -1 });
-        await db.collection('users').createIndex({ 'readingHistory.mangaId': 1 });
-        await db.collection('users').createIndex({ 'readingHistory.chapterId': 1 });
-
-        // Payments collection indexes
-        await db.collection('payments').createIndex({ userId: 1 });
-        await db.collection('payments').createIndex({ timestamp: -1 });
-        await db.collection('payments').createIndex({ type: 1 });
-        await db.collection('payments').createIndex({ mangaId: 1 });
-        await db.collection('payments').createIndex({ episodeId: 1 });
-
-        // Ads collection indexes
-        await db.collection('ads').createIndex({ active: 1 });
-        await db.collection('ads').createIndex({ location: 1 });
-        await db.collection('ads').createIndex({ startDate: 1, endDate: 1 });
-        await db.collection('ads').createIndex({ priority: -1 });
 
         console.log('Database indexes created successfully');
     } catch (error) {
@@ -85,13 +94,10 @@ async function createIndexes() {
     }
 }
 
-// Create indexes on first connection - only on server side and not during build
-if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'production') {
-    // Only create indexes in development
-    createIndexes().catch(err => console.error('Index creation failed:', err));
+// Only auto-create indexes in development
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
+    createIndexes().catch((err) => console.error('Index creation failed:', err));
 }
 
-// Export function to manually create indexes if needed
 export { createIndexes };
-
-export default clientPromise; 
+export default clientPromise;
