@@ -254,10 +254,26 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     );
 }
 
+const noopWebSocket: WebSocketContextType = {
+    socket: null,
+    isConnected: false,
+    onlineUsers: [],
+    currentReaders: {},
+    sendMessage: () => {},
+    sendReaction: () => {},
+    joinMangaRoom: () => {},
+    leaveMangaRoom: () => {},
+    sendComment: () => {},
+    typingUsers: {},
+    startTyping: () => {},
+    stopTyping: () => {},
+};
+
 export function useWebSocket() {
     const context = useContext(WebSocketContext);
+    // Never throw — prevents "Oops!" ErrorBoundary on manga pages if provider timing differs
     if (context === undefined) {
-        throw new Error('useWebSocket must be used within a WebSocketProvider');
+        return noopWebSocket;
     }
     return context;
 }
